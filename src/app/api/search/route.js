@@ -4,7 +4,7 @@ export async function POST(request) {
   try {
     const { query, country } = await request.json();
     
-    const gatewayUrl = (process.env.NEXT_PUBLIC_GATEWAY_URL || "https://ai-shopping-vewk.onrender.com").trim();
+    const gatewayUrl = (process.env.NEXT_PUBLIC_GATEWAY_URL || "https://ai-shopping-taupe.vercel.app").trim();
     const apiKey = (() => {
       const k = process.env.NEXT_PUBLIC_GATEWAY_API_KEY;
       return (k && k.trim() !== "") ? k.trim() : "gw_49219b7938a801d920087bc153c6ec2b";

@@ -1,6 +1,6 @@
 import { mockProductsData } from "../data/mockProducts";
 
-const GATEWAY_URL = "https://ai-shopping-vewk.onrender.com";
+const GATEWAY_URL = (process.env.NEXT_PUBLIC_GATEWAY_URL || "https://ai-shopping-taupe.vercel.app").trim();
 const DEFAULT_API_KEY = "gw_49219b7938a801d920087bc153c6ec2b";
 
 // Fallback logic on API failure or timeout:
