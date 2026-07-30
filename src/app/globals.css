@@ -1,0 +1,77 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-indigo: #6366f1;
+  --color-brand-violet: #a855f7;
+  --color-dark-bg: #090d16;
+  --color-dark-card: rgba(15, 23, 42, 0.6);
+  --color-glass-border: rgba(255, 255, 255, 0.08);
+}
+
+:root {
+  --background: #090d16;
+  --foreground: #f8fafc;
+  --font-sans: var(--font-outfit), var(--font-inter), sans-serif;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+}
+
+/* Custom scrollbar for premium look */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #090d16;
+}
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
+
+/* Glassmorphism utility classes */
+.glass-panel {
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-panel-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.glass-panel-hover:hover {
+  background: rgba(20, 30, 55, 0.75);
+  border-color: rgba(99, 102, 241, 0.3);
+  box-shadow: 0 0 25px rgba(99, 102, 241, 0.15);
+}
+
+/* Custom animations for background glow and rocket thruster */
+@keyframes pulseGlow {
+  0%, 100% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+}
+
+.bg-glow-purple {
+  filter: blur(130px);
+  animation: pulseGlow 10s infinite ease-in-out;
+}
+
+.bg-glow-blue {
+  filter: blur(130px);
+  animation: pulseGlow 12s infinite ease-in-out 2s;
+}
+
