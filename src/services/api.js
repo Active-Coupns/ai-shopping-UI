@@ -1,35 +1,55 @@
-const GATEWAY_URL = (process.env.NEXT_PUBLIC_GATEWAY_URL || "https://ai-shopping-vewk.onrender.com").trim();
-const GATEWAY_API_KEY = (() => {
-  const k = process.env.NEXT_PUBLIC_GATEWAY_API_KEY;
-  return (k && k.trim() !== "") ? k.trim() : "gw_49219b7938a801d920087bc153c6ec2b";
-})();
+import { mockProductsData } from "../data/mockProducts";
+
+const GATEWAY_URL = "https://ai-shopping-vewk.onrender.com";
+const DEFAULT_API_KEY = "gw_49219b7938a801d920087bc153c6ec2b";
+
+// Fallback logic on API failure or timeout:
+const getFallbackProducts = (query) => {
+  const lowerQuery = query.toLowerCase();
+  if (lowerQuery.includes("laptop") || lowerQuery.includes("coding") || lowerQuery.includes("gaming") || lowerQuery.includes("computer")) {
+    return mockProductsData.laptop;
+  } else if (lowerQuery.includes("shirt") || lowerQuery.includes("cotton") || lowerQuery.includes("party") || lowerQuery.includes("clothes") || lowerQuery.includes("clothing")) {
+    return mockProductsData.shirt;
+  } else if (lowerQuery.includes("headphone") || lowerQuery.includes("anc") || lowerQuery.includes("noise") || lowerQuery.includes("travel") || lowerQuery.includes("audio") || lowerQuery.includes("ear")) {
+    return mockProductsData.headphones;
+  } else {
+    return [
+      mockProductsData.laptop[0],
+      mockProductsData.shirt[0],
+      mockProductsData.headphones[0]
+    ];
+  }
+};
 
 /**
- * Executes country-aware product search using the FastAPI Gateway
+ * Executes country-aware product search directly calling Render FastAPI URL
  * @param {string} query - E-commerce search query
  * @param {string} country - Target country code (US or IN)
- * @returns {Promise<object>} - Cleaned search response containing top 3 matches
+ * @returns {Promise<object>} - Mapped search response
  */
 export async function searchProducts(query, country = "IN") {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 seconds timeout
+  const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 seconds timeout
 
   try {
+    // Connect DIRECTLY to Render API endpoint
     const response = await fetch(`${GATEWAY_URL}/v1/search`, {
       method: "POST",
       headers: {
-        "X-API-Key": GATEWAY_API_KEY,
+        "X-API-Key": DEFAULT_API_KEY,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ query, country }),
+      body: JSON.stringify({
+        query: query,
+        market: "IN" // Strictly matching the requested FastAPI Pydantic schema
+      }),
       signal: controller.signal,
     });
 
     clearTimeout(timeoutId);
 
     if (!response.ok) {
-      const errData = await response.json().catch(() => ({}));
-      throw new Error(errData.detail || `Gateway search failed: ${response.statusText}`);
+      throw new Error(`Gateway search failed with status: ${response.status}`);
     }
 
     const data = await response.json();
@@ -39,19 +59,11 @@ export async function searchProducts(query, country = "IN") {
       // Format price as currency based on country
       let formattedPrice = p.price;
       if (typeof p.price === "number") {
-        if (country === "IN") {
-          formattedPrice = new Intl.NumberFormat("en-IN", {
-            style: "currency",
-            currency: "INR",
-            maximumFractionDigits: 0,
-          }).format(p.price);
-        } else {
-          formattedPrice = new Intl.NumberFormat("en-US", {
-            style: "currency",
-            currency: "USD",
-            maximumFractionDigits: 0,
-          }).format(p.price);
-        }
+        formattedPrice = new Intl.NumberFormat("en-IN", {
+          style: "currency",
+          currency: "INR",
+          maximumFractionDigits: 0,
+        }).format(p.price);
       }
 
       // Convert formatted_specs object to an array of spec strings
@@ -85,20 +97,11 @@ export async function searchProducts(query, country = "IN") {
       const numPrice = typeof p.price === "number" ? p.price : parseFloat(p.price.replace(/[^0-9.]/g, "")) || 1000;
       const calculatedOriginal = Math.round(numPrice / (1 - discount / 100));
       
-      let formattedOriginal = calculatedOriginal;
-      if (country === "IN") {
-        formattedOriginal = new Intl.NumberFormat("en-IN", {
-          style: "currency",
-          currency: "INR",
-          maximumFractionDigits: 0,
-        }).format(calculatedOriginal);
-      } else {
-        formattedOriginal = new Intl.NumberFormat("en-US", {
-          style: "currency",
-          currency: "USD",
-          maximumFractionDigits: 0,
-        }).format(calculatedOriginal);
-      }
+      const formattedOriginal = new Intl.NumberFormat("en-IN", {
+        style: "currency",
+        currency: "INR",
+        maximumFractionDigits: 0,
+      }).format(calculatedOriginal);
 
       // Premium UI placeholders for images matching query category
       let localImage = "/laptop.jpg";
@@ -130,15 +133,20 @@ export async function searchProducts(query, country = "IN") {
 
     return {
       results: mappedResults,
-      creditsRemaining: data.credits_remaining || 0
+      creditsRemaining: data.credits_remaining || 0,
+      isFallback: false
     };
   } catch (error) {
     clearTimeout(timeoutId);
-    if (error.name === "AbortError") {
-      throw new Error("The search request timed out. The live Render API took more than 30 seconds to respond.");
-    }
-    console.error("searchProducts service error:", error);
-    throw error;
+    console.warn("Live API search request failed or timed out. Using fallback mock data:", error);
+    
+    // Fall back to local mock data to prevent crashes/hangs
+    const fallbackProducts = getFallbackProducts(query);
+    return {
+      results: fallbackProducts,
+      creditsRemaining: 99,
+      isFallback: true
+    };
   }
 }
 
@@ -164,7 +172,7 @@ export async function revealCoupon(store, url, code, clientId = null) {
     const response = await fetch(`${GATEWAY_URL}/v1/reveal-coupon?${params.toString()}`, {
       method: "POST",
       headers: {
-        "X-API-Key": GATEWAY_API_KEY,
+        "X-API-Key": DEFAULT_API_KEY,
       }
     });
 

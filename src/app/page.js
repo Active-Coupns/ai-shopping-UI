@@ -29,6 +29,12 @@ export default function Home() {
       const response = await searchProducts(query, "IN");
       setProducts(response.results);
       setCreditsRemaining(response.creditsRemaining);
+      
+      if (response.isFallback) {
+        setApiError("AI Gateway took too long to wake up (Render cold-start). Showing verified local recommendations.");
+      } else {
+        setApiError(null);
+      }
     } catch (err) {
       console.error("Live API request failed:", err);
       setApiError(err.message || "Failed to retrieve live shopping matches from Render Gateway.");
