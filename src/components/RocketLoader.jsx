@@ -257,7 +257,7 @@ export default function RocketLoader({ query, onComplete, apiLoading }) {
         })}
       </div>
 
-      {/* Dynamic spinner for Vercel API wakeups */}
+      {/* Dynamic spinner for Render API wakeups */}
       <AnimatePresence>
         {completedSteps.length === STEPS.length && apiLoading && (
           <motion.div
@@ -267,7 +267,7 @@ export default function RocketLoader({ query, onComplete, apiLoading }) {
             className="w-full mt-6 flex items-center justify-center gap-2.5 px-4 py-3.5 rounded-xl bg-brand-indigo/10 border border-brand-indigo/20 text-brand-indigo text-xs md:text-sm font-semibold shadow-inner"
           >
             <Loader2 className="w-4 h-4 animate-spin text-brand-indigo" />
-            <span>Warming up Vercel API Gateway... resolving recommendations.</span>
+            <span>AI Gateway is spinning up... this may take up to 45 seconds.</span>
           </motion.div>
         )}
       </AnimatePresence>

@@ -25,19 +25,19 @@ export default function Home() {
     setProducts([]);
 
     try {
-      // Execute the live Vercel API search request with IN market
+      // Execute the live Render API search request with IN market
       const response = await searchProducts(query, "IN");
       setProducts(response.results);
       setCreditsRemaining(response.creditsRemaining);
       
       if (response.isFallback) {
-        setApiError("AI Gateway took too long to wake up (Vercel API latency). Showing verified local recommendations.");
+        setApiError("AI Gateway took too long to wake up (Render cold-start). Showing verified local recommendations.");
       } else {
         setApiError(null);
       }
     } catch (err) {
       console.error("Live API request failed:", err);
-      setApiError(err.message || "Failed to retrieve live shopping matches from Vercel API Gateway.");
+      setApiError(err.message || "Failed to retrieve live shopping matches from Render Gateway.");
       setCreditsRemaining(null);
     } finally {
       setIsApiLoading(false);

@@ -1,6 +1,6 @@
 import { mockProductsData } from "../data/mockProducts";
 
-const GATEWAY_URL = (process.env.NEXT_PUBLIC_GATEWAY_URL || "https://ai-shopping-taupe.vercel.app").trim();
+const GATEWAY_URL = (process.env.NEXT_PUBLIC_GATEWAY_URL || "https://ai-shopping-ucde.onrender.com").trim();
 const DEFAULT_API_KEY = "gw_49219b7938a801d920087bc153c6ec2b";
 
 // Fallback logic on API failure or timeout:
@@ -29,7 +29,7 @@ const getFallbackProducts = (query) => {
  */
 export async function searchProducts(query, country = "IN") {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 seconds timeout
+  const timeoutId = setTimeout(() => controller.abort(), 45000); // 45 seconds timeout
 
   try {
     // Connect DIRECTLY to Render API endpoint
