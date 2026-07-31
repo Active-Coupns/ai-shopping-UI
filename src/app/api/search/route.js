@@ -106,11 +106,29 @@ export async function POST(request) {
       if (!item) continue;
       try {
         const title = item.title || item.name || "";
-        const link = item.link || item.productLink || item.url || item.hasdataLink || "";
         const image = item.thumbnail || item.image || item.imageUrl || item.serpapi_thumbnail || "";
         const platform = item.source || item.merchant || item.seller || "Online Store";
 
-        // Skip if title or link is missing
+        // Resolve direct destination link (avoiding broken HasData API proxy URLs)
+        let link = item.link || item.productLink || item.url || item.merchantUrl || "";
+        if (!link || link.includes("api.hasdata.com")) {
+          const storeLower = platform.toLowerCase();
+          if (storeLower.includes("amazon")) {
+            link = `https://www.amazon.in/s?k=${encodeURIComponent(title)}`;
+          } else if (storeLower.includes("flipkart")) {
+            link = `https://www.flipkart.com/search?q=${encodeURIComponent(title)}`;
+          } else if (storeLower.includes("croma")) {
+            link = `https://www.croma.com/search/?text=${encodeURIComponent(title)}`;
+          } else if (storeLower.includes("reliance") || storeLower.includes("jiomart")) {
+            link = `https://www.jiomart.com/search/${encodeURIComponent(title)}`;
+          } else if (storeLower.includes("tata") || storeLower.includes("cliq")) {
+            link = `https://www.tatacliq.com/search/?searchCategory=all&text=${encodeURIComponent(title)}`;
+          } else {
+            link = `https://www.google.com/search?q=${encodeURIComponent(title + " " + platform)}`;
+          }
+        }
+
+        // Skip if title or resolved link is missing
         if (!title || !link) {
           continue;
         }
@@ -133,8 +151,31 @@ export async function POST(request) {
       }
     }
 
+    // Round-robin re-sorting to ensure merchant diversity at the top
+    const sortedProducts = [];
+    const merchantGroups = {};
+    for (const p of cleanProducts) {
+      const key = (p.platform || "Online Store").toLowerCase();
+      if (!merchantGroups[key]) {
+        merchantGroups[key] = [];
+      }
+      merchantGroups[key].push(p);
+    }
+    const merchantKeys = Object.keys(merchantGroups);
+    if (merchantKeys.length > 0) {
+      const maxItemsInGroup = Math.max(...merchantKeys.map(k => merchantGroups[k].length));
+      for (let step = 0; step < maxItemsInGroup; step++) {
+        for (const key of merchantKeys) {
+          if (merchantGroups[key][step]) {
+            sortedProducts.push(merchantGroups[key][step]);
+          }
+        }
+      }
+    }
+    const finalProducts = sortedProducts.length > 0 ? sortedProducts : cleanProducts;
+
     // Fallback logic if results array is empty
-    if (cleanProducts.length === 0) {
+    if (finalProducts.length === 0) {
       console.warn(`[API Fallback] Returning curated fallback list for query: "${cleanQuery}"`);
       const queryLower = cleanQuery.toLowerCase();
       if (queryLower.includes("laptop") || queryLower.includes("computer") || queryLower.includes("coding")) {
@@ -148,7 +189,7 @@ export async function POST(request) {
     }
 
     // 4. Return clean JSON response
-    return NextResponse.json({ products: cleanProducts }, { status: 200 });
+    return NextResponse.json({ products: finalProducts }, { status: 200 });
 
   } catch (err) {
     console.error("Serverless Search API Route error:", err);
