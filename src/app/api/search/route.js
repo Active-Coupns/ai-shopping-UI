@@ -1,4 +1,4 @@
-import { NextResponse } from "next";
+import { NextResponse } from "next/server";
 
 export async function POST(request) {
   console.log("HASDATA_API_KEY present:", !!process.env.HASDATA_API_KEY);
@@ -59,6 +59,8 @@ export async function POST(request) {
     let data;
     try {
       data = await scraperResponse.json();
+      console.log("HasData Status:", scraperResponse.status);
+      console.log("HasData Raw Response JSON:", JSON.stringify(data, null, 2));
     } catch (jsonErr) {
       console.error("[Scraper JSON Parse Error] Failed parsing response:", jsonErr);
       return NextResponse.json(
@@ -69,20 +71,32 @@ export async function POST(request) {
 
     const rawResults = data?.shoppingResults || data?.shopping_results || data?.organicResults || data?.organic_results || [];
 
-    // 3. Map into clean array containing strictly the exact 6 fields and filter invalid items
-    const cleanProducts = rawResults
-      .map(item => {
-        if (!item) return null;
-        return {
-          title: item.title || item.name || "",
-          description: item.snippet || item.description || "Great value product matching your search query.",
-          image: item.thumbnail || item.image || "",
+    // 3. Map into clean array containing strictly the exact 6 fields with try-catch mapping checks
+    const cleanProducts = [];
+    for (const item of rawResults) {
+      if (!item) continue;
+      try {
+        const title = item.title || item.name;
+        const link = item.link || item.product_link;
+        const image = item.thumbnail || item.image || item.product_image;
+
+        // Skip if title, link, or image is missing
+        if (!title || !link || !image) {
+          continue;
+        }
+
+        cleanProducts.push({
+          title: String(title),
+          description: String(item.snippet || item.description || "Great value product matching your search query."),
+          image: String(image),
           rating: String(item.rating || item.stars || "4.5"),
-          link: item.link || item.product_link || "",
-          platform: item.source || item.merchant || "Online Store"
-        };
-      })
-      .filter(p => p !== null && p.title && p.link && p.image);
+          link: String(link),
+          platform: String(item.source || item.merchant || "Online Store")
+        });
+      } catch (mapErr) {
+        console.error("Mapping Error:", mapErr);
+      }
+    }
 
     // 4. Return clean JSON response
     return NextResponse.json({ products: cleanProducts }, { status: 200 });
