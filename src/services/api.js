@@ -54,8 +54,21 @@ export async function searchProducts(query, country = "IN") {
 
     const data = await response.json();
     
-    // Map FastAPI schema fields to front-end component expected fields
-    const mappedResults = (data.results || []).map((p, idx) => {
+    // 1. Filter out zero-price, missing, or invalid products
+    const validResults = (data.results || []).filter(p => {
+      if (!p) return false;
+      const priceVal = p.price;
+      if (priceVal === undefined || priceVal === null) return false;
+      if (typeof priceVal === "string") {
+        const clean = priceVal.replace(/[^0-9.]/g, "");
+        const num = parseFloat(clean);
+        return !isNaN(num) && num > 0;
+      }
+      return typeof priceVal === "number" && priceVal > 0;
+    });
+
+    // 2. Map FastAPI schema fields to front-end component expected fields
+    const mappedResults = validResults.map((p, idx) => {
       // Format price as currency dynamically based on API p.currency
       const rawCurrency = p.currency || (country === "US" ? "USD" : "INR");
       const isUSD = rawCurrency === "USD" || rawCurrency === "$";
@@ -144,15 +157,8 @@ export async function searchProducts(query, country = "IN") {
     };
   } catch (error) {
     clearTimeout(timeoutId);
-    console.warn("Live API search request failed or timed out. Using fallback mock data:", error);
-    
-    // Fall back to local mock data to prevent crashes/hangs
-    const fallbackProducts = getFallbackProducts(query);
-    return {
-      results: fallbackProducts,
-      creditsRemaining: 99,
-      isFallback: true
-    };
+    console.error("searchProducts service error:", error);
+    throw error;
   }
 }
 

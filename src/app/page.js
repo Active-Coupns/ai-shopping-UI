@@ -174,19 +174,19 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Grid Dashboard or Error UI */}
-              {products.length === 0 && apiError ? (
+              {/* Grid Dashboard or User-Friendly Empty/Error State */}
+              {products.length === 0 ? (
                 <motion.div
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className="max-w-md mx-auto text-center py-16 px-6 glass-panel rounded-2xl border-red-500/20 shadow-[0_0_20px_rgba(239,68,68,0.1)] mt-8"
+                  className="max-w-md mx-auto text-center py-16 px-6 glass-panel rounded-2xl border-brand-indigo/20 shadow-[0_0_20px_rgba(99,102,241,0.1)] mt-8"
                 >
-                  <div className="w-16 h-16 bg-red-500/10 border border-red-500/20 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <ShieldAlert className="w-8 h-8" />
+                  <div className="w-16 h-16 bg-brand-indigo/10 border border-brand-indigo/20 text-brand-indigo rounded-full flex items-center justify-center mx-auto mb-6">
+                    <Sparkles className="w-8 h-8" />
                   </div>
-                  <h3 className="text-xl font-bold text-white mb-2">Search Verification Failed</h3>
-                  <p className="text-sm text-slate-400 mb-6">
-                    {apiError}
+                  <h3 className="text-xl font-bold text-white mb-2">No Live Deals Found</h3>
+                  <p className="text-sm text-slate-400 mb-6 leading-relaxed">
+                    {apiError ? apiError : "No live deals found for this query. Try adjusting your search terms."}
                   </p>
                   <button
                     onClick={handleReset}
