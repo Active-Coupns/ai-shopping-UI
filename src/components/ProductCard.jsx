@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowUpRight, Star, CheckCircle, Sparkles, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowUpRight, Star, CheckCircle, Sparkles, ChevronDown, ChevronUp, ShoppingBag } from "lucide-react";
 import CouponBadge from "./CouponBadge";
 import { revealCoupon } from "@/services/api";
 
@@ -32,9 +32,11 @@ export default function ProductCard({ product }) {
   
   const initialImg = product.image_url || product.image || product.thumbnail || product.product_image || "/laptop.jpg";
   const [imgSrc, setImgSrc] = useState(initialImg);
+  const [imgFailed, setImgFailed] = useState(false);
 
   React.useEffect(() => {
     setImgSrc(initialImg);
+    setImgFailed(false);
   }, [initialImg]);
 
   const handleBuyNow = () => {
@@ -56,19 +58,30 @@ export default function ProductCard({ product }) {
 
   // Setup badge style depending on store
   const getStoreBadge = () => {
-    if (product.store.toLowerCase() === "amazon") {
-      return (
-        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#131921] border border-[#ff9900]/30 text-xs font-bold text-white tracking-wide">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#ff9900] animate-pulse" />
-          amzn
-          <span className="text-[#ff9900] font-extrabold">.in</span>
-        </span>
-      );
+    const storeName = product.store || "Online Store";
+    const storeLower = storeName.toLowerCase();
+    
+    let bgClass = "bg-brand-indigo/10 border-brand-indigo/30 text-brand-indigo";
+    let dotColor = "bg-brand-indigo";
+
+    if (storeLower.includes("amazon")) {
+      bgClass = "bg-[#131921] border-[#ff9900]/30 text-white";
+      dotColor = "bg-[#ff9900]";
+    } else if (storeLower.includes("flipkart")) {
+      bgClass = "bg-[#2874f0] border-[#ffe11b]/30 text-white";
+      dotColor = "bg-[#ffe11b]";
+    } else if (storeLower.includes("croma")) {
+      bgClass = "bg-[#121212] border-[#00e6c3]/30 text-[#00e6c3]";
+      dotColor = "bg-[#00e6c3]";
+    } else if (storeLower.includes("vijay") || storeLower.includes("vj")) {
+      bgClass = "bg-red-600/10 border-red-500/30 text-red-500";
+      dotColor = "bg-red-500";
     }
+
     return (
-      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#2874f0] border border-[#ffe11b]/30 text-xs font-bold text-white tracking-wide">
-        <span className="w-1.5 h-1.5 rounded-full bg-[#ffe11b] animate-pulse" />
-        flipkart
+      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-bold tracking-wide capitalize ${bgClass}`}>
+        <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${dotColor}`} />
+        {storeName}
       </span>
     );
   };
@@ -115,22 +128,34 @@ export default function ProductCard({ product }) {
 
           {/* Product Image - ALWAYS visible */}
           <div className="relative w-full h-44 rounded-xl overflow-hidden mb-4 bg-slate-950/80 border border-slate-800 flex items-center justify-center">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={imgSrc}
-              alt={product.title}
-              onError={() => {
-                let fallback = "/laptop.jpg";
-                const titleLower = (product.title || "").toLowerCase();
-                if (titleLower.includes("shirt") || titleLower.includes("cotton") || titleLower.includes("wear") || titleLower.includes("cloth") || titleLower.includes("denim")) {
-                  fallback = "/shirt.jpg";
-                } else if (titleLower.includes("headphone") || titleLower.includes("noise") || titleLower.includes("ear") || titleLower.includes("audio") || titleLower.includes("sound")) {
-                  fallback = "/headphones.jpg";
-                }
-                setImgSrc(fallback);
-              }}
-              className="object-contain w-full h-full p-2.5 transform hover:scale-105 transition-transform duration-500 bg-slate-950/40"
-            />
+            {imgFailed ? (
+              <div className="flex flex-col items-center justify-center gap-2 text-slate-500 w-full h-full bg-slate-950/50">
+                <ShoppingBag className="w-10 h-10 text-slate-600 animate-pulse" />
+                <span className="text-[10px] uppercase font-bold tracking-widest text-slate-500">No Product Image</span>
+              </div>
+            ) : (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src={imgSrc}
+                alt={product.title}
+                onError={() => {
+                  let fallback = "/laptop.jpg";
+                  const titleLower = (product.title || "").toLowerCase();
+                  if (titleLower.includes("shirt") || titleLower.includes("cotton") || titleLower.includes("wear") || titleLower.includes("cloth") || titleLower.includes("denim")) {
+                    fallback = "/shirt.jpg";
+                  } else if (titleLower.includes("headphone") || titleLower.includes("noise") || titleLower.includes("ear") || titleLower.includes("audio") || titleLower.includes("sound")) {
+                    fallback = "/headphones.jpg";
+                  }
+                  
+                  if (imgSrc === fallback || imgSrc === "") {
+                    setImgFailed(true);
+                  } else {
+                    setImgSrc(fallback);
+                  }
+                }}
+                className="object-contain w-full h-full p-2.5 transform hover:scale-105 transition-transform duration-500 bg-slate-950/40"
+              />
+            )}
             {product.tag && (
               <span className="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-gradient-to-r from-brand-indigo to-brand-violet text-white shadow-lg">
                 {product.tag}
@@ -210,13 +235,7 @@ export default function ProductCard({ product }) {
 
         {/* Bottom Section - ALWAYS visible (Coupon & Buy button) */}
         <div>
-          {/* Coupon */}
-          {product.coupon && (
-            <CouponBadge
-              couponCode={product.coupon.code}
-              discount={product.coupon.discount}
-            />
-          )}
+
 
           {/* Buy Button */}
           <button

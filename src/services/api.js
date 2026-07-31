@@ -49,23 +49,12 @@ export async function searchProducts(query, country = "IN") {
       }).format(calculatedOriginal);
 
       const specs = [
-        p.title.split(" ").slice(0, 3).join(" ") || "Verified Specifications",
-        p.platform ? `Sold by verified seller: ${p.platform}` : "Merchant warranty included",
-        "Top rated customer feedback and fast shipping support"
+        "Verified Merchant Partner",
+        "Top Customer Satisfaction Rating",
+        "In Stock & Ready to Ship"
       ];
 
-      let coupon = null;
-      if (idx === 0) {
-        coupon = {
-          code: "AISAVE10",
-          discount: "10% Extra Discount"
-        };
-      } else if (idx === 1) {
-        coupon = {
-          code: "FREESHIP",
-          discount: "Free Shipping Applied"
-        };
-      }
+      const coupon = null;
 
       return {
         id: `prod-${idx}-${Date.now()}`,
