@@ -69,29 +69,29 @@ export async function POST(request) {
       );
     }
 
-    const rawResults = data?.shoppingResults || data?.shopping_results || data?.organicResults || data?.organic_results || [];
+    const rawResults = data?.shoppingResults || data?.shopping_results || data?.organicResults || [];
 
     // 3. Map into clean array containing strictly the exact 6 fields with try-catch mapping checks
     const cleanProducts = [];
     for (const item of rawResults) {
       if (!item) continue;
       try {
-        const title = item.title || item.name;
-        const link = item.link || item.product_link;
-        const image = item.thumbnail || item.image || item.product_image;
+        const title = item.title || item.name || "";
+        const link = item.link || item.productLink || item.url || "";
+        const image = item.thumbnail || item.image || item.imageUrl || "";
 
-        // Skip if title, link, or image is missing
-        if (!title || !link || !image) {
+        // Skip if title or link is missing
+        if (!title || !link) {
           continue;
         }
 
         cleanProducts.push({
           title: String(title),
-          description: String(item.snippet || item.description || "Great value product matching your search query."),
+          description: String(item.snippet || item.description || title || ""),
           image: String(image),
           rating: String(item.rating || item.stars || "4.5"),
           link: String(link),
-          platform: String(item.source || item.merchant || "Online Store")
+          platform: String(item.source || item.merchant || item.seller || "Online Store")
         });
       } catch (mapErr) {
         console.error("Mapping Error:", mapErr);
