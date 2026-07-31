@@ -27,7 +27,35 @@ export default function Home() {
     try {
       // Execute the local Next.js search API request
       const response = await searchProducts(query, "IN");
-      setProducts(response.results);
+      const fetchedProducts = response.results || [];
+
+      // Preload product images before releasing the search loader
+      if (fetchedProducts.length > 0) {
+        try {
+          const preloadPromises = fetchedProducts.map((p) => {
+            return new Promise((resolve) => {
+              if (!p.image) {
+                resolve();
+                return;
+              }
+              const img = new window.Image();
+              img.src = p.image;
+              img.onload = () => resolve();
+              img.onerror = () => resolve();
+            });
+          });
+
+          // Wait for all images or a maximum timeout of 1.5s
+          await Promise.race([
+            Promise.all(preloadPromises),
+            new Promise((resolve) => setTimeout(resolve, 1500))
+          ]);
+        } catch (preloadErr) {
+          console.error("Product image preloading error:", preloadErr);
+        }
+      }
+
+      setProducts(fetchedProducts);
       setCreditsRemaining(response.creditsRemaining);
       setApiError(null);
     } catch (err) {

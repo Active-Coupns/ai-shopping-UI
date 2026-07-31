@@ -28,46 +28,24 @@ const FALLBACK_PRODUCTS = [
 ];
 
 /**
- * Extracts and cleans the target merchant product landing page URL.
- * Falls back to search results if URL is an API proxy or Google Shopping internal ID to prevent Flipkart E002 errors.
+ * Extracts and cleans the target merchant product landing page URL (PDP URL).
+ * If a direct link isn't available, constructs Google's single product details page to prevent Flipkart E002 errors.
  * @param {object} item - Raw HasData product object.
  * @returns {string} - Direct clean HTTP merchant link.
  */
-function getCleanProductUrl(item) {
-  let rawUrl = "";
-  
-  // 1. Audit offers array if present
-  if (item.offers && Array.isArray(item.offers) && item.offers.length > 0) {
-    const firstOffer = item.offers[0];
-    rawUrl = firstOffer.link || firstOffer.productLink || firstOffer.url || firstOffer.merchantLink || firstOffer.merchant_link || "";
+function getSingleProductPageUrl(item) {
+  // 1. If a direct offer / merchant link exists, use it
+  const directLink = item.merchantLink || item.merchant_link || item.offerLink || item.offer_link || item.directUrl || item.direct_url || "";
+  if (directLink && directLink.startsWith("http") && !directLink.includes("api.hasdata.com")) {
+    return directLink;
   }
-  
-  if (!rawUrl && item.merchant_link) {
-    rawUrl = item.merchant_link;
+  // 2. If item has a Google Shopping Product ID, construct Google's single product page URL
+  if (item.productId || item.product_id || item.docid) {
+    const pid = item.productId || item.product_id || item.docid;
+    return `https://www.google.com/shopping/product/${pid}`;
   }
-  if (!rawUrl && item.merchantLink) {
-    rawUrl = item.merchantLink;
-  }
-  if (!rawUrl) {
-    rawUrl = item.link || item.productLink || item.offerLink || item.merchantLink || item.url || "";
-  }
-
-  // If URL is valid, external, and does not contain proxy parameters or Google's /p/p~ structure
-  if (rawUrl && rawUrl.startsWith("http") && !rawUrl.includes("api.hasdata.com") && !rawUrl.includes("/p/p~")) {
-    return rawUrl;
-  }
-
-  // 2. Safe Fallback: Generate merchant direct search URL to bypass internal IDs
-  const encodedTitle = encodeURIComponent(item.title || "product");
-  const merchant = (item.source || item.merchant || "google").toLowerCase();
-
-  if (merchant.includes("flipkart")) {
-    return `https://www.flipkart.com/search?q=${encodedTitle}`;
-  } else if (merchant.includes("amazon")) {
-    return `https://www.amazon.in/s?k=${encodedTitle}`;
-  } else {
-    return `https://www.google.com/search?q=${encodedTitle}`;
-  }
+  // 3. Fallback to raw link if valid
+  return item.link || item.productLink || item.url || "#";
 }
 
 export async function POST(request) {
@@ -158,7 +136,7 @@ export async function POST(request) {
         const platform = item.source || item.merchant || item.seller || "Online Store";
 
         // Call our safe resolved destination link
-        const directLink = getCleanProductUrl(item);
+        const directLink = getSingleProductPageUrl(item);
 
         // Skip if title or resolved link is missing
         if (!title || !directLink) {
