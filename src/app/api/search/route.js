@@ -27,6 +27,49 @@ const FALLBACK_PRODUCTS = [
   }
 ];
 
+/**
+ * Extracts and cleans the target merchant product landing page URL.
+ * Falls back to search results if URL is an API proxy or Google Shopping internal ID to prevent Flipkart E002 errors.
+ * @param {object} item - Raw HasData product object.
+ * @returns {string} - Direct clean HTTP merchant link.
+ */
+function getCleanProductUrl(item) {
+  let rawUrl = "";
+  
+  // 1. Audit offers array if present
+  if (item.offers && Array.isArray(item.offers) && item.offers.length > 0) {
+    const firstOffer = item.offers[0];
+    rawUrl = firstOffer.link || firstOffer.productLink || firstOffer.url || firstOffer.merchantLink || firstOffer.merchant_link || "";
+  }
+  
+  if (!rawUrl && item.merchant_link) {
+    rawUrl = item.merchant_link;
+  }
+  if (!rawUrl && item.merchantLink) {
+    rawUrl = item.merchantLink;
+  }
+  if (!rawUrl) {
+    rawUrl = item.link || item.productLink || item.offerLink || item.merchantLink || item.url || "";
+  }
+
+  // If URL is valid, external, and does not contain proxy parameters or Google's /p/p~ structure
+  if (rawUrl && rawUrl.startsWith("http") && !rawUrl.includes("api.hasdata.com") && !rawUrl.includes("/p/p~")) {
+    return rawUrl;
+  }
+
+  // 2. Safe Fallback: Generate merchant direct search URL to bypass internal IDs
+  const encodedTitle = encodeURIComponent(item.title || "product");
+  const merchant = (item.source || item.merchant || "google").toLowerCase();
+
+  if (merchant.includes("flipkart")) {
+    return `https://www.flipkart.com/search?q=${encodedTitle}`;
+  } else if (merchant.includes("amazon")) {
+    return `https://www.amazon.in/s?k=${encodedTitle}`;
+  } else {
+    return `https://www.google.com/search?q=${encodedTitle}`;
+  }
+}
+
 export async function POST(request) {
   console.log("HASDATA_API_KEY present:", !!process.env.HASDATA_API_KEY);
 
@@ -94,7 +137,7 @@ export async function POST(request) {
     }
 
     // Safely extract results checking for both camelCase and snake_case variations
-    const rawResults = data?.shoppingResults || data?.shopping_results || data?.organicResults || data?.organic_results || [];
+    const rawResults = data?.shoppingResults || data?.shopping_results || data?.organicResults || [];
 
     // Slice array immediately to process ONLY the top 5 high-quality products for latency & focus
     const top5Items = rawResults
@@ -114,39 +157,8 @@ export async function POST(request) {
         const image = item.thumbnail || item.image || item.imageUrl || item.serpapi_thumbnail || "";
         const platform = item.source || item.merchant || item.seller || "Online Store";
 
-        // Extract direct product landing page link (PDP URL) rather than a search query page
-        let directLink = "";
-
-        // Check inside item.offers
-        if (item.offers && Array.isArray(item.offers) && item.offers.length > 0) {
-          const firstOffer = item.offers[0];
-          directLink = firstOffer.link || firstOffer.productLink || firstOffer.url || firstOffer.merchantLink || firstOffer.merchant_link || "";
-        }
-
-        if (!directLink && item.merchant_link) {
-          directLink = item.merchant_link;
-        }
-        if (!directLink && item.merchantLink) {
-          directLink = item.merchantLink;
-        }
-
-        // Try top-level product page keys in requested order
-        if (!directLink) {
-          directLink = item.product_link || item.direct_link || item.offer_link || item.link || item.productLink || item.url || "";
-        }
-
-        // Ensure link does not contain search results page triggers (/s?k= or search wraps) or HasData proxy
-        if (!directLink || directLink.includes("api.hasdata.com") || directLink.includes("/s?k=") || directLink.includes("/search?q=")) {
-          const storeLower = platform.toLowerCase();
-          if (storeLower.includes("amazon")) {
-            directLink = `https://www.amazon.in/dp/${item.productId || "B0CSYV7Z9B"}`;
-          } else if (storeLower.includes("flipkart")) {
-            directLink = `https://www.flipkart.com/p/p/p~${item.productId || "itm123"}`;
-          } else {
-            // Fall back to clean google search page as absolute last resort
-            directLink = item.hasdataLink || `https://www.google.com/search?q=${encodeURIComponent(title + " " + platform)}`;
-          }
-        }
+        // Call our safe resolved destination link
+        const directLink = getCleanProductUrl(item);
 
         // Skip if title or resolved link is missing
         if (!title || !directLink) {
