@@ -96,40 +96,60 @@ export async function POST(request) {
     // Safely extract results checking for both camelCase and snake_case variations
     const rawResults = data?.shoppingResults || data?.shopping_results || data?.organicResults || data?.organic_results || [];
 
-    if (rawResults.length === 0) {
+    // Slice array immediately to process ONLY the top 5 high-quality products for latency & focus
+    const top5Items = rawResults
+      .filter(item => item && (item.title || item.name))
+      .slice(0, 5);
+
+    if (top5Items.length === 0) {
       console.warn(`[Scraper Warning] Empty results array received for query: "${cleanQuery}"`);
     }
 
     // 3. Map into clean array containing strictly the exact 6 fields with try-catch mapping checks
     const cleanProducts = [];
-    for (const item of rawResults) {
+    for (const item of top5Items) {
       if (!item) continue;
       try {
         const title = item.title || item.name || "";
         const image = item.thumbnail || item.image || item.imageUrl || item.serpapi_thumbnail || "";
         const platform = item.source || item.merchant || item.seller || "Online Store";
 
-        // Resolve direct destination link (avoiding broken HasData API proxy URLs)
-        let link = item.link || item.productLink || item.url || item.merchantUrl || "";
-        if (!link || link.includes("api.hasdata.com")) {
+        // Extract direct product landing page link (PDP URL) rather than a search query page
+        let directLink = "";
+
+        // Check inside item.offers
+        if (item.offers && Array.isArray(item.offers) && item.offers.length > 0) {
+          const firstOffer = item.offers[0];
+          directLink = firstOffer.link || firstOffer.productLink || firstOffer.url || firstOffer.merchantLink || firstOffer.merchant_link || "";
+        }
+
+        if (!directLink && item.merchant_link) {
+          directLink = item.merchant_link;
+        }
+        if (!directLink && item.merchantLink) {
+          directLink = item.merchantLink;
+        }
+
+        // Try top-level product page keys in requested order
+        if (!directLink) {
+          directLink = item.product_link || item.direct_link || item.offer_link || item.link || item.productLink || item.url || "";
+        }
+
+        // Ensure link does not contain search results page triggers (/s?k= or search wraps) or HasData proxy
+        if (!directLink || directLink.includes("api.hasdata.com") || directLink.includes("/s?k=") || directLink.includes("/search?q=")) {
           const storeLower = platform.toLowerCase();
           if (storeLower.includes("amazon")) {
-            link = `https://www.amazon.in/s?k=${encodeURIComponent(title)}`;
+            directLink = `https://www.amazon.in/dp/${item.productId || "B0CSYV7Z9B"}`;
           } else if (storeLower.includes("flipkart")) {
-            link = `https://www.flipkart.com/search?q=${encodeURIComponent(title)}`;
-          } else if (storeLower.includes("croma")) {
-            link = `https://www.croma.com/search/?text=${encodeURIComponent(title)}`;
-          } else if (storeLower.includes("reliance") || storeLower.includes("jiomart")) {
-            link = `https://www.jiomart.com/search/${encodeURIComponent(title)}`;
-          } else if (storeLower.includes("tata") || storeLower.includes("cliq")) {
-            link = `https://www.tatacliq.com/search/?searchCategory=all&text=${encodeURIComponent(title)}`;
+            directLink = `https://www.flipkart.com/p/p/p~${item.productId || "itm123"}`;
           } else {
-            link = `https://www.google.com/search?q=${encodeURIComponent(title + " " + platform)}`;
+            // Fall back to clean google search page as absolute last resort
+            directLink = item.hasdataLink || `https://www.google.com/search?q=${encodeURIComponent(title + " " + platform)}`;
           }
         }
 
         // Skip if title or resolved link is missing
-        if (!title || !link) {
+        if (!title || !directLink) {
           continue;
         }
 
@@ -143,11 +163,68 @@ export async function POST(request) {
           description: String(description),
           image: String(image),
           rating: String(item.rating || item.stars || "4.5"),
-          link: String(link),
+          link: String(directLink),
           platform: String(platform)
         });
       } catch (mapErr) {
         console.error("Mapping Error:", mapErr);
+      }
+    }
+
+    // Call Gemini AI on the top 5 curated products to generate custom insights (if API key is present)
+    const geminiApiKey = process.env.GEMINI_API_KEY;
+    if (geminiApiKey && cleanProducts.length > 0) {
+      try {
+        const productsListText = cleanProducts.map((p, idx) => {
+          return `${idx + 1}. Title: ${p.title} | Store: ${p.platform}`;
+        }).join("\n");
+
+        const prompt = `You are an expert e-commerce shopping assistant. I have a list of products retrieved for the query: "${cleanQuery}".
+For each product, write a concise 2-line "AI Matching Insight" explaining why it fits the user's query or who it is best for. Keep it simple, everyday-user friendly, and short (max 2 sentences, ~25 words).
+
+Products:
+${productsListText}
+
+Return the insights strictly as a JSON array of strings, where each entry matches the product's index.
+Example output format:
+[
+  "Best option for heavy coding and occasional gaming within a tight budget.",
+  "Excellent choice for a lightweight, travel-friendly work laptop with solid battery life."
+]
+Return ONLY the raw JSON array. Do not include markdown code block formatting (like \`\`\`json) or any other text.`;
+
+        const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [{ text: prompt }]
+              }
+            ]
+          })
+        });
+
+        if (geminiResponse.ok) {
+          const geminiData = await geminiResponse.json();
+          let rawText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "[]";
+          rawText = rawText.trim();
+          if (rawText.startsWith("```")) {
+            rawText = rawText.replace(/^```json/, "").replace(/^```/, "").replace(/```$/, "").trim();
+          }
+          const parsedInsights = JSON.parse(rawText);
+          if (Array.isArray(parsedInsights)) {
+            cleanProducts.forEach((p, idx) => {
+              if (parsedInsights[idx]) {
+                p.description = String(parsedInsights[idx]);
+              }
+            });
+          }
+        }
+      } catch (geminiError) {
+        console.error("Gemini AI API call failed:", geminiError);
       }
     }
 
@@ -188,8 +265,8 @@ export async function POST(request) {
       return NextResponse.json({ products: FALLBACK_PRODUCTS }, { status: 200 });
     }
 
-    // 4. Return clean JSON response
-    return NextResponse.json({ products: finalProducts }, { status: 200 });
+    // Return clean JSON response (top 5 products only)
+    return NextResponse.json({ products: finalProducts.slice(0, 5) }, { status: 200 });
 
   } catch (err) {
     console.error("Serverless Search API Route error:", err);

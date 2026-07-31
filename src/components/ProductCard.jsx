@@ -39,16 +39,12 @@ export default function ProductCard({ product }) {
     setImgFailed(false);
   }, [initialImg]);
 
-  const handleBuyNow = () => {
+  const handleBuyNow = (e) => {
+    if (e) {
+      e.preventDefault();
+    }
     setIsRedirecting(true);
     
-    // Call live coupon reveal session tracker in the background
-    if (product.coupon?.code && product.affiliateUrl) {
-      revealCoupon(product.store, product.affiliateUrl, product.coupon.code)
-        .then((res) => console.log("Coupon reveal session registered successfully:", res))
-        .catch((err) => console.error("Coupon reveal session tracking failed:", err));
-    }
-
     // Simulate redirection delay
     setTimeout(() => {
       setIsRedirecting(false);
@@ -238,13 +234,16 @@ export default function ProductCard({ product }) {
 
 
           {/* Buy Button */}
-          <button
+          <a
+            href={product.affiliateUrl}
+            target="_blank"
+            rel="noopener noreferrer"
             onClick={handleBuyNow}
-            className="w-full mt-4 flex items-center justify-center gap-2 bg-gradient-to-r from-brand-indigo to-brand-violet hover:from-brand-indigo/90 hover:to-brand-violet/90 text-white font-bold py-3.5 rounded-xl transition-all duration-300 shadow-[0_4px_20px_rgba(99,102,241,0.2)] hover:shadow-[0_4px_30px_rgba(168,85,247,0.4)] active:scale-98 text-sm group cursor-pointer"
+            className="w-full mt-4 flex items-center justify-center gap-2 bg-gradient-to-r from-brand-indigo to-brand-violet hover:from-brand-indigo/90 hover:to-brand-violet/90 text-white font-bold py-3.5 rounded-xl transition-all duration-300 shadow-[0_4px_20px_rgba(99,102,241,0.2)] hover:shadow-[0_4px_30px_rgba(168,85,247,0.4)] active:scale-98 text-sm group cursor-pointer text-center"
           >
             <span>Buy Now at {product.store}</span>
             <ArrowUpRight className="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-          </button>
+          </a>
         </div>
       </motion.div>
 
