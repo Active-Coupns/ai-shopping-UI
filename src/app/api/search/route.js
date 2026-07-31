@@ -33,29 +33,46 @@ export async function POST(request) {
     const domain = gl === "us" ? "google.com" : "google.co.in";
     const hasdataUrl = `https://api.hasdata.com/scrape/google/serp?q=${encodeURIComponent(cleanQuery)}&domain=${domain}&gl=${gl}&tbm=shop&apiKey=${hasdataApiKey}`;
 
-    const scraperResponse = await fetch(hasdataUrl, {
-      method: "GET",
-      headers: {
-        "x-api-key": hasdataApiKey,
-        "Content-Type": "application/json"
-      }
-    });
-
-    if (!scraperResponse.ok || scraperResponse.status !== 200) {
-      const errText = await scraperResponse.text();
-      console.error(`[Scraper Error] HasData returned status: ${scraperResponse.status}`);
-      console.error(`[Scraper Error] Raw response body:`, errText);
+    let scraperResponse;
+    try {
+      scraperResponse = await fetch(hasdataUrl, {
+        method: "GET",
+        headers: {
+          "x-api-key": hasdataApiKey,
+          "Content-Type": "application/json"
+        }
+      });
+    } catch (fetchErr) {
+      console.error("[Scraper Connection Error] HasData network fetch threw:", fetchErr);
       return NextResponse.json(
-        { error: `Google Shopping scraper failed with status ${scraperResponse.status}: ${errText}` },
-        { status: scraperResponse.status }
+        { results: [], products: [], error: fetchErr.message || "Scraper network connection failed" },
+        { status: 200 }
       );
     }
 
-    const data = await scraperResponse.json();
+    if (!scraperResponse || !scraperResponse.ok) {
+      const errorText = scraperResponse ? await scraperResponse.text() : "No response object";
+      console.error("Fetch failed with status:", scraperResponse?.status, errorText);
+      return NextResponse.json(
+        { results: [], products: [], error: errorText },
+        { status: 200 }
+      );
+    }
+
+    let data;
+    try {
+      data = await scraperResponse.json();
+    } catch (jsonErr) {
+      console.error("[Scraper JSON Parse Error] Failed parsing HasData response:", jsonErr);
+      return NextResponse.json(
+        { results: [], products: [], error: "Invalid JSON response from Scraper API" },
+        { status: 200 }
+      );
+    }
     
     // Safely parse shoppingResults OR organicResults and log if empty
-    const rawResults = data.shoppingResults || data.shopping_results || data.organicResults || data.organic_results || [];
-    const isOrganic = !data.shoppingResults && !data.shopping_results && (data.organicResults || data.organic_results);
+    const rawResults = data?.shoppingResults || data?.shopping_results || data?.organicResults || data?.organic_results || [];
+    const isOrganic = !data?.shoppingResults && !data?.shopping_results && (data?.organicResults || data?.organic_results);
 
     if (rawResults.length === 0) {
       console.warn(`[Scraper Warning] Empty results array received for query: "${cleanQuery}"`);
@@ -81,7 +98,7 @@ export async function POST(request) {
     const topProducts = validResults.slice(0, 5);
 
     if (topProducts.length === 0) {
-      return NextResponse.json({ results: [], creditsRemaining: data.requestInfo?.creditsLeft || 100 });
+      return NextResponse.json({ results: [], products: [], creditsRemaining: data?.requestInfo?.creditsLeft || 100 });
     }
 
     // 4. Pass top products to Gemini API for custom AI insights
@@ -107,32 +124,43 @@ Example output format:
 ]
 Return ONLY the raw JSON array. Do not include markdown code block formatting (like \`\`\`json) or any other text.`;
 
-        const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            contents: [
-              {
-                parts: [
-                  {
-                    text: prompt
-                  }
-                ]
-              }
-            ]
-          })
-        });
+        let geminiResponse;
+        try {
+          geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              contents: [
+                {
+                  parts: [
+                    {
+                      text: prompt
+                    }
+                  ]
+                }
+              ]
+            })
+          });
+        } catch (gemFetchErr) {
+          console.error("[Gemini Connection Error] Fetch failed:", gemFetchErr);
+        }
 
-        if (geminiResponse.ok) {
-          const geminiData = await geminiResponse.json();
-          let rawText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "[]";
-          rawText = rawText.trim();
-          if (rawText.startsWith("```")) {
-            rawText = rawText.replace(/^```json/, "").replace(/^```/, "").replace(/```$/, "").trim();
+        if (geminiResponse && geminiResponse.ok) {
+          try {
+            const geminiData = await geminiResponse.json();
+            let rawText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "[]";
+            rawText = rawText.trim();
+            if (rawText.startsWith("```")) {
+              rawText = rawText.replace(/^```json/, "").replace(/^```/, "").replace(/```$/, "").trim();
+            }
+            insights = JSON.parse(rawText);
+          } catch (jsonErr) {
+            console.error("[Gemini JSON Parse Error] Failed parsing raw text to json:", jsonErr);
           }
-          insights = JSON.parse(rawText);
+        } else {
+          console.warn("[Gemini API Status Error] Gemini fetch not ok or undefined. Status:", geminiResponse?.status);
         }
       } catch (geminiError) {
         console.error("Gemini API call failed:", geminiError);
