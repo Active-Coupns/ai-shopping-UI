@@ -9,6 +9,13 @@ import { revealCoupon } from "@/services/api";
 export default function ProductCard({ product }) {
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  
+  const initialImg = product.image_url || product.image || product.thumbnail || product.product_image || "/laptop.jpg";
+  const [imgSrc, setImgSrc] = useState(initialImg);
+
+  React.useEffect(() => {
+    setImgSrc(initialImg);
+  }, [initialImg]);
 
   const handleBuyNow = () => {
     setIsRedirecting(true);
@@ -90,9 +97,19 @@ export default function ProductCard({ product }) {
           <div className="relative w-full h-44 rounded-xl overflow-hidden mb-4 bg-slate-950/80 border border-slate-800 flex items-center justify-center">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={product.image}
+              src={imgSrc}
               alt={product.title}
-              className="object-cover w-full h-full transform hover:scale-105 transition-transform duration-500"
+              onError={() => {
+                let fallback = "/laptop.jpg";
+                const titleLower = (product.title || "").toLowerCase();
+                if (titleLower.includes("shirt") || titleLower.includes("cotton") || titleLower.includes("wear") || titleLower.includes("cloth") || titleLower.includes("denim")) {
+                  fallback = "/shirt.jpg";
+                } else if (titleLower.includes("headphone") || titleLower.includes("noise") || titleLower.includes("ear") || titleLower.includes("audio") || titleLower.includes("sound")) {
+                  fallback = "/headphones.jpg";
+                }
+                setImgSrc(fallback);
+              }}
+              className="object-contain w-full h-full p-2.5 transform hover:scale-105 transition-transform duration-500 bg-slate-950/40"
             />
             {product.tag && (
               <span className="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-gradient-to-r from-brand-indigo to-brand-violet text-white shadow-lg">
