@@ -2,16 +2,15 @@ import { NextResponse } from "next";
 
 export async function POST(request) {
   console.log("HASDATA_API_KEY present:", !!process.env.HASDATA_API_KEY);
-  console.log("GEMINI_API_KEY present:", !!process.env.GEMINI_API_KEY);
 
   try {
     const { query, country } = await request.json();
     
     if (!query) {
-      return NextResponse.json({ error: "Query parameter is required" }, { status: 400 });
+      return NextResponse.json({ products: [], error: "Query is required" }, { status: 200 });
     }
 
-    // 1. Sanitize the query keywords (remove currency symbols like ₹, $, filler words, extra spacing)
+    // 1. Sanitize the query keywords (remove currency symbols, extra spacing)
     const cleanQuery = query
       .replace(/[₹$€£]/g, "")
       .replace(/\b(please|find|show|me|best|buy|under|below|for|search|deals|get)\b/gi, "")
@@ -19,16 +18,14 @@ export async function POST(request) {
       .trim();
 
     const hasdataApiKey = process.env.HASDATA_API_KEY;
-    const geminiApiKey = process.env.GEMINI_API_KEY;
-
     if (!hasdataApiKey) {
       return NextResponse.json(
-        { error: "HASDATA_API_KEY environment variable is not configured." },
-        { status: 500 }
+        { products: [], error: "HASDATA_API_KEY is not configured." },
+        { status: 200 }
       );
     }
 
-    // 2. Build HasData search URL targeting Google Shopping (tbm=shop) with fallback query parameter apiKey
+    // 2. Fetch live data from HasData targeting Google Shopping
     const gl = (country || "IN").toLowerCase();
     const domain = gl === "us" ? "google.com" : "google.co.in";
     const hasdataUrl = `https://api.hasdata.com/scrape/google/serp?q=${encodeURIComponent(cleanQuery)}&domain=${domain}&gl=${gl}&tbm=shop&apiKey=${hasdataApiKey}`;
@@ -43,9 +40,9 @@ export async function POST(request) {
         }
       });
     } catch (fetchErr) {
-      console.error("[Scraper Connection Error] HasData network fetch threw:", fetchErr);
+      console.error("[Scraper Connection Error] HasData fetch threw:", fetchErr);
       return NextResponse.json(
-        { results: [], products: [], error: fetchErr.message || "Scraper network connection failed" },
+        { products: [], error: fetchErr.message || "Scraper connection failed" },
         { status: 200 }
       );
     }
@@ -54,7 +51,7 @@ export async function POST(request) {
       const errorText = scraperResponse ? await scraperResponse.text() : "No response object";
       console.error("Fetch failed with status:", scraperResponse?.status, errorText);
       return NextResponse.json(
-        { results: [], products: [], error: errorText },
+        { products: [], error: errorText },
         { status: 200 }
       );
     }
@@ -63,200 +60,38 @@ export async function POST(request) {
     try {
       data = await scraperResponse.json();
     } catch (jsonErr) {
-      console.error("[Scraper JSON Parse Error] Failed parsing HasData response:", jsonErr);
+      console.error("[Scraper JSON Parse Error] Failed parsing response:", jsonErr);
       return NextResponse.json(
-        { results: [], products: [], error: "Invalid JSON response from Scraper API" },
+        { products: [], error: "Invalid JSON response from Scraper API" },
         { status: 200 }
       );
     }
-    
-    // Safely parse shoppingResults OR organicResults and log if empty
+
     const rawResults = data?.shoppingResults || data?.shopping_results || data?.organicResults || data?.organic_results || [];
-    const isOrganic = !data?.shoppingResults && !data?.shopping_results && (data?.organicResults || data?.organic_results);
 
-    if (rawResults.length === 0) {
-      console.warn(`[Scraper Warning] Empty results array received for query: "${cleanQuery}"`);
-      console.warn(`[Scraper Warning] Full scraper JSON response:`, JSON.stringify(data));
-    }
-
-    // 3. Filter out zero-price, missing, or invalid products
-    const validResults = rawResults.filter(p => {
-      if (!p) return false;
-      if (isOrganic) return true; // Keep organic results (we will mock/estimate their price if missing)
-      
-      const priceVal = p.extracted_price || p.price;
-      if (priceVal === undefined || priceVal === null) return false;
-      if (typeof priceVal === "string") {
-        const clean = priceVal.replace(/[^0-9.]/g, "");
-        const num = parseFloat(clean);
-        return !isNaN(num) && num > 0;
-      }
-      return typeof priceVal === "number" && priceVal > 0;
-    });
-
-    // Take top 4-5 products for analysis
-    const topProducts = validResults.slice(0, 5);
-
-    if (topProducts.length === 0) {
-      return NextResponse.json({ results: [], products: [], creditsRemaining: data?.requestInfo?.creditsLeft || 100 });
-    }
-
-    // 4. Pass top products to Gemini API for custom AI insights
-    let insights = [];
-    if (geminiApiKey) {
-      try {
-        const productsListText = topProducts.map((p, idx) => {
-          const priceStr = p.price || `${p.extracted_price}`;
-          return `${idx + 1}. Title: ${p.title} | Price: ${priceStr} | Store: ${p.source || "Merchant"}`;
-        }).join("\n");
-
-        const prompt = `You are an expert e-commerce shopping assistant. I have a list of products retrieved for the query: "${cleanQuery}".
-For each product, write a concise 2-line "AI Matching Insight" explaining why it fits the user's query or who it is best for. Keep it simple, everyday-user friendly, and short (max 2 sentences, ~25 words).
-
-Products:
-${productsListText}
-
-Return the insights strictly as a JSON array of strings, where each entry matches the product's index.
-Example output format:
-[
-  "Best option for heavy coding and occasional gaming within a tight budget.",
-  "Excellent choice for a lightweight, travel-friendly work laptop with solid battery life."
-]
-Return ONLY the raw JSON array. Do not include markdown code block formatting (like \`\`\`json) or any other text.`;
-
-        let geminiResponse;
-        try {
-          geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-              contents: [
-                {
-                  parts: [
-                    {
-                      text: prompt
-                    }
-                  ]
-                }
-              ]
-            })
-          });
-        } catch (gemFetchErr) {
-          console.error("[Gemini Connection Error] Fetch failed:", gemFetchErr);
-        }
-
-        if (geminiResponse && geminiResponse.ok) {
-          try {
-            const geminiData = await geminiResponse.json();
-            let rawText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "[]";
-            rawText = rawText.trim();
-            if (rawText.startsWith("```")) {
-              rawText = rawText.replace(/^```json/, "").replace(/^```/, "").replace(/```$/, "").trim();
-            }
-            insights = JSON.parse(rawText);
-          } catch (jsonErr) {
-            console.error("[Gemini JSON Parse Error] Failed parsing raw text to json:", jsonErr);
-          }
-        } else {
-          console.warn("[Gemini API Status Error] Gemini fetch not ok or undefined. Status:", geminiResponse?.status);
-        }
-      } catch (geminiError) {
-        console.error("Gemini API call failed:", geminiError);
-      }
-    }
-
-    // 5. Map results into card format
-    const mappedResults = topProducts.map((p, idx) => {
-      let priceNum = 0;
-      if (typeof p.extracted_price === "number") {
-        priceNum = p.extracted_price;
-      } else if (p.price) {
-        const clean = String(p.price).replace(/[^0-9.]/g, "");
-        priceNum = parseFloat(clean) || 0;
-      }
-      if (priceNum <= 0) {
-        priceNum = 1499 + (idx * 350);
-      }
-
-      const isUSD = gl === "us";
-      const currencyCode = isUSD ? "USD" : "INR";
-      const locale = isUSD ? "en-US" : "en-IN";
-
-      const formattedPrice = new Intl.NumberFormat(locale, {
-        style: "currency",
-        currency: currencyCode,
-        maximumFractionDigits: 0,
-      }).format(priceNum);
-
-      const discount = Math.floor(15 + (idx * 5) + Math.random() * 5);
-      const calculatedOriginal = Math.round(priceNum / (1 - discount / 100));
-      
-      const formattedOriginal = new Intl.NumberFormat(locale, {
-        style: "currency",
-        currency: currencyCode,
-        maximumFractionDigits: 0,
-      }).format(calculatedOriginal);
-
-      let localImage = "/laptop.jpg";
-      const qLower = query.toLowerCase();
-      if (qLower.includes("shirt") || qLower.includes("cotton") || qLower.includes("cloth") || qLower.includes("wear")) {
-        localImage = "/shirt.jpg";
-      } else if (qLower.includes("headphone") || qLower.includes("noise") || qLower.includes("audio") || qLower.includes("earphone")) {
-        localImage = "/headphones.jpg";
-      }
-
-      const specs = [
-        p.title.split(" ").slice(0, 3).join(" ") || "Verified Specifications",
-        p.source ? `Sold by verified seller: ${p.source}` : "Merchant warranty included",
-        "Top rated customer feedback and fast shipping support"
-      ];
-
-      let coupon = null;
-      if (idx === 0) {
-        coupon = {
-          code: "AISAVE10",
-          discount: "10% Extra Discount"
+    // 3. Map into clean array containing strictly the exact 6 fields and filter invalid items
+    const cleanProducts = rawResults
+      .map(item => {
+        if (!item) return null;
+        return {
+          title: item.title || item.name || "",
+          description: item.snippet || item.description || "Great value product matching your search query.",
+          image: item.thumbnail || item.image || "",
+          rating: String(item.rating || item.stars || "4.5"),
+          link: item.link || item.product_link || "",
+          platform: item.source || item.merchant || "Online Store"
         };
-      } else if (idx === 1) {
-        coupon = {
-          code: "FREESHIP",
-          discount: "Free Shipping Applied"
-        };
-      }
+      })
+      .filter(p => p !== null && p.title && p.link && p.image);
 
-      return {
-        id: p.product_id || p.id || `prod-${idx}-${Date.now()}`,
-        title: p.title,
-        store: p.source || p.displayed_link || "Merchant",
-        price: formattedPrice,
-        originalPrice: formattedOriginal,
-        discountPercent: discount,
-        rating: p.rating || (4.4 + idx * 0.1).toFixed(1),
-        reviewsCount: p.reviews || Math.floor(150 + Math.random() * 850),
-        image: p.thumbnail || p.image || p.product_image || localImage,
-        tag: idx === 0 ? "AI Recommended" : idx === 1 ? "Best Value" : "Top Pick",
-        aiReason: insights[idx] || "Highly matched recommendation based on search keywords.",
-        specs,
-        coupon,
-        affiliateUrl: p.product_link || p.link || "#",
-        revealUrl: p.product_link || p.link || "#",
-        currency: currencyCode
-      };
-    });
+    // 4. Return clean JSON response
+    return NextResponse.json({ products: cleanProducts }, { status: 200 });
 
-    const creditsLeft = data.requestInfo?.creditsLeft !== undefined ? data.requestInfo.creditsLeft : 99;
-
-    return NextResponse.json({
-      results: mappedResults,
-      creditsRemaining: creditsLeft
-    });
   } catch (err) {
-    console.error("Next.js Serverless Search API Route Error:", err);
+    console.error("Serverless Search API Route error:", err);
     return NextResponse.json(
-      { error: `Internal Server Error: ${err.message}` },
-      { status: 500 }
+      { products: [], error: `Server Error: ${err.message}` },
+      { status: 200 }
     );
   }
 }
