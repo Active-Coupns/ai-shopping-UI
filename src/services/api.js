@@ -56,12 +56,17 @@ export async function searchProducts(query, country = "IN") {
     
     // Map FastAPI schema fields to front-end component expected fields
     const mappedResults = (data.results || []).map((p, idx) => {
-      // Format price as currency based on country
+      // Format price as currency dynamically based on API p.currency
+      const rawCurrency = p.currency || (country === "US" ? "USD" : "INR");
+      const isUSD = rawCurrency === "USD" || rawCurrency === "$";
+      const currencyCode = isUSD ? "USD" : "INR";
+      const locale = isUSD ? "en-US" : "en-IN";
+
       let formattedPrice = p.price;
       if (typeof p.price === "number") {
-        formattedPrice = new Intl.NumberFormat("en-IN", {
+        formattedPrice = new Intl.NumberFormat(locale, {
           style: "currency",
-          currency: "INR",
+          currency: currencyCode,
           maximumFractionDigits: 0,
         }).format(p.price);
       }
@@ -97,9 +102,9 @@ export async function searchProducts(query, country = "IN") {
       const numPrice = typeof p.price === "number" ? p.price : parseFloat(p.price.replace(/[^0-9.]/g, "")) || 1000;
       const calculatedOriginal = Math.round(numPrice / (1 - discount / 100));
       
-      const formattedOriginal = new Intl.NumberFormat("en-IN", {
+      const formattedOriginal = new Intl.NumberFormat(locale, {
         style: "currency",
-        currency: "INR",
+        currency: currencyCode,
         maximumFractionDigits: 0,
       }).format(calculatedOriginal);
 
@@ -127,7 +132,8 @@ export async function searchProducts(query, country = "IN") {
         specs,
         coupon,
         affiliateUrl: p.affiliate_url,
-        revealUrl: p.reveal_url
+        revealUrl: p.reveal_url,
+        currency: currencyCode
       };
     });
 

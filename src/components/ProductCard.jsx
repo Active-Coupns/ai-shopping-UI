@@ -6,6 +6,26 @@ import { ArrowUpRight, Star, CheckCircle, Sparkles, ChevronDown, ChevronUp } fro
 import CouponBadge from "./CouponBadge";
 import { revealCoupon } from "@/services/api";
 
+const formatPrice = (val, currency) => {
+  if (val === undefined || val === null) return "";
+  const isUSD = currency === "USD" || currency === "$";
+  const symbol = isUSD ? "$" : "₹";
+  
+  if (typeof val === "string") {
+    if (val.includes("$") || val.includes("₹")) return val;
+    const cleanVal = val.replace(/[$₹\s,]/g, "");
+    const num = parseFloat(cleanVal);
+    if (isNaN(num)) return `${symbol}${val}`;
+    val = num;
+  }
+  
+  return new Intl.NumberFormat(isUSD ? "en-US" : "en-IN", {
+    style: "currency",
+    currency: isUSD ? "USD" : "INR",
+    maximumFractionDigits: 0,
+  }).format(val);
+};
+
 export default function ProductCard({ product }) {
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -124,10 +144,12 @@ export default function ProductCard({ product }) {
               {product.title}
             </h3>
             <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-black text-white">{product.price}</span>
+              <span className="text-2xl font-black text-white">
+                {formatPrice(product.price, product.currency)}
+              </span>
               {product.originalPrice && (
                 <span className="text-sm text-slate-500 line-through font-medium">
-                  {product.originalPrice}
+                  {formatPrice(product.originalPrice, product.currency)}
                 </span>
               )}
               {product.discountPercent && (
