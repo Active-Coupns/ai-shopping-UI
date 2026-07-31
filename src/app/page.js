@@ -25,19 +25,14 @@ export default function Home() {
     setProducts([]);
 
     try {
-      // Execute the live Render API search request with IN market
+      // Execute the local Next.js search API request
       const response = await searchProducts(query, "IN");
       setProducts(response.results);
       setCreditsRemaining(response.creditsRemaining);
-      
-      if (response.isFallback) {
-        setApiError("AI Gateway took too long to wake up (Render cold-start). Showing verified local recommendations.");
-      } else {
-        setApiError(null);
-      }
+      setApiError(null);
     } catch (err) {
-      console.error("Live API request failed:", err);
-      setApiError(err.message || "Failed to retrieve live shopping matches from Render Gateway.");
+      console.error("Local search API request failed:", err);
+      setApiError("No live deals found for this query. Try adjusting your search terms.");
       setCreditsRemaining(null);
     } finally {
       setIsApiLoading(false);
