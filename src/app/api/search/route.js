@@ -28,24 +28,36 @@ const FALLBACK_PRODUCTS = [
 ];
 
 /**
- * Extracts and cleans the target merchant product landing page URL (PDP URL).
- * If a direct link isn't available, constructs Google's single product details page to prevent Flipkart E002 errors.
- * @param {object} item - Raw HasData product object.
+ * Extracts and cleans the target merchant destination page URL.
+ * Falls back to search results if URL is an API proxy or Google Shopping product page to prevent "Nothing to see here" errors.
+ * @param {object} item - Raw HasData product or offer object.
  * @returns {string} - Direct clean HTTP merchant link.
  */
-function getSingleProductPageUrl(item) {
-  // 1. If a direct offer / merchant link exists, use it
-  const directLink = item.merchantLink || item.merchant_link || item.offerLink || item.offer_link || item.directUrl || item.direct_url || "";
-  if (directLink && directLink.startsWith("http") && !directLink.includes("api.hasdata.com")) {
-    return directLink;
+function getCleanDestinationUrl(item) {
+  // Step 1: Check for explicit, valid direct merchant URLs
+  const candidateUrl = item.merchantLink || item.merchant_link || item.offerLink || item.offer_link || item.directUrl || item.direct_url || item.link || item.productLink || item.url || "";
+  
+  // Ensure it is a valid full HTTP URL and NOT a HasData proxy or raw Google ID URL
+  if (
+    candidateUrl &&
+    candidateUrl.startsWith("http") &&
+    !candidateUrl.includes("api.hasdata.com") &&
+    !candidateUrl.includes("google.com/shopping/product/")
+  ) {
+    return candidateUrl;
   }
-  // 2. If item has a Google Shopping Product ID, construct Google's single product page URL
-  if (item.productId || item.product_id || item.docid) {
-    const pid = item.productId || item.product_id || item.docid;
-    return `https://www.google.com/shopping/product/${pid}`;
+
+  // Step 2: Fail-safe fallback - Construct a direct search link to the exact merchant
+  const title = encodeURIComponent(item.title || "product");
+  const store = (item.platform || item.source || item.merchant || "").toLowerCase();
+
+  if (store.includes("amazon")) {
+    return `https://www.amazon.in/s?k=${title}`;
+  } else if (store.includes("flipkart")) {
+    return `https://www.flipkart.com/search?q=${title}`;
+  } else {
+    return `https://www.google.com/search?tbm=shop&q=${title}`;
   }
-  // 3. Fallback to raw link if valid
-  return item.link || item.productLink || item.url || "#";
 }
 
 export async function POST(request) {
@@ -148,7 +160,7 @@ export async function POST(request) {
         }
 
         // Call our safe resolved destination link
-        const directLink = getSingleProductPageUrl(item);
+        const directLink = getCleanDestinationUrl(item);
 
         // 1. Audit offers array if present
         let offers = [];
@@ -164,7 +176,11 @@ export async function POST(request) {
             return {
               store: o.source || o.merchant || o.seller || "Online Store",
               price: numPrice,
-              link: o.link || o.productLink || o.url || o.merchant_link || o.merchantLink || ""
+              link: getCleanDestinationUrl({
+                title,
+                platform: o.source || o.merchant || o.seller || "Online Store",
+                link: o.link || o.productLink || o.url || o.merchant_link || o.merchantLink || ""
+              })
             };
           }).filter(o => o.price > 0 && o.store);
         }
