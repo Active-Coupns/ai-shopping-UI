@@ -34,10 +34,26 @@ const FALLBACK_PRODUCTS = [
  * @returns {string} - Direct clean HTTP merchant link.
  */
 function getCleanDestinationUrl(item) {
-  // Step 1: Check for explicit, valid direct merchant URLs
-  const candidateUrl = item.merchantLink || item.merchant_link || item.offerLink || item.offer_link || item.directUrl || item.direct_url || item.link || item.productLink || item.url || "";
+  // Step 1: Check for explicit, valid direct merchant URLs inside nested objects first
+  let candidateUrl = "";
+
+  // 1. Audit offers array if present
+  if (item.offers && Array.isArray(item.offers) && item.offers.length > 0) {
+    const firstOffer = item.offers[0];
+    candidateUrl = firstOffer.link || firstOffer.productLink || firstOffer.url || firstOffer.merchantLink || firstOffer.merchant_link || firstOffer.direct_url || firstOffer.directUrl || "";
+  }
+
+  // 2. Audit merchant link objects if present
+  if (!candidateUrl && item.merchant) {
+    candidateUrl = item.merchant.link || item.merchant.url || "";
+  }
   
-  // Ensure it is a valid full HTTP URL and NOT a HasData proxy or raw Google ID URL
+  // 3. Fallback to top-level url/link keys
+  if (!candidateUrl) {
+    candidateUrl = item.serpapi_product_api || item.merchant_link || item.merchantLink || item.offerLink || item.offer_link || item.direct_url || item.directUrl || item.link || item.productLink || item.url || "";
+  }
+  
+  // Ensure it is a valid full HTTP URL and NOT a HasData proxy or raw Google Shopping ID URL
   if (
     candidateUrl &&
     candidateUrl.startsWith("http") &&
@@ -48,15 +64,26 @@ function getCleanDestinationUrl(item) {
   }
 
   // Step 2: Fail-safe fallback - Construct a direct search link to the exact merchant
-  const title = encodeURIComponent(item.title || "product");
+  // Clean the title query string to prevent dilution or punctuation mismatches
+  const rawTitle = item.title || "product";
+  const cleanTitle = rawTitle
+    .replace(/[()[\]{}"'“”‘’]/g, "") // remove brackets and quotes
+    .replace(/[-–—]/g, " ")          // replace hyphens with spaces
+    .replace(/\s+/g, " ")
+    .trim();
+
+  // Take the first 7 words to ensure search compatibility and accuracy
+  const shortTitle = cleanTitle.split(" ").slice(0, 7).join(" ");
+  const encodedTitle = encodeURIComponent(shortTitle);
+  
   const store = (item.platform || item.source || item.merchant || "").toLowerCase();
 
   if (store.includes("amazon")) {
-    return `https://www.amazon.in/s?k=${title}`;
+    return `https://www.amazon.in/s?k=${encodedTitle}`;
   } else if (store.includes("flipkart")) {
-    return `https://www.flipkart.com/search?q=${title}`;
+    return `https://www.flipkart.com/search?q=${encodedTitle}`;
   } else {
-    return `https://www.google.com/search?tbm=shop&q=${title}`;
+    return `https://www.google.com/search?tbm=shop&q=${encodedTitle}`;
   }
 }
 
