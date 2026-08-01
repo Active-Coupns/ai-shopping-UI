@@ -28,25 +28,41 @@ export async function searchProducts(query, country = "IN") {
       const currencyCode = isUSD ? "USD" : "INR";
       const locale = isUSD ? "en-US" : "en-IN";
 
-      // Mock a nice pricing details layer since the streamlined backend excludes it
-      const baseMockPrice = isUSD 
+      // Use backend resolved price if available, otherwise generate mock base price
+      const basePrice = p.price || (isUSD 
         ? 29 + (idx * 20) + Math.floor(Math.random() * 10) 
-        : 1999 + (idx * 1500) + Math.floor(Math.random() * 200);
+        : 1999 + (idx * 1500) + Math.floor(Math.random() * 200));
       
       const discount = Math.floor(15 + (idx * 5) + Math.random() * 5); // 15% - 30% off
-      const calculatedOriginal = Math.round(baseMockPrice / (1 - discount / 100));
+      const calculatedOriginal = Math.round(basePrice / (1 - discount / 100));
 
       const formattedPrice = new Intl.NumberFormat(locale, {
         style: "currency",
         currency: currencyCode,
         maximumFractionDigits: 0,
-      }).format(baseMockPrice);
+      }).format(basePrice);
 
       const formattedOriginal = new Intl.NumberFormat(locale, {
         style: "currency",
         currency: currencyCode,
         maximumFractionDigits: 0,
       }).format(calculatedOriginal);
+
+      // Format comparison prices
+      const priceComparison = (p.price_comparison || []).map(offer => {
+        const formattedOfferPrice = new Intl.NumberFormat(locale, {
+          style: "currency",
+          currency: currencyCode,
+          maximumFractionDigits: 0,
+        }).format(offer.price);
+
+        return {
+          store: offer.store,
+          price: formattedOfferPrice,
+          link: offer.link,
+          is_lowest: offer.is_lowest
+        };
+      });
 
       const specs = [
         "Verified Merchant Partner",
@@ -72,7 +88,8 @@ export async function searchProducts(query, country = "IN") {
         coupon,
         affiliateUrl: p.link || "#",
         revealUrl: p.link || "#",
-        currency: currencyCode
+        currency: currencyCode,
+        priceComparison
       };
     });
 

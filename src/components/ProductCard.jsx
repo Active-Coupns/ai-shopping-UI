@@ -112,7 +112,7 @@ export default function ProductCard({ product }) {
         {/* Top Info Section */}
         <div>
           {/* Store Badge & Rating */}
-          <div className="flex items-center justify-between gap-3 mb-4">
+          <div className="flex items-center justify-between gap-3 mb-3">
             {getStoreBadge()}
             
             <div className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-lg bg-slate-900/80 border border-slate-800 text-slate-300">
@@ -120,6 +120,13 @@ export default function ProductCard({ product }) {
               <span>{product.rating}</span>
               <span className="text-slate-500">({product.reviewsCount})</span>
             </div>
+          </div>
+
+          {/* 🔥 Best Deal Badge */}
+          <div className="mb-4">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-[10px] font-bold text-emerald-400 uppercase tracking-wider animate-pulse">
+              🔥 Best Deal on {product.store}
+            </span>
           </div>
 
           {/* Product Image - ALWAYS visible */}
@@ -179,6 +186,31 @@ export default function ProductCard({ product }) {
                 </span>
               )}
             </div>
+
+            {/* Price Comparison Chips */}
+            {product.priceComparison && product.priceComparison.length > 0 && (
+              <div className="mt-3.5 border-t border-slate-800/80 pt-3">
+                <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider block mb-2">Compare Stores:</span>
+                <div className="flex flex-wrap gap-2">
+                  {product.priceComparison.map((offer, idx) => (
+                    <a
+                      key={idx}
+                      href={offer.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`inline-flex flex-col items-start px-2.5 py-1.5 rounded-lg border text-left transition-all hover:scale-103 ${
+                        offer.is_lowest
+                          ? "bg-emerald-500/10 border-emerald-500/30 hover:border-emerald-500 text-emerald-400 font-extrabold shadow-[0_0_10px_rgba(16,185,129,0.1)]"
+                          : "bg-slate-900/60 border-slate-800 hover:border-slate-700 text-slate-300"
+                      }`}
+                    >
+                      <span className="text-[9px] uppercase tracking-wider text-slate-400 font-semibold">{offer.store}</span>
+                      <span className="text-xs font-black mt-0.5">{offer.price} {offer.is_lowest && "✓"}</span>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Why This Fits You AI Badge - ALWAYS visible */}
