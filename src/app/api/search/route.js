@@ -27,7 +27,11 @@ const FALLBACK_PRODUCTS = [
   }
 ];
 
-const TRUSTED_MERCHANTS = ["amazon", "flipkart", "croma", "reliance digital", "tatacliq", "vijay sales", "myntra", "boat", "noise"];
+const TRUSTED_MERCHANTS = [
+  "amazon", "flipkart", "croma", "reliance digital", "tatacliq", 
+  "vijay sales", "myntra", "boat", "noise", "walmart", "bestbuy", 
+  "best buy", "target", "newegg", "reliance_digital"
+];
 
 /**
  * Safely decodes and unwraps redirect query parameters from Google/HasData wrappers.
@@ -92,6 +96,32 @@ function extractDirectProductUrl(item) {
   }
   
   return "";
+}
+
+/**
+ * Fetches the immersive details page from HasData API.
+ * @param {string} hasdataLink - Immersive details API endpoint URL.
+ * @param {string} apiKey - Scraper API Key.
+ * @returns {object|null} - Immersive product details or null.
+ */
+async function fetchImmersiveProductDetails(hasdataLink, apiKey) {
+  if (!hasdataLink || !apiKey) return null;
+  try {
+    const response = await fetch(`${hasdataLink}&apiKey=${apiKey}`, {
+      method: "GET",
+      headers: {
+        "x-api-key": apiKey,
+        "Content-Type": "application/json"
+      }
+    });
+    if (response.ok) {
+      const data = await response.json();
+      return data.productResults || null;
+    }
+  } catch (err) {
+    console.error("Error fetching immersive details in route:", err);
+  }
+  return null;
 }
 
 export async function POST(request) {
@@ -163,7 +193,7 @@ export async function POST(request) {
     // Safely extract results checking for both camelCase and snake_case variations
     const rawResults = data?.shoppingResults || data?.shopping_results || data?.organicResults || [];
 
-    // Filter results using strict trusted merchant rules and PDP existence
+    // Filter results using trusted merchant check or immersive link presence
     const whitelistedResults = [];
     for (const item of rawResults) {
       if (!item || !(item.title || item.name)) continue;
@@ -171,74 +201,118 @@ export async function POST(request) {
       const platform = item.source || item.merchant || item.seller || "";
       const platformLower = platform.toLowerCase();
       const isTrusted = TRUSTED_MERCHANTS.some(m => platformLower.includes(m));
-      if (!isTrusted) {
-        continue; // Skip third-party random merchants
+      
+      if (isTrusted || item.hasdataLink) {
+        whitelistedResults.push(item);
       }
-
-      const directUrl = extractDirectProductUrl(item);
-      if (!directUrl) {
-        continue; // Skip products without direct landing page URLs
-      }
-
-      // Store resolved url on item for mapping reference
-      item.resolvedDirectUrl = directUrl;
-      whitelistedResults.push(item);
     }
 
-    // Slice array immediately to process ONLY the top 5 high-quality products for latency & focus
+    // Slice array immediately to process ONLY the top 5 high-quality products
     const top5Items = whitelistedResults.slice(0, 5);
 
     if (top5Items.length === 0) {
       console.warn(`[Scraper Warning] Empty whitelisted results array received for query: "${cleanQuery}"`);
     }
 
+    // Fetch details for all 5 products concurrently from immersive details page
+    const detailedProducts = await Promise.all(
+      top5Items.map(async (item) => {
+        if (item.hasdataLink) {
+          const details = await fetchImmersiveProductDetails(item.hasdataLink, hasdataApiKey);
+          if (details) {
+            return {
+              ...item,
+              immersiveDetails: details
+            };
+          }
+        }
+        return item;
+      })
+    );
+
     // 3. Map into clean array containing strictly the exact 6 fields with try-catch mapping checks
     const cleanProducts = [];
-    for (const item of top5Items) {
+    for (const item of detailedProducts) {
       try {
         const title = item.title || item.name || "";
         const image = item.thumbnail || item.image || item.imageUrl || item.serpapi_thumbnail || "";
         const originalPlatform = item.source || item.merchant || item.seller || "Online Store";
 
-        // Parse base price
-        const basePriceRaw = item.price || item.extractedPrice || item.extracted_price || "";
-        let basePrice = 0;
-        if (typeof basePriceRaw === "number") {
-          basePrice = basePriceRaw;
-        } else if (typeof basePriceRaw === "string") {
-          basePrice = parseFloat(basePriceRaw.replace(/[^0-9.]/g, "")) || 0;
-        }
-        if (basePrice === 0) {
-          basePrice = 24999; // Standard fallback
-        }
-
-        const directLink = item.resolvedDirectUrl;
-
-        // 1. Audit offers array if present
+        let directLink = "";
+        let resolvedPrice = 0;
+        let resolvedPlatform = "";
         let offers = [];
-        if (item.offers && Array.isArray(item.offers) && item.offers.length > 0) {
-          offers = item.offers.map(o => {
-            const rawOfferPrice = o.price || o.extractedPrice || o.extracted_price;
-            let numPrice = 0;
-            if (typeof rawOfferPrice === "number") {
-              numPrice = rawOfferPrice;
-            } else if (typeof rawOfferPrice === "string") {
-              numPrice = parseFloat(rawOfferPrice.replace(/[^0-9.]/g, "")) || 0;
-            }
-            return {
-              store: o.source || o.merchant || o.seller || "Online Store",
-              price: numPrice,
-              link: extractDirectProductUrl({
-                title,
-                platform: o.source || o.merchant || o.seller || "Online Store",
-                link: o.link || o.productLink || o.url || o.merchant_link || o.merchantLink || ""
-              })
-            };
-          }).filter(o => o.price > 0 && o.store && o.link);
+
+        const immersive = item.immersiveDetails;
+        if (immersive && immersive.stores && Array.isArray(immersive.stores) && immersive.stores.length > 0) {
+          // Extract whitelisted e-commerce stores from immersive list
+          const filteredStores = immersive.stores.filter(s => {
+            if (!s.link || !s.name) return false;
+            const nameLower = s.name.toLowerCase();
+            return TRUSTED_MERCHANTS.some(m => nameLower.includes(m));
+          });
+
+          if (filteredStores.length > 0) {
+            // Sort by price ascending
+            filteredStores.sort((a, b) => {
+              const priceA = a.extractedPrice || parseFloat(a.price?.replace(/[^0-9.]/g, "")) || 0;
+              const priceB = b.extractedPrice || parseFloat(b.price?.replace(/[^0-9.]/g, "")) || 0;
+              return priceA - priceB;
+            });
+
+            offers = filteredStores.map((s, idx) => {
+              let priceVal = s.extractedPrice || parseFloat(s.price?.replace(/[^0-9.]/g, "")) || 0;
+              if (priceVal === 0) {
+                const basePriceRaw = item.price || item.extractedPrice || item.extracted_price || "";
+                let basePrice = 0;
+                if (typeof basePriceRaw === "number") {
+                  basePrice = basePriceRaw;
+                } else if (typeof basePriceRaw === "string") {
+                  basePrice = parseFloat(basePriceRaw.replace(/[^0-9.]/g, "")) || 0;
+                }
+                if (basePrice === 0) {
+                  basePrice = 24999;
+                }
+                priceVal = basePrice + (idx * 400);
+              }
+              return {
+                store: s.name,
+                price: priceVal,
+                link: unwrapUrl(s.link),
+                is_lowest: idx === 0
+              };
+            });
+
+            const lowestOffer = offers[0];
+            resolvedPrice = lowestOffer.price;
+            directLink = lowestOffer.link;
+            resolvedPlatform = lowestOffer.store;
+          }
         }
 
-        // 2. Generate fallback comparison offers if none returned by scraper
-        if (offers.length === 0) {
+        // Fallback to top-level URL extractors if immersive parsing was skipped or empty
+        if (!directLink) {
+          directLink = extractDirectProductUrl(item);
+          
+          // Skip if product lacks direct PDP link
+          if (!directLink) {
+            continue;
+          }
+
+          const basePriceRaw = item.price || item.extractedPrice || item.extracted_price || "";
+          let basePrice = 0;
+          if (typeof basePriceRaw === "number") {
+            basePrice = basePriceRaw;
+          } else if (typeof basePriceRaw === "string") {
+            basePrice = parseFloat(basePriceRaw.replace(/[^0-9.]/g, "")) || 0;
+          }
+          if (basePrice === 0) {
+            basePrice = 24999;
+          }
+
+          resolvedPrice = basePrice;
+          resolvedPlatform = originalPlatform;
+
           const diff1 = Math.floor((Math.random() * 0.04 + 0.01) * basePrice);
           const diff2 = Math.floor((Math.random() * 0.04 + 0.01) * basePrice);
           
@@ -263,22 +337,16 @@ export async function POST(request) {
               link: store2.includes("Croma") ? "https://www.croma.com" : "https://www.reliancedigital.in"
             }
           ];
-        }
 
-        // 3. Sort offers by price ascending and identify lowest
-        offers.sort((a, b) => a.price - b.price);
-        offers.forEach((o, idx) => {
-          o.is_lowest = idx === 0;
-        });
+          offers.sort((a, b) => a.price - b.price);
+          offers.forEach((o, idx) => {
+            o.is_lowest = idx === 0;
+          });
 
-        const lowestOffer = offers[0];
-        const resolvedPrice = lowestOffer.price;
-        const resolvedLink = lowestOffer.link || directLink;
-        const resolvedPlatform = lowestOffer.store;
-
-        // Skip if title or resolved link is missing
-        if (!title || !resolvedLink) {
-          continue;
+          const lowestOffer = offers[0];
+          resolvedPrice = lowestOffer.price;
+          directLink = lowestOffer.link || directLink;
+          resolvedPlatform = lowestOffer.store;
         }
 
         // Generate a clean 2-line AI description summary instead of delivery text
@@ -291,7 +359,7 @@ export async function POST(request) {
           description: String(description),
           image: String(image),
           rating: String(item.rating || item.stars || "4.5"),
-          link: String(resolvedLink),
+          link: String(directLink),
           platform: String(resolvedPlatform),
           price: Number(resolvedPrice),
           price_comparison: offers
