@@ -28,6 +28,28 @@ const FALLBACK_PRODUCTS = [
 ];
 
 /**
+ * Safely decodes and unwraps redirect query parameters from Google/HasData wrappers.
+ * @param {string} url - Candidate redirect link.
+ * @returns {string} - Direct raw target merchant URL if found.
+ */
+function unwrapUrl(url) {
+  if (!url) return "";
+  try {
+    const parsed = new URL(url);
+    const params = ["adurl", "url", "q", "destination", "redirect"];
+    for (const param of params) {
+      const val = parsed.searchParams.get(param);
+      if (val && val.startsWith("http")) {
+        return decodeURIComponent(val);
+      }
+    }
+  } catch (err) {
+    // Fail-safe catch for non-URLs
+  }
+  return url;
+}
+
+/**
  * Extracts and cleans the target merchant destination page URL.
  * Falls back to search results if URL is an API proxy or Google Shopping product page to prevent "Nothing to see here" errors.
  * @param {object} item - Raw HasData product or offer object.
@@ -50,15 +72,22 @@ function getCleanDestinationUrl(item) {
   
   // 3. Fallback to top-level url/link keys
   if (!candidateUrl) {
-    candidateUrl = item.serpapi_product_api || item.merchant_link || item.merchantLink || item.offerLink || item.offer_link || item.direct_url || item.directUrl || item.link || item.productLink || item.url || "";
+    candidateUrl = item.serpapi_product_api || item.merchant_link || item.merchantLink || item.offerLink || item.offer_link || item.direct_url || item.directUrl || item.link || item.productLink || item.url || item.seller_link || item.sellerLink || "";
   }
+
+  // Decouple any redirect tracking layers to get the raw target PDP page
+  candidateUrl = unwrapUrl(candidateUrl);
+
+  const isAmazon = candidateUrl.includes("amazon.in") || candidateUrl.includes("amazon.com");
+  const isFlipkart = candidateUrl.includes("flipkart.com");
   
-  // Ensure it is a valid full HTTP URL and NOT a HasData proxy or raw Google Shopping ID URL
+  // Ensure it is a valid full HTTP URL and NOT a HasData proxy or raw Google Shopping ID details URL
   if (
     candidateUrl &&
     candidateUrl.startsWith("http") &&
     !candidateUrl.includes("api.hasdata.com") &&
-    !candidateUrl.includes("google.com/shopping/product/")
+    !candidateUrl.includes("google.com/shopping/product/") &&
+    !candidateUrl.includes("google.co.in/shopping/product/")
   ) {
     return candidateUrl;
   }
@@ -373,8 +402,12 @@ Return ONLY the raw JSON array. Do not include markdown code block formatting (l
       return NextResponse.json({ products: FALLBACK_PRODUCTS }, { status: 200 });
     }
 
+    // Log the extracted direct URLs for verification
+    const mappedProducts = finalProducts.slice(0, 5);
+    console.log("Extracted Direct URLs:", mappedProducts.map(p => ({ title: p.title, link: p.link })));
+
     // Return clean JSON response (top 5 products only)
-    return NextResponse.json({ products: finalProducts.slice(0, 5) }, { status: 200 });
+    return NextResponse.json({ products: mappedProducts }, { status: 200 });
 
   } catch (err) {
     console.error("Serverless Search API Route error:", err);
