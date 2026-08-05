@@ -30,7 +30,7 @@ const FALLBACK_PRODUCTS = [
 const TRUSTED_MERCHANTS = [
   "amazon", "flipkart", "croma", "reliance digital", "tatacliq", 
   "vijay sales", "myntra", "boat", "noise", "walmart", "bestbuy", 
-  "best buy", "target", "newegg", "reliance_digital"
+  "best buy", "target", "newegg", "reliance_digital", "samsung", "apple", "vijaysales"
 ];
 
 /**
@@ -242,6 +242,7 @@ export async function POST(request) {
         let resolvedPrice = 0;
         let resolvedPlatform = "";
         let offers = [];
+        let hasDirectPDP = true;
 
         const immersive = item.immersiveDetails;
         if (immersive && immersive.stores && Array.isArray(immersive.stores) && immersive.stores.length > 0) {
@@ -294,9 +295,18 @@ export async function POST(request) {
         if (!directLink) {
           directLink = extractDirectProductUrl(item);
           
-          // Skip if product lacks direct PDP link
           if (!directLink) {
-            continue;
+            hasDirectPDP = false;
+            // Generate fallback search redirect query URL
+            const titleEscaped = encodeURIComponent(title.split(" ").slice(0, 7).join(" "));
+            const storeLower = originalPlatform.toLowerCase();
+            if (storeLower.includes("amazon")) {
+              directLink = `https://www.amazon.in/s?k=${titleEscaped}`;
+            } else if (storeLower.includes("flipkart")) {
+              directLink = `https://www.flipkart.com/search?q=${titleEscaped}`;
+            } else {
+              directLink = `https://www.google.com/search?tbm=shop&q=${titleEscaped}`;
+            }
           }
 
           const basePriceRaw = item.price || item.extractedPrice || item.extracted_price || "";
@@ -347,6 +357,8 @@ export async function POST(request) {
           resolvedPrice = lowestOffer.price;
           directLink = lowestOffer.link || directLink;
           resolvedPlatform = lowestOffer.store;
+        } else {
+          hasDirectPDP = true;
         }
 
         // Generate a clean 2-line AI description summary instead of delivery text
@@ -362,7 +374,8 @@ export async function POST(request) {
           link: String(directLink),
           platform: String(resolvedPlatform),
           price: Number(resolvedPrice),
-          price_comparison: offers
+          price_comparison: offers,
+          hasDirectPDP: hasDirectPDP
         });
       } catch (mapErr) {
         console.error("Mapping Error:", mapErr);
@@ -426,10 +439,41 @@ Return ONLY the raw JSON array. Do not include markdown code block formatting (l
       }
     }
 
+    // Filter to prioritize items with direct PDP page links
+    let finalSelection = cleanProducts.filter(p => p.hasDirectPDP);
+    
+    // Fallback: If strict PDP filtering leaves fewer than 3 products, use the full list of products
+    if (finalSelection.length < 3) {
+      finalSelection = cleanProducts;
+    }
+
+    // Pad the list with whitelisted curated fallback products if we still have fewer than 3 products total
+    if (finalSelection.length < 3) {
+      const needed = 3 - finalSelection.length;
+      for (let i = 0; i < needed; i++) {
+        const fallback = FALLBACK_PRODUCTS[i % FALLBACK_PRODUCTS.length];
+        if (!finalSelection.some(p => p.title === fallback.title)) {
+          finalSelection.push({
+            title: fallback.title,
+            description: fallback.description,
+            image: fallback.image,
+            rating: fallback.rating,
+            link: fallback.link,
+            platform: fallback.platform,
+            price: 24999,
+            price_comparison: [
+              { store: fallback.platform, price: 24999, link: fallback.link, is_lowest: true }
+            ],
+            hasDirectPDP: true
+          });
+        }
+      }
+    }
+
     // Round-robin re-sorting to ensure merchant diversity at the top
     const sortedProducts = [];
     const merchantGroups = {};
-    for (const p of cleanProducts) {
+    for (const p of finalSelection) {
       const key = (p.platform || "Online Store").toLowerCase();
       if (!merchantGroups[key]) {
         merchantGroups[key] = [];
@@ -447,7 +491,7 @@ Return ONLY the raw JSON array. Do not include markdown code block formatting (l
         }
       }
     }
-    const finalProducts = sortedProducts.length > 0 ? sortedProducts : cleanProducts;
+    const finalProducts = sortedProducts.length > 0 ? sortedProducts : finalSelection;
 
     // Fallback logic if results array is empty
     if (finalProducts.length === 0) {
