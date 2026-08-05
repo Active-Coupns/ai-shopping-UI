@@ -27,6 +27,8 @@ const FALLBACK_PRODUCTS = [
   }
 ];
 
+const TRUSTED_MERCHANTS = ["amazon", "flipkart", "croma", "reliance digital", "tatacliq", "vijay sales", "myntra", "boat", "noise"];
+
 /**
  * Safely decodes and unwraps redirect query parameters from Google/HasData wrappers.
  * @param {string} url - Candidate redirect link.
@@ -50,70 +52,46 @@ function unwrapUrl(url) {
 }
 
 /**
- * Extracts and cleans the target merchant destination page URL.
- * Falls back to search results if URL is an API proxy or Google Shopping product page to prevent "Nothing to see here" errors.
+ * Extracts and cleans the target merchant direct single product details URL (PDP).
+ * Rejects proxy URLs, Google Shopping pages, and generic search queries.
  * @param {object} item - Raw HasData product or offer object.
- * @returns {string} - Direct clean HTTP merchant link.
+ * @returns {string} - Direct PDP link or empty string if invalid.
  */
-function getCleanDestinationUrl(item) {
-  // Step 1: Check for explicit, valid direct merchant URLs inside nested objects first
-  let candidateUrl = "";
-
-  // 1. Audit offers array if present
+function extractDirectProductUrl(item) {
+  let directUrl = "";
+  
   if (item.offers && Array.isArray(item.offers) && item.offers.length > 0) {
     const firstOffer = item.offers[0];
-    candidateUrl = firstOffer.link || firstOffer.productLink || firstOffer.url || firstOffer.merchantLink || firstOffer.merchant_link || firstOffer.direct_url || firstOffer.directUrl || "";
-  }
-
-  // 2. Audit merchant link objects if present
-  if (!candidateUrl && item.merchant) {
-    candidateUrl = item.merchant.link || item.merchant.url || "";
+    directUrl = firstOffer.link || firstOffer.productLink || firstOffer.url || firstOffer.merchantLink || firstOffer.merchant_link || firstOffer.direct_url || firstOffer.directUrl || "";
   }
   
-  // 3. Fallback to top-level url/link keys
-  if (!candidateUrl) {
-    candidateUrl = item.serpapi_product_api || item.merchant_link || item.merchantLink || item.offerLink || item.offer_link || item.direct_url || item.directUrl || item.link || item.productLink || item.url || item.seller_link || item.sellerLink || "";
+  if (!directUrl && item.merchant) {
+    directUrl = item.merchant.link || item.merchant.url || "";
+  }
+  
+  if (!directUrl) {
+    directUrl = item.serpapi_product_api || item.merchant_link || item.merchantLink || item.offerLink || item.offer_link || item.direct_url || item.directUrl || item.link || item.productLink || item.url || item.seller_link || item.sellerLink || "";
   }
 
-  // Decouple any redirect tracking layers to get the raw target PDP page
-  candidateUrl = unwrapUrl(candidateUrl);
+  // Decouple any redirect wrappers
+  directUrl = unwrapUrl(directUrl);
 
-  const isAmazon = candidateUrl.includes("amazon.in") || candidateUrl.includes("amazon.com");
-  const isFlipkart = candidateUrl.includes("flipkart.com");
-  
-  // Ensure it is a valid full HTTP URL and NOT a HasData proxy or raw Google Shopping ID details URL
+  // Validate the destination URL
   if (
-    candidateUrl &&
-    candidateUrl.startsWith("http") &&
-    !candidateUrl.includes("api.hasdata.com") &&
-    !candidateUrl.includes("google.com/shopping/product/") &&
-    !candidateUrl.includes("google.co.in/shopping/product/")
+    directUrl &&
+    directUrl.startsWith("http") &&
+    !directUrl.includes("api.hasdata.com") &&
+    !directUrl.includes("google.com/shopping/product/") &&
+    !directUrl.includes("google.co.in/shopping/product/")
   ) {
-    return candidateUrl;
+    // Exclude generic search pages
+    const lowerUrl = directUrl.toLowerCase();
+    if (!lowerUrl.includes("/search") && !lowerUrl.includes("/s?k=") && !lowerUrl.includes("?q=")) {
+      return directUrl;
+    }
   }
-
-  // Step 2: Fail-safe fallback - Construct a direct search link to the exact merchant
-  // Clean the title query string to prevent dilution or punctuation mismatches
-  const rawTitle = item.title || "product";
-  const cleanTitle = rawTitle
-    .replace(/[()[\]{}"'“”‘’]/g, "") // remove brackets and quotes
-    .replace(/[-–—]/g, " ")          // replace hyphens with spaces
-    .replace(/\s+/g, " ")
-    .trim();
-
-  // Take the first 7 words to ensure search compatibility and accuracy
-  const shortTitle = cleanTitle.split(" ").slice(0, 7).join(" ");
-  const encodedTitle = encodeURIComponent(shortTitle);
   
-  const store = (item.platform || item.source || item.merchant || "").toLowerCase();
-
-  if (store.includes("amazon")) {
-    return `https://www.amazon.in/s?k=${encodedTitle}`;
-  } else if (store.includes("flipkart")) {
-    return `https://www.flipkart.com/search?q=${encodedTitle}`;
-  } else {
-    return `https://www.google.com/search?tbm=shop&q=${encodedTitle}`;
-  }
+  return "";
 }
 
 export async function POST(request) {
@@ -126,7 +104,7 @@ export async function POST(request) {
       return NextResponse.json({ products: FALLBACK_PRODUCTS, error: "Query is required" }, { status: 200 });
     }
 
-    // 1. Sanitize the query keywords (remove currency symbols, extra spacing)
+    // 1. Sanitize the query keywords
     const cleanQuery = query
       .replace(/[₹$€£]/g, "")
       .replace(/\b(please|find|show|me|best|buy|under|below|for|search|deals|get)\b/gi, "")
@@ -185,19 +163,38 @@ export async function POST(request) {
     // Safely extract results checking for both camelCase and snake_case variations
     const rawResults = data?.shoppingResults || data?.shopping_results || data?.organicResults || [];
 
+    // Filter results using strict trusted merchant rules and PDP existence
+    const whitelistedResults = [];
+    for (const item of rawResults) {
+      if (!item || !(item.title || item.name)) continue;
+
+      const platform = item.source || item.merchant || item.seller || "";
+      const platformLower = platform.toLowerCase();
+      const isTrusted = TRUSTED_MERCHANTS.some(m => platformLower.includes(m));
+      if (!isTrusted) {
+        continue; // Skip third-party random merchants
+      }
+
+      const directUrl = extractDirectProductUrl(item);
+      if (!directUrl) {
+        continue; // Skip products without direct landing page URLs
+      }
+
+      // Store resolved url on item for mapping reference
+      item.resolvedDirectUrl = directUrl;
+      whitelistedResults.push(item);
+    }
+
     // Slice array immediately to process ONLY the top 5 high-quality products for latency & focus
-    const top5Items = rawResults
-      .filter(item => item && (item.title || item.name))
-      .slice(0, 5);
+    const top5Items = whitelistedResults.slice(0, 5);
 
     if (top5Items.length === 0) {
-      console.warn(`[Scraper Warning] Empty results array received for query: "${cleanQuery}"`);
+      console.warn(`[Scraper Warning] Empty whitelisted results array received for query: "${cleanQuery}"`);
     }
 
     // 3. Map into clean array containing strictly the exact 6 fields with try-catch mapping checks
     const cleanProducts = [];
     for (const item of top5Items) {
-      if (!item) continue;
       try {
         const title = item.title || item.name || "";
         const image = item.thumbnail || item.image || item.imageUrl || item.serpapi_thumbnail || "";
@@ -215,8 +212,7 @@ export async function POST(request) {
           basePrice = 24999; // Standard fallback
         }
 
-        // Call our safe resolved destination link
-        const directLink = getCleanDestinationUrl(item);
+        const directLink = item.resolvedDirectUrl;
 
         // 1. Audit offers array if present
         let offers = [];
@@ -232,13 +228,13 @@ export async function POST(request) {
             return {
               store: o.source || o.merchant || o.seller || "Online Store",
               price: numPrice,
-              link: getCleanDestinationUrl({
+              link: extractDirectProductUrl({
                 title,
                 platform: o.source || o.merchant || o.seller || "Online Store",
                 link: o.link || o.productLink || o.url || o.merchant_link || o.merchantLink || ""
               })
             };
-          }).filter(o => o.price > 0 && o.store);
+          }).filter(o => o.price > 0 && o.store && o.link);
         }
 
         // 2. Generate fallback comparison offers if none returned by scraper
@@ -253,21 +249,18 @@ export async function POST(request) {
             {
               store: originalPlatform,
               price: basePrice,
-              link: directLink
+              link: directLink,
+              is_lowest: true
             },
             {
               store: store1,
               price: basePrice + diff1,
-              link: store1.includes("Amazon")
-                ? `https://www.amazon.in/s?k=${encodeURIComponent(title)}`
-                : `https://www.flipkart.com/search?q=${encodeURIComponent(title)}`
+              link: store1.includes("Amazon") ? "https://www.amazon.in" : "https://www.flipkart.com"
             },
             {
               store: store2,
               price: basePrice + diff2,
-              link: store2.includes("Croma")
-                ? `https://www.croma.com/search/?text=${encodeURIComponent(title)}`
-                : `https://www.jiomart.com/search/${encodeURIComponent(title)}`
+              link: store2.includes("Croma") ? "https://www.croma.com" : "https://www.reliancedigital.in"
             }
           ];
         }
@@ -280,7 +273,7 @@ export async function POST(request) {
 
         const lowestOffer = offers[0];
         const resolvedPrice = lowestOffer.price;
-        const resolvedLink = lowestOffer.link;
+        const resolvedLink = lowestOffer.link || directLink;
         const resolvedPlatform = lowestOffer.store;
 
         // Skip if title or resolved link is missing
@@ -404,7 +397,7 @@ Return ONLY the raw JSON array. Do not include markdown code block formatting (l
 
     // Log the extracted direct URLs for verification
     const mappedProducts = finalProducts.slice(0, 5);
-    console.log("Extracted Direct URLs:", mappedProducts.map(p => ({ title: p.title, link: p.link })));
+    console.log("Filtered Whitelisted Products:", mappedProducts.map(p => ({ title: p.title, store: p.platform, link: p.link })));
 
     // Return clean JSON response (top 5 products only)
     return NextResponse.json({ products: mappedProducts }, { status: 200 });
