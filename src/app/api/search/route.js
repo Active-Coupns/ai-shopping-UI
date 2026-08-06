@@ -13,13 +13,13 @@ const FALLBACK_PRODUCTS = [
       { store: "Amazon.in", price: 32990, link: "https://www.amazon.in", is_lowest: true },
       { store: "Flipkart", price: 33499, link: "https://www.flipkart.com", is_lowest: false }
     ],
-    detailed_specs: {
-      cpu: "AMD Ryzen 3 7320U Processor",
-      ram_storage: "8GB LPDDR5 RAM | 512GB NVMe SSD",
-      display_gpu: "15.6-inch Full HD Display",
-      battery_build: "Students & Daily Office Work",
-      standout_feature: "Sleek 1.59kg lightweight build"
-    }
+    detailed_specs: [
+      "Processor: AMD Ryzen 3 7320U Processor",
+      "Memory & Storage: 8GB LPDDR5 RAM | 512GB NVMe SSD",
+      "Display: 15.6-inch Full HD Display",
+      "Target Use: Students & Daily Office Work",
+      "Standout Feature: Sleek 1.59kg lightweight build"
+    ]
   },
   {
     title: "Classy Casual Cotton Slim Fit Shirt",
@@ -33,13 +33,13 @@ const FALLBACK_PRODUCTS = [
       { store: "Flipkart", price: 999, link: "https://www.flipkart.com", is_lowest: true },
       { store: "Amazon.in", price: 1099, link: "https://www.amazon.in", is_lowest: false }
     ],
-    detailed_specs: {
-      cpu: "Premium 100% Breathable Cotton fabric",
-      ram_storage: "Slim Fit tailoring cut profile",
-      display_gpu: "Classic spread collar line layout",
-      battery_build: "Casual & Semi-Formal Social Wear",
-      standout_feature: "Moisture-wicking active comfort"
-    }
+    detailed_specs: [
+      "Material: Premium 100% Breathable Cotton fabric",
+      "Fit Profile: Slim Fit tailoring cut profile",
+      "Occasion: Classic spread collar line layout",
+      "Care Instructions: Casual & Semi-Formal Social Wear",
+      "Standout Feature: Moisture-wicking active comfort"
+    ]
   },
   {
     title: "Over-Ear Wireless ANC Headphones Pro",
@@ -53,13 +53,13 @@ const FALLBACK_PRODUCTS = [
       { store: "Amazon.in", price: 4999, link: "https://www.amazon.in", is_lowest: true },
       { store: "Croma", price: 5299, link: "https://www.croma.com", is_lowest: false }
     ],
-    detailed_specs: {
-      cpu: "40mm dynamic drivers with high fidelity",
-      ram_storage: "Up to 40 Hours playtime with ANC off",
-      display_gpu: "Hybrid Active Noise Cancelling chip",
-      battery_build: "Remote Workers & Commuters",
-      standout_feature: "Ergonomic memory-foam ear cushions"
-    }
+    detailed_specs: [
+      "Sound Engine: 40mm dynamic drivers with high fidelity",
+      "Noise Control: Up to 40 Hours playtime with ANC off",
+      "Battery Life: Hybrid Active Noise Cancelling chip",
+      "Connectivity: Remote Workers & Commuters",
+      "Standout Feature: Ergonomic memory-foam ear cushions"
+    ]
   }
 ];
 
@@ -84,69 +84,152 @@ function parseBudgetLimit(query) {
 }
 
 /**
- * Parses technical attributes directly from product title.
- * @param {string} title - Product title string.
- * @returns {object} - Structured specs object.
+ * Detects the product category based on keywords in query and title.
+ * @param {string} query - User search query.
+ * @param {string} title - Product title.
+ * @returns {string} - "laptop", "audio", "fashion", or "general".
  */
-function parseSpecsFromTitle(title) {
+function detectCategory(query, title) {
+  const text = (query + " " + title).toLowerCase();
+  if (text.includes("laptop") || text.includes("notebook") || text.includes("computer") || text.includes("pc") || text.includes("macbook")) {
+    return "laptop";
+  }
+  if (text.includes("headphone") || text.includes("earphone") || text.includes("earbuds") || text.includes("audio") || text.includes("sound") || text.includes("pods") || text.includes("noise") || text.includes("anc")) {
+    return "audio";
+  }
+  if (text.includes("shoe") || text.includes("sneaker") || text.includes("shirt") || text.includes("cotton") || text.includes("wear") || text.includes("clothing") || text.includes("jeans") || text.includes("tshirt") || text.includes("t-shirt") || text.includes("pant")) {
+    return "fashion";
+  }
+  return "general";
+}
+
+/**
+ * Parses category-specific technical attributes directly from product title.
+ * @param {string} category - Product category string.
+ * @param {string} title - Product title string.
+ * @returns {Array<string>} - Array of technical specification bullet points.
+ */
+function parseSpecsFromTitle(category, title) {
   const titleLower = title.toLowerCase();
-  let cpu = "Standard Processor";
-  let ramStorage = "Standard RAM & Storage config";
-  let display = "Full HD Display layout";
-  let persona = "Daily Home & Office Use";
+  
+  if (category === "laptop") {
+    let cpu = "Standard Processor";
+    if (titleLower.includes("ryzen 3")) cpu = "AMD Ryzen 3 Processor";
+    else if (titleLower.includes("ryzen 5")) cpu = "AMD Ryzen 5 Processor";
+    else if (titleLower.includes("ryzen 7")) cpu = "AMD Ryzen 7 Processor";
+    else if (titleLower.includes("core i3") || titleLower.includes("i3")) cpu = "Intel Core i3 Processor";
+    else if (titleLower.includes("core i5") || titleLower.includes("i5")) cpu = "Intel Core i5 Processor";
+    else if (titleLower.includes("core i7") || titleLower.includes("i7")) cpu = "Intel Core i7 Processor";
+    else if (titleLower.includes("athlon")) cpu = "AMD Athlon Silver CPU";
+    else if (titleLower.includes("celeron")) cpu = "Intel Celeron CPU";
+    else if (titleLower.includes("m1") || titleLower.includes("m2") || titleLower.includes("m3")) cpu = "Apple Silicon Chip";
+    else {
+      const match = title.match(/\b(Ryzen\s*\d+|Intel\s*Core\s*i\d+|Athlon|Celeron)\b/i);
+      if (match) cpu = match[1];
+    }
 
-  // 1. Processor / CPU
-  if (titleLower.includes("ryzen 3")) cpu = "AMD Ryzen 3 Processor";
-  else if (titleLower.includes("ryzen 5")) cpu = "AMD Ryzen 5 Processor";
-  else if (titleLower.includes("ryzen 7")) cpu = "AMD Ryzen 7 Processor";
-  else if (titleLower.includes("core i3") || titleLower.includes("i3")) cpu = "Intel Core i3 Processor";
-  else if (titleLower.includes("core i5") || titleLower.includes("i5")) cpu = "Intel Core i5 Processor";
-  else if (titleLower.includes("core i7") || titleLower.includes("i7")) cpu = "Intel Core i7 Processor";
-  else if (titleLower.includes("athlon")) cpu = "AMD Athlon Silver CPU";
-  else if (titleLower.includes("celeron")) cpu = "Intel Celeron CPU";
-  else if (titleLower.includes("m1")) cpu = "Apple M1 Chip";
-  else if (titleLower.includes("m2")) cpu = "Apple M2 Chip";
-  else if (titleLower.includes("m3")) cpu = "Apple M3 Chip";
-  else {
-    const match = title.match(/\b(Ryzen\s*\d+|Intel\s*Core\s*i\d+|Athlon|Celeron)\b/i);
-    if (match) cpu = match[1];
+    const ramMatch = title.match(/\b(\d+GB)\s*(?:RAM|LPDDR\d|DDR\d)?/i);
+    const ssdMatch = title.match(/\b(\d+GB|\d+TB)\s*(?:SSD|HDD|NVMe|Storage)/i) || title.match(/\b(512GB|256GB|1TB)\b/i);
+    const ramStr = ramMatch ? ramMatch[1] : "8GB RAM";
+    const ssdStr = ssdMatch ? ssdMatch[1] : "512GB SSD";
+
+    let display = "15.6-inch Full HD Display";
+    const sizeMatch = title.match(/\b(\d+(?:\.\d+)?\s*(?:inch|[\"”]))/i);
+    if (sizeMatch) {
+      display = `${sizeMatch[1]} Display`;
+    } else if (titleLower.includes("15s")) {
+      display = "15.6-inch Display";
+    } else if (titleLower.includes("14s")) {
+      display = "14-inch Display";
+    }
+
+    let persona = "Students & Daily Office Work";
+    if (titleLower.includes("gaming") || titleLower.includes("rtx") || titleLower.includes("gtx")) {
+      persona = "Gamers & Content Creators";
+    } else if (titleLower.includes("pro") || titleLower.includes("thinkpad") || titleLower.includes("book")) {
+      persona = "Professionals & Developers";
+    }
+
+    return [
+      `Processor: ${cpu}`,
+      `Memory & Storage: ${ramStr} | ${ssdStr} Storage`,
+      `Display: ${display}`,
+      `Target Use: ${persona}`,
+      `Standout Feature: Lightweight and portable build`
+    ];
   }
 
-  // 2. RAM & Storage
-  const ramMatch = title.match(/\b(\d+GB)\s*(?:RAM|LPDDR\d|DDR\d)?/i);
-  const ssdMatch = title.match(/\b(\d+GB|\d+TB)\s*(?:SSD|HDD|NVMe|Storage)/i) || title.match(/\b(512GB|256GB|1TB)\b/i);
-  const ramStr = ramMatch ? ramMatch[1] : "8GB RAM";
-  const ssdStr = ssdMatch ? ssdMatch[1] : "512GB SSD";
-  ramStorage = `${ramStr} | ${ssdStr} Storage`;
+  if (category === "audio") {
+    let anc = "Passive Noise Isolation";
+    if (titleLower.includes("anc") || titleLower.includes("noise cancelling") || titleLower.includes("noise cancellation")) {
+      anc = "Active Noise Cancellation (ANC) support";
+    }
+    
+    let brand = "Wireless Headphone Audio";
+    if (titleLower.includes("sony")) brand = "Sony Audio Acoustics";
+    else if (titleLower.includes("bose")) brand = "Bose Premium Soundstage";
+    else if (titleLower.includes("boat")) brand = "boAt Signature Bass";
+    else if (titleLower.includes("noise")) brand = "Noise Soundlabs";
+    else if (titleLower.includes("jbl")) brand = "JBL Pure Bass Sound";
+    
+    let battery = "Up to 30 Hours active playback";
+    if (titleLower.includes("ch520")) battery = "Up to 50 Hours ultra battery life";
+    else if (titleLower.includes("ultra")) battery = "Up to 24 Hours premium ANC playback";
 
-  // 3. Display
-  const sizeMatch = title.match(/\b(\d+(?:\.\d+)?\s*(?:inch|[\"”]))/i);
-  if (sizeMatch) {
-    display = `${sizeMatch[1]} Display`;
-  } else if (titleLower.includes("15s")) {
-    display = "15.6-inch Display";
-  } else if (titleLower.includes("14s")) {
-    display = "14-inch Display";
-  } else {
-    display = "15.6-inch Full HD Display";
+    return [
+      `Sound Engine: ${brand}`,
+      `Noise Control: ${anc}`,
+      `Battery Life: ${battery}`,
+      `Connectivity: Bluetooth Wireless pairing`,
+      `Standout Feature: Immersive comfort fit ear cups`
+    ];
   }
 
-  // 4. Target Persona
-  if (titleLower.includes("gaming") || titleLower.includes("rtx") || titleLower.includes("gtx")) {
-    persona = "Gamers & Creators";
-  } else if (titleLower.includes("pro") || titleLower.includes("thinkpad") || titleLower.includes("book")) {
-    persona = "Professionals & Developers";
-  } else {
-    persona = "Students & Daily Office Work";
+  if (category === "fashion") {
+    let material = "Premium breathable fabric blend";
+    if (titleLower.includes("cotton")) material = "100% Premium breathable Cotton fabric";
+    else if (titleLower.includes("denim")) material = "Durable denim cotton blend";
+    else if (titleLower.includes("leather")) material = "Genuine durable leather build";
+
+    let fit = "Comfortable active fit profile";
+    if (titleLower.includes("slim")) fit = "Modern Tailored Slim Fit cut";
+    else if (titleLower.includes("regular")) fit = "Standard Regular Fit profile";
+
+    return [
+      `Material: ${material}`,
+      `Fit Profile: ${fit}`,
+      `Occasion: Casual, daily office & social wear`,
+      `Care Instructions: Gentle cold wash recommended`,
+      `Standout Feature: Premium stitched styling seams`
+    ];
   }
 
-  return {
-    cpu,
-    ram_storage: ramStorage,
-    display_gpu: display,
-    battery_build: persona,
-    standout_feature: "Verified Deal Page"
-  };
+  return [
+    `Product Line: Verified retail seller listing`,
+    `Platform Partner: Top customer satisfaction rating`,
+    `Availability: In Stock & Ready to Ship`,
+    `Rating Status: Highly rated by verified buyers`,
+    `Standout Feature: Best value for price segment`
+  ];
+}
+
+/**
+ * Returns category-specific fallback matching insight summaries.
+ * @param {string} category - Product category string.
+ * @param {string} platform - Low-price store name.
+ * @returns {string} - Structured personal consultant advice string.
+ */
+function getFallbackDescriptionForCategory(category, platform) {
+  if (category === "laptop") {
+    return `👤 Best For: Daily home, school, and work routines.\n\n💡 Why This Deal: Standard retail specifications offering reliable durability and store warranty parameters.\n\n⚠️ Trade-off: Ideal for core tasks, but not geared for graphic-heavy applications or 3D gaming.`;
+  }
+  if (category === "audio") {
+    return `👤 Best For: Commuters, remote workers, and casual music listeners.\n\n💡 Why This Deal: Great battery capacity combined with reliable wireless connectivity to enjoy uninterrupted playlists on ${platform}.\n\n⚠️ Trade-off: Perfect for daily listening, but audiophiles seeking flat studio profiles may need software EQ adjustments.`;
+  }
+  if (category === "fashion") {
+    return `👤 Best For: Versatile daily outfits, casual social gatherings, and office wear.\n\n💡 Why This Deal: Durable fabrics constructed with comfortable cuts to balance style and value.\n\n⚠️ Trade-off: Tailored slim designs require following wash instructions to maintain shape.`;
+  }
+  return `👤 Best For: General everyday use and practical applications.\n\n💡 Why This Deal: Highly rated by verified buyers and backed by merchant partner shipping guarantees.\n\n⚠️ Trade-off: A solid budget friendly choice, but check warranty details for extended coverage.`;
 }
 
 /**
@@ -511,12 +594,10 @@ export async function POST(request) {
           hasDirectPDP = true;
         }
 
-        // Parse specifications locally from title
-        const parsedSpecs = parseSpecsFromTitle(title);
-
-        // Friendly personal consultant fallback description
-        const cleanTitle = title.split(" ").slice(0, 6).join(" ");
-        const fallbackDesc = `👤 Best For: Daily home, school, and work routines.\n\n💡 Why This Deal: Standard retail specifications offering reliable durability and store warranty parameters.\n\n⚠️ Trade-off: Ideal for core tasks, but not geared for graphic-heavy applications or 3D gaming.`;
+        // Dynamically detect category and parse specifications locally
+        const category = detectCategory(cleanQuery, title);
+        const parsedSpecs = parseSpecsFromTitle(category, title);
+        const fallbackDesc = getFallbackDescriptionForCategory(category, resolvedPlatform);
 
         cleanProducts.push({
           title: String(title),
@@ -543,19 +624,22 @@ export async function POST(request) {
           return `${idx + 1}. Title: ${p.title} | Store: ${p.platform} | Price: ${p.price}`;
         }).join("\n");
 
-        const prompt = `You are a friendly, expert personal tech shopping consultant advising a friend on their search for: "${cleanQuery}".
-For each product, write an honest, helpful recommendation in a friendly, conversational tone (no robotic fluff, talk like a real human advising a buddy).
+        const prompt = `You are a friendly, expert personal shopping consultant advising a friend on their search for: "${cleanQuery}".
+For each product, generate category-specific specifications and conversational recommendations.
 
 For each product, output:
 1. "ai_insight" object containing:
-   - "best_for": A practical use-case statement explaining who should buy this (e.g. "Perfect for students needing long battery life and fast doc editing.").
-   - "why_this_deal": A sharp statement highlighting the real value in this price range (e.g. "Getting an 8GB RAM and SSD combo at this price makes multitasking effortless.").
-   - "trade_off": An honest, transparent note about limitations (e.g. "Great for daily work, but avoid if you want to play heavy 3D games.").
-2. "detailed_specs" object containing (extract the exact values from the title):
-   - "cpu": Processor / CPU details (e.g. "Intel Core i3 12th Gen" or "N/A" if clothing).
-   - "ram_storage": RAM & Storage capacity (e.g. "8GB RAM | 512GB SSD" or fabric details).
-   - "display_gpu": Screen size and type (e.g. "15.6-inch FHD Display" or style/cut).
-   - "target_persona": Target persona recommendation (e.g. "Students & Daily Work" or "Casual Comfort").
+   - "best_for": A practical use-case statement explaining who should buy this (e.g. "Perfect for students needing long battery life" or "Ideal for commuters seeking quiet listening").
+   - "why_this_deal": A sharp statement highlighting the real value in this price range (e.g. "Getting 8GB RAM + SSD makes multitasking effortless" or "Offers premium ANC acoustics under 10k").
+   - "trade_off": An honest, transparent note about limitations (e.g. "Not geared for heavy 3D gaming" or "Charging is micro-USB instead of Type-C").
+2. "detailed_specs" array of strings (Pre-formatted specifications bullet points specific to the product category):
+   - If it's a Laptop/PC: Show CPU, RAM & Storage, Display & GPU, Battery Life, Standout Feature.
+     (e.g., ["Processor: Intel Core i5 12th Gen", "Memory & Storage: 8GB RAM | 512GB SSD", "Display: 15.6\" FHD Screen", "Battery & Build: Up to 8 Hours / 1.7kg", "Standout Feature: Backlit keyboard"])
+   - If it's Headphones/Audio: Show Sound Engine, Noise Control, Battery Life, Connectivity, Standout Feature.
+     (e.g., ["Sound Engine: 40mm Dynamic Drivers", "Noise Control: Hybrid Active Noise Cancelling", "Battery Life: Up to 35 Hours playtime", "Connectivity: Bluetooth 5.2 multipoint", "Standout Feature: Spatial Audio support"])
+   - If it's Shoes/Fashion: Show Material, Fit Profile, Occasion, Care, Standout Feature.
+     (e.g., ["Material: 100% Breathable Cotton", "Fit Profile: Modern Slim Fit cut", "Occasion: Casual and semi-formal wear", "Care: Machine wash cold", "Standout Feature: Reinforced collar seams"])
+   - If it's any other category: Extract 5 relevant product attributes from the title and detail them.
 
 Products:
 ${productsListText}
@@ -569,12 +653,13 @@ Example output format:
       "why_this_deal": "Getting 8GB RAM + SSD combo under 45k makes multitasking effortless.",
       "trade_off": "Good for daily work, but avoid if you plan heavy 3D gaming."
     },
-    "detailed_specs": {
-      "cpu": "AMD Ryzen 3 7320U",
-      "ram_storage": "8GB RAM | 512GB SSD",
-      "display_gpu": "15.6\" FHD Display",
-      "target_persona": "Students & Daily Office Work"
-    }
+    "detailed_specs": [
+      "Processor: AMD Ryzen 3 7320U",
+      "Memory & Storage: 8GB RAM | 512GB SSD",
+      "Display: 15.6\" FHD Screen",
+      "Battery & Build: Students & Daily Work",
+      "Standout Feature: Lightweight 1.59kg design"
+    ]
   }
 ]
 Return ONLY the raw JSON array. Do not include markdown code block formatting (like \`\`\`json) or any other text.`;
@@ -611,14 +696,8 @@ Return ONLY the raw JSON array. Do not include markdown code block formatting (l
                   const toff = res.ai_insight.trade_off || "";
                   p.description = `👤 Best For: ${bfor}\n\n💡 Why This Deal: ${wdeal}\n\n⚠️ Trade-off: ${toff}`;
                 }
-                if (res.detailed_specs) {
-                  p.detailed_specs = {
-                    cpu: res.detailed_specs.cpu || p.detailed_specs.cpu,
-                    ram_storage: res.detailed_specs.ram_storage || p.detailed_specs.ram_storage,
-                    display_gpu: res.detailed_specs.display_gpu || p.detailed_specs.display_gpu,
-                    battery_build: res.detailed_specs.target_persona || p.detailed_specs.battery_build,
-                    standout_feature: res.ai_insight?.why_this_deal?.split(".")[0] || "Verified Deal Page"
-                  };
+                if (res.detailed_specs && Array.isArray(res.detailed_specs)) {
+                  p.detailed_specs = res.detailed_specs;
                 }
               }
             });

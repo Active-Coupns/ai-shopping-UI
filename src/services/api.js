@@ -65,17 +65,15 @@ export async function searchProducts(query, country = "IN") {
       });
 
       // Extract rich technical specs from detailed_specs backend mapping
-      const specs = p.detailed_specs ? [
-        `Processor: ${p.detailed_specs.cpu || "N/A"}`,
-        `Memory & Storage: ${p.detailed_specs.ram_storage || "N/A"}`,
-        `Display & Graphics: ${p.detailed_specs.display_gpu || "N/A"}`,
-        `Battery & Build: ${p.detailed_specs.battery_build || "N/A"}`,
-        `Standout Feature: ${p.detailed_specs.standout_feature || "N/A"}`
-      ] : [
-        "Verified Merchant Partner",
-        "Top Customer Satisfaction Rating",
-        "In Stock & Ready to Ship"
-      ];
+      const specs = p.detailed_specs && Array.isArray(p.detailed_specs)
+        ? p.detailed_specs
+        : (p.detailed_specs && typeof p.detailed_specs === "object"
+            ? Object.entries(p.detailed_specs).map(([k, v]) => `${k}: ${v}`)
+            : [
+                "Verified Merchant Partner",
+                "Top Customer Satisfaction Rating",
+                "In Stock & Ready to Ship"
+              ]);
 
       const coupon = null;
 
