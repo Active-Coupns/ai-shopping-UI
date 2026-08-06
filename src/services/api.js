@@ -64,7 +64,14 @@ export async function searchProducts(query, country = "IN") {
         };
       });
 
-      const specs = [
+      // Extract rich technical specs from detailed_specs backend mapping
+      const specs = p.detailed_specs ? [
+        `Processor: ${p.detailed_specs.cpu || "N/A"}`,
+        `Memory & Storage: ${p.detailed_specs.ram_storage || "N/A"}`,
+        `Display & Graphics: ${p.detailed_specs.display_gpu || "N/A"}`,
+        `Battery & Build: ${p.detailed_specs.battery_build || "N/A"}`,
+        `Standout Feature: ${p.detailed_specs.standout_feature || "N/A"}`
+      ] : [
         "Verified Merchant Partner",
         "Top Customer Satisfaction Rating",
         "In Stock & Ready to Ship"

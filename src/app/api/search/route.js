@@ -34,6 +34,20 @@ const TRUSTED_MERCHANTS = [
 ];
 
 /**
+ * Parses user query to extract maximum budget limit.
+ * @param {string} query - Raw search query.
+ * @returns {number|null} - Parsed budget or null.
+ */
+function parseBudgetLimit(query) {
+  const cleanStr = query.toLowerCase().replace(/[,₹$]/g, "");
+  const match = cleanStr.match(/\b(?:under|below|budget|limit|max|up to|price|at|around|\bs\b|<|=)\s*(\d{4,6})\b/i) || cleanStr.match(/\b(\d{4,6})\b/);
+  if (match) {
+    return parseFloat(match[1]);
+  }
+  return null;
+}
+
+/**
  * Safely decodes and unwraps redirect query parameters from Google/HasData wrappers.
  * @param {string} url - Candidate redirect link.
  * @returns {string} - Direct raw target merchant URL if found.
@@ -193,7 +207,7 @@ export async function POST(request) {
     // Safely extract results checking for both camelCase and snake_case variations
     const rawResults = data?.shoppingResults || data?.shopping_results || data?.organicResults || [];
 
-    // Filter results using trusted merchant check or immersive link presence
+    // Filter results using trusted merchant check, budget limits, and accessory blacklists
     const whitelistedResults = [];
     for (const item of rawResults) {
       if (!item || !(item.title || item.name)) continue;
@@ -202,9 +216,43 @@ export async function POST(request) {
       const platformLower = platform.toLowerCase();
       const isTrusted = TRUSTED_MERCHANTS.some(m => platformLower.includes(m));
       
-      if (isTrusted || item.hasdataLink) {
-        whitelistedResults.push(item);
+      if (!isTrusted && !item.hasdataLink) {
+        continue; // Skip untrusted platforms
       }
+
+      // Logical budget validation
+      const priceRaw = item.price || item.extractedPrice || item.extracted_price || 0;
+      let priceVal = 0;
+      if (typeof priceRaw === "number") {
+        priceVal = priceRaw;
+      } else if (typeof priceRaw === "string") {
+        priceVal = parseFloat(priceRaw.replace(/[^0-9.]/g, "")) || 0;
+      }
+
+      const budgetLimit = parseBudgetLimit(cleanQuery);
+      if (budgetLimit && priceVal > 0) {
+        const maxAllowedPrice = budgetLimit * 1.05; // 5% padding flexibility
+        if (priceVal > maxAllowedPrice) {
+          continue; // Skip items exceeding budget limits
+        }
+      }
+
+      // Logical category accessory validation
+      const titleLower = (item.title || item.name || "").toLowerCase();
+      const queryLower = cleanQuery.toLowerCase();
+      if (queryLower.includes("laptop") || queryLower.includes("computer")) {
+        const blacklist = ["bag", "sleeve", "charger", "adapter", "stand", "mouse pad", "keyboard cover", "cleaner", "skin", "decal", "cable", "case"];
+        if (blacklist.some(word => titleLower.includes(word))) {
+          continue;
+        }
+      } else if (queryLower.includes("headphone") || queryLower.includes("audio")) {
+        const blacklist = ["case", "pouch", "stand", "hanger", "cushion", "earpad", "cable", "adapter"];
+        if (blacklist.some(word => titleLower.includes(word))) {
+          continue;
+        }
+      }
+
+      whitelistedResults.push(item);
     }
 
     // Slice array immediately to process ONLY the top 5 high-quality products
@@ -366,6 +414,15 @@ export async function POST(request) {
         const fallbackDesc = `${cleanTitle} is a top choice on ${resolvedPlatform} with a ${item.rating || "4.5"}/5 customer rating, matching your search parameters perfectly.`;
         const description = item.snippet || item.description || fallbackDesc;
 
+        // Structured specs fallback
+        const fallbackSpecs = {
+          cpu: "Processor details available upon check",
+          ram_storage: "Standard store configuration",
+          display_gpu: "High Definition screen layout",
+          battery_build: "Robust daily battery life capacity",
+          standout_feature: "Verified store listing"
+        };
+
         cleanProducts.push({
           title: String(title),
           description: String(description),
@@ -375,7 +432,8 @@ export async function POST(request) {
           platform: String(resolvedPlatform),
           price: Number(resolvedPrice),
           price_comparison: offers,
-          hasDirectPDP: hasDirectPDP
+          hasDirectPDP: hasDirectPDP,
+          detailed_specs: fallbackSpecs
         });
       } catch (mapErr) {
         console.error("Mapping Error:", mapErr);
@@ -387,20 +445,42 @@ export async function POST(request) {
     if (geminiApiKey && cleanProducts.length > 0) {
       try {
         const productsListText = cleanProducts.map((p, idx) => {
-          return `${idx + 1}. Title: ${p.title} | Store: ${p.platform}`;
+          return `${idx + 1}. Title: ${p.title} | Store: ${p.platform} | Price: ${p.price}`;
         }).join("\n");
 
         const prompt = `You are an expert e-commerce shopping assistant. I have a list of products retrieved for the query: "${cleanQuery}".
-For each product, write a concise 2-line "AI Matching Insight" explaining why it fits the user's query or who it is best for. Keep it simple, everyday-user friendly, and short (max 2 sentences, ~25 words).
+For each product, generate:
+1. "ai_insight" object containing:
+   - "why_fits": 1 sharp sentence explaining EXACTLY how this product fulfills their query requirements.
+   - "best_for": A concise statement of who should buy this (e.g., "Ideal for coders needing smooth multitasking").
+   - "key_advantage": Highlight the top reason this deal beats others in its price class.
+2. "detailed_specs" object containing:
+   - "cpu": Processor / CPU details (e.g. "Intel Core i5 12th Gen" or "N/A" if clothing).
+   - "ram_storage": RAM & Storage details (e.g. "8GB RAM / 512GB SSD" or fabric details for clothing).
+   - "display_gpu": Display & GPU details (e.g. "15.6\" FHD / Intel Iris Xe" or style/cut for clothing).
+   - "battery_build": Battery Life / Build details (e.g. "Up to 7 hours battery / 1.7kg lightweight").
+   - "standout_feature": Key standout feature.
 
 Products:
 ${productsListText}
 
-Return the insights strictly as a JSON array of strings, where each entry matches the product's index.
+Return the results strictly as a JSON array of objects, where each object matches the product's index.
 Example output format:
 [
-  "Best option for heavy coding and occasional gaming within a tight budget.",
-  "Excellent choice for a lightweight, travel-friendly work laptop with solid battery life."
+  {
+    "ai_insight": {
+      "why_fits": "Features a powerful Ryzen 5 processor and 512GB SSD that handles developer tools smoothly within the 50k budget.",
+      "best_for": "Coders and students needing smooth multitasking and robust performance.",
+      "key_advantage": "Offers the best cost-to-performance ratio with expandable RAM in this price bracket."
+    },
+    "detailed_specs": {
+      "cpu": "AMD Ryzen 5 7520U",
+      "ram_storage": "8GB LPDDR5 / 512GB SSD",
+      "display_gpu": "15.6\" Full HD (1920x1080) / AMD Radeon Graphics",
+      "battery_build": "Up to 8 hours battery life / 1.6kg sleek design",
+      "standout_feature": "Rapid charge support (80% in 1 hour)"
+    }
+  }
 ]
 Return ONLY the raw JSON array. Do not include markdown code block formatting (like \`\`\`json) or any other text.`;
 
@@ -425,11 +505,20 @@ Return ONLY the raw JSON array. Do not include markdown code block formatting (l
           if (rawText.startsWith("```")) {
             rawText = rawText.replace(/^```json/, "").replace(/^```/, "").replace(/```$/, "").trim();
           }
-          const parsedInsights = JSON.parse(rawText);
-          if (Array.isArray(parsedInsights)) {
+          const parsedResults = JSON.parse(rawText);
+          if (Array.isArray(parsedResults)) {
             cleanProducts.forEach((p, idx) => {
-              if (parsedInsights[idx]) {
-                p.description = String(parsedInsights[idx]);
+              const res = parsedResults[idx];
+              if (res) {
+                if (res.ai_insight) {
+                  const fit = res.ai_insight.why_fits || "";
+                  const bfor = res.ai_insight.best_for || "";
+                  const adv = res.ai_insight.key_advantage || "";
+                  p.description = `🎯 Why it fits: ${fit}\n\n👤 Best For: ${bfor}\n\n🏆 Key Advantage: ${adv}`;
+                }
+                if (res.detailed_specs) {
+                  p.detailed_specs = res.detailed_specs;
+                }
               }
             });
           }
@@ -464,7 +553,14 @@ Return ONLY the raw JSON array. Do not include markdown code block formatting (l
             price_comparison: [
               { store: fallback.platform, price: 24999, link: fallback.link, is_lowest: true }
             ],
-            hasDirectPDP: true
+            hasDirectPDP: true,
+            detailed_specs: {
+              cpu: "HP Built Processor configuration",
+              ram_storage: "8GB RAM / 512GB SSD storage layout",
+              display_gpu: "15.6\" HD anti-glare display panel",
+              battery_build: "Up to 7 hours active battery capacity",
+              standout_feature: "Optimal value workhorse laptop"
+            }
           });
         }
       }

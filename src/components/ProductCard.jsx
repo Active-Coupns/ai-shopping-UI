@@ -219,8 +219,8 @@ export default function ProductCard({ product }) {
               <Sparkles className="w-3.5 h-3.5 animate-pulse" />
               <span>AI Matching Insight</span>
             </div>
-            <p className="text-xs md:text-sm text-slate-200 leading-snug font-medium italic">
-              &ldquo;{product.aiReason}&rdquo;
+            <p className="text-xs md:text-sm text-slate-200 leading-snug font-medium italic whitespace-pre-line">
+              {product.aiReason}
             </p>
           </div>
 
