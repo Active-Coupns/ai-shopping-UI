@@ -3,27 +3,63 @@ import { NextResponse } from "next/server";
 const FALLBACK_PRODUCTS = [
   {
     title: "HP Standard Laptop 15s AMD Ryzen 3 (8GB RAM / 512GB SSD)",
-    description: "Ideal budget laptop for daily office productivity, online classes, and casual entertainment.",
+    description: "👤 Best For: Students and office workers wanting a reliable daily driver.\n\n💡 Why This Deal: AMD Ryzen 3 processor combined with 8GB RAM and 512GB SSD provides smooth multitasking.\n\n⚠️ Trade-off: Great for docs and streaming, but skip if you need professional video editing or heavy gaming.",
     image: "/laptop.jpg",
     rating: "4.4",
     link: "https://www.amazon.in",
-    platform: "Amazon"
+    platform: "Amazon",
+    price: 32990,
+    price_comparison: [
+      { store: "Amazon.in", price: 32990, link: "https://www.amazon.in", is_lowest: true },
+      { store: "Flipkart", price: 33499, link: "https://www.flipkart.com", is_lowest: false }
+    ],
+    detailed_specs: {
+      cpu: "AMD Ryzen 3 7320U Processor",
+      ram_storage: "8GB LPDDR5 RAM | 512GB NVMe SSD",
+      display_gpu: "15.6-inch Full HD Display",
+      battery_build: "Students & Daily Office Work",
+      standout_feature: "Sleek 1.59kg lightweight build"
+    }
   },
   {
     title: "Classy Casual Cotton Slim Fit Shirt",
-    description: "Breathable cotton fabric with custom tailoring. Perfect for semi-casual wear and social events.",
+    description: "👤 Best For: Semi-casual outings, weekend social events, and daily office wear.\n\n💡 Why This Deal: Premium breathable cotton with custom tailoring offers luxury look on a budget.\n\n⚠️ Trade-off: Requires low-heat ironing to maintain clean tailored seams.",
     image: "/shirt.jpg",
     rating: "4.5",
     link: "https://www.flipkart.com",
-    platform: "Flipkart"
+    platform: "Flipkart",
+    price: 999,
+    price_comparison: [
+      { store: "Flipkart", price: 999, link: "https://www.flipkart.com", is_lowest: true },
+      { store: "Amazon.in", price: 1099, link: "https://www.amazon.in", is_lowest: false }
+    ],
+    detailed_specs: {
+      cpu: "Premium 100% Breathable Cotton fabric",
+      ram_storage: "Slim Fit tailoring cut profile",
+      display_gpu: "Classic spread collar line layout",
+      battery_build: "Casual & Semi-Formal Social Wear",
+      standout_feature: "Moisture-wicking active comfort"
+    }
   },
   {
     title: "Over-Ear Wireless ANC Headphones Pro",
-    description: "Immersive sound signature with custom active noise cancellation and up to 40 hours battery life.",
+    description: "👤 Best For: Travelers, remote workers, and students wanting distraction-free study sessions.\n\n💡 Why This Deal: High-end active noise cancellation (ANC) and 40-hour battery life under budget.\n\n⚠️ Trade-off: Bass is rich and deep, but audiophiles seeking studio flat profiles might want eq tuning.",
     image: "/headphones.jpg",
     rating: "4.7",
     link: "https://www.amazon.in",
-    platform: "Amazon"
+    platform: "Amazon",
+    price: 4999,
+    price_comparison: [
+      { store: "Amazon.in", price: 4999, link: "https://www.amazon.in", is_lowest: true },
+      { store: "Croma", price: 5299, link: "https://www.croma.com", is_lowest: false }
+    ],
+    detailed_specs: {
+      cpu: "40mm dynamic drivers with high fidelity",
+      ram_storage: "Up to 40 Hours playtime with ANC off",
+      display_gpu: "Hybrid Active Noise Cancelling chip",
+      battery_build: "Remote Workers & Commuters",
+      standout_feature: "Ergonomic memory-foam ear cushions"
+    }
   }
 ];
 
@@ -45,6 +81,72 @@ function parseBudgetLimit(query) {
     return parseFloat(match[1]);
   }
   return null;
+}
+
+/**
+ * Parses technical attributes directly from product title.
+ * @param {string} title - Product title string.
+ * @returns {object} - Structured specs object.
+ */
+function parseSpecsFromTitle(title) {
+  const titleLower = title.toLowerCase();
+  let cpu = "Standard Processor";
+  let ramStorage = "Standard RAM & Storage config";
+  let display = "Full HD Display layout";
+  let persona = "Daily Home & Office Use";
+
+  // 1. Processor / CPU
+  if (titleLower.includes("ryzen 3")) cpu = "AMD Ryzen 3 Processor";
+  else if (titleLower.includes("ryzen 5")) cpu = "AMD Ryzen 5 Processor";
+  else if (titleLower.includes("ryzen 7")) cpu = "AMD Ryzen 7 Processor";
+  else if (titleLower.includes("core i3") || titleLower.includes("i3")) cpu = "Intel Core i3 Processor";
+  else if (titleLower.includes("core i5") || titleLower.includes("i5")) cpu = "Intel Core i5 Processor";
+  else if (titleLower.includes("core i7") || titleLower.includes("i7")) cpu = "Intel Core i7 Processor";
+  else if (titleLower.includes("athlon")) cpu = "AMD Athlon Silver CPU";
+  else if (titleLower.includes("celeron")) cpu = "Intel Celeron CPU";
+  else if (titleLower.includes("m1")) cpu = "Apple M1 Chip";
+  else if (titleLower.includes("m2")) cpu = "Apple M2 Chip";
+  else if (titleLower.includes("m3")) cpu = "Apple M3 Chip";
+  else {
+    const match = title.match(/\b(Ryzen\s*\d+|Intel\s*Core\s*i\d+|Athlon|Celeron)\b/i);
+    if (match) cpu = match[1];
+  }
+
+  // 2. RAM & Storage
+  const ramMatch = title.match(/\b(\d+GB)\s*(?:RAM|LPDDR\d|DDR\d)?/i);
+  const ssdMatch = title.match(/\b(\d+GB|\d+TB)\s*(?:SSD|HDD|NVMe|Storage)/i) || title.match(/\b(512GB|256GB|1TB)\b/i);
+  const ramStr = ramMatch ? ramMatch[1] : "8GB RAM";
+  const ssdStr = ssdMatch ? ssdMatch[1] : "512GB SSD";
+  ramStorage = `${ramStr} | ${ssdStr} Storage`;
+
+  // 3. Display
+  const sizeMatch = title.match(/\b(\d+(?:\.\d+)?\s*(?:inch|[\"”]))/i);
+  if (sizeMatch) {
+    display = `${sizeMatch[1]} Display`;
+  } else if (titleLower.includes("15s")) {
+    display = "15.6-inch Display";
+  } else if (titleLower.includes("14s")) {
+    display = "14-inch Display";
+  } else {
+    display = "15.6-inch Full HD Display";
+  }
+
+  // 4. Target Persona
+  if (titleLower.includes("gaming") || titleLower.includes("rtx") || titleLower.includes("gtx")) {
+    persona = "Gamers & Creators";
+  } else if (titleLower.includes("pro") || titleLower.includes("thinkpad") || titleLower.includes("book")) {
+    persona = "Professionals & Developers";
+  } else {
+    persona = "Students & Daily Office Work";
+  }
+
+  return {
+    cpu,
+    ram_storage: ramStorage,
+    display_gpu: display,
+    battery_build: persona,
+    standout_feature: "Verified Deal Page"
+  };
 }
 
 /**
@@ -409,23 +511,16 @@ export async function POST(request) {
           hasDirectPDP = true;
         }
 
-        // Generate a clean 2-line AI description summary instead of delivery text
-        const cleanTitle = title.split(" ").slice(0, 6).join(" ");
-        const fallbackDesc = `${cleanTitle} is a top choice on ${resolvedPlatform} with a ${item.rating || "4.5"}/5 customer rating, matching your search parameters perfectly.`;
-        const description = item.snippet || item.description || fallbackDesc;
+        // Parse specifications locally from title
+        const parsedSpecs = parseSpecsFromTitle(title);
 
-        // Structured specs fallback
-        const fallbackSpecs = {
-          cpu: "Processor details available upon check",
-          ram_storage: "Standard store configuration",
-          display_gpu: "High Definition screen layout",
-          battery_build: "Robust daily battery life capacity",
-          standout_feature: "Verified store listing"
-        };
+        // Friendly personal consultant fallback description
+        const cleanTitle = title.split(" ").slice(0, 6).join(" ");
+        const fallbackDesc = `👤 Best For: Daily home, school, and work routines.\n\n💡 Why This Deal: Standard retail specifications offering reliable durability and store warranty parameters.\n\n⚠️ Trade-off: Ideal for core tasks, but not geared for graphic-heavy applications or 3D gaming.`;
 
         cleanProducts.push({
           title: String(title),
-          description: String(description),
+          description: String(fallbackDesc),
           image: String(image),
           rating: String(item.rating || item.stars || "4.5"),
           link: String(directLink),
@@ -433,7 +528,7 @@ export async function POST(request) {
           price: Number(resolvedPrice),
           price_comparison: offers,
           hasDirectPDP: hasDirectPDP,
-          detailed_specs: fallbackSpecs
+          detailed_specs: parsedSpecs
         });
       } catch (mapErr) {
         console.error("Mapping Error:", mapErr);
@@ -448,18 +543,19 @@ export async function POST(request) {
           return `${idx + 1}. Title: ${p.title} | Store: ${p.platform} | Price: ${p.price}`;
         }).join("\n");
 
-        const prompt = `You are an expert e-commerce shopping assistant. I have a list of products retrieved for the query: "${cleanQuery}".
-For each product, generate:
+        const prompt = `You are a friendly, expert personal tech shopping consultant advising a friend on their search for: "${cleanQuery}".
+For each product, write an honest, helpful recommendation in a friendly, conversational tone (no robotic fluff, talk like a real human advising a buddy).
+
+For each product, output:
 1. "ai_insight" object containing:
-   - "why_fits": 1 sharp sentence explaining EXACTLY how this product fulfills their query requirements.
-   - "best_for": A concise statement of who should buy this (e.g., "Ideal for coders needing smooth multitasking").
-   - "key_advantage": Highlight the top reason this deal beats others in its price class.
-2. "detailed_specs" object containing:
-   - "cpu": Processor / CPU details (e.g. "Intel Core i5 12th Gen" or "N/A" if clothing).
-   - "ram_storage": RAM & Storage details (e.g. "8GB RAM / 512GB SSD" or fabric details for clothing).
-   - "display_gpu": Display & GPU details (e.g. "15.6\" FHD / Intel Iris Xe" or style/cut for clothing).
-   - "battery_build": Battery Life / Build details (e.g. "Up to 7 hours battery / 1.7kg lightweight").
-   - "standout_feature": Key standout feature.
+   - "best_for": A practical use-case statement explaining who should buy this (e.g. "Perfect for students needing long battery life and fast doc editing.").
+   - "why_this_deal": A sharp statement highlighting the real value in this price range (e.g. "Getting an 8GB RAM and SSD combo at this price makes multitasking effortless.").
+   - "trade_off": An honest, transparent note about limitations (e.g. "Great for daily work, but avoid if you want to play heavy 3D games.").
+2. "detailed_specs" object containing (extract the exact values from the title):
+   - "cpu": Processor / CPU details (e.g. "Intel Core i3 12th Gen" or "N/A" if clothing).
+   - "ram_storage": RAM & Storage capacity (e.g. "8GB RAM | 512GB SSD" or fabric details).
+   - "display_gpu": Screen size and type (e.g. "15.6-inch FHD Display" or style/cut).
+   - "target_persona": Target persona recommendation (e.g. "Students & Daily Work" or "Casual Comfort").
 
 Products:
 ${productsListText}
@@ -469,16 +565,15 @@ Example output format:
 [
   {
     "ai_insight": {
-      "why_fits": "Features a powerful Ryzen 5 processor and 512GB SSD that handles developer tools smoothly within the 50k budget.",
-      "best_for": "Coders and students needing smooth multitasking and robust performance.",
-      "key_advantage": "Offers the best cost-to-performance ratio with expandable RAM in this price bracket."
+      "best_for": "Perfect for college students needing long battery life and fast doc editing.",
+      "why_this_deal": "Getting 8GB RAM + SSD combo under 45k makes multitasking effortless.",
+      "trade_off": "Good for daily work, but avoid if you plan heavy 3D gaming."
     },
     "detailed_specs": {
-      "cpu": "AMD Ryzen 5 7520U",
-      "ram_storage": "8GB LPDDR5 / 512GB SSD",
-      "display_gpu": "15.6\" Full HD (1920x1080) / AMD Radeon Graphics",
-      "battery_build": "Up to 8 hours battery life / 1.6kg sleek design",
-      "standout_feature": "Rapid charge support (80% in 1 hour)"
+      "cpu": "AMD Ryzen 3 7320U",
+      "ram_storage": "8GB RAM | 512GB SSD",
+      "display_gpu": "15.6\" FHD Display",
+      "target_persona": "Students & Daily Office Work"
     }
   }
 ]
@@ -511,13 +606,19 @@ Return ONLY the raw JSON array. Do not include markdown code block formatting (l
               const res = parsedResults[idx];
               if (res) {
                 if (res.ai_insight) {
-                  const fit = res.ai_insight.why_fits || "";
                   const bfor = res.ai_insight.best_for || "";
-                  const adv = res.ai_insight.key_advantage || "";
-                  p.description = `🎯 Why it fits: ${fit}\n\n👤 Best For: ${bfor}\n\n🏆 Key Advantage: ${adv}`;
+                  const wdeal = res.ai_insight.why_this_deal || "";
+                  const toff = res.ai_insight.trade_off || "";
+                  p.description = `👤 Best For: ${bfor}\n\n💡 Why This Deal: ${wdeal}\n\n⚠️ Trade-off: ${toff}`;
                 }
                 if (res.detailed_specs) {
-                  p.detailed_specs = res.detailed_specs;
+                  p.detailed_specs = {
+                    cpu: res.detailed_specs.cpu || p.detailed_specs.cpu,
+                    ram_storage: res.detailed_specs.ram_storage || p.detailed_specs.ram_storage,
+                    display_gpu: res.detailed_specs.display_gpu || p.detailed_specs.display_gpu,
+                    battery_build: res.detailed_specs.target_persona || p.detailed_specs.battery_build,
+                    standout_feature: res.ai_insight?.why_this_deal?.split(".")[0] || "Verified Deal Page"
+                  };
                 }
               }
             });
@@ -549,18 +650,10 @@ Return ONLY the raw JSON array. Do not include markdown code block formatting (l
             rating: fallback.rating,
             link: fallback.link,
             platform: fallback.platform,
-            price: 24999,
-            price_comparison: [
-              { store: fallback.platform, price: 24999, link: fallback.link, is_lowest: true }
-            ],
+            price: fallback.price,
+            price_comparison: fallback.price_comparison,
             hasDirectPDP: true,
-            detailed_specs: {
-              cpu: "HP Built Processor configuration",
-              ram_storage: "8GB RAM / 512GB SSD storage layout",
-              display_gpu: "15.6\" HD anti-glare display panel",
-              battery_build: "Up to 7 hours active battery capacity",
-              standout_feature: "Optimal value workhorse laptop"
-            }
+            detailed_specs: fallback.detailed_specs
           });
         }
       }
