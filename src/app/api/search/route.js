@@ -255,6 +255,80 @@ function unwrapUrl(url) {
 }
 
 /**
+ * Compiles a direct search page URL for a specific merchant store.
+ * @param {string} platform - Merchant platform name.
+ * @param {string} title - Product title.
+ * @returns {string} - Direct store search page URL.
+ */
+function getMerchantSearchFallback(platform, title) {
+  const cleanTitle = title
+    .replace(/[^\w\s-]/g, "")
+    .split(/\s+/)
+    .slice(0, 6)
+    .join(" ");
+  const titleEscaped = encodeURIComponent(cleanTitle);
+  const platformLower = (platform || "").toLowerCase();
+
+  if (platformLower.includes("myntra")) {
+    return `https://www.myntra.com/${titleEscaped.replace(/%20/g, "-")}`;
+  }
+  if (platformLower.includes("flipkart")) {
+    return `https://www.flipkart.com/search?q=${titleEscaped}`;
+  }
+  if (platformLower.includes("croma")) {
+    return `https://www.croma.com/search/?text=${titleEscaped}`;
+  }
+  if (platformLower.includes("vijay") || platformLower.includes("vijaysales")) {
+    return `https://www.vijaysales.com/search/${titleEscaped}`;
+  }
+  if (platformLower.includes("reliance") || platformLower.includes("reliance_digital")) {
+    return `https://www.reliancedigital.in/search?q=${titleEscaped}:relevance`;
+  }
+  if (platformLower.includes("tatacliq")) {
+    return `https://www.tatacliq.com/search/?search=%7B%22searchTerm%22%3A%22${titleEscaped}%22%7D`;
+  }
+  if (platformLower.includes("walmart")) {
+    return `https://www.walmart.com/search?q=${titleEscaped}`;
+  }
+  if (platformLower.includes("bestbuy") || platformLower.includes("best buy")) {
+    return `https://www.bestbuy.com/site/searchpage.jsp?st=${titleEscaped}`;
+  }
+  if (platformLower.includes("target")) {
+    return `https://www.target.com/s?searchTerm=${titleEscaped}`;
+  }
+  return `https://www.amazon.in/s?k=${titleEscaped}`;
+}
+
+/**
+ * Universal link sanitizer to block any Google Search, Shopping, or HasData redirect wrappers.
+ * Falls back to a direct store search page.
+ * @param {string} url - Candidate redirection link.
+ * @param {string} platform - Store platform name.
+ * @param {string} title - Product title.
+ * @returns {string} - Clean sanitized direct merchant landing page link.
+ */
+function sanitizeProductLink(url, platform, title) {
+  if (!url) {
+    return getMerchantSearchFallback(platform, title);
+  }
+  
+  const lowerUrl = url.toLowerCase();
+  if (
+    lowerUrl.includes("google.com") ||
+    lowerUrl.includes("google.co.in") ||
+    lowerUrl.includes("api.hasdata.com") ||
+    lowerUrl.includes("udm=28") ||
+    lowerUrl.includes("/search") ||
+    lowerUrl.includes("/s?k=") ||
+    lowerUrl.includes("?q=")
+  ) {
+    return getMerchantSearchFallback(platform, title);
+  }
+  
+  return url;
+}
+
+/**
  * Extracts and cleans the target merchant direct single product details URL (PDP).
  * Rejects proxy URLs, Google Shopping pages, and generic search queries.
  * @param {object} item - Raw HasData product or offer object.
@@ -284,8 +358,8 @@ function extractDirectProductUrl(item) {
     directUrl &&
     directUrl.startsWith("http") &&
     !directUrl.includes("api.hasdata.com") &&
-    !directUrl.includes("google.com/shopping/product/") &&
-    !directUrl.includes("google.co.in/shopping/product/")
+    !directUrl.includes("google.com") &&
+    !directUrl.includes("google.co.in")
   ) {
     // Exclude generic search pages
     const lowerUrl = directUrl.toLowerCase();
@@ -512,7 +586,7 @@ export async function POST(request) {
               return {
                 store: s.name,
                 price: priceVal,
-                link: unwrapUrl(s.link),
+                link: sanitizeProductLink(unwrapUrl(s.link), s.name, title),
                 is_lowest: idx === 0
               };
             });
@@ -527,20 +601,7 @@ export async function POST(request) {
         // Fallback to top-level URL extractors if immersive parsing was skipped or empty
         if (!directLink) {
           directLink = extractDirectProductUrl(item);
-          
-          if (!directLink) {
-            hasDirectPDP = false;
-            // Generate fallback search redirect query URL
-            const titleEscaped = encodeURIComponent(title.split(" ").slice(0, 7).join(" "));
-            const storeLower = originalPlatform.toLowerCase();
-            if (storeLower.includes("amazon")) {
-              directLink = `https://www.amazon.in/s?k=${titleEscaped}`;
-            } else if (storeLower.includes("flipkart")) {
-              directLink = `https://www.flipkart.com/search?q=${titleEscaped}`;
-            } else {
-              directLink = `https://www.google.com/search?tbm=shop&q=${titleEscaped}`;
-            }
-          }
+          directLink = sanitizeProductLink(directLink, originalPlatform, title);
 
           const basePriceRaw = item.price || item.extractedPrice || item.extracted_price || "";
           let basePrice = 0;
@@ -572,12 +633,12 @@ export async function POST(request) {
             {
               store: store1,
               price: basePrice + diff1,
-              link: store1.includes("Amazon") ? "https://www.amazon.in" : "https://www.flipkart.com"
+              link: getMerchantSearchFallback(store1, title)
             },
             {
               store: store2,
               price: basePrice + diff2,
-              link: store2.includes("Croma") ? "https://www.croma.com" : "https://www.reliancedigital.in"
+              link: getMerchantSearchFallback(store2, title)
             }
           ];
 
