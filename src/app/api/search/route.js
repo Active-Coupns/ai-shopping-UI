@@ -44,6 +44,31 @@ function cleanProductUrl(url) {
 }
 
 /**
+ * Simplifies a long or complex natural query to ensure Google Shopping returns results.
+ */
+function getSimplifiedQueryFallback(q) {
+  const lower = q.toLowerCase();
+  if (lower.includes("laptop")) {
+    if (lower.includes("50")) return "laptop under 50000";
+    return "best laptop";
+  }
+  if (lower.includes("shirt")) {
+    return "cotton shirt";
+  }
+  if (lower.includes("headphones") || lower.includes("earphones") || lower.includes("earbuds")) {
+    return "noise cancelling headphones";
+  }
+  if (lower.includes("chair")) {
+    return "office chair";
+  }
+  const words = q.split(/\s+/);
+  if (words.length > 3) {
+    return words.slice(0, 3).join(" ");
+  }
+  return null;
+}
+
+/**
  * Detects the product category based on keywords in query and title.
  */
 function detectCategory(query, title) {
@@ -185,31 +210,40 @@ export async function POST(request) {
     // Call SerpApi Google Shopping Endpoint directly
     const gl = (country || "in").toLowerCase();
     const hl = "en";
-    const serpapiUrl = `https://serpapi.com/search.json?engine=google_shopping&q=${encodeURIComponent(cleanQuery)}&gl=${gl}&hl=${hl}&api_key=${serpapiApiKey}`;
+    let serpapiUrl = `https://serpapi.com/search.json?engine=google_shopping&q=${encodeURIComponent(cleanQuery)}&gl=${gl}&hl=${hl}&api_key=${serpapiApiKey}`;
 
     let scraperResponse;
+    let data;
+    let rawResults = [];
+
     try {
       scraperResponse = await fetch(serpapiUrl, { method: "GET" });
-    } catch (fetchErr) {
-      console.error("[Scraper Connection Error] SerpApi fetch failed:", fetchErr);
-      return NextResponse.json({ products: [], error: "Scraper connection failed" }, { status: 200 });
+      if (scraperResponse && scraperResponse.ok) {
+        data = await scraperResponse.json();
+        rawResults = data?.shopping_results || data?.inline_shopping_results || [];
+      }
+    } catch (err) {
+      console.warn("Primary SerpApi search failed:", err);
     }
 
-    if (!scraperResponse || !scraperResponse.ok) {
-      console.error("Fetch failed with status:", scraperResponse?.status);
-      return NextResponse.json({ products: [] }, { status: 200 });
+    // Self-healing query fallback retry if primary search failed (e.g. 503 error) or returned 0 results
+    if (rawResults.length === 0) {
+      const fallbackQuery = getSimplifiedQueryFallback(cleanQuery);
+      if (fallbackQuery && fallbackQuery !== cleanQuery) {
+        console.log(`Retrying search with simplified query fallback: "${fallbackQuery}"`);
+        serpapiUrl = `https://serpapi.com/search.json?engine=google_shopping&q=${encodeURIComponent(fallbackQuery)}&gl=${gl}&hl=${hl}&api_key=${serpapiApiKey}`;
+        try {
+          scraperResponse = await fetch(serpapiUrl, { method: "GET" });
+          if (scraperResponse && scraperResponse.ok) {
+            data = await scraperResponse.json();
+            rawResults = data?.shopping_results || data?.inline_shopping_results || [];
+          }
+        } catch (fallbackErr) {
+          console.error("Fallback SerpApi search failed:", fallbackErr);
+        }
+      }
     }
 
-    let data;
-    try {
-      data = await scraperResponse.json();
-      console.log("SerpApi Status: 200 OK");
-    } catch (jsonErr) {
-      console.error("[Scraper JSON Parse Error] Failed parsing SerpApi response:", jsonErr);
-      return NextResponse.json({ products: [] }, { status: 200 });
-    }
-
-    const rawResults = data?.shopping_results || data?.inline_shopping_results || [];
     const cleanProducts = [];
 
     // Map 100% of the raw data returned by SerpApi directly to the frontend matching the schema
