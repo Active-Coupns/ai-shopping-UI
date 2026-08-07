@@ -8,7 +8,7 @@ async function testService() {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        query: "Sony WH-1000XM4",
+        query: "iPhone 16",
         country: "IN"
       })
     });
