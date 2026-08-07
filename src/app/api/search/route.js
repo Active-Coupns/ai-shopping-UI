@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 const FALLBACK_PRODUCTS = [
   {
+    category: "laptop",
     title: "HP Standard Laptop 15s AMD Ryzen 3 (8GB RAM / 512GB SSD)",
     description: "👤 Best For: Students and office workers wanting a reliable daily driver.\n\n💡 Why This Deal: AMD Ryzen 3 processor combined with 8GB RAM and 512GB SSD provides smooth multitasking.\n\n⚠️ Trade-off: Great for docs and streaming, but skip if you need professional video editing or heavy gaming.",
     image: "/laptop.jpg",
@@ -22,6 +23,49 @@ const FALLBACK_PRODUCTS = [
     ]
   },
   {
+    category: "laptop",
+    title: "ASUS Vivobook 14 Intel Core i3 (8GB RAM / 512GB SSD)",
+    description: "👤 Best For: College students and remote workers who travel frequently.\n\n💡 Why This Deal: Extremely portable and lightweight 14-inch form factor with smooth SSD performance.\n\n⚠️ Trade-off: Screen space is compact compared to 15.6-inch models, but perfect for travel convenience.",
+    image: "/laptop.jpg",
+    rating: "4.3",
+    link: "https://www.amazon.in/dp/B0C3M18S52",
+    platform: "Amazon",
+    price: 34990,
+    price_comparison: [
+      { store: "Amazon.in", price: 34990, link: "https://www.amazon.in/dp/B0C3M18S52", is_lowest: true },
+      { store: "Croma", price: 35990, link: "https://www.croma.com/p/272314", is_lowest: false }
+    ],
+    detailed_specs: [
+      "Processor: Intel Core i3 1215U Processor",
+      "Memory & Storage: 8GB DDR4 RAM | 512GB PCIe SSD",
+      "Display: 14-inch Full HD Eye-Care Display",
+      "Target Use: Remote Workers & Frequent Travelers",
+      "Standout Feature: Military-grade durable chassis"
+    ]
+  },
+  {
+    category: "laptop",
+    title: "Lenovo V15 AMD Ryzen 5 (8GB RAM / 512GB SSD)",
+    description: "👤 Best For: Programmers and budget developers needing processing headroom.\n\n💡 Why This Deal: Ryzen 5 performance at a very aggressive budget makes compiling code smooth.\n\n⚠️ Trade-off: Built mainly of plastic, but extremely solid design.",
+    image: "/laptop.jpg",
+    rating: "4.2",
+    link: "https://www.flipkart.com/p/itm123456789",
+    platform: "Flipkart",
+    price: 38990,
+    price_comparison: [
+      { store: "Flipkart", price: 38990, link: "https://www.flipkart.com/p/itm123456789", is_lowest: true },
+      { store: "Amazon.in", price: 39990, link: "https://www.amazon.in/dp/B0D5Y7G62Y", is_lowest: false }
+    ],
+    detailed_specs: [
+      "Processor: AMD Ryzen 5 5500U Processor",
+      "Memory & Storage: 8GB DDR4 RAM | 512GB NVMe SSD",
+      "Display: 15.6-inch FHD Anti-Glare Display",
+      "Target Use: Developers & Multi-taskers",
+      "Standout Feature: 180-degree lay-flat hinge layout"
+    ]
+  },
+  {
+    category: "fashion",
     title: "Classy Casual Cotton Slim Fit Shirt",
     description: "👤 Best For: Semi-casual outings, weekend social events, and daily office wear.\n\n💡 Why This Deal: Premium breathable cotton with custom tailoring offers luxury look on a budget.\n\n⚠️ Trade-off: Requires low-heat ironing to maintain clean tailored seams.",
     image: "/shirt.jpg",
@@ -42,6 +86,49 @@ const FALLBACK_PRODUCTS = [
     ]
   },
   {
+    category: "fashion",
+    title: "Men's Premium Slim Fit Stretchable Jeans",
+    description: "👤 Best For: Everyday casual styling and active social weekends.\n\n💡 Why This Deal: Excellent elastane-infused denim provides supreme stretch comfort and retention.\n\n⚠️ Trade-off: Standard Indigo dye runs on first wash; wash separately.",
+    image: "/shirt.jpg",
+    rating: "4.4",
+    link: "https://www.amazon.in/dp/B0CRVCGHJG",
+    platform: "Amazon",
+    price: 1499,
+    price_comparison: [
+      { store: "Amazon.in", price: 1499, link: "https://www.amazon.in/dp/B0CRVCGHJG", is_lowest: true },
+      { store: "Flipkart", price: 1599, link: "https://www.flipkart.com/p/itm987654321", is_lowest: false }
+    ],
+    detailed_specs: [
+      "Material: Stretch Denim Cotton Elastane blend",
+      "Fit Profile: Tapered Slim Fit comfort profile",
+      "Wash Care: Machine wash cold separately",
+      "Style Details: Signature 5-pocket jeans styling",
+      "Standout Feature: Durable double-reinforced stitching"
+    ]
+  },
+  {
+    category: "fashion",
+    title: "Casual Comfort Lightweight Walking Sneakers",
+    description: "👤 Best For: Daily walking, gym sessions, and light sport commutes.\n\n💡 Why This Deal: Responsive EVA midsole cushion absorbs heel impacts comfortably under price bounds.\n\n⚠️ Trade-off: Sole is optimized for road walking, not for heavy off-road hiking.",
+    image: "/shirt.jpg",
+    rating: "4.3",
+    link: "https://www.flipkart.com/p/itm987654321",
+    platform: "Flipkart",
+    price: 1899,
+    price_comparison: [
+      { store: "Flipkart", price: 1899, link: "https://www.flipkart.com/p/itm987654321", is_lowest: true },
+      { store: "Amazon.in", price: 1999, link: "https://www.amazon.in/dp/B0CRVCGHJG", is_lowest: false }
+    ],
+    detailed_specs: [
+      "Material: Breathable active mesh knit fabric upper",
+      "Sole Type: Slip-resistant flexible rubber outsole",
+      "Fit Profile: Ergonomic snug foot support fit",
+      "Occasion: Running, gym workouts & daily walking",
+      "Standout Feature: Orthopedic cushion comfort insoles"
+    ]
+  },
+  {
+    category: "audio",
     title: "Over-Ear Wireless ANC Headphones Pro",
     description: "👤 Best For: Travelers, remote workers, and students wanting distraction-free study sessions.\n\n💡 Why This Deal: High-end active noise cancellation (ANC) and 40-hour battery life under budget.\n\n⚠️ Trade-off: Bass is rich and deep, but audiophiles seeking studio flat profiles might want eq tuning.",
     image: "/headphones.jpg",
@@ -59,6 +146,48 @@ const FALLBACK_PRODUCTS = [
       "Battery Life: Hybrid Active Noise Cancelling chip",
       "Connectivity: Remote Workers & Commuters",
       "Standout Feature: Ergonomic memory-foam ear cushions"
+    ]
+  },
+  {
+    category: "audio",
+    title: "boAt Rockerz 450 Bluetooth Headphones",
+    description: "👤 Best For: Budget music lovers and casual media consumers.\n\n💡 Why This Deal: The boat signature sound tuning yields massive bass punch under highly accessible pricing.\n\n⚠️ Trade-off: On-ear design gets warm during long extended wearing sessions.",
+    image: "/headphones.jpg",
+    rating: "4.3",
+    link: "https://www.flipkart.com/p/itm123456789",
+    platform: "Flipkart",
+    price: 1499,
+    price_comparison: [
+      { store: "Flipkart", price: 1499, link: "https://www.flipkart.com/p/itm123456789", is_lowest: true },
+      { store: "Amazon.in", price: 1599, link: "https://www.amazon.in/dp/B0C3M18S52", is_lowest: false }
+    ],
+    detailed_specs: [
+      "Sound Engine: 40mm dynamic driver audio profile",
+      "Noise Control: Snug passive ear noise isolation",
+      "Battery Life: Up to 15 Hours wireless playtime",
+      "Connectivity: Bluetooth v5.0 and AUX options",
+      "Standout Feature: Foldable design for easy carrying"
+    ]
+  },
+  {
+    category: "audio",
+    title: "Sony WH-CH520 Wireless On-Ear Headphones",
+    description: "👤 Best For: Daily callers and office professionals wanting pristine voice clarity.\n\n💡 Why This Deal: Massive 50-hour battery life and DSE sound engine enhancement under a compact price.\n\n⚠️ Trade-off: No active ANC, but passive seal does a good job.",
+    image: "/headphones.jpg",
+    rating: "4.5",
+    link: "https://www.amazon.in/dp/B0C3M18S52",
+    platform: "Amazon",
+    price: 4490,
+    price_comparison: [
+      { store: "Amazon.in", price: 4490, link: "https://www.amazon.in/dp/B0C3M18S52", is_lowest: true },
+      { store: "Vijay Sales", price: 4490, link: "https://www.vijaysales.com/p/231497", is_lowest: false }
+    ],
+    detailed_specs: [
+      "Sound Engine: Sony DSEE custom digital acoustic engine",
+      "Noise Control: Passive voice acoustic isolating design",
+      "Battery Life: Up to 50 Hours fast-charge battery",
+      "Connectivity: Multipoint connection Bluetooth v5.2",
+      "Standout Feature: Built-in high-quality microphone calls"
     ]
   }
 ];
@@ -139,21 +268,50 @@ function isValidDirectPDPUrl(url) {
 }
 
 /**
- * Extracts Amazon ASIN identifier from string.
+ * Extracts Amazon ASIN identifier from a verified Amazon URL pathway.
+ * Avoids false positive matches in random strings.
  */
-function extractAmazonAsin(str) {
-  if (!str) return null;
-  const match = str.match(/\b(B[A-Z0-9]{9})\b/i);
-  return match ? match[1].toUpperCase() : null;
+function extractAmazonAsin(url) {
+  if (!url || typeof url !== "string") return null;
+  
+  // 1. Path segment matching
+  const pathMatch = url.match(/\/(?:dp|gp\/product|gp\/aw\/d|product)\/([A-Z0-9]{10})\b/i);
+  if (pathMatch) {
+    const asin = pathMatch[1].toUpperCase();
+    if (asin.startsWith("B") || /^\d{9}[\dX]$/.test(asin)) {
+      return asin;
+    }
+  }
+  
+  // 2. Query parameter matching
+  const queryMatch = url.match(/[?&](?:asin|productid|dp)=([A-Z0-9]{10})\b/i);
+  if (queryMatch) {
+    const asin = queryMatch[1].toUpperCase();
+    if (asin.startsWith("B") || /^\d{9}[\dX]$/.test(asin)) {
+      return asin;
+    }
+  }
+  
+  return null;
 }
 
 /**
  * Extracts Flipkart product identifier from string.
  */
-function extractFlipkartId(str) {
-  if (!str) return null;
-  const match = str.match(/\b(itm[a-f0-9]{12,16})\b/i) || str.match(/pid=([A-Z0-9]{16})/i);
-  return match ? match[1] : null;
+function extractFlipkartId(url) {
+  if (!url || typeof url !== "string") return null;
+  
+  const itmMatch = url.match(/\b(itm[a-f0-9]{12,16})\b/i);
+  if (itmMatch) {
+    return itmMatch[1];
+  }
+  
+  const pidMatch = url.match(/[?&]pid=([A-Z0-9]{16})/i);
+  if (pidMatch) {
+    return pidMatch[1];
+  }
+  
+  return null;
 }
 
 /**
@@ -218,10 +376,10 @@ function parseBudgetLimit(query) {
  */
 function detectCategory(query, title) {
   const text = (query + " " + title).toLowerCase();
-  if (text.includes("laptop") || text.includes("notebook") || text.includes("computer") || text.includes("pc") || text.includes("macbook")) {
+  if (text.includes("laptop") || text.includes("notebook") || text.includes("computer") || text.includes("pc") || text.includes("macbook") || text.includes("chromebook")) {
     return "laptop";
   }
-  if (text.includes("headphone") || text.includes("earphone") || text.includes("earbuds") || text.includes("audio") || text.includes("sound") || text.includes("pods") || text.includes("noise") || text.includes("anc")) {
+  if (text.includes("headphone") || text.includes("earphone") || text.includes("earbuds") || text.includes("audio") || text.includes("sound") || text.includes("pods") || text.includes("noise") || text.includes("anc") || text.includes("wireless ear")) {
     return "audio";
   }
   if (text.includes("shoe") || text.includes("sneaker") || text.includes("shirt") || text.includes("cotton") || text.includes("wear") || text.includes("clothing") || text.includes("jeans") || text.includes("tshirt") || text.includes("t-shirt") || text.includes("pant")) {
@@ -519,10 +677,20 @@ export async function POST(request) {
     // Safely extract results checking for both camelCase and snake_case variations
     const rawResults = data?.shoppingResults || data?.shopping_results || data?.organicResults || [];
 
-    // Filter results using trusted merchant check, budget limits, and accessory blacklists
+    // Filter results using trusted merchant check, budget limits, accessory blacklists, and category validation
     const whitelistedResults = [];
+    const queryCategory = detectCategory(cleanQuery, "");
+
     for (const item of rawResults) {
       if (!item || !(item.title || item.name)) continue;
+
+      const titleLower = (item.title || item.name || "").toLowerCase();
+
+      // Enforce strict category matching to prevent cross-category data leakage
+      const itemCategory = detectCategory(cleanQuery, titleLower);
+      if (queryCategory !== "general" && itemCategory !== queryCategory) {
+        continue; // Skip items that violate searched category
+      }
 
       const platform = item.source || item.merchant || item.seller || "";
       const platformLower = platform.toLowerCase();
@@ -550,7 +718,6 @@ export async function POST(request) {
       }
 
       // Logical category accessory validation
-      const titleLower = (item.title || item.name || "").toLowerCase();
       const queryLower = cleanQuery.toLowerCase();
       if (queryLower.includes("laptop") || queryLower.includes("computer")) {
         const blacklist = ["bag", "sleeve", "charger", "adapter", "stand", "mouse pad", "keyboard cover", "cleaner", "skin", "decal", "cable", "case"];
@@ -820,11 +987,15 @@ Return ONLY the raw JSON array. Do not include markdown code block formatting (l
       finalSelection = cleanProducts;
     }
 
-    // Pad the list with whitelisted curated fallback products if we still have fewer than 3 products total
+    // Filter fallback list to match query category to avoid category leakage in padding
+    const filteredFallbacks = FALLBACK_PRODUCTS.filter(p => p.category === queryCategory);
+    const fallbackList = filteredFallbacks.length > 0 ? filteredFallbacks : FALLBACK_PRODUCTS;
+
+    // Pad the list with whitelisted curated fallback products of the same category if we still have fewer than 3 products total
     if (finalSelection.length < 3) {
       const needed = 3 - finalSelection.length;
       for (let i = 0; i < needed; i++) {
-        const fallback = FALLBACK_PRODUCTS[i % FALLBACK_PRODUCTS.length];
+        const fallback = fallbackList[i % fallbackList.length];
         if (!finalSelection.some(p => p.title === fallback.title)) {
           finalSelection.push({
             title: fallback.title,
@@ -870,13 +1041,13 @@ Return ONLY the raw JSON array. Do not include markdown code block formatting (l
       console.warn(`[API Fallback] Returning curated fallback list for query: "${cleanQuery}"`);
       const queryLower = cleanQuery.toLowerCase();
       if (queryLower.includes("laptop") || queryLower.includes("computer") || queryLower.includes("coding")) {
-        return NextResponse.json({ products: [FALLBACK_PRODUCTS[0]] }, { status: 200 });
+        return NextResponse.json({ products: [FALLBACK_PRODUCTS[0], FALLBACK_PRODUCTS[1], FALLBACK_PRODUCTS[2]] }, { status: 200 });
       } else if (queryLower.includes("shirt") || queryLower.includes("cotton") || queryLower.includes("wear")) {
-        return NextResponse.json({ products: [FALLBACK_PRODUCTS[1]] }, { status: 200 });
+        return NextResponse.json({ products: [FALLBACK_PRODUCTS[3], FALLBACK_PRODUCTS[4], FALLBACK_PRODUCTS[5]] }, { status: 200 });
       } else if (queryLower.includes("headphone") || queryLower.includes("audio") || queryLower.includes("anc")) {
-        return NextResponse.json({ products: [FALLBACK_PRODUCTS[2]] }, { status: 200 });
+        return NextResponse.json({ products: [FALLBACK_PRODUCTS[6], FALLBACK_PRODUCTS[7], FALLBACK_PRODUCTS[8]] }, { status: 200 });
       }
-      return NextResponse.json({ products: FALLBACK_PRODUCTS }, { status: 200 });
+      return NextResponse.json({ products: [FALLBACK_PRODUCTS[0], FALLBACK_PRODUCTS[3], FALLBACK_PRODUCTS[6]] }, { status: 200 });
     }
 
     // Log the extracted direct URLs for verification
@@ -889,7 +1060,7 @@ Return ONLY the raw JSON array. Do not include markdown code block formatting (l
   } catch (err) {
     console.error("Serverless Search API Route error:", err);
     return NextResponse.json(
-      { products: FALLBACK_PRODUCTS, error: `Server Error: ${err.message}` },
+      { products: [FALLBACK_PRODUCTS[0], FALLBACK_PRODUCTS[3], FALLBACK_PRODUCTS[6]], error: `Server Error: ${err.message}` },
       { status: 200 }
     );
   }
