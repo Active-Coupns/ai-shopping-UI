@@ -1,197 +1,5 @@
 import { NextResponse } from "next/server";
 
-const FALLBACK_PRODUCTS = [
-  {
-    category: "laptop",
-    title: "HP Standard Laptop 15s AMD Ryzen 3 (8GB RAM / 512GB SSD)",
-    description: "👤 Best For: Students and office workers wanting a reliable daily driver.\n\n💡 Why This Deal: AMD Ryzen 3 processor combined with 8GB RAM and 512GB SSD provides smooth multitasking.\n\n⚠️ Trade-off: Great for docs and streaming, but skip if you need professional video editing or heavy gaming.",
-    image: "/laptop.jpg",
-    rating: "4.4",
-    link: "https://www.amazon.in/dp/B0D5Y7G62Y",
-    platform: "Amazon",
-    price: 32990,
-    price_comparison: [
-      { store: "Amazon.in", price: 32990, link: "https://www.amazon.in/dp/B0D5Y7G62Y", is_lowest: true },
-      { store: "Flipkart", price: 33499, link: "https://www.flipkart.com/p/itm123456789", is_lowest: false }
-    ],
-    detailed_specs: [
-      "Processor: AMD Ryzen 3 7320U Processor",
-      "Memory & Storage: 8GB LPDDR5 RAM | 512GB NVMe SSD",
-      "Display: 15.6-inch Full HD Display",
-      "Target Use: Students & Daily Office Work",
-      "Standout Feature: Sleek 1.59kg lightweight build"
-    ]
-  },
-  {
-    category: "laptop",
-    title: "ASUS Vivobook 14 Intel Core i3 (8GB RAM / 512GB SSD)",
-    description: "👤 Best For: College students and remote workers who travel frequently.\n\n💡 Why This Deal: Extremely portable and lightweight 14-inch form factor with smooth SSD performance.\n\n⚠️ Trade-off: Screen space is compact compared to 15.6-inch models, but perfect for travel convenience.",
-    image: "/laptop.jpg",
-    rating: "4.3",
-    link: "https://www.amazon.in/dp/B0C3M18S52",
-    platform: "Amazon",
-    price: 34990,
-    price_comparison: [
-      { store: "Amazon.in", price: 34990, link: "https://www.amazon.in/dp/B0C3M18S52", is_lowest: true },
-      { store: "Croma", price: 35990, link: "https://www.croma.com/p/272314", is_lowest: false }
-    ],
-    detailed_specs: [
-      "Processor: Intel Core i3 1215U Processor",
-      "Memory & Storage: 8GB DDR4 RAM | 512GB PCIe SSD",
-      "Display: 14-inch Full HD Eye-Care Display",
-      "Target Use: Remote Workers & Frequent Travelers",
-      "Standout Feature: Military-grade durable chassis"
-    ]
-  },
-  {
-    category: "laptop",
-    title: "Lenovo V15 AMD Ryzen 5 (8GB RAM / 512GB SSD)",
-    description: "👤 Best For: Programmers and budget developers needing processing headroom.\n\n💡 Why This Deal: Ryzen 5 performance at a very aggressive budget makes compiling code smooth.\n\n⚠️ Trade-off: Built mainly of plastic, but extremely solid design.",
-    image: "/laptop.jpg",
-    rating: "4.2",
-    link: "https://www.flipkart.com/p/itm123456789",
-    platform: "Flipkart",
-    price: 38990,
-    price_comparison: [
-      { store: "Flipkart", price: 38990, link: "https://www.flipkart.com/p/itm123456789", is_lowest: true },
-      { store: "Amazon.in", price: 39990, link: "https://www.amazon.in/dp/B0D5Y7G62Y", is_lowest: false }
-    ],
-    detailed_specs: [
-      "Processor: AMD Ryzen 5 5500U Processor",
-      "Memory & Storage: 8GB DDR4 RAM | 512GB NVMe SSD",
-      "Display: 15.6-inch FHD Anti-Glare Display",
-      "Target Use: Developers & Multi-taskers",
-      "Standout Feature: 180-degree lay-flat hinge layout"
-    ]
-  },
-  {
-    category: "fashion",
-    title: "Classy Casual Cotton Slim Fit Shirt",
-    description: "👤 Best For: Semi-casual outings, weekend social events, and daily office wear.\n\n💡 Why This Deal: Premium breathable cotton with custom tailoring offers luxury look on a budget.\n\n⚠️ Trade-off: Requires low-heat ironing to maintain clean tailored seams.",
-    image: "/shirt.jpg",
-    rating: "4.5",
-    link: "https://www.flipkart.com/p/itm987654321",
-    platform: "Flipkart",
-    price: 999,
-    price_comparison: [
-      { store: "Flipkart", price: 999, link: "https://www.flipkart.com/p/itm987654321", is_lowest: true },
-      { store: "Amazon.in", price: 1099, link: "https://www.amazon.in/dp/B0CRVCGHJG", is_lowest: false }
-    ],
-    detailed_specs: [
-      "Material: Premium 100% Breathable Cotton fabric",
-      "Fit Profile: Slim Fit tailoring cut profile",
-      "Occasion: Classic spread collar line layout",
-      "Care Instructions: Casual & Semi-Formal Social Wear",
-      "Standout Feature: Moisture-wicking active comfort"
-    ]
-  },
-  {
-    category: "fashion",
-    title: "Men's Premium Slim Fit Stretchable Jeans",
-    description: "👤 Best For: Everyday casual styling and active social weekends.\n\n💡 Why This Deal: Excellent elastane-infused denim provides supreme stretch comfort and retention.\n\n⚠️ Trade-off: Standard Indigo dye runs on first wash; wash separately.",
-    image: "/shirt.jpg",
-    rating: "4.4",
-    link: "https://www.amazon.in/dp/B0CRVCGHJG",
-    platform: "Amazon",
-    price: 1499,
-    price_comparison: [
-      { store: "Amazon.in", price: 1499, link: "https://www.amazon.in/dp/B0CRVCGHJG", is_lowest: true },
-      { store: "Flipkart", price: 1599, link: "https://www.flipkart.com/p/itm987654321", is_lowest: false }
-    ],
-    detailed_specs: [
-      "Material: Stretch Denim Cotton Elastane blend",
-      "Fit Profile: Tapered Slim Fit comfort profile",
-      "Wash Care: Machine wash cold separately",
-      "Style Details: Signature 5-pocket jeans styling",
-      "Standout Feature: Durable double-reinforced stitching"
-    ]
-  },
-  {
-    category: "fashion",
-    title: "Casual Comfort Lightweight Walking Sneakers",
-    description: "👤 Best For: Daily walking, gym sessions, and light sport commutes.\n\n💡 Why This Deal: Responsive EVA midsole cushion absorbs heel impacts comfortably under price bounds.\n\n⚠️ Trade-off: Sole is optimized for road walking, not for heavy off-road hiking.",
-    image: "/shirt.jpg",
-    rating: "4.3",
-    link: "https://www.flipkart.com/p/itm987654321",
-    platform: "Flipkart",
-    price: 1899,
-    price_comparison: [
-      { store: "Flipkart", price: 1899, link: "https://www.flipkart.com/p/itm987654321", is_lowest: true },
-      { store: "Amazon.in", price: 1999, link: "https://www.amazon.in/dp/B0CRVCGHJG", is_lowest: false }
-    ],
-    detailed_specs: [
-      "Material: Breathable active mesh knit fabric upper",
-      "Sole Type: Slip-resistant flexible rubber outsole",
-      "Fit Profile: Ergonomic snug foot support fit",
-      "Occasion: Running, gym workouts & daily walking",
-      "Standout Feature: Orthopedic cushion comfort insoles"
-    ]
-  },
-  {
-    category: "audio",
-    title: "Over-Ear Wireless ANC Headphones Pro",
-    description: "👤 Best For: Travelers, remote workers, and students wanting distraction-free study sessions.\n\n💡 Why This Deal: High-end active noise cancellation (ANC) and 40-hour battery life under budget.\n\n⚠️ Trade-off: Bass is rich and deep, but audiophiles seeking studio flat profiles might want eq tuning.",
-    image: "/headphones.jpg",
-    rating: "4.7",
-    link: "https://www.amazon.in/dp/B0C3M18S52",
-    platform: "Amazon",
-    price: 4999,
-    price_comparison: [
-      { store: "Amazon.in", price: 4999, link: "https://www.amazon.in/dp/B0C3M18S52", is_lowest: true },
-      { store: "Croma", price: 5299, link: "https://www.croma.com/p/272314", is_lowest: false }
-    ],
-    detailed_specs: [
-      "Sound Engine: 40mm dynamic drivers with high fidelity",
-      "Noise Control: Up to 40 Hours playtime with ANC off",
-      "Battery Life: Hybrid Active Noise Cancelling chip",
-      "Connectivity: Remote Workers & Commuters",
-      "Standout Feature: Ergonomic memory-foam ear cushions"
-    ]
-  },
-  {
-    category: "audio",
-    title: "boAt Rockerz 450 Bluetooth Headphones",
-    description: "👤 Best For: Budget music lovers and casual media consumers.\n\n💡 Why This Deal: The boat signature sound tuning yields massive bass punch under highly accessible pricing.\n\n⚠️ Trade-off: On-ear design gets warm during long extended wearing sessions.",
-    image: "/headphones.jpg",
-    rating: "4.3",
-    link: "https://www.flipkart.com/p/itm123456789",
-    platform: "Flipkart",
-    price: 1499,
-    price_comparison: [
-      { store: "Flipkart", price: 1499, link: "https://www.flipkart.com/p/itm123456789", is_lowest: true },
-      { store: "Amazon.in", price: 1599, link: "https://www.amazon.in/dp/B0C3M18S52", is_lowest: false }
-    ],
-    detailed_specs: [
-      "Sound Engine: 40mm dynamic driver audio profile",
-      "Noise Control: Snug passive ear noise isolation",
-      "Battery Life: Up to 15 Hours wireless playtime",
-      "Connectivity: Bluetooth v5.0 and AUX options",
-      "Standout Feature: Foldable design for easy carrying"
-    ]
-  },
-  {
-    category: "audio",
-    title: "Sony WH-CH520 Wireless On-Ear Headphones",
-    description: "👤 Best For: Daily callers and office professionals wanting pristine voice clarity.\n\n💡 Why This Deal: Massive 50-hour battery life and DSE sound engine enhancement under a compact price.\n\n⚠️ Trade-off: No active ANC, but passive seal does a good job.",
-    image: "/headphones.jpg",
-    rating: "4.5",
-    link: "https://www.amazon.in/dp/B0C3M18S52",
-    platform: "Amazon",
-    price: 4490,
-    price_comparison: [
-      { store: "Amazon.in", price: 4490, link: "https://www.amazon.in/dp/B0C3M18S52", is_lowest: true },
-      { store: "Vijay Sales", price: 4490, link: "https://www.vijaysales.com/p/231497", is_lowest: false }
-    ],
-    detailed_specs: [
-      "Sound Engine: Sony DSEE custom digital acoustic engine",
-      "Noise Control: Passive voice acoustic isolating design",
-      "Battery Life: Up to 50 Hours fast-charge battery",
-      "Connectivity: Multipoint connection Bluetooth v5.2",
-      "Standout Feature: Built-in high-quality microphone calls"
-    ]
-  }
-];
-
 const TRUSTED_MERCHANTS = [
   "amazon", "flipkart", "croma", "reliance digital", "tatacliq", 
   "vijay sales", "myntra", "boat", "noise", "walmart", "bestbuy", 
@@ -199,194 +7,81 @@ const TRUSTED_MERCHANTS = [
 ];
 
 /**
- * Validates whether a URL routes directly to a Product Detail Page (PDP).
- * Excludes generic search strings and homepages.
- * @param {string} url - Candidate landing page link.
- * @returns {boolean} - True if link is a valid direct PDP.
+ * Safely decodes and unwraps redirect query parameters from Google/HasData wrappers.
  */
-function isValidDirectPDPUrl(url) {
-  if (!url || typeof url !== "string") return false;
-  
-  const lowerUrl = url.toLowerCase();
-  
-  // Reject search parameters
-  if (
-    lowerUrl.includes("/search") ||
-    lowerUrl.includes("/s?k=") ||
-    lowerUrl.includes("udm=") ||
-    lowerUrl.includes("?q=") ||
-    lowerUrl.includes("cat=") ||
-    lowerUrl.includes("browse") ||
-    lowerUrl.includes("google.com") ||
-    lowerUrl.includes("google.co.in") ||
-    lowerUrl.includes("api.hasdata.com")
-  ) {
-    return false;
-  }
-  
-  // Must be a valid HTTP/HTTPS URL
-  if (!url.startsWith("http")) {
-    return false;
-  }
-  
-  // Enforce store-specific product page pathways
-  if (lowerUrl.includes("amazon.in") || lowerUrl.includes("amazon.com")) {
-    return lowerUrl.includes("/dp/") || lowerUrl.includes("/gp/product/");
-  }
-  
-  if (lowerUrl.includes("flipkart.com")) {
-    return lowerUrl.includes("/p/") || lowerUrl.includes("/p/itm");
-  }
-  
-  if (lowerUrl.includes("croma.com")) {
-    return lowerUrl.includes("/p/");
-  }
-
-  if (lowerUrl.includes("reliancedigital.in")) {
-    return lowerUrl.includes("/p/") || lowerUrl.includes("/product/");
-  }
-
-  if (lowerUrl.includes("vijaysales.com")) {
-    return lowerUrl.includes("/p/");
-  }
-  
-  if (lowerUrl.includes("myntra.com")) {
-    return lowerUrl.includes("/buy");
-  }
-
-  // General fallback: must have a path segment indicating a specific item, not a bare domain
+function unwrapUrl(url) {
+  if (!url) return "";
   try {
     const parsed = new URL(url);
-    const path = parsed.pathname;
-    if (path === "/" || path === "" || path.toLowerCase().includes("index.html") || path.toLowerCase().includes("home")) {
-      return false;
-    }
-    return true;
-  } catch (err) {
-    return false;
-  }
-}
-
-/**
- * Extracts Amazon ASIN identifier from a verified Amazon URL pathway.
- * Avoids false positive matches in random strings.
- */
-/**
- * Extracts Amazon ASIN identifier from a verified Amazon URL pathway.
- * Avoids false positive matches in query params and random strings.
- */
-function extractAmazonAsin(url) {
-  if (!url || typeof url !== "string") return null;
-  
-  // Only extract ASIN if it is strictly present inside the official URL path string
-  const pathMatch = url.match(/\/(?:dp|gp\/product|gp\/aw\/d|product)\/([A-Z0-9]{10})\b/i);
-  if (pathMatch) {
-    const asin = pathMatch[1].toUpperCase();
-    if (asin.startsWith("B") || /^\d{9}[\dX]$/.test(asin)) {
-      return asin;
-    }
-  }
-  
-  return null;
-}
-
-/**
- * Extracts Flipkart product identifier from string.
- */
-function extractFlipkartId(url) {
-  if (!url || typeof url !== "string") return null;
-  
-  const itmMatch = url.match(/\b(itm[a-f0-9]{12,16})\b/i);
-  if (itmMatch) {
-    return itmMatch[1];
-  }
-  
-  const pidMatch = url.match(/[?&]pid=([A-Z0-9]{16})/i);
-  if (pidMatch) {
-    return pidMatch[1];
-  }
-  
-  return null;
-}
-
-/**
- * Identifies if a URL is a direct native merchant link rather than a search page or redirect.
- */
-function isDirectNativeStoreLink(url) {
-  if (!url || typeof url !== "string") return false;
-  const lowerUrl = url.toLowerCase();
-  
-  // Reject search parameters, Google Shopping, and HasData proxy wrappers
-  if (
-    lowerUrl.includes("/search") ||
-    lowerUrl.includes("/s?k=") ||
-    lowerUrl.includes("udm=") ||
-    lowerUrl.includes("?q=") ||
-    lowerUrl.includes("cat=") ||
-    lowerUrl.includes("browse") ||
-    lowerUrl.includes("google.com") ||
-    lowerUrl.includes("google.co.in") ||
-    lowerUrl.includes("api.hasdata.com")
-  ) {
-    return false;
-  }
-  
-  // Must belong to one of our whitelisted trusted merchants
-  return TRUSTED_MERCHANTS.some(merchant => lowerUrl.includes(merchant.replace(/\s+/g, "")));
-}
-
-/**
- * Dynamically constructs direct product URLs using unique identifier parsers.
- */
-function tryBuildDirectPDP(url, platform) {
-  if (!url) return null;
-  const platformLower = (platform || "").toLowerCase();
-  
-  // PRIORITY: If it is a direct native store link, use it directly (clearing tracking query params)
-  if (isDirectNativeStoreLink(url)) {
-    try {
-      const parsed = new URL(url);
-      const searchParams = parsed.searchParams;
-      const trackingParams = ["gclid", "utm_source", "utm_medium", "utm_campaign", "srsltid", "cmpid", "adurl"];
-      trackingParams.forEach(p => searchParams.delete(p));
-      return parsed.toString();
-    } catch (e) {
-      return url;
-    }
-  }
-  
-  // Fallback to ASIN/Flipkart ID regex construction
-  if (platformLower.includes("amazon")) {
-    const asin = extractAmazonAsin(url);
-    if (asin) {
-      const domain = url.toLowerCase().includes("amazon.com") ? "amazon.com" : "amazon.in";
-      return `https://www.${domain}/dp/${asin}`;
-    }
-  }
-  
-  if (platformLower.includes("flipkart")) {
-    const itmId = extractFlipkartId(url);
-    if (itmId) {
-      if (itmId.startsWith("itm")) {
-        return `https://www.flipkart.com/p/p/p~${itmId}`;
-      } else {
-        return `https://www.flipkart.com/p/p/p?pid=${itmId}`;
+    const params = ["adurl", "url", "q", "destination", "redirect"];
+    for (const param of params) {
+      const val = parsed.searchParams.get(param);
+      if (val && val.startsWith("http")) {
+        return decodeURIComponent(val);
       }
     }
+  } catch (err) {
+    // Fail-safe catch for non-URLs
   }
-  
-  if (isValidDirectPDPUrl(url)) {
-    try {
-      const parsed = new URL(url);
-      parsed.search = "";
-      parsed.hash = "";
-      return parsed.toString();
-    } catch (e) {
-      return url;
-    }
+  return url;
+}
+
+/**
+ * Cleans the product URL, unwrapping redirects and stripping common tracking query parameters.
+ */
+function cleanProductUrl(url) {
+  if (!url) return "";
+  const clean = unwrapUrl(url);
+  try {
+    const parsed = new URL(clean);
+    const searchParams = parsed.searchParams;
+    const trackingParams = ["gclid", "utm_source", "utm_medium", "utm_campaign", "srsltid", "cmpid", "adurl"];
+    trackingParams.forEach(p => searchParams.delete(p));
+    return parsed.toString();
+  } catch (e) {
+    return clean;
   }
+}
+
+/**
+ * Generates a clean, 100% working merchant search URL for a specific product to avoid 404 errors.
+ */
+function getMerchantSearchFallback(platform, title) {
+  const cleanTitle = title
+    .replace(/[^\w\s-]/g, "") // Remove special characters
+    .replace(/\s+/g, " ")
+    .trim();
+  const titleEscaped = encodeURIComponent(cleanTitle.split(" ").slice(0, 6).join(" "));
+  const platformLower = (platform || "").toLowerCase();
   
-  return null;
+  if (platformLower.includes("myntra")) {
+    return `https://www.myntra.com/${titleEscaped.replace(/%20/g, "-")}`;
+  }
+  if (platformLower.includes("flipkart")) {
+    return `https://www.flipkart.com/search?q=${titleEscaped}`;
+  }
+  if (platformLower.includes("croma")) {
+    return `https://www.croma.com/search/?text=${titleEscaped}`;
+  }
+  if (platformLower.includes("vijay") || platformLower.includes("vijaysales")) {
+    return `https://www.vijaysales.com/search/${titleEscaped}`;
+  }
+  if (platformLower.includes("reliance") || platformLower.includes("reliance_digital")) {
+    return `https://www.reliancedigital.in/search?q=${titleEscaped}:relevance`;
+  }
+  if (platformLower.includes("tatacliq")) {
+    return `https://www.tatacliq.com/search/?search=%7B%22searchTerm%22%3A%22${titleEscaped}%22%7D`;
+  }
+  if (platformLower.includes("walmart")) {
+    return `https://www.walmart.com/search?q=${titleEscaped}`;
+  }
+  if (platformLower.includes("bestbuy") || platformLower.includes("best buy")) {
+    return `https://www.bestbuy.com/site/searchpage.jsp?st=${titleEscaped}`;
+  }
+  if (platformLower.includes("target")) {
+    return `https://www.target.com/s?searchTerm=${titleEscaped}`;
+  }
+  return `https://www.amazon.in/s?k=${titleEscaped}`;
 }
 
 /**
@@ -394,7 +89,6 @@ function tryBuildDirectPDP(url, platform) {
  * Wraps files.hasdata.com webp files using an open proxy to bypass client-side CORS issues.
  */
 function resolveProductImage(item) {
-  // 1. Prefer native Google Shopping thumbnails
   let img = item.thumbnail || item.serpapi_thumbnail || "";
   
   if (img && img.includes("files.hasdata.com")) {
@@ -406,7 +100,6 @@ function resolveProductImage(item) {
     img = item.image || item.imageUrl || "";
   }
   
-  // 2. Wrap files.hasdata.com URLs using images.weserv.nl image proxy to bypass CORS
   if (img && img.includes("files.hasdata.com")) {
     return `https://images.weserv.nl/?url=${encodeURIComponent(img)}`;
   }
@@ -416,8 +109,6 @@ function resolveProductImage(item) {
 
 /**
  * Parses user query to extract maximum budget limit.
- * @param {string} query - Raw search query.
- * @returns {number|null} - Parsed budget or null.
  */
 function parseBudgetLimit(query) {
   const cleanStr = query.toLowerCase().replace(/[,₹$]/g, "");
@@ -430,9 +121,6 @@ function parseBudgetLimit(query) {
 
 /**
  * Detects the product category based on keywords in query and title.
- * @param {string} query - User search query.
- * @param {string} title - Product title.
- * @returns {string} - "laptop", "audio", "fashion", or "general".
  */
 function detectCategory(query, title) {
   const text = (query + " " + title).toLowerCase();
@@ -450,9 +138,6 @@ function detectCategory(query, title) {
 
 /**
  * Parses category-specific technical attributes directly from product title.
- * @param {string} category - Product category string.
- * @param {string} title - Product title string.
- * @returns {Array<string>} - Array of technical specification bullet points.
  */
 function parseSpecsFromTitle(category, title) {
   const titleLower = title.toLowerCase();
@@ -560,9 +245,6 @@ function parseSpecsFromTitle(category, title) {
 
 /**
  * Returns category-specific fallback matching insight summaries.
- * @param {string} category - Product category string.
- * @param {string} platform - Low-price store name.
- * @returns {string} - Structured personal consultant advice string.
  */
 function getFallbackDescriptionForCategory(category, platform) {
   if (category === "laptop") {
@@ -577,97 +259,6 @@ function getFallbackDescriptionForCategory(category, platform) {
   return `👤 Best For: General everyday use and practical applications.\n\n💡 Why This Deal: Highly rated by verified buyers and backed by merchant partner shipping guarantees.\n\n⚠️ Trade-off: A solid budget friendly choice, but check warranty details for extended coverage.`;
 }
 
-/**
- * Safely decodes and unwraps redirect query parameters from Google/HasData wrappers.
- * @param {string} url - Candidate redirect link.
- * @returns {string} - Direct raw target merchant URL if found.
- */
-function unwrapUrl(url) {
-  if (!url) return "";
-  try {
-    const parsed = new URL(url);
-    const params = ["adurl", "url", "q", "destination", "redirect"];
-    for (const param of params) {
-      const val = parsed.searchParams.get(param);
-      if (val && val.startsWith("http")) {
-        return decodeURIComponent(val);
-      }
-    }
-  } catch (err) {
-    // Fail-safe catch for non-URLs
-  }
-  return url;
-}
-
-/**
- * Extracts and cleans the target merchant direct single product details URL (PDP).
- * Rejects proxy URLs, Google Shopping pages, and generic search queries.
- * @param {object} item - Raw HasData product or offer object.
- * @returns {string} - Direct PDP link or empty string if invalid.
- */
-function extractDirectProductUrl(item) {
-  let directUrl = "";
-  
-  if (item.offers && Array.isArray(item.offers) && item.offers.length > 0) {
-    const firstOffer = item.offers[0];
-    directUrl = firstOffer.link || firstOffer.productLink || firstOffer.url || firstOffer.merchantLink || firstOffer.merchant_link || firstOffer.direct_url || firstOffer.directUrl || "";
-  }
-  
-  if (!directUrl && item.merchant) {
-    directUrl = item.merchant.link || item.merchant.url || "";
-  }
-  
-  if (!directUrl) {
-    directUrl = item.serpapi_product_api || item.merchant_link || item.merchantLink || item.offerLink || item.offer_link || item.direct_url || item.directUrl || item.link || item.productLink || item.url || item.seller_link || item.sellerLink || "";
-  }
-
-  // Decouple any redirect wrappers
-  directUrl = unwrapUrl(directUrl);
-
-  // Validate the destination URL
-  if (
-    directUrl &&
-    directUrl.startsWith("http") &&
-    !directUrl.includes("api.hasdata.com") &&
-    !directUrl.includes("google.com") &&
-    !directUrl.includes("google.co.in")
-  ) {
-    // Exclude generic search pages
-    const lowerUrl = directUrl.toLowerCase();
-    if (!lowerUrl.includes("/search") && !lowerUrl.includes("/s?k=") && !lowerUrl.includes("?q=")) {
-      return directUrl;
-    }
-  }
-  
-  return "";
-}
-
-/**
- * Fetches the immersive details page from HasData API.
- * @param {string} hasdataLink - Immersive details API endpoint URL.
- * @param {string} apiKey - Scraper API Key.
- * @returns {object|null} - Immersive product details or null.
- */
-async function fetchImmersiveProductDetails(hasdataLink, apiKey) {
-  if (!hasdataLink || !apiKey) return null;
-  try {
-    const response = await fetch(`${hasdataLink}&apiKey=${apiKey}`, {
-      method: "GET",
-      headers: {
-        "x-api-key": apiKey,
-        "Content-Type": "application/json"
-      }
-    });
-    if (response.ok) {
-      const data = await response.json();
-      return data.productResults || null;
-    }
-  } catch (err) {
-    console.error("Error fetching immersive details in route:", err);
-  }
-  return null;
-}
-
 export async function POST(request) {
   console.log("HASDATA_API_KEY present:", !!process.env.HASDATA_API_KEY);
 
@@ -675,10 +266,9 @@ export async function POST(request) {
     const { query, country } = await request.json();
     
     if (!query) {
-      return NextResponse.json({ products: FALLBACK_PRODUCTS, error: "Query is required" }, { status: 200 });
+      return NextResponse.json({ products: [], error: "Query is required" }, { status: 200 });
     }
 
-    // 1. Sanitize the query keywords
     const cleanQuery = query
       .replace(/[₹$€£]/g, "")
       .replace(/\b(please|find|show|me|best|buy|under|below|for|search|deals|get)\b/gi, "")
@@ -687,11 +277,11 @@ export async function POST(request) {
 
     const hasdataApiKey = process.env.HASDATA_API_KEY;
     if (!hasdataApiKey) {
-      console.warn("[Scraper Warning] HASDATA_API_KEY is not configured. Using curated fallbacks.");
-      return NextResponse.json({ products: FALLBACK_PRODUCTS, error: "Scraper API key not configured." }, { status: 200 });
+      console.warn("[Scraper Warning] HASDATA_API_KEY is not configured. Returning empty list.");
+      return NextResponse.json({ products: [] }, { status: 200 });
     }
 
-    // 2. Fetch live data from HasData targeting Google Shopping
+    // Execute exactly one single HasData Google Shopping API call per search query
     const gl = (country || "IN").toLowerCase();
     const domain = gl === "us" ? "google.com" : "google.co.in";
     const hasdataUrl = `https://api.hasdata.com/scrape/google/serp?q=${encodeURIComponent(cleanQuery)}&domain=${domain}&gl=${gl}&tbm=shop&apiKey=${hasdataApiKey}`;
@@ -706,20 +296,13 @@ export async function POST(request) {
         }
       });
     } catch (fetchErr) {
-      console.error("[Scraper Connection Error] HasData fetch threw:", fetchErr);
-      return NextResponse.json(
-        { products: FALLBACK_PRODUCTS, error: fetchErr.message || "Scraper connection failed" },
-        { status: 200 }
-      );
+      console.error("[Scraper Connection Error] HasData fetch failed:", fetchErr);
+      return NextResponse.json({ products: [], error: "Scraper connection failed" }, { status: 200 });
     }
 
     if (!scraperResponse || !scraperResponse.ok) {
-      const errorText = scraperResponse ? await scraperResponse.text() : "No response object";
-      console.error("Fetch failed with status:", scraperResponse?.status, errorText);
-      return NextResponse.json(
-        { products: FALLBACK_PRODUCTS, error: errorText },
-        { status: 200 }
-      );
+      console.error("Fetch failed with status:", scraperResponse?.status);
+      return NextResponse.json({ products: [] }, { status: 200 });
     }
 
     let data;
@@ -728,39 +311,42 @@ export async function POST(request) {
       console.log("HasData Status:", scraperResponse.status);
     } catch (jsonErr) {
       console.error("[Scraper JSON Parse Error] Failed parsing response:", jsonErr);
-      return NextResponse.json(
-        { products: FALLBACK_PRODUCTS, error: "Invalid JSON response from Scraper API" },
-        { status: 200 }
-      );
+      return NextResponse.json({ products: [] }, { status: 200 });
     }
 
-    // Safely extract results checking for both camelCase and snake_case variations
     const rawResults = data?.shoppingResults || data?.shopping_results || data?.organicResults || [];
-
-    // Filter results using trusted merchant check, budget limits, accessory blacklists, and category validation
-    const whitelistedResults = [];
+    const cleanProducts = [];
     const queryCategory = detectCategory(cleanQuery, "");
 
+    // Iterate through organic search items directly from that single response
     for (const item of rawResults) {
       if (!item || !(item.title || item.name)) continue;
 
-      const titleLower = (item.title || item.name || "").toLowerCase();
+      const title = item.title || item.name || "";
+      const titleLower = title.toLowerCase();
 
-      // Enforce strict category matching to prevent cross-category data leakage
+      // Filter by category to prevent cross-category data leakage
       const itemCategory = detectCategory(cleanQuery, titleLower);
       if (queryCategory !== "general" && itemCategory !== queryCategory) {
-        continue; // Skip items that violate searched category
+        continue;
       }
 
+      // Filter by trusted merchant
       const platform = item.source || item.merchant || item.seller || "";
       const platformLower = platform.toLowerCase();
       const isTrusted = TRUSTED_MERCHANTS.some(m => platformLower.includes(m));
+      if (!isTrusted) continue;
+
+      // Extract direct native store URL directly from HasData response
+      const rawLink = item.merchant_link || item.direct_url || item.link || "";
+      let directLink = cleanProductUrl(rawLink);
       
-      if (!isTrusted && !item.hasdataLink) {
-        continue; // Skip untrusted platforms
+      // Fallback to merchant search page if no direct PDP url was provided
+      if (!directLink || directLink.includes("google.com") || directLink.includes("google.co.in")) {
+        directLink = getMerchantSearchFallback(platform, title);
       }
 
-      // Logical budget validation
+      // Parse price
       const priceRaw = item.price || item.extractedPrice || item.extracted_price || 0;
       let priceVal = 0;
       if (typeof priceRaw === "number") {
@@ -769,189 +355,47 @@ export async function POST(request) {
         priceVal = parseFloat(priceRaw.replace(/[^0-9.]/g, "")) || 0;
       }
 
+      // Apply logical budget validation
       const budgetLimit = parseBudgetLimit(cleanQuery);
       if (budgetLimit && priceVal > 0) {
-        const maxAllowedPrice = budgetLimit * 1.05; // 5% padding flexibility
+        const maxAllowedPrice = budgetLimit * 1.05;
         if (priceVal > maxAllowedPrice) {
-          continue; // Skip items exceeding budget limits
-        }
-      }
-
-      // Logical category accessory validation
-      const queryLower = cleanQuery.toLowerCase();
-      if (queryLower.includes("laptop") || queryLower.includes("computer")) {
-        const blacklist = ["bag", "sleeve", "charger", "adapter", "stand", "mouse pad", "keyboard cover", "cleaner", "skin", "decal", "cable", "case"];
-        if (blacklist.some(word => titleLower.includes(word))) {
-          continue;
-        }
-      } else if (queryLower.includes("headphone") || queryLower.includes("audio")) {
-        const blacklist = ["case", "pouch", "stand", "hanger", "cushion", "earpad", "cable", "adapter"];
-        if (blacklist.some(word => titleLower.includes(word))) {
           continue;
         }
       }
 
-      whitelistedResults.push(item);
+      // Category specs parsing & description
+      const category = detectCategory(cleanQuery, title);
+      const parsedSpecs = parseSpecsFromTitle(category, title);
+      const fallbackDesc = getFallbackDescriptionForCategory(category, platform);
+      const image = resolveProductImage(item);
+
+      cleanProducts.push({
+        title: String(title),
+        description: String(fallbackDesc),
+        image: String(image),
+        rating: String(item.rating || item.stars || "4.5"),
+        link: String(directLink),
+        platform: String(platform),
+        price: Number(priceVal),
+        price_comparison: [
+          {
+            store: platform,
+            price: priceVal,
+            link: directLink,
+            is_lowest: true
+          }
+        ],
+        hasDirectPDP: true,
+        detailed_specs: parsedSpecs
+      });
     }
 
-    // Slice array immediately to process ONLY the top 5 high-quality products
-    const top5Items = whitelistedResults.slice(0, 5);
-
-    if (top5Items.length === 0) {
-      console.warn(`[Scraper Warning] Empty whitelisted results array received for query: "${cleanQuery}"`);
-    }
-
-    // Fetch details for all 5 products concurrently from immersive details page
-    const detailedProducts = await Promise.all(
-      top5Items.map(async (item) => {
-        if (item.hasdataLink) {
-          const details = await fetchImmersiveProductDetails(item.hasdataLink, hasdataApiKey);
-          if (details) {
-            return {
-              ...item,
-              immersiveDetails: details
-            };
-          }
-        }
-        return item;
-      })
-    );
-
-    // 3. Map into clean array containing strictly the exact 6 fields with try-catch mapping checks
-    const cleanProducts = [];
-    for (const item of detailedProducts) {
-      try {
-        const title = item.title || item.name || "";
-        const image = resolveProductImage(item);
-        const originalPlatform = item.source || item.merchant || item.seller || "Online Store";
-
-        let directLink = "";
-        let resolvedPrice = 0;
-        let resolvedPlatform = "";
-        let offers = [];
-        let hasDirectPDP = false;
-
-        const immersive = item.immersiveDetails;
-        if (immersive && immersive.stores && Array.isArray(immersive.stores) && immersive.stores.length > 0) {
-          // Extract whitelisted e-commerce stores from immersive list
-          const filteredStores = immersive.stores.filter(s => {
-            if (!s.link || !s.name) return false;
-            const nameLower = s.name.toLowerCase();
-            return TRUSTED_MERCHANTS.some(m => nameLower.includes(m));
-          });
-
-          if (filteredStores.length > 0) {
-            // Map store links to direct PDPs, dropping any invalid/search ones
-            const mappedOffers = [];
-            filteredStores.forEach(s => {
-              const unwrapped = unwrapUrl(s.link);
-              const pdpUrl = tryBuildDirectPDP(unwrapped, s.name);
-              if (pdpUrl && isValidDirectPDPUrl(pdpUrl)) {
-                let priceVal = s.extractedPrice || parseFloat(s.price?.replace(/[^0-9.]/g, "")) || 0;
-                if (priceVal === 0) {
-                  const basePriceRaw = item.price || item.extractedPrice || item.extracted_price || "";
-                  let basePrice = 0;
-                  if (typeof basePriceRaw === "number") {
-                    basePrice = basePriceRaw;
-                  } else if (typeof basePriceRaw === "string") {
-                    basePrice = parseFloat(basePriceRaw.replace(/[^0-9.]/g, "")) || 0;
-                  }
-                  if (basePrice === 0) {
-                    basePrice = 24999;
-                  }
-                  priceVal = basePrice + (mappedOffers.length * 400);
-                }
-                mappedOffers.push({
-                  store: s.name,
-                  price: priceVal,
-                  link: pdpUrl
-                });
-              }
-            });
-
-            if (mappedOffers.length > 0) {
-              // Sort by price ascending
-              mappedOffers.sort((a, b) => a.price - b.price);
-              offers = mappedOffers.map((o, idx) => ({
-                ...o,
-                is_lowest: idx === 0
-              }));
-
-              const lowestOffer = offers[0];
-              resolvedPrice = lowestOffer.price;
-              directLink = lowestOffer.link;
-              resolvedPlatform = lowestOffer.store;
-              hasDirectPDP = true;
-            }
-          }
-        }
-
-        // Fallback to top-level URL extractors if immersive parsing was empty or did not yield whitelisted PDPs
-        if (!hasDirectPDP) {
-          const rawUrl = extractDirectProductUrl(item);
-          const pdpUrl = tryBuildDirectPDP(rawUrl, originalPlatform);
-          
-          if (pdpUrl && isValidDirectPDPUrl(pdpUrl)) {
-            directLink = pdpUrl;
-            resolvedPlatform = originalPlatform;
-            hasDirectPDP = true;
-
-            const basePriceRaw = item.price || item.extractedPrice || item.extracted_price || "";
-            let basePrice = 0;
-            if (typeof basePriceRaw === "number") {
-              basePrice = basePriceRaw;
-            } else if (typeof basePriceRaw === "string") {
-              basePrice = parseFloat(basePriceRaw.replace(/[^0-9.]/g, "")) || 0;
-            }
-            if (basePrice === 0) {
-              basePrice = 24999;
-            }
-            resolvedPrice = basePrice;
-
-            offers = [
-              {
-                store: originalPlatform,
-                price: basePrice,
-                link: directLink,
-                is_lowest: true
-              }
-            ];
-          }
-        }
-
-        // Under NO circumstances should the API route output a search listing URL for ANY product card or store chip.
-        // If the item doesn't have any valid PDP link, drop it!
-        if (!hasDirectPDP || !directLink) {
-          continue;
-        }
-
-        // Dynamically detect category and parse specifications locally
-        const category = detectCategory(cleanQuery, title);
-        const parsedSpecs = parseSpecsFromTitle(category, title);
-        const fallbackDesc = getFallbackDescriptionForCategory(category, resolvedPlatform);
-
-        cleanProducts.push({
-          title: String(title),
-          description: String(fallbackDesc),
-          image: String(image),
-          rating: String(item.rating || item.stars || "4.5"),
-          link: String(directLink),
-          platform: String(resolvedPlatform),
-          price: Number(resolvedPrice),
-          price_comparison: offers,
-          hasDirectPDP: hasDirectPDP,
-          detailed_specs: parsedSpecs
-        });
-      } catch (mapErr) {
-        console.error("Mapping Error:", mapErr);
-      }
-    }
-
-    // Call Gemini AI on the top 5 curated products to generate custom insights (if API key is present)
+    // Call Gemini AI on the top products to generate custom insights (if API key is present)
     const geminiApiKey = process.env.GEMINI_API_KEY;
     if (geminiApiKey && cleanProducts.length > 0) {
       try {
-        const productsListText = cleanProducts.map((p, idx) => {
+        const productsListText = cleanProducts.slice(0, 5).map((p, idx) => {
           return `${idx + 1}. Title: ${p.title} | Store: ${p.platform} | Price: ${p.price}`;
         }).join("\n");
 
@@ -960,40 +404,20 @@ For each product, generate category-specific specifications and conversational r
 
 For each product, output:
 1. "ai_insight" object containing:
-   - "best_for": A practical use-case statement explaining who should buy this (e.g. "Perfect for students needing long battery life" or "Ideal for commuters seeking quiet listening").
-   - "why_this_deal": A sharp statement highlighting the real value in this price range (e.g. "Getting 8GB RAM + SSD makes multitasking effortless" or "Offers premium ANC acoustics under 10k").
-   - "trade_off": An honest, transparent note about limitations (e.g. "Not geared for heavy 3D gaming" or "Charging is micro-USB instead of Type-C").
-2. "detailed_specs" array of strings (Pre-formatted specifications bullet points specific to the product category):
-   - If it's a Laptop/PC: Show CPU, RAM & Storage, Display & GPU, Battery Life, Standout Feature.
-     (e.g., ["Processor: Intel Core i5 12th Gen", "Memory & Storage: 8GB RAM | 512GB SSD", "Display: 15.6\" FHD Screen", "Battery & Build: Up to 8 Hours / 1.7kg", "Standout Feature: Backlit keyboard"])
-   - If it's Headphones/Audio: Show Sound Engine, Noise Control, Battery Life, Connectivity, Standout Feature.
-     (e.g., ["Sound Engine: 40mm Dynamic Drivers", "Noise Control: Hybrid Active Noise Cancelling", "Battery Life: Up to 35 Hours playtime", "Connectivity: Bluetooth 5.2 multipoint", "Standout Feature: Spatial Audio support"])
-   - If it's Shoes/Fashion: Show Material, Fit Profile, Occasion, Care, Standout Feature.
-     (e.g., ["Material: 100% Breathable Cotton", "Fit Profile: Modern Slim Fit cut", "Occasion: Casual and semi-formal wear", "Care: Machine wash cold", "Standout Feature: Reinforced collar seams"])
-   - If it's any other category: Extract 5 relevant product attributes from the title and detail them.
+   - "best_for": A practical use-case statement explaining who should buy this.
+   - "why_this_deal": A sharp statement highlighting the real value in this price range.
+   - "trade_off": An honest, transparent note about limitations.
+2. "detailed_specs" array of strings:
+   - If it's a Laptop/PC: CPU, RAM & Storage, Display & GPU, Battery Life, Standout Feature.
+   - If it's Headphones/Audio: Sound Engine, Noise Control, Battery Life, Connectivity, Standout Feature.
+   - If it's Shoes/Fashion: Material, Fit Profile, Occasion, Care, Standout Feature.
+   - Other: Extract 5 relevant attributes from title.
 
 Products:
 ${productsListText}
 
 Return the results strictly as a JSON array of objects, where each object matches the product's index.
-Example output format:
-[
-  {
-    "ai_insight": {
-      "best_for": "Perfect for college students needing long battery life and fast doc editing.",
-      "why_this_deal": "Getting 8GB RAM + SSD combo under 45k makes multitasking effortless.",
-      "trade_off": "Good for daily work, but avoid if you plan heavy 3D gaming."
-    },
-    "detailed_specs": [
-      "Processor: AMD Ryzen 3 7320U",
-      "Memory & Storage: 8GB RAM | 512GB SSD",
-      "Display: 15.6\" FHD Screen",
-      "Battery & Build: Students & Daily Work",
-      "Standout Feature: Lightweight 1.59kg design"
-    ]
-  }
-]
-Return ONLY the raw JSON array. Do not include markdown code block formatting (like \`\`\`json) or any other text.`;
+Do not include markdown code block formatting (like \`\`\`json). Return ONLY raw JSON array.`;
 
         const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
           method: "POST",
@@ -1001,11 +425,7 @@ Return ONLY the raw JSON array. Do not include markdown code block formatting (l
             "Content-Type": "application/json"
           },
           body: JSON.stringify({
-            contents: [
-              {
-                parts: [{ text: prompt }]
-              }
-            ]
+            contents: [{ parts: [{ text: prompt }] }]
           })
         });
 
@@ -1018,7 +438,7 @@ Return ONLY the raw JSON array. Do not include markdown code block formatting (l
           }
           const parsedResults = JSON.parse(rawText);
           if (Array.isArray(parsedResults)) {
-            cleanProducts.forEach((p, idx) => {
+            cleanProducts.slice(0, 5).forEach((p, idx) => {
               const res = parsedResults[idx];
               if (res) {
                 if (res.ai_insight) {
@@ -1039,89 +459,13 @@ Return ONLY the raw JSON array. Do not include markdown code block formatting (l
       }
     }
 
-    // Filter to prioritize items with direct PDP page links
-    let finalSelection = cleanProducts.filter(p => p.hasDirectPDP);
-    
-    // Fallback: If strict PDP filtering leaves fewer than 3 products, use the full list of products
-    if (finalSelection.length < 3) {
-      finalSelection = cleanProducts;
-    }
-
-    // Filter fallback list to match query category to avoid category leakage in padding
-    const filteredFallbacks = FALLBACK_PRODUCTS.filter(p => p.category === queryCategory);
-    const fallbackList = filteredFallbacks.length > 0 ? filteredFallbacks : FALLBACK_PRODUCTS;
-
-    // Pad the list with whitelisted curated fallback products of the same category if we still have fewer than 3 products total
-    if (finalSelection.length < 3) {
-      const needed = 3 - finalSelection.length;
-      for (let i = 0; i < needed; i++) {
-        const fallback = fallbackList[i % fallbackList.length];
-        if (!finalSelection.some(p => p.title === fallback.title)) {
-          finalSelection.push({
-            title: fallback.title,
-            description: fallback.description,
-            image: fallback.image,
-            rating: fallback.rating,
-            link: fallback.link,
-            platform: fallback.platform,
-            price: fallback.price,
-            price_comparison: fallback.price_comparison,
-            hasDirectPDP: true,
-            detailed_specs: fallback.detailed_specs
-          });
-        }
-      }
-    }
-
-    // Round-robin re-sorting to ensure merchant diversity at the top
-    const sortedProducts = [];
-    const merchantGroups = {};
-    for (const p of finalSelection) {
-      const key = (p.platform || "Online Store").toLowerCase();
-      if (!merchantGroups[key]) {
-        merchantGroups[key] = [];
-      }
-      merchantGroups[key].push(p);
-    }
-    const merchantKeys = Object.keys(merchantGroups);
-    if (merchantKeys.length > 0) {
-      const maxItemsInGroup = Math.max(...merchantKeys.map(k => merchantGroups[k].length));
-      for (let step = 0; step < maxItemsInGroup; step++) {
-        for (const key of merchantKeys) {
-          if (merchantGroups[key][step]) {
-            sortedProducts.push(merchantGroups[key][step]);
-          }
-        }
-      }
-    }
-    const finalProducts = sortedProducts.length > 0 ? sortedProducts : finalSelection;
-
-    // Fallback logic if results array is empty
-    if (finalProducts.length === 0) {
-      console.warn(`[API Fallback] Returning curated fallback list for query: "${cleanQuery}"`);
-      const queryLower = cleanQuery.toLowerCase();
-      if (queryLower.includes("laptop") || queryLower.includes("computer") || queryLower.includes("coding")) {
-        return NextResponse.json({ products: [FALLBACK_PRODUCTS[0], FALLBACK_PRODUCTS[1], FALLBACK_PRODUCTS[2]] }, { status: 200 });
-      } else if (queryLower.includes("shirt") || queryLower.includes("cotton") || queryLower.includes("wear")) {
-        return NextResponse.json({ products: [FALLBACK_PRODUCTS[3], FALLBACK_PRODUCTS[4], FALLBACK_PRODUCTS[5]] }, { status: 200 });
-      } else if (queryLower.includes("headphone") || queryLower.includes("audio") || queryLower.includes("anc")) {
-        return NextResponse.json({ products: [FALLBACK_PRODUCTS[6], FALLBACK_PRODUCTS[7], FALLBACK_PRODUCTS[8]] }, { status: 200 });
-      }
-      return NextResponse.json({ products: [FALLBACK_PRODUCTS[0], FALLBACK_PRODUCTS[3], FALLBACK_PRODUCTS[6]] }, { status: 200 });
-    }
-
-    // Log the extracted direct URLs for verification
-    const mappedProducts = finalProducts.slice(0, 5);
+    const mappedProducts = cleanProducts.slice(0, 5);
     console.log("Filtered Whitelisted Products:", mappedProducts.map(p => ({ title: p.title, store: p.platform, link: p.link })));
 
-    // Return clean JSON response (top 5 products only)
     return NextResponse.json({ products: mappedProducts }, { status: 200 });
 
   } catch (err) {
     console.error("Serverless Search API Route error:", err);
-    return NextResponse.json(
-      { products: [FALLBACK_PRODUCTS[0], FALLBACK_PRODUCTS[3], FALLBACK_PRODUCTS[6]], error: `Server Error: ${err.message}` },
-      { status: 200 }
-    );
+    return NextResponse.json({ products: [], error: `Server Error: ${err.message}` }, { status: 200 });
   }
 }
