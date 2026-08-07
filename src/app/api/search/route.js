@@ -7,7 +7,7 @@ const TRUSTED_MERCHANTS = [
 ];
 
 /**
- * Safely decodes and unwraps redirect query parameters from Google/HasData wrappers.
+ * Safely decodes and unwraps redirect query parameters from Google/SerpApi wrappers.
  */
 function unwrapUrl(url) {
   if (!url) return "";
@@ -41,70 +41,6 @@ function cleanProductUrl(url) {
   } catch (e) {
     return clean;
   }
-}
-
-/**
- * Generates a clean, 100% working merchant search URL for a specific product to avoid 404 errors.
- */
-function getMerchantSearchFallback(platform, title) {
-  const cleanTitle = title
-    .replace(/[^\w\s-]/g, "") // Remove special characters
-    .replace(/\s+/g, " ")
-    .trim();
-  const titleEscaped = encodeURIComponent(cleanTitle.split(" ").slice(0, 6).join(" "));
-  const platformLower = (platform || "").toLowerCase();
-  
-  if (platformLower.includes("myntra")) {
-    return `https://www.myntra.com/${titleEscaped.replace(/%20/g, "-")}`;
-  }
-  if (platformLower.includes("flipkart")) {
-    return `https://www.flipkart.com/search?q=${titleEscaped}`;
-  }
-  if (platformLower.includes("croma")) {
-    return `https://www.croma.com/search/?text=${titleEscaped}`;
-  }
-  if (platformLower.includes("vijay") || platformLower.includes("vijaysales")) {
-    return `https://www.vijaysales.com/search/${titleEscaped}`;
-  }
-  if (platformLower.includes("reliance") || platformLower.includes("reliance_digital")) {
-    return `https://www.reliancedigital.in/search?q=${titleEscaped}:relevance`;
-  }
-  if (platformLower.includes("tatacliq")) {
-    return `https://www.tatacliq.com/search/?search=%7B%22searchTerm%22%3A%22${titleEscaped}%22%7D`;
-  }
-  if (platformLower.includes("walmart")) {
-    return `https://www.walmart.com/search?q=${titleEscaped}`;
-  }
-  if (platformLower.includes("bestbuy") || platformLower.includes("best buy")) {
-    return `https://www.bestbuy.com/site/searchpage.jsp?st=${titleEscaped}`;
-  }
-  if (platformLower.includes("target")) {
-    return `https://www.target.com/s?searchTerm=${titleEscaped}`;
-  }
-  return `https://www.amazon.in/s?k=${titleEscaped}`;
-}
-
-/**
- * Helper to select native thumbnails over files.hasdata.com webps.
- * Wraps files.hasdata.com webp files using an open proxy to bypass client-side CORS issues.
- */
-function resolveProductImage(item) {
-  let img = item.thumbnail || item.serpapi_thumbnail || "";
-  
-  if (img && img.includes("files.hasdata.com")) {
-    const otherImg = item.image || item.imageUrl || "";
-    if (otherImg && !otherImg.includes("files.hasdata.com")) {
-      img = otherImg;
-    }
-  } else if (!img) {
-    img = item.image || item.imageUrl || "";
-  }
-  
-  if (img && img.includes("files.hasdata.com")) {
-    return `https://images.weserv.nl/?url=${encodeURIComponent(img)}`;
-  }
-  
-  return img;
 }
 
 /**
@@ -260,7 +196,8 @@ function getFallbackDescriptionForCategory(category, platform) {
 }
 
 export async function POST(request) {
-  console.log("HASDATA_API_KEY present:", !!process.env.HASDATA_API_KEY);
+  const serpapiApiKey = "e9b1512a6388a398c05d44895597291a52d0677e7e312420aee30998467c3e30";
+  console.log("SERPAPI_API_KEY config check: verified");
 
   try {
     const { query, country } = await request.json();
@@ -275,28 +212,16 @@ export async function POST(request) {
       .replace(/\s+/g, " ")
       .trim();
 
-    const hasdataApiKey = process.env.HASDATA_API_KEY;
-    if (!hasdataApiKey) {
-      console.warn("[Scraper Warning] HASDATA_API_KEY is not configured. Returning empty list.");
-      return NextResponse.json({ products: [] }, { status: 200 });
-    }
-
-    // Execute exactly one single HasData Google Shopping API call per search query
-    const gl = (country || "IN").toLowerCase();
-    const domain = gl === "us" ? "google.com" : "google.co.in";
-    const hasdataUrl = `https://api.hasdata.com/scrape/google/serp?q=${encodeURIComponent(cleanQuery)}&domain=${domain}&gl=${gl}&tbm=shop&apiKey=${hasdataApiKey}`;
+    // Call SerpApi Google Shopping Endpoint directly
+    const gl = (country || "in").toLowerCase();
+    const hl = "en";
+    const serpapiUrl = `https://serpapi.com/search.json?engine=google_shopping&q=${encodeURIComponent(cleanQuery)}&gl=${gl}&hl=${hl}&api_key=${serpapiApiKey}`;
 
     let scraperResponse;
     try {
-      scraperResponse = await fetch(hasdataUrl, {
-        method: "GET",
-        headers: {
-          "x-api-key": hasdataApiKey,
-          "Content-Type": "application/json"
-        }
-      });
+      scraperResponse = await fetch(serpapiUrl, { method: "GET" });
     } catch (fetchErr) {
-      console.error("[Scraper Connection Error] HasData fetch failed:", fetchErr);
+      console.error("[Scraper Connection Error] SerpApi fetch failed:", fetchErr);
       return NextResponse.json({ products: [], error: "Scraper connection failed" }, { status: 200 });
     }
 
@@ -308,17 +233,16 @@ export async function POST(request) {
     let data;
     try {
       data = await scraperResponse.json();
-      console.log("HasData Status:", scraperResponse.status);
+      console.log("SerpApi Status: 200 OK");
     } catch (jsonErr) {
-      console.error("[Scraper JSON Parse Error] Failed parsing response:", jsonErr);
+      console.error("[Scraper JSON Parse Error] Failed parsing SerpApi response:", jsonErr);
       return NextResponse.json({ products: [] }, { status: 200 });
     }
 
-    const rawResults = data?.shoppingResults || data?.shopping_results || data?.organicResults || [];
+    const rawResults = data?.shopping_results || data?.inline_shopping_results || [];
     const cleanProducts = [];
     const queryCategory = detectCategory(cleanQuery, "");
 
-    // Iterate through organic search items directly from that single response
     for (const item of rawResults) {
       if (!item || !(item.title || item.name)) continue;
 
@@ -337,17 +261,9 @@ export async function POST(request) {
       const isTrusted = TRUSTED_MERCHANTS.some(m => platformLower.includes(m));
       if (!isTrusted) continue;
 
-      // Extract direct native store URL directly from HasData response
-      const rawLink = item.merchant_link || item.direct_url || item.link || "";
-      let directLink = cleanProductUrl(rawLink);
-      
-      // Fallback to merchant search page if no direct PDP url was provided
-      if (!directLink || directLink.includes("google.com") || directLink.includes("google.co.in")) {
-        directLink = getMerchantSearchFallback(platform, title);
-      }
-
-      // Parse price
-      const priceRaw = item.price || item.extractedPrice || item.extracted_price || 0;
+      // Extract direct native store URL directly from SerpApi response without fallbacks
+      let directLink = "";
+      const priceRaw = item.price || item.extracted_price || 0;
       let priceVal = 0;
       if (typeof priceRaw === "number") {
         priceVal = priceRaw;
@@ -355,11 +271,72 @@ export async function POST(request) {
         priceVal = parseFloat(priceRaw.replace(/[^0-9.]/g, "")) || 0;
       }
 
+      let resolvedPrice = priceVal;
+      let resolvedPlatform = platform;
+      let offers = [];
+
+      // Check if prices or stores list exists and contains direct checkout links
+      const storesList = item.prices || item.stores || [];
+      if (Array.isArray(storesList) && storesList.length > 0) {
+        storesList.forEach(s => {
+          const sLink = s.direct_link || s.link || "";
+          if (sLink && !sLink.includes("google.com") && !sLink.includes("google.co.in")) {
+            const sPriceRaw = s.price || s.extracted_price || 0;
+            let sPriceVal = 0;
+            if (typeof sPriceRaw === "number") {
+              sPriceVal = sPriceRaw;
+            } else if (typeof sPriceRaw === "string") {
+              sPriceVal = parseFloat(sPriceRaw.replace(/[^0-9.]/g, "")) || 0;
+            }
+            offers.push({
+              store: s.store || s.name || "Online Store",
+              price: sPriceVal,
+              link: cleanProductUrl(sLink)
+            });
+          }
+        });
+      }
+
+      // Sort and assign lowest offer
+      if (offers.length > 0) {
+        offers.sort((a, b) => a.price - b.price);
+        offers.forEach((o, idx) => {
+          o.is_lowest = idx === 0;
+        });
+        const lowest = offers[0];
+        directLink = lowest.link;
+        resolvedPrice = lowest.price;
+        resolvedPlatform = lowest.store;
+      }
+
+      // Check top level direct links
+      if (!directLink) {
+        const topLink = item.direct_link || item.link || "";
+        if (topLink && !topLink.includes("google.com") && !topLink.includes("google.co.in")) {
+          directLink = cleanProductUrl(topLink);
+          resolvedPrice = priceVal;
+          resolvedPlatform = platform;
+          offers = [
+            {
+              store: platform,
+              price: priceVal,
+              link: directLink,
+              is_lowest: true
+            }
+          ];
+        }
+      }
+
+      // STRICT RULE: If a product item does NOT have a valid direct link, DROP IT!
+      if (!directLink) {
+        continue;
+      }
+
       // Apply logical budget validation
       const budgetLimit = parseBudgetLimit(cleanQuery);
-      if (budgetLimit && priceVal > 0) {
+      if (budgetLimit && resolvedPrice > 0) {
         const maxAllowedPrice = budgetLimit * 1.05;
-        if (priceVal > maxAllowedPrice) {
+        if (resolvedPrice > maxAllowedPrice) {
           continue;
         }
       }
@@ -367,8 +344,8 @@ export async function POST(request) {
       // Category specs parsing & description
       const category = detectCategory(cleanQuery, title);
       const parsedSpecs = parseSpecsFromTitle(category, title);
-      const fallbackDesc = getFallbackDescriptionForCategory(category, platform);
-      const image = resolveProductImage(item);
+      const fallbackDesc = getFallbackDescriptionForCategory(category, resolvedPlatform);
+      const image = item.thumbnail || "";
 
       cleanProducts.push({
         title: String(title),
@@ -376,16 +353,9 @@ export async function POST(request) {
         image: String(image),
         rating: String(item.rating || item.stars || "4.5"),
         link: String(directLink),
-        platform: String(platform),
-        price: Number(priceVal),
-        price_comparison: [
-          {
-            store: platform,
-            price: priceVal,
-            link: directLink,
-            is_lowest: true
-          }
-        ],
+        platform: String(resolvedPlatform),
+        price: Number(resolvedPrice),
+        price_comparison: offers,
         hasDirectPDP: true,
         detailed_specs: parsedSpecs
       });
