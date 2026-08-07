@@ -1,5 +1,11 @@
 import { NextResponse } from "next/server";
 
+const TRUSTED_MERCHANTS = [
+  "amazon", "flipkart", "croma", "reliance digital", "tatacliq", 
+  "vijay sales", "myntra", "boat", "noise", "walmart", "bestbuy", 
+  "best buy", "target", "newegg", "reliance_digital", "samsung", "apple", "vijaysales"
+];
+
 /**
  * Safely decodes and unwraps redirect query parameters.
  */
@@ -170,9 +176,9 @@ export async function POST(request) {
       return NextResponse.json({ products: [], error: "Query is required" }, { status: 200 });
     }
 
+    // Keep user's query intact, only stripping currency symbols and double spaces
     const cleanQuery = query
-      .replace(/[₹$€£]/g, "")
-      .replace(/\b(please|find|show|me|best|buy|under|below|for|search|deals|get)\b/gi, "")
+      .replace(/[₹$€£,]/g, "")
       .replace(/\s+/g, " ")
       .trim();
 
