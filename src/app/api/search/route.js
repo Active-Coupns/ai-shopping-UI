@@ -1,13 +1,7 @@
 import { NextResponse } from "next/server";
 
-const TRUSTED_MERCHANTS = [
-  "amazon", "flipkart", "croma", "reliance digital", "tatacliq", 
-  "vijay sales", "myntra", "boat", "noise", "walmart", "bestbuy", 
-  "best buy", "target", "newegg", "reliance_digital", "samsung", "apple", "vijaysales"
-];
-
 /**
- * Safely decodes and unwraps redirect query parameters from Google/SerpApi wrappers.
+ * Safely decodes and unwraps redirect query parameters.
  */
 function unwrapUrl(url) {
   if (!url) return "";
@@ -27,7 +21,7 @@ function unwrapUrl(url) {
 }
 
 /**
- * Cleans the product URL, unwrapping redirects and stripping common tracking query parameters.
+ * Cleans the product URL by unwrapping redirects and stripping common tracking query parameters.
  */
 function cleanProductUrl(url) {
   if (!url) return "";
@@ -41,18 +35,6 @@ function cleanProductUrl(url) {
   } catch (e) {
     return clean;
   }
-}
-
-/**
- * Parses user query to extract maximum budget limit.
- */
-function parseBudgetLimit(query) {
-  const cleanStr = query.toLowerCase().replace(/[,₹$]/g, "");
-  const match = cleanStr.match(/\b(?:under|below|budget|limit|max|up to|price|at|around|\bs\b|<|=)\s*(\d{4,6})\b/i) || cleanStr.match(/\b(\d{4,6})\b/);
-  if (match) {
-    return parseFloat(match[1]);
-  }
-  return null;
 }
 
 /**
@@ -103,24 +85,13 @@ function parseSpecsFromTitle(category, title) {
     const sizeMatch = title.match(/\b(\d+(?:\.\d+)?\s*(?:inch|[\"”]))/i);
     if (sizeMatch) {
       display = `${sizeMatch[1]} Display`;
-    } else if (titleLower.includes("15s")) {
-      display = "15.6-inch Display";
-    } else if (titleLower.includes("14s")) {
-      display = "14-inch Display";
-    }
-
-    let persona = "Students & Daily Office Work";
-    if (titleLower.includes("gaming") || titleLower.includes("rtx") || titleLower.includes("gtx")) {
-      persona = "Gamers & Content Creators";
-    } else if (titleLower.includes("pro") || titleLower.includes("thinkpad") || titleLower.includes("book")) {
-      persona = "Professionals & Developers";
     }
 
     return [
       `Processor: ${cpu}`,
       `Memory & Storage: ${ramStr} | ${ssdStr} Storage`,
       `Display: ${display}`,
-      `Target Use: ${persona}`,
+      `Target Use: Students & Daily Work`,
       `Standout Feature: Lightweight and portable build`
     ];
   }
@@ -139,8 +110,6 @@ function parseSpecsFromTitle(category, title) {
     else if (titleLower.includes("jbl")) brand = "JBL Pure Bass Sound";
     
     let battery = "Up to 30 Hours active playback";
-    if (titleLower.includes("ch520")) battery = "Up to 50 Hours ultra battery life";
-    else if (titleLower.includes("ultra")) battery = "Up to 24 Hours premium ANC playback";
 
     return [
       `Sound Engine: ${brand}`,
@@ -155,15 +124,10 @@ function parseSpecsFromTitle(category, title) {
     let material = "Premium breathable fabric blend";
     if (titleLower.includes("cotton")) material = "100% Premium breathable Cotton fabric";
     else if (titleLower.includes("denim")) material = "Durable denim cotton blend";
-    else if (titleLower.includes("leather")) material = "Genuine durable leather build";
-
-    let fit = "Comfortable active fit profile";
-    if (titleLower.includes("slim")) fit = "Modern Tailored Slim Fit cut";
-    else if (titleLower.includes("regular")) fit = "Standard Regular Fit profile";
 
     return [
       `Material: ${material}`,
-      `Fit Profile: ${fit}`,
+      `Fit Profile: Modern Slim Fit cut`,
       `Occasion: Casual, daily office & social wear`,
       `Care Instructions: Gentle cold wash recommended`,
       `Standout Feature: Premium stitched styling seams`
@@ -241,28 +205,15 @@ export async function POST(request) {
 
     const rawResults = data?.shopping_results || data?.inline_shopping_results || [];
     const cleanProducts = [];
-    const queryCategory = detectCategory(cleanQuery, "");
 
+    // Map 100% of the raw data returned by SerpApi directly to the frontend matching the schema
     for (const item of rawResults) {
       if (!item || !(item.title || item.name)) continue;
 
       const title = item.title || item.name || "";
-      const titleLower = title.toLowerCase();
+      const platform = item.source || item.merchant || item.seller || "Online Store";
 
-      // Filter by category to prevent cross-category data leakage
-      const itemCategory = detectCategory(cleanQuery, titleLower);
-      if (queryCategory !== "general" && itemCategory !== queryCategory) {
-        continue;
-      }
-
-      // Filter by trusted merchant
-      const platform = item.source || item.merchant || item.seller || "";
-      const platformLower = platform.toLowerCase();
-      const isTrusted = TRUSTED_MERCHANTS.some(m => platformLower.includes(m));
-      if (!isTrusted) continue;
-
-      // Extract direct native store URL directly from SerpApi response without fallbacks
-      let directLink = "";
+      // Extract price
       const priceRaw = item.price || item.extracted_price || 0;
       let priceVal = 0;
       if (typeof priceRaw === "number") {
@@ -271,90 +222,61 @@ export async function POST(request) {
         priceVal = parseFloat(priceRaw.replace(/[^0-9.]/g, "")) || 0;
       }
 
-      let resolvedPrice = priceVal;
-      let resolvedPlatform = platform;
-      let offers = [];
+      // Map Store Link: Pass item.link or item.direct_link or item.product_link directly
+      const rawLink = item.link || item.direct_link || item.product_link || "";
+      const directLink = cleanProductUrl(rawLink);
 
-      // Check if prices or stores list exists and contains direct checkout links
+      // Price comparison array
+      let offers = [];
       const storesList = item.prices || item.stores || [];
       if (Array.isArray(storesList) && storesList.length > 0) {
         storesList.forEach(s => {
-          const sLink = s.direct_link || s.link || "";
-          if (sLink && !sLink.includes("google.com") && !sLink.includes("google.co.in")) {
-            const sPriceRaw = s.price || s.extracted_price || 0;
-            let sPriceVal = 0;
-            if (typeof sPriceRaw === "number") {
-              sPriceVal = sPriceRaw;
-            } else if (typeof sPriceRaw === "string") {
-              sPriceVal = parseFloat(sPriceRaw.replace(/[^0-9.]/g, "")) || 0;
-            }
-            offers.push({
-              store: s.store || s.name || "Online Store",
-              price: sPriceVal,
-              link: cleanProductUrl(sLink)
-            });
+          const sLink = s.link || s.direct_link || "";
+          const sPriceRaw = s.price || s.extracted_price || 0;
+          let sPriceVal = 0;
+          if (typeof sPriceRaw === "number") {
+            sPriceVal = sPriceRaw;
+          } else if (typeof sPriceRaw === "string") {
+            sPriceVal = parseFloat(sPriceRaw.replace(/[^0-9.]/g, "")) || 0;
           }
+          offers.push({
+            store: s.store || s.name || "Online Store",
+            price: sPriceVal,
+            link: cleanProductUrl(sLink)
+          });
         });
       }
 
-      // Sort and assign lowest offer
-      if (offers.length > 0) {
+      if (offers.length === 0) {
+        offers = [
+          {
+            store: platform,
+            price: priceVal,
+            link: directLink,
+            is_lowest: true
+          }
+        ];
+      } else {
         offers.sort((a, b) => a.price - b.price);
         offers.forEach((o, idx) => {
           o.is_lowest = idx === 0;
         });
-        const lowest = offers[0];
-        directLink = lowest.link;
-        resolvedPrice = lowest.price;
-        resolvedPlatform = lowest.store;
       }
 
-      // Check top level direct links
-      if (!directLink) {
-        const topLink = item.direct_link || item.link || "";
-        if (topLink && !topLink.includes("google.com") && !topLink.includes("google.co.in")) {
-          directLink = cleanProductUrl(topLink);
-          resolvedPrice = priceVal;
-          resolvedPlatform = platform;
-          offers = [
-            {
-              store: platform,
-              price: priceVal,
-              link: directLink,
-              is_lowest: true
-            }
-          ];
-        }
-      }
-
-      // STRICT RULE: If a product item does NOT have a valid direct link, DROP IT!
-      if (!directLink) {
-        continue;
-      }
-
-      // Apply logical budget validation
-      const budgetLimit = parseBudgetLimit(cleanQuery);
-      if (budgetLimit && resolvedPrice > 0) {
-        const maxAllowedPrice = budgetLimit * 1.05;
-        if (resolvedPrice > maxAllowedPrice) {
-          continue;
-        }
-      }
-
-      // Category specs parsing & description
       const category = detectCategory(cleanQuery, title);
       const parsedSpecs = parseSpecsFromTitle(category, title);
-      const fallbackDesc = getFallbackDescriptionForCategory(category, resolvedPlatform);
+      const fallbackDesc = getFallbackDescriptionForCategory(category, platform);
       const image = item.thumbnail || "";
 
       cleanProducts.push({
         title: String(title),
         description: String(fallbackDesc),
         image: String(image),
-        rating: String(item.rating || item.stars || "4.5"),
+        rating: String(item.rating || "4.5"),
+        reviewsCount: Number(item.reviews || 100),
         link: String(directLink),
-        platform: String(resolvedPlatform),
-        price: Number(resolvedPrice),
+        platform: String(platform),
+        price: Number(priceVal),
         price_comparison: offers,
         hasDirectPDP: true,
         detailed_specs: parsedSpecs
@@ -370,12 +292,12 @@ export async function POST(request) {
         }).join("\n");
 
         const prompt = `You are a friendly, expert personal shopping consultant advising a friend on their search for: "${cleanQuery}".
-For each product, generate category-specific specifications and conversational recommendations.
+For each product, generate category-specific specifications and recommendations.
 
 For each product, output:
 1. "ai_insight" object containing:
    - "best_for": A practical use-case statement explaining who should buy this.
-   - "why_this_deal": A sharp statement highlighting the real value in this price range.
+   - "why_this_deal": A sharp statement highlighting the real value.
    - "trade_off": An honest, transparent note about limitations.
 2. "detailed_specs" array of strings:
    - If it's a Laptop/PC: CPU, RAM & Storage, Display & GPU, Battery Life, Standout Feature.
@@ -430,7 +352,7 @@ Do not include markdown code block formatting (like \`\`\`json). Return ONLY raw
     }
 
     const mappedProducts = cleanProducts.slice(0, 5);
-    console.log("Filtered Whitelisted Products:", mappedProducts.map(p => ({ title: p.title, store: p.platform, link: p.link })));
+    console.log("Filtered Products mapped count:", mappedProducts.length);
 
     return NextResponse.json({ products: mappedProducts }, { status: 200 });
 
