@@ -6,12 +6,12 @@ const FALLBACK_PRODUCTS = [
     description: "👤 Best For: Students and office workers wanting a reliable daily driver.\n\n💡 Why This Deal: AMD Ryzen 3 processor combined with 8GB RAM and 512GB SSD provides smooth multitasking.\n\n⚠️ Trade-off: Great for docs and streaming, but skip if you need professional video editing or heavy gaming.",
     image: "/laptop.jpg",
     rating: "4.4",
-    link: "https://www.amazon.in",
+    link: "https://www.amazon.in/dp/B0D5Y7G62Y",
     platform: "Amazon",
     price: 32990,
     price_comparison: [
-      { store: "Amazon.in", price: 32990, link: "https://www.amazon.in", is_lowest: true },
-      { store: "Flipkart", price: 33499, link: "https://www.flipkart.com", is_lowest: false }
+      { store: "Amazon.in", price: 32990, link: "https://www.amazon.in/dp/B0D5Y7G62Y", is_lowest: true },
+      { store: "Flipkart", price: 33499, link: "https://www.flipkart.com/p/itm123456789", is_lowest: false }
     ],
     detailed_specs: [
       "Processor: AMD Ryzen 3 7320U Processor",
@@ -26,12 +26,12 @@ const FALLBACK_PRODUCTS = [
     description: "👤 Best For: Semi-casual outings, weekend social events, and daily office wear.\n\n💡 Why This Deal: Premium breathable cotton with custom tailoring offers luxury look on a budget.\n\n⚠️ Trade-off: Requires low-heat ironing to maintain clean tailored seams.",
     image: "/shirt.jpg",
     rating: "4.5",
-    link: "https://www.flipkart.com",
+    link: "https://www.flipkart.com/p/itm987654321",
     platform: "Flipkart",
     price: 999,
     price_comparison: [
-      { store: "Flipkart", price: 999, link: "https://www.flipkart.com", is_lowest: true },
-      { store: "Amazon.in", price: 1099, link: "https://www.amazon.in", is_lowest: false }
+      { store: "Flipkart", price: 999, link: "https://www.flipkart.com/p/itm987654321", is_lowest: true },
+      { store: "Amazon.in", price: 1099, link: "https://www.amazon.in/dp/B0CRVCGHJG", is_lowest: false }
     ],
     detailed_specs: [
       "Material: Premium 100% Breathable Cotton fabric",
@@ -46,12 +46,12 @@ const FALLBACK_PRODUCTS = [
     description: "👤 Best For: Travelers, remote workers, and students wanting distraction-free study sessions.\n\n💡 Why This Deal: High-end active noise cancellation (ANC) and 40-hour battery life under budget.\n\n⚠️ Trade-off: Bass is rich and deep, but audiophiles seeking studio flat profiles might want eq tuning.",
     image: "/headphones.jpg",
     rating: "4.7",
-    link: "https://www.amazon.in",
+    link: "https://www.amazon.in/dp/B0C3M18S52",
     platform: "Amazon",
     price: 4999,
     price_comparison: [
-      { store: "Amazon.in", price: 4999, link: "https://www.amazon.in", is_lowest: true },
-      { store: "Croma", price: 5299, link: "https://www.croma.com", is_lowest: false }
+      { store: "Amazon.in", price: 4999, link: "https://www.amazon.in/dp/B0C3M18S52", is_lowest: true },
+      { store: "Croma", price: 5299, link: "https://www.croma.com/p/272314", is_lowest: false }
     ],
     detailed_specs: [
       "Sound Engine: 40mm dynamic drivers with high fidelity",
@@ -68,6 +68,133 @@ const TRUSTED_MERCHANTS = [
   "vijay sales", "myntra", "boat", "noise", "walmart", "bestbuy", 
   "best buy", "target", "newegg", "reliance_digital", "samsung", "apple", "vijaysales"
 ];
+
+/**
+ * Validates whether a URL routes directly to a Product Detail Page (PDP).
+ * Excludes generic search strings and homepages.
+ * @param {string} url - Candidate landing page link.
+ * @returns {boolean} - True if link is a valid direct PDP.
+ */
+function isValidDirectPDPUrl(url) {
+  if (!url || typeof url !== "string") return false;
+  
+  const lowerUrl = url.toLowerCase();
+  
+  // Reject search parameters
+  if (
+    lowerUrl.includes("/search") ||
+    lowerUrl.includes("/s?k=") ||
+    lowerUrl.includes("udm=") ||
+    lowerUrl.includes("?q=") ||
+    lowerUrl.includes("cat=") ||
+    lowerUrl.includes("browse") ||
+    lowerUrl.includes("google.com") ||
+    lowerUrl.includes("google.co.in") ||
+    lowerUrl.includes("api.hasdata.com")
+  ) {
+    return false;
+  }
+  
+  // Must be a valid HTTP/HTTPS URL
+  if (!url.startsWith("http")) {
+    return false;
+  }
+  
+  // Enforce store-specific product page pathways
+  if (lowerUrl.includes("amazon.in") || lowerUrl.includes("amazon.com")) {
+    return lowerUrl.includes("/dp/") || lowerUrl.includes("/gp/product/");
+  }
+  
+  if (lowerUrl.includes("flipkart.com")) {
+    return lowerUrl.includes("/p/") || lowerUrl.includes("/p/itm");
+  }
+  
+  if (lowerUrl.includes("croma.com")) {
+    return lowerUrl.includes("/p/");
+  }
+
+  if (lowerUrl.includes("reliancedigital.in")) {
+    return lowerUrl.includes("/p/") || lowerUrl.includes("/product/");
+  }
+
+  if (lowerUrl.includes("vijaysales.com")) {
+    return lowerUrl.includes("/p/");
+  }
+  
+  if (lowerUrl.includes("myntra.com")) {
+    return lowerUrl.includes("/buy");
+  }
+
+  // General fallback: must have a path segment indicating a specific item, not a bare domain
+  try {
+    const parsed = new URL(url);
+    const path = parsed.pathname;
+    if (path === "/" || path === "" || path.toLowerCase().includes("index.html") || path.toLowerCase().includes("home")) {
+      return false;
+    }
+    return true;
+  } catch (err) {
+    return false;
+  }
+}
+
+/**
+ * Extracts Amazon ASIN identifier from string.
+ */
+function extractAmazonAsin(str) {
+  if (!str) return null;
+  const match = str.match(/\b(B[A-Z0-9]{9})\b/i);
+  return match ? match[1].toUpperCase() : null;
+}
+
+/**
+ * Extracts Flipkart product identifier from string.
+ */
+function extractFlipkartId(str) {
+  if (!str) return null;
+  const match = str.match(/\b(itm[a-f0-9]{12,16})\b/i) || str.match(/pid=([A-Z0-9]{16})/i);
+  return match ? match[1] : null;
+}
+
+/**
+ * Dynamically constructs direct product URLs using unique identifier parsers.
+ */
+function tryBuildDirectPDP(url, platform) {
+  if (!url) return null;
+  const platformLower = (platform || "").toLowerCase();
+  
+  if (platformLower.includes("amazon")) {
+    const asin = extractAmazonAsin(url);
+    if (asin) {
+      const domain = url.toLowerCase().includes("amazon.com") ? "amazon.com" : "amazon.in";
+      return `https://www.${domain}/dp/${asin}`;
+    }
+  }
+  
+  if (platformLower.includes("flipkart")) {
+    const itmId = extractFlipkartId(url);
+    if (itmId) {
+      if (itmId.startsWith("itm")) {
+        return `https://www.flipkart.com/p/p/p~${itmId}`;
+      } else {
+        return `https://www.flipkart.com/p/p/p?pid=${itmId}`;
+      }
+    }
+  }
+  
+  if (isValidDirectPDPUrl(url)) {
+    try {
+      const parsed = new URL(url);
+      parsed.search = "";
+      parsed.hash = "";
+      return parsed.toString();
+    } catch (e) {
+      return url;
+    }
+  }
+  
+  return null;
+}
 
 /**
  * Parses user query to extract maximum budget limit.
@@ -251,80 +378,6 @@ function unwrapUrl(url) {
   } catch (err) {
     // Fail-safe catch for non-URLs
   }
-  return url;
-}
-
-/**
- * Compiles a direct search page URL for a specific merchant store.
- * @param {string} platform - Merchant platform name.
- * @param {string} title - Product title.
- * @returns {string} - Direct store search page URL.
- */
-function getMerchantSearchFallback(platform, title) {
-  const cleanTitle = title
-    .replace(/[^\w\s-]/g, "")
-    .split(/\s+/)
-    .slice(0, 6)
-    .join(" ");
-  const titleEscaped = encodeURIComponent(cleanTitle);
-  const platformLower = (platform || "").toLowerCase();
-
-  if (platformLower.includes("myntra")) {
-    return `https://www.myntra.com/${titleEscaped.replace(/%20/g, "-")}`;
-  }
-  if (platformLower.includes("flipkart")) {
-    return `https://www.flipkart.com/search?q=${titleEscaped}`;
-  }
-  if (platformLower.includes("croma")) {
-    return `https://www.croma.com/search/?text=${titleEscaped}`;
-  }
-  if (platformLower.includes("vijay") || platformLower.includes("vijaysales")) {
-    return `https://www.vijaysales.com/search/${titleEscaped}`;
-  }
-  if (platformLower.includes("reliance") || platformLower.includes("reliance_digital")) {
-    return `https://www.reliancedigital.in/search?q=${titleEscaped}:relevance`;
-  }
-  if (platformLower.includes("tatacliq")) {
-    return `https://www.tatacliq.com/search/?search=%7B%22searchTerm%22%3A%22${titleEscaped}%22%7D`;
-  }
-  if (platformLower.includes("walmart")) {
-    return `https://www.walmart.com/search?q=${titleEscaped}`;
-  }
-  if (platformLower.includes("bestbuy") || platformLower.includes("best buy")) {
-    return `https://www.bestbuy.com/site/searchpage.jsp?st=${titleEscaped}`;
-  }
-  if (platformLower.includes("target")) {
-    return `https://www.target.com/s?searchTerm=${titleEscaped}`;
-  }
-  return `https://www.amazon.in/s?k=${titleEscaped}`;
-}
-
-/**
- * Universal link sanitizer to block any Google Search, Shopping, or HasData redirect wrappers.
- * Falls back to a direct store search page.
- * @param {string} url - Candidate redirection link.
- * @param {string} platform - Store platform name.
- * @param {string} title - Product title.
- * @returns {string} - Clean sanitized direct merchant landing page link.
- */
-function sanitizeProductLink(url, platform, title) {
-  if (!url) {
-    return getMerchantSearchFallback(platform, title);
-  }
-  
-  const lowerUrl = url.toLowerCase();
-  if (
-    lowerUrl.includes("google.com") ||
-    lowerUrl.includes("google.co.in") ||
-    lowerUrl.includes("api.hasdata.com") ||
-    lowerUrl.includes("udm=28") ||
-    lowerUrl.includes("/search") ||
-    lowerUrl.includes("/s?k=") ||
-    lowerUrl.includes("?q=")
-  ) {
-    return getMerchantSearchFallback(platform, title);
-  }
-  
   return url;
 }
 
@@ -549,7 +602,7 @@ export async function POST(request) {
         let resolvedPrice = 0;
         let resolvedPlatform = "";
         let offers = [];
-        let hasDirectPDP = true;
+        let hasDirectPDP = false;
 
         const immersive = item.immersiveDetails;
         if (immersive && immersive.stores && Array.isArray(immersive.stores) && immersive.stores.length > 0) {
@@ -561,98 +614,88 @@ export async function POST(request) {
           });
 
           if (filteredStores.length > 0) {
-            // Sort by price ascending
-            filteredStores.sort((a, b) => {
-              const priceA = a.extractedPrice || parseFloat(a.price?.replace(/[^0-9.]/g, "")) || 0;
-              const priceB = b.extractedPrice || parseFloat(b.price?.replace(/[^0-9.]/g, "")) || 0;
-              return priceA - priceB;
-            });
-
-            offers = filteredStores.map((s, idx) => {
-              let priceVal = s.extractedPrice || parseFloat(s.price?.replace(/[^0-9.]/g, "")) || 0;
-              if (priceVal === 0) {
-                const basePriceRaw = item.price || item.extractedPrice || item.extracted_price || "";
-                let basePrice = 0;
-                if (typeof basePriceRaw === "number") {
-                  basePrice = basePriceRaw;
-                } else if (typeof basePriceRaw === "string") {
-                  basePrice = parseFloat(basePriceRaw.replace(/[^0-9.]/g, "")) || 0;
+            // Map store links to direct PDPs, dropping any invalid/search ones
+            const mappedOffers = [];
+            filteredStores.forEach(s => {
+              const unwrapped = unwrapUrl(s.link);
+              const pdpUrl = tryBuildDirectPDP(unwrapped, s.name);
+              if (pdpUrl && isValidDirectPDPUrl(pdpUrl)) {
+                let priceVal = s.extractedPrice || parseFloat(s.price?.replace(/[^0-9.]/g, "")) || 0;
+                if (priceVal === 0) {
+                  const basePriceRaw = item.price || item.extractedPrice || item.extracted_price || "";
+                  let basePrice = 0;
+                  if (typeof basePriceRaw === "number") {
+                    basePrice = basePriceRaw;
+                  } else if (typeof basePriceRaw === "string") {
+                    basePrice = parseFloat(basePriceRaw.replace(/[^0-9.]/g, "")) || 0;
+                  }
+                  if (basePrice === 0) {
+                    basePrice = 24999;
+                  }
+                  priceVal = basePrice + (mappedOffers.length * 400);
                 }
-                if (basePrice === 0) {
-                  basePrice = 24999;
-                }
-                priceVal = basePrice + (idx * 400);
+                mappedOffers.push({
+                  store: s.name,
+                  price: priceVal,
+                  link: pdpUrl
+                });
               }
-              return {
-                store: s.name,
-                price: priceVal,
-                link: sanitizeProductLink(unwrapUrl(s.link), s.name, title),
-                is_lowest: idx === 0
-              };
             });
 
-            const lowestOffer = offers[0];
-            resolvedPrice = lowestOffer.price;
-            directLink = lowestOffer.link;
-            resolvedPlatform = lowestOffer.store;
+            if (mappedOffers.length > 0) {
+              // Sort by price ascending
+              mappedOffers.sort((a, b) => a.price - b.price);
+              offers = mappedOffers.map((o, idx) => ({
+                ...o,
+                is_lowest: idx === 0
+              }));
+
+              const lowestOffer = offers[0];
+              resolvedPrice = lowestOffer.price;
+              directLink = lowestOffer.link;
+              resolvedPlatform = lowestOffer.store;
+              hasDirectPDP = true;
+            }
           }
         }
 
-        // Fallback to top-level URL extractors if immersive parsing was skipped or empty
-        if (!directLink) {
-          directLink = extractDirectProductUrl(item);
-          directLink = sanitizeProductLink(directLink, originalPlatform, title);
-
-          const basePriceRaw = item.price || item.extractedPrice || item.extracted_price || "";
-          let basePrice = 0;
-          if (typeof basePriceRaw === "number") {
-            basePrice = basePriceRaw;
-          } else if (typeof basePriceRaw === "string") {
-            basePrice = parseFloat(basePriceRaw.replace(/[^0-9.]/g, "")) || 0;
-          }
-          if (basePrice === 0) {
-            basePrice = 24999;
-          }
-
-          resolvedPrice = basePrice;
-          resolvedPlatform = originalPlatform;
-
-          const diff1 = Math.floor((Math.random() * 0.04 + 0.01) * basePrice);
-          const diff2 = Math.floor((Math.random() * 0.04 + 0.01) * basePrice);
+        // Fallback to top-level URL extractors if immersive parsing was empty or did not yield whitelisted PDPs
+        if (!hasDirectPDP) {
+          const rawUrl = extractDirectProductUrl(item);
+          const pdpUrl = tryBuildDirectPDP(rawUrl, originalPlatform);
           
-          const store1 = originalPlatform.toLowerCase().includes("amazon") ? "Flipkart" : "Amazon.in";
-          const store2 = originalPlatform.toLowerCase().includes("croma") ? "Reliance Digital" : "Croma";
-          
-          offers = [
-            {
-              store: originalPlatform,
-              price: basePrice,
-              link: directLink,
-              is_lowest: true
-            },
-            {
-              store: store1,
-              price: basePrice + diff1,
-              link: getMerchantSearchFallback(store1, title)
-            },
-            {
-              store: store2,
-              price: basePrice + diff2,
-              link: getMerchantSearchFallback(store2, title)
+          if (pdpUrl && isValidDirectPDPUrl(pdpUrl)) {
+            directLink = pdpUrl;
+            resolvedPlatform = originalPlatform;
+            hasDirectPDP = true;
+
+            const basePriceRaw = item.price || item.extractedPrice || item.extracted_price || "";
+            let basePrice = 0;
+            if (typeof basePriceRaw === "number") {
+              basePrice = basePriceRaw;
+            } else if (typeof basePriceRaw === "string") {
+              basePrice = parseFloat(basePriceRaw.replace(/[^0-9.]/g, "")) || 0;
             }
-          ];
+            if (basePrice === 0) {
+              basePrice = 24999;
+            }
+            resolvedPrice = basePrice;
 
-          offers.sort((a, b) => a.price - b.price);
-          offers.forEach((o, idx) => {
-            o.is_lowest = idx === 0;
-          });
+            offers = [
+              {
+                store: originalPlatform,
+                price: basePrice,
+                link: directLink,
+                is_lowest: true
+              }
+            ];
+          }
+        }
 
-          const lowestOffer = offers[0];
-          resolvedPrice = lowestOffer.price;
-          directLink = lowestOffer.link || directLink;
-          resolvedPlatform = lowestOffer.store;
-        } else {
-          hasDirectPDP = true;
+        // Under NO circumstances should the API route output a search listing URL for ANY product card or store chip.
+        // If the item doesn't have any valid PDP link, drop it!
+        if (!hasDirectPDP || !directLink) {
+          continue;
         }
 
         // Dynamically detect category and parse specifications locally
