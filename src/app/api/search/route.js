@@ -271,22 +271,17 @@ function isValidDirectPDPUrl(url) {
  * Extracts Amazon ASIN identifier from a verified Amazon URL pathway.
  * Avoids false positive matches in random strings.
  */
+/**
+ * Extracts Amazon ASIN identifier from a verified Amazon URL pathway.
+ * Avoids false positive matches in query params and random strings.
+ */
 function extractAmazonAsin(url) {
   if (!url || typeof url !== "string") return null;
   
-  // 1. Path segment matching
+  // Only extract ASIN if it is strictly present inside the official URL path string
   const pathMatch = url.match(/\/(?:dp|gp\/product|gp\/aw\/d|product)\/([A-Z0-9]{10})\b/i);
   if (pathMatch) {
     const asin = pathMatch[1].toUpperCase();
-    if (asin.startsWith("B") || /^\d{9}[\dX]$/.test(asin)) {
-      return asin;
-    }
-  }
-  
-  // 2. Query parameter matching
-  const queryMatch = url.match(/[?&](?:asin|productid|dp)=([A-Z0-9]{10})\b/i);
-  if (queryMatch) {
-    const asin = queryMatch[1].toUpperCase();
     if (asin.startsWith("B") || /^\d{9}[\dX]$/.test(asin)) {
       return asin;
     }
@@ -315,12 +310,52 @@ function extractFlipkartId(url) {
 }
 
 /**
+ * Identifies if a URL is a direct native merchant link rather than a search page or redirect.
+ */
+function isDirectNativeStoreLink(url) {
+  if (!url || typeof url !== "string") return false;
+  const lowerUrl = url.toLowerCase();
+  
+  // Reject search parameters, Google Shopping, and HasData proxy wrappers
+  if (
+    lowerUrl.includes("/search") ||
+    lowerUrl.includes("/s?k=") ||
+    lowerUrl.includes("udm=") ||
+    lowerUrl.includes("?q=") ||
+    lowerUrl.includes("cat=") ||
+    lowerUrl.includes("browse") ||
+    lowerUrl.includes("google.com") ||
+    lowerUrl.includes("google.co.in") ||
+    lowerUrl.includes("api.hasdata.com")
+  ) {
+    return false;
+  }
+  
+  // Must belong to one of our whitelisted trusted merchants
+  return TRUSTED_MERCHANTS.some(merchant => lowerUrl.includes(merchant.replace(/\s+/g, "")));
+}
+
+/**
  * Dynamically constructs direct product URLs using unique identifier parsers.
  */
 function tryBuildDirectPDP(url, platform) {
   if (!url) return null;
   const platformLower = (platform || "").toLowerCase();
   
+  // PRIORITY: If it is a direct native store link, use it directly (clearing tracking query params)
+  if (isDirectNativeStoreLink(url)) {
+    try {
+      const parsed = new URL(url);
+      const searchParams = parsed.searchParams;
+      const trackingParams = ["gclid", "utm_source", "utm_medium", "utm_campaign", "srsltid", "cmpid", "adurl"];
+      trackingParams.forEach(p => searchParams.delete(p));
+      return parsed.toString();
+    } catch (e) {
+      return url;
+    }
+  }
+  
+  // Fallback to ASIN/Flipkart ID regex construction
   if (platformLower.includes("amazon")) {
     const asin = extractAmazonAsin(url);
     if (asin) {
@@ -352,6 +387,31 @@ function tryBuildDirectPDP(url, platform) {
   }
   
   return null;
+}
+
+/**
+ * Helper to select native thumbnails over files.hasdata.com webps.
+ * Wraps files.hasdata.com webp files using an open proxy to bypass client-side CORS issues.
+ */
+function resolveProductImage(item) {
+  // 1. Prefer native Google Shopping thumbnails
+  let img = item.thumbnail || item.serpapi_thumbnail || "";
+  
+  if (img && img.includes("files.hasdata.com")) {
+    const otherImg = item.image || item.imageUrl || "";
+    if (otherImg && !otherImg.includes("files.hasdata.com")) {
+      img = otherImg;
+    }
+  } else if (!img) {
+    img = item.image || item.imageUrl || "";
+  }
+  
+  // 2. Wrap files.hasdata.com URLs using images.weserv.nl image proxy to bypass CORS
+  if (img && img.includes("files.hasdata.com")) {
+    return `https://images.weserv.nl/?url=${encodeURIComponent(img)}`;
+  }
+  
+  return img;
 }
 
 /**
@@ -762,7 +822,7 @@ export async function POST(request) {
     for (const item of detailedProducts) {
       try {
         const title = item.title || item.name || "";
-        const image = item.thumbnail || item.image || item.imageUrl || item.serpapi_thumbnail || "";
+        const image = resolveProductImage(item);
         const originalPlatform = item.source || item.merchant || item.seller || "Online Store";
 
         let directLink = "";

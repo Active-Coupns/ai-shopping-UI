@@ -8,7 +8,7 @@ async function testService() {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        query: "laptop 50000",
+        query: "Sony WH-1000XM4",
         country: "IN"
       })
     });
