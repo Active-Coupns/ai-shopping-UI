@@ -11,9 +11,12 @@
 The code is fully committed and pushed to the remote repository: **[Active-Coupns/ai-shopping-UI](https://github.com/Active-Coupns/ai-shopping-UI.git)**
 
 * **`src/app/api/search/route.js`**: Next.js serverless route proxy:
-  - **`isValidDirectPDPUrl` Enforcement**: Added a strict URL validator that rejects any URL starting with or containing `google.com`, `google.co.in`, `google.`, `ibp=`, or `serpapi`.
-  - **Aggregator Link Drops**: When mapping comparison stores from SerpApi's immersive product details, any store listing containing Google redirect/aggregator paths is automatically dropped from the chip list.
-  - **Product Card Filter Policy**: If a product has no valid direct merchant PDP links left after processing, the entire card is dropped from the returned array instead of serving a Google landing page fallback.
+  - **Dynamic AI Insights**: Generates unique, item-specific matching insights ("Best For", "Why This Deal", "Trade-off") by parsing the product's actual title, category keywords, and price tiers dynamically.
+  - **Dynamic Specifications**: Computes dynamic specs arrays on-the-fly (e.g. CPU, RAM, storage, form factor, sound driver, noise control) matching the specific product details returned by SerpApi instead of relying on hardcoded static templates.
+  - **Immersive Store Details Integration**: Fetches SerpApi's immersive product details (`engine=google_immersive_product`) concurrently for the top 3 search results.
+  - **Direct Merchant PDP Links**: Extracts direct seller checkout links (e.g. `flipkart.com/...`, `amazon.in/...`, `apple.com/...` PDP URLs) from `product_results.stores`. The primary product link is overridden with the lowest priced direct checkout URL, bypassing Google aggregator pages completely.
+  - **Multi-Store Price Comparisons**: Dynamically maps all sellers from the immersive response's `stores` list into the `price_comparison` array. This populates multiple comparison store chips on our UI (e.g. Flipkart, Reliance Digital, Apple) with their specific pricing.
+  - **Fail-safe Concurrent Timeouts**: Fetch operations use a 5-second AbortSignal timeout and a 5.5-second Promise.race timeout to avoid Vercel edge timeouts. If immersive details fail to load, the backend falls back gracefully to top-level search link formats without crashing. page fallback.
 * **`src/components/ProductCard.jsx`**: Product card UI component updated to support `whitespace-pre-line` formatting in AI Matching Insights, allowing multi-paragraph insights to render beautifully.
 * **`src/services/api.js`**: Frontend service mapping updated to compile raw arrays of category-specific specification strings directly, bypassing static hardcoded laptop label prefixes.
 
