@@ -245,9 +245,49 @@ export async function POST(request) {
     }
 
     const cleanProducts = [];
+    const topResults = rawResults.slice(0, 5);
 
-    // Map 100% of the raw data returned by SerpApi directly to the frontend matching the schema
-    for (const item of rawResults) {
+    // Fetch immersive store/comparison details concurrently for the top 3 search items (highly optimized timeout)
+    const detailPromises = topResults.slice(0, 3).map(async (item) => {
+      if (item.serpapi_immersive_product_api) {
+        try {
+          const detailUrl = `${item.serpapi_immersive_product_api}&api_key=${serpapiApiKey}`;
+          const res = await fetch(detailUrl, { signal: AbortSignal.timeout(5000) });
+          if (res.ok) {
+            const detailData = await res.json();
+            return {
+              position: item.position,
+              stores: detailData.product_results?.stores || []
+            };
+          }
+        } catch (err) {
+          console.warn(`Failed fetching immersive details for product ${item.title}:`, err);
+        }
+      }
+      return { position: item.position, stores: [] };
+    });
+
+    let detailsList = [];
+    try {
+      // Race details fetching with a 5.5-second timeout limit to avoid Vercel edge function timeouts
+      detailsList = await Promise.race([
+        Promise.all(detailPromises),
+        new Promise((resolve) => setTimeout(() => resolve([]), 5500))
+      ]);
+    } catch (err) {
+      console.error("Failed fetching detail promises:", err);
+    }
+
+    // Map stores list by product position
+    const detailsMap = new Map();
+    if (Array.isArray(detailsList)) {
+      detailsList.forEach(d => {
+        if (d) detailsMap.set(d.position, d.stores);
+      });
+    }
+
+    // Map results to schema, merging direct checkout links and store chips from details
+    for (const item of topResults) {
       if (!item || !(item.title || item.name)) continue;
 
       const title = item.title || item.name || "";
@@ -264,11 +304,14 @@ export async function POST(request) {
 
       // Map Store Link: Pass item.link or item.direct_link or item.product_link directly
       const rawLink = item.link || item.direct_link || item.product_link || "";
-      const directLink = cleanProductUrl(rawLink);
+      let directLink = cleanProductUrl(rawLink);
+      let resolvedPrice = priceVal;
+      let resolvedPlatform = platform;
 
-      // Price comparison array
+      // Map comparison stores from details response
+      const storesList = detailsMap.get(item.position) || [];
       let offers = [];
-      const storesList = item.prices || item.stores || [];
+
       if (Array.isArray(storesList) && storesList.length > 0) {
         storesList.forEach(s => {
           const sLink = s.link || s.direct_link || "";
@@ -280,14 +323,26 @@ export async function POST(request) {
             sPriceVal = parseFloat(sPriceRaw.replace(/[^0-9.]/g, "")) || 0;
           }
           offers.push({
-            store: s.store || s.name || "Online Store",
+            store: s.name || s.store || "Online Store",
             price: sPriceVal,
             link: cleanProductUrl(sLink)
           });
         });
       }
 
-      if (offers.length === 0) {
+      if (offers.length > 0) {
+        // Sort and pick lowest price offer details
+        offers.sort((a, b) => a.price - b.price);
+        offers.forEach((o, idx) => {
+          o.is_lowest = idx === 0;
+        });
+        const lowest = offers[0];
+        // Override comparative page links with direct merchant store PDP links
+        directLink = lowest.link;
+        resolvedPrice = lowest.price;
+        resolvedPlatform = lowest.store;
+      } else {
+        // Fallback store chip matching schema
         offers = [
           {
             store: platform,
@@ -296,16 +351,11 @@ export async function POST(request) {
             is_lowest: true
           }
         ];
-      } else {
-        offers.sort((a, b) => a.price - b.price);
-        offers.forEach((o, idx) => {
-          o.is_lowest = idx === 0;
-        });
       }
 
       const category = detectCategory(cleanQuery, title);
       const parsedSpecs = parseSpecsFromTitle(category, title);
-      const fallbackDesc = getFallbackDescriptionForCategory(category, platform);
+      const fallbackDesc = getFallbackDescriptionForCategory(category, resolvedPlatform);
       const image = item.thumbnail || "";
 
       cleanProducts.push({
@@ -315,8 +365,8 @@ export async function POST(request) {
         rating: String(item.rating || "4.5"),
         reviewsCount: Number(item.reviews || 100),
         link: String(directLink),
-        platform: String(platform),
-        price: Number(priceVal),
+        platform: String(resolvedPlatform),
+        price: Number(resolvedPrice),
         price_comparison: offers,
         hasDirectPDP: true,
         detailed_specs: parsedSpecs
