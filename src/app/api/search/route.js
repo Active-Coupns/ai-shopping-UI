@@ -44,6 +44,25 @@ function cleanProductUrl(url) {
 }
 
 /**
+ * Strictly validates that a URL resolves directly to a merchant's PDP.
+ * Returns false if the URL contains Google aggregator fields or SerpApi redirect wrappers.
+ */
+function isValidDirectPDPUrl(url) {
+  if (!url) return false;
+  const lower = url.toLowerCase();
+  if (
+    lower.includes("google.com") ||
+    lower.includes("google.co.in") ||
+    lower.includes("google.") ||
+    lower.includes("ibp=") ||
+    lower.includes("serpapi")
+  ) {
+    return false;
+  }
+  return true;
+}
+
+/**
  * Simplifies a long or complex natural query to ensure Google Shopping returns results.
  */
 function getSimplifiedQueryFallback(q) {
@@ -247,7 +266,7 @@ export async function POST(request) {
     const cleanProducts = [];
     const topResults = rawResults.slice(0, 5);
 
-    // Fetch immersive store/comparison details concurrently for the top 3 search items (highly optimized timeout)
+    // Fetch immersive store/comparison details concurrently for the top 3 search items
     const detailPromises = topResults.slice(0, 3).map(async (item) => {
       if (item.serpapi_immersive_product_api) {
         try {
@@ -315,18 +334,23 @@ export async function POST(request) {
       if (Array.isArray(storesList) && storesList.length > 0) {
         storesList.forEach(s => {
           const sLink = s.link || s.direct_link || "";
-          const sPriceRaw = s.price || s.extracted_price || 0;
-          let sPriceVal = 0;
-          if (typeof sPriceRaw === "number") {
-            sPriceVal = sPriceRaw;
-          } else if (typeof sPriceRaw === "string") {
-            sPriceVal = parseFloat(sPriceRaw.replace(/[^0-9.]/g, "")) || 0;
+          const cleanedLink = cleanProductUrl(sLink);
+          
+          // STRICT RULE: Drop store chip if it points to Google aggregator instead of direct merchant PDP
+          if (isValidDirectPDPUrl(cleanedLink)) {
+            const sPriceRaw = s.price || s.extracted_price || 0;
+            let sPriceVal = 0;
+            if (typeof sPriceRaw === "number") {
+              sPriceVal = sPriceRaw;
+            } else if (typeof sPriceRaw === "string") {
+              sPriceVal = parseFloat(sPriceRaw.replace(/[^0-9.]/g, "")) || 0;
+            }
+            offers.push({
+              store: s.name || s.store || "Online Store",
+              price: sPriceVal,
+              link: cleanedLink
+            });
           }
-          offers.push({
-            store: s.name || s.store || "Online Store",
-            price: sPriceVal,
-            link: cleanProductUrl(sLink)
-          });
         });
       }
 
@@ -337,20 +361,28 @@ export async function POST(request) {
           o.is_lowest = idx === 0;
         });
         const lowest = offers[0];
-        // Override comparative page links with direct merchant store PDP links
         directLink = lowest.link;
         resolvedPrice = lowest.price;
         resolvedPlatform = lowest.store;
       } else {
-        // Fallback store chip matching schema
-        offers = [
-          {
-            store: platform,
-            price: priceVal,
-            link: directLink,
-            is_lowest: true
-          }
-        ];
+        const topLink = item.direct_link || item.link || "";
+        const cleanedTopLink = cleanProductUrl(topLink);
+        if (isValidDirectPDPUrl(cleanedTopLink)) {
+          offers = [
+            {
+              store: platform,
+              price: priceVal,
+              link: cleanedTopLink,
+              is_lowest: true
+            }
+          ];
+          directLink = cleanedTopLink;
+        }
+      }
+
+      // STRICT RULE: If no valid direct merchant PDP link exists, drop the product card completely
+      if (!directLink || !isValidDirectPDPUrl(directLink)) {
+        continue;
       }
 
       const category = detectCategory(cleanQuery, title);
