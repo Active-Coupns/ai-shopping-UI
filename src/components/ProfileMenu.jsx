@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { User, LogOut, ChevronDown, Globe, Mail } from "lucide-react";
 
-export default function ProfileMenu({ user, onLogout, onOpenLogin }) {
+export default function ProfileMenu({ user, onLogout, onOpenLogin, searchesLeft = 10 }) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -49,7 +49,7 @@ export default function ProfileMenu({ user, onLogout, onOpenLogin }) {
         </div>
         <div className="hidden md:block">
           <p className="text-xs font-bold text-white leading-tight max-w-[120px] truncate">{name}</p>
-          <p className="text-[10px] text-slate-400 truncate max-w-[120px]">{email}</p>
+          <p className="text-[10px] text-slate-400 truncate max-w-[120px]">{searchesLeft} / 10 Left Today</p>
         </div>
         <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
       </button>
@@ -80,6 +80,16 @@ export default function ProfileMenu({ user, onLogout, onOpenLogin }) {
               </span>
               <span className="font-bold text-brand-indigo bg-brand-indigo/10 px-2 py-0.5 rounded-md text-[10px]">
                 {country === "US" ? "USA (US)" : "India (IN)"}
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between text-xs py-1.5 px-2.5 rounded-lg bg-slate-900/50 text-slate-300">
+              <span className="flex items-center gap-2">
+                <User className="w-3.5 h-3.5 text-slate-500" />
+                <span>Daily Quota</span>
+              </span>
+              <span className="font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md text-[10px]">
+                {searchesLeft} / 10 Left
               </span>
             </div>
           </div>

@@ -133,5 +133,30 @@ export const auth = {
       return { data: { user }, error };
     }
     return supabase.auth.getUser();
+  },
+
+  updateUserMetadata: async (userId, metadata, token = null) => {
+    if (isMockAuthMode() || (token && token.startsWith("mock-jwt-token-jwt-"))) {
+      if (token && token.startsWith("mock-jwt-token-jwt-")) {
+        try {
+          const userJson = atob(token.replace("mock-jwt-token-jwt-", ""));
+          const user = JSON.parse(userJson);
+          user.user_metadata = {
+            ...user.user_metadata,
+            ...metadata
+          };
+          const updatedToken = "mock-jwt-token-jwt-" + btoa(JSON.stringify(user));
+          return { data: { user, access_token: updatedToken }, error: null };
+        } catch (e) {
+          return { error: e };
+        }
+      }
+      return { error: new Error("Mock user session not found") };
+    }
+
+    const { data, error } = await supabase.auth.updateUser({
+      data: metadata
+    });
+    return { data, error };
   }
 };

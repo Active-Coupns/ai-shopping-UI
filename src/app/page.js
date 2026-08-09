@@ -8,6 +8,7 @@ import RocketLoader from "@/components/RocketLoader";
 import ProductCard from "@/components/ProductCard";
 import AuthModal from "@/components/AuthModal";
 import ProfileMenu from "@/components/ProfileMenu";
+import QuotaModal from "@/components/QuotaModal";
 import { searchProducts } from "@/services/api";
 import { auth } from "@/services/supabase";
 
@@ -23,11 +24,24 @@ export default function Home() {
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [authMode, setAuthMode] = useState("login");
 
+  const [searchesLeft, setSearchesLeft] = useState(10);
+  const [isQuotaOpen, setIsQuotaOpen] = useState(false);
+
   useEffect(() => {
     async function initSession() {
       const { data: { session } } = await auth.getSession();
       if (session?.user) {
         setUser(session.user);
+        
+        // Sync real-time remaining searches from user metadata
+        const todayStr = new Date().toISOString().split("T")[0];
+        const lastDate = session.user.user_metadata?.last_search_date || "";
+        const count = session.user.user_metadata?.search_count_today || 0;
+        if (lastDate === todayStr) {
+          setSearchesLeft(10 - count);
+        } else {
+          setSearchesLeft(10);
+        }
       }
     }
     initSession();
@@ -88,12 +102,33 @@ export default function Home() {
         }
       }
 
+      // Sync target session changes if backend refreshed the token payload
+      if (response.newToken) {
+        const todayStr = new Date().toISOString().split("T")[0];
+        const updatedUser = {
+          ...user,
+          user_metadata: {
+            ...user.user_metadata,
+            search_count_today: (user.user_metadata?.search_count_today || 0) + 1,
+            last_search_date: todayStr
+          }
+        };
+        localStorage.setItem("mock_supabase_session", JSON.stringify({
+          access_token: response.newToken,
+          user: updatedUser
+        }));
+        setUser(updatedUser);
+      }
+
       setProducts(fetchedProducts);
-      setCreditsRemaining(response.creditsRemaining);
+      setSearchesLeft(response.searchesLeft !== undefined ? response.searchesLeft : 10);
       setApiError(null);
     } catch (err) {
       console.error("Local search API request failed:", err);
-      if (err.message?.includes("401") || err.message?.includes("Unauthorized")) {
+      if (err.message?.includes("403") || err.message?.includes("QuotaReached")) {
+        setSearchesLeft(0);
+        setIsQuotaOpen(true);
+      } else if (err.message?.includes("401") || err.message?.includes("Unauthorized")) {
         setApiError("Your session has expired. Please sign in again.");
         setUser(null);
         setAuthMode("login");
@@ -154,6 +189,7 @@ export default function Home() {
                 setAuthMode("login");
                 setIsAuthOpen(true);
               }}
+              searchesLeft={searchesLeft}
             />
           </div>
         </div>
@@ -227,10 +263,10 @@ export default function Home() {
                 </div>
 
                 <div className="flex items-center gap-3">
-                  {creditsRemaining !== null && (
+                  {user && (
                     <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-brand-indigo/15 border border-brand-indigo/35 text-xs font-semibold text-brand-indigo shadow-inner">
                       <Coins className="w-4 h-4 text-brand-indigo animate-pulse" />
-                      <span>{creditsRemaining} Credits</span>
+                      <span>{searchesLeft} / 10 Searches Left Today</span>
                     </div>
                   )}
                   <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs font-semibold text-slate-300">
@@ -300,6 +336,11 @@ export default function Home() {
         onClose={() => setIsAuthOpen(false)}
         onAuthSuccess={handleAuthSuccess}
         initialMode={authMode}
+      />
+
+      <QuotaModal
+        isOpen={isQuotaOpen}
+        onClose={() => setIsQuotaOpen(false)}
       />
     </div>
   );

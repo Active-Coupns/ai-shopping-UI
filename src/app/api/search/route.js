@@ -335,6 +335,29 @@ export async function POST(request) {
       return NextResponse.json({ error: "Unauthorized: Invalid or expired session token" }, { status: 401 });
     }
 
+    // Daily Quota Verification (strictly capped to 10 searches per day)
+    const todayStr = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+    let count = user.user_metadata?.search_count_today || 0;
+    let lastDate = user.user_metadata?.last_search_date || "";
+
+    if (lastDate !== todayStr) {
+      count = 0;
+      lastDate = todayStr;
+    }
+
+    if (count >= 10) {
+      return NextResponse.json({ error: "QuotaReached", searchesLeft: 0 }, { status: 403 });
+    }
+
+    const newCount = count + 1;
+    const updatedMetadata = {
+      search_count_today: newCount,
+      last_search_date: lastDate
+    };
+
+    const { data: updateData } = await auth.updateUserMetadata(user.id, updatedMetadata, token);
+    const newToken = updateData?.access_token || null;
+
     const { query, country } = await request.json();
     
     if (!query) {
@@ -619,7 +642,11 @@ Do not include markdown code block formatting (like \`\`\`json). Return ONLY raw
     const mappedProducts = cleanProducts.slice(0, 5);
     console.log("Filtered Products mapped count:", mappedProducts.length);
 
-    return NextResponse.json({ products: mappedProducts }, { status: 200 });
+    return NextResponse.json({
+      products: mappedProducts,
+      searchesLeft: 10 - newCount,
+      newToken
+    }, { status: 200 });
 
   } catch (err) {
     console.error("Serverless Search API Route error:", err);
