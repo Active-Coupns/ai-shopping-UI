@@ -1,33 +1,37 @@
 # Walkthrough - AI Shopping Assistant Platform
 
-We have successfully completed **Phase 1: Step 2 - In-Memory Request Queue System** across the platform.
+We have successfully completed **Phase 1: Step 3 - Per-User Daily Search Limits (Quota System)** across the platform.
 
 ## What Was Refactored & Deployed
 
 ### 📁 Project Repository & Structure
 The code is fully committed and pushed to the remote repository: **[Active-Coupns/ai-shopping-UI](https://github.com/Active-Coupns/ai-shopping-UI.git)**
 
-* **`src/app/api/search/route.js`**: Next.js serverless route proxy:
-  - **`RequestQueue` Class** [NEW]: Defined an async FIFO request queue limiting active outbound executions to a concurrency of 3, with a 5-second waiting timeout safeguard.
-  - **Queued Execution**: Wrapped all SerpApi search, fallback retry, and immersive detail requests inside the global `searchQueue` instance to restrict serverless concurrency.
-  - **HTTP 429 Busy State**: Rejects queued requests that exceed the 5-second waiting limit immediately with an **HTTP 429 Too Many Requests** response and an appropriate JSON error payload.
+* **`src/services/supabase.js`**: Unified Supabase driver:
+  - **`updateUserMetadata` Helper** [NEW]: Supports saving custom session metadata (`search_count_today`, `last_search_date`) in both Mock Auth Mode and live Supabase Auth project databases.
+* **`src/app/api/search/route.js`**: Serverless search api route:
+  - **Daily Search Quota Enforcement**: Tracks per-user daily search count bound to their Supabase session ID. Limits searches strictly to a maximum of 10 per day.
+  - **HTTP 403 Forbidden Response**: If the daily search limit is reached, blocks API execution and returns an **HTTP 403 Forbidden** status with error code `QuotaReached`.
+  - **Payload Syncing**: Appends `searchesLeft` and updated token `newToken` in the search success payload.
+* **`src/components/ProfileMenu.jsx`**: Navbar user profile dropdown:
+  - **Live Quota Display**: Displays the remaining daily quota (e.g. `7 / 10 Left Today`) directly in the Navbar trigger button and the dropdown list.
+* **`src/components/QuotaModal.jsx`** [NEW]: A sleek glassmorphic limit-exhaustion popup modal dialog. Displays a polite notification prompting the user to return in 24 hours.
 * **`src/app/page.js`**: Home landing client page:
-  - **HTTP 429 State Handling**: Updates the catch block to intercept 429 / busy status codes. Displays a friendly banner advising the user that the server is currently busy and to try again shortly, maintaining a clean visual state.
+  - **Real-time Counter Sync**: Hooks state variable `searchesLeft` to display remaining daily searches on success payloads.
+  - **Limit Exhaustion Catching**: Intercepts HTTP 403 / `QuotaReached` status responses from search requests, dynamically updating state counters to 0 and triggering the custom `QuotaModal` dialog cleanly without technical error overlays.
 
 ---
 
 ## Technical Features & API Integrations
 
-### 1. Concurrency Queue Verification
-* **Isolated Concurrency Simulator (`scratch/test-queue-concurrency.js`)**:
-  - Enqueued 5 concurrent tasks with a limit of 3 and a 2-second timeout.
-  - Tasks 1, 2, and 3 executed immediately.
-  - Tasks 4 and 5 queued up, timed out at 2 seconds, and rejected with the correct `QueueTimeout` error as expected.
-* **Search Route Block Status**:
-  - Overloaded requests beyond bounds fail gracefully with **HTTP 429** (`{ "error": "Server is busy processing other search requests. Please try again in a moment." }`).
+### 1. Quota Enforcement Verification
+* **11-Search Quota Simulator (`scratch/test-quota-limit.js`)**:
+  - Initialized a mock user with 9 searches today.
+  - Request #10 succeeded with **HTTP 200 OK** and returned `searchesLeft: 0`.
+  - Request #11 was blocked immediately with **HTTP 403 Forbidden** and returned `{ error: "QuotaReached", searchesLeft: 0 }`, confirming that the daily search limits and API protection are fully functional.
 
 ### 2. Verified Local Build
-Production build compiles cleanly in **3.9 seconds** and is deployed to the remote main repository.
+Production build compiles cleanly in **4.1 seconds** and is deployed to the remote main repository.
 
 ---
 
