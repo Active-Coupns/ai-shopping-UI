@@ -177,5 +177,26 @@ export const auth = {
       data: metadata
     });
     return { data, error };
+  },
+
+  resetPasswordForEmail: async (email, options) => {
+    if (isMockAuthMode()) {
+      return { data: {}, error: null };
+    }
+    return supabase.auth.resetPasswordForEmail(email, options);
+  },
+
+  updateUser: async (attributes) => {
+    if (isMockAuthMode()) {
+      return { data: { user: {} }, error: null };
+    }
+    return supabase.auth.updateUser(attributes);
+  },
+
+  onAuthStateChange: (callback) => {
+    if (isMockAuthMode()) {
+      return { data: { subscription: { unsubscribe: () => {} } } };
+    }
+    return supabase.auth.onAuthStateChange(callback);
   }
 };
