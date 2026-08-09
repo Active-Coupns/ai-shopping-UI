@@ -154,6 +154,25 @@ export const auth = {
       return { error: new Error("Mock user session not found") };
     }
 
+    // Production real Supabase with dynamic user token authorization:
+    if (token) {
+      try {
+        const userClient = createClient(supabaseUrl, supabaseAnonKey, {
+          global: {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          }
+        });
+        const { data, error } = await userClient.auth.updateUser({
+          data: metadata
+        });
+        return { data, error };
+      } catch (err) {
+        return { error: err };
+      }
+    }
+
     const { data, error } = await supabase.auth.updateUser({
       data: metadata
     });

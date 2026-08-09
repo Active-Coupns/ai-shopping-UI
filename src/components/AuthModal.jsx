@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Mail, Lock, User, Globe, Sparkles } from "lucide-react";
 import { auth } from "@/services/supabase";
 
-export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode = "login" }) {
+export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode = "login", message = null }) {
   const [mode, setMode] = useState(initialMode); // login | signup
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -96,11 +96,17 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
           <h2 className="text-2xl font-bold text-white tracking-tight">
             {mode === "signup" ? "Create an Account" : "Welcome Back"}
           </h2>
-          <p className="text-xs text-slate-400 mt-1.5">
-            {mode === "signup"
-              ? "Sign up to start tracking products and comparing prices"
-              : "Sign in to access your personal AI shopping assistant"}
-          </p>
+          {message ? (
+            <p className="text-xs text-amber-300 font-semibold mt-2 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/20">
+              {message}
+            </p>
+          ) : (
+            <p className="text-xs text-slate-400 mt-1.5">
+              {mode === "signup"
+                ? "Sign up to start tracking products and comparing prices"
+                : "Sign in to access your personal AI shopping assistant"}
+            </p>
+          )}
         </div>
 
         {/* Error Alert */}

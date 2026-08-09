@@ -23,6 +23,7 @@ export default function Home() {
   const [user, setUser] = useState(null);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [authMode, setAuthMode] = useState("login");
+  const [authMessage, setAuthMessage] = useState(null);
 
   const [searchesLeft, setSearchesLeft] = useState(10);
   const [isQuotaOpen, setIsQuotaOpen] = useState(false);
@@ -59,7 +60,8 @@ export default function Home() {
 
   const handleSearchSubmit = async (query) => {
     if (!user) {
-      setAuthMode("login");
+      setAuthMessage("Account Required to Search 🔒\nTo search products and compare prices, please create a free account or sign in first.");
+      setAuthMode("signup");
       setIsAuthOpen(true);
       return;
     }
@@ -186,6 +188,7 @@ export default function Home() {
               user={user}
               onLogout={handleLogout}
               onOpenLogin={() => {
+                setAuthMessage(null);
                 setAuthMode("login");
                 setIsAuthOpen(true);
               }}
@@ -336,6 +339,7 @@ export default function Home() {
         onClose={() => setIsAuthOpen(false)}
         onAuthSuccess={handleAuthSuccess}
         initialMode={authMode}
+        message={authMessage}
       />
 
       <QuotaModal
