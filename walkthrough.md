@@ -1,36 +1,33 @@
 # Walkthrough - AI Shopping Assistant Platform
 
-We have successfully completed **Phase 1: Step 1 - Supabase Authentication & Profile Menu** across the platform.
+We have successfully completed **Phase 1: Step 2 - In-Memory Request Queue System** across the platform.
 
 ## What Was Refactored & Deployed
 
 ### 📁 Project Repository & Structure
 The code is fully committed and pushed to the remote repository: **[Active-Coupns/ai-shopping-UI](https://github.com/Active-Coupns/ai-shopping-UI.git)**
 
-* **`src/services/supabase.js`** [NEW]: A unified Supabase driver. To support rapid local development, this driver features an automatic **Mock Auth Fallback Mode** that triggers when Supabase environmental keys are unconfigured. It mimics the official Supabase Auth SDK exactly, enabling login, signup, session checking, and metadata registration without requiring database configuration.
-* **`src/components/AuthModal.jsx`** [NEW]: A sleek glassmorphic login/signup modal collecting the user's Full Name, Email, Password, and target shopping country preference ("IN" / "US").
-* **`src/components/ProfileMenu.jsx`** [NEW]: A dropdown navbar profile menu displaying initials, full name, email, target country, and log out options.
+* **`src/app/api/search/route.js`**: Next.js serverless route proxy:
+  - **`RequestQueue` Class** [NEW]: Defined an async FIFO request queue limiting active outbound executions to a concurrency of 3, with a 5-second waiting timeout safeguard.
+  - **Queued Execution**: Wrapped all SerpApi search, fallback retry, and immersive detail requests inside the global `searchQueue` instance to restrict serverless concurrency.
+  - **HTTP 429 Busy State**: Rejects queued requests that exceed the 5-second waiting limit immediately with an **HTTP 429 Too Many Requests** response and an appropriate JSON error payload.
 * **`src/app/page.js`**: Home landing client page:
-  - Hooks up `useEffect` to retrieve and restore session states from Supabase auth.
-  - Controls Auth Modal visibility, triggers signup/login/logout flows, and intercepts search requests if the user is unauthenticated.
-  - Dynamically passes the user's country preference (`IN` / `US`) to the search API.
-* **`src/services/api.js`**: Appends the active session token in the authorization header using the standard format `Authorization: Bearer <token>`.
-* **`src/app/api/search/route.js`**: Protects the serverless search endpoint:
-  - Verifies the Authorization header Bearer token against Supabase auth.
-  - Rejects unauthenticated callers immediately with **HTTP 401 Unauthorized** error codes and descriptive message payloads.
+  - **HTTP 429 State Handling**: Updates the catch block to intercept 429 / busy status codes. Displays a friendly banner advising the user that the server is currently busy and to try again shortly, maintaining a clean visual state.
 
 ---
 
 ## Technical Features & API Integrations
 
-### 1. Protection Verification
-* **Blocked Unauthenticated Request**:
-  - `POST /api/search` -> **HTTP 401 Unauthorized** (`{ "error": "Unauthorized: Missing active session token" }`).
-* **Successful Authenticated Request**:
-  - `POST /api/search` (with valid mock token) -> **HTTP 200 OK** (processes SerpApi results).
+### 1. Concurrency Queue Verification
+* **Isolated Concurrency Simulator (`scratch/test-queue-concurrency.js`)**:
+  - Enqueued 5 concurrent tasks with a limit of 3 and a 2-second timeout.
+  - Tasks 1, 2, and 3 executed immediately.
+  - Tasks 4 and 5 queued up, timed out at 2 seconds, and rejected with the correct `QueueTimeout` error as expected.
+* **Search Route Block Status**:
+  - Overloaded requests beyond bounds fail gracefully with **HTTP 429** (`{ "error": "Server is busy processing other search requests. Please try again in a moment." }`).
 
 ### 2. Verified Local Build
-Production build compiles cleanly in **3.8 seconds** and is deployed to the remote main repository.
+Production build compiles cleanly in **3.9 seconds** and is deployed to the remote main repository.
 
 ---
 
