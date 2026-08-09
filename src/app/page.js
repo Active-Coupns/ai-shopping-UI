@@ -98,6 +98,8 @@ export default function Home() {
         setUser(null);
         setAuthMode("login");
         setIsAuthOpen(true);
+      } else if (err.message?.includes("429") || err.message?.includes("busy") || err.message?.includes("Too Many Requests")) {
+        setApiError("The server is currently busy processing other searches. Please wait a moment and try again.");
       } else {
         setApiError("No live deals found for this query. Try adjusting your search terms.");
       }

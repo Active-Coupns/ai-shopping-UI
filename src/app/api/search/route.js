@@ -1,6 +1,70 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/services/supabase";
 
+class RequestQueue {
+  constructor(concurrencyLimit = 3, waitTimeoutMs = 5000) {
+    this.concurrencyLimit = concurrencyLimit;
+    this.waitTimeoutMs = waitTimeoutMs;
+    this.runningCount = 0;
+    this.waitingQueue = [];
+  }
+
+  async enqueue(requestFn) {
+    if (this.runningCount < this.concurrencyLimit) {
+      this.runningCount++;
+      try {
+        return await requestFn();
+      } finally {
+        this.runningCount--;
+        this.next();
+      }
+    }
+
+    return new Promise((resolve, reject) => {
+      let timeoutId;
+      const queueItem = {
+        resolve: async () => {
+          clearTimeout(timeoutId);
+          this.runningCount++;
+          try {
+            const result = await requestFn();
+            resolve(result);
+          } catch (err) {
+            reject(err);
+          } finally {
+            this.runningCount--;
+            this.next();
+          }
+        },
+        reject: (err) => {
+          clearTimeout(timeoutId);
+          reject(err);
+        }
+      };
+
+      this.waitingQueue.push(queueItem);
+
+      timeoutId = setTimeout(() => {
+        const idx = this.waitingQueue.indexOf(queueItem);
+        if (idx !== -1) {
+          this.waitingQueue.splice(idx, 1);
+        }
+        queueItem.reject(new Error("QueueTimeout"));
+      }, this.waitTimeoutMs);
+    });
+  }
+
+  next() {
+    if (this.waitingQueue.length > 0 && this.runningCount < this.concurrencyLimit) {
+      const nextItem = this.waitingQueue.shift();
+      nextItem.resolve();
+    }
+  }
+}
+
+const searchQueue = new RequestQueue(3, 5000);
+
+
 const TRUSTED_MERCHANTS = [
   "amazon", "flipkart", "croma", "reliance digital", "tatacliq", 
   "vijay sales", "myntra", "boat", "noise", "walmart", "bestbuy", 
@@ -283,84 +347,104 @@ export async function POST(request) {
       .replace(/\s+/g, " ")
       .trim();
 
-    // Call SerpApi Google Shopping Endpoint directly
-    const gl = (country || "in").toLowerCase();
-    const hl = "en";
-    let serpapiUrl = `https://serpapi.com/search.json?engine=google_shopping&q=${encodeURIComponent(cleanQuery)}&gl=${gl}&hl=${hl}&api_key=${serpapiApiKey}`;
-
-    let scraperResponse;
-    let data;
     let rawResults = [];
+    const detailsMap = new Map();
 
     try {
-      scraperResponse = await fetch(serpapiUrl, { method: "GET" });
-      if (scraperResponse && scraperResponse.ok) {
-        data = await scraperResponse.json();
-        rawResults = data?.shopping_results || data?.inline_shopping_results || [];
-      }
-    } catch (err) {
-      console.warn("Primary SerpApi search failed:", err);
-    }
+      const queueResult = await searchQueue.enqueue(async () => {
+        let currentRawResults = [];
+        let scraperResponse;
+        let data;
 
-    // Self-healing query fallback retry if primary search failed (e.g. 503 error) or returned 0 results
-    if (rawResults.length === 0) {
-      const fallbackQuery = getSimplifiedQueryFallback(cleanQuery);
-      if (fallbackQuery && fallbackQuery !== cleanQuery) {
-        console.log(`Retrying search with simplified query fallback: "${fallbackQuery}"`);
-        serpapiUrl = `https://serpapi.com/search.json?engine=google_shopping&q=${encodeURIComponent(fallbackQuery)}&gl=${gl}&hl=${hl}&api_key=${serpapiApiKey}`;
+        // Call SerpApi Google Shopping Endpoint directly
+        const gl = (country || "in").toLowerCase();
+        const hl = "en";
+        let serpapiUrl = `https://serpapi.com/search.json?engine=google_shopping&q=${encodeURIComponent(cleanQuery)}&gl=${gl}&hl=${hl}&api_key=${serpapiApiKey}`;
+
         try {
           scraperResponse = await fetch(serpapiUrl, { method: "GET" });
           if (scraperResponse && scraperResponse.ok) {
             data = await scraperResponse.json();
-            rawResults = data?.shopping_results || data?.inline_shopping_results || [];
+            currentRawResults = data?.shopping_results || data?.inline_shopping_results || [];
           }
-        } catch (fallbackErr) {
-          console.error("Fallback SerpApi search failed:", fallbackErr);
+        } catch (err) {
+          console.warn("Primary SerpApi search failed inside queue:", err);
         }
+
+        // Self-healing query fallback retry if primary search failed (e.g. 503 error) or returned 0 results
+        if (currentRawResults.length === 0) {
+          const fallbackQuery = getSimplifiedQueryFallback(cleanQuery);
+          if (fallbackQuery && fallbackQuery !== cleanQuery) {
+            console.log(`Retrying search with simplified query fallback inside queue: "${fallbackQuery}"`);
+            const fallbackSerpapiUrl = `https://serpapi.com/search.json?engine=google_shopping&q=${encodeURIComponent(fallbackQuery)}&gl=${gl}&hl=${hl}&api_key=${serpapiApiKey}`;
+            try {
+              scraperResponse = await fetch(fallbackSerpapiUrl, { method: "GET" });
+              if (scraperResponse && scraperResponse.ok) {
+                data = await scraperResponse.json();
+                currentRawResults = data?.shopping_results || data?.inline_shopping_results || [];
+              }
+            } catch (fallbackErr) {
+              console.error("Fallback SerpApi search failed inside queue:", fallbackErr);
+            }
+          }
+        }
+
+        const currentTopResults = currentRawResults.slice(0, 5);
+
+        // Fetch immersive store/comparison details concurrently for the top 3 search items
+        const detailPromises = currentTopResults.slice(0, 3).map(async (item) => {
+          if (item.serpapi_immersive_product_api) {
+            try {
+              const detailUrl = `${item.serpapi_immersive_product_api}&api_key=${serpapiApiKey}`;
+              const res = await fetch(detailUrl, { signal: AbortSignal.timeout(5000) });
+              if (res.ok) {
+                const detailData = await res.json();
+                return {
+                  position: item.position,
+                  stores: detailData.product_results?.stores || []
+                };
+              }
+            } catch (err) {
+              console.warn(`Failed fetching immersive details for product ${item.title}:`, err);
+            }
+          }
+          return { position: item.position, stores: [] };
+        });
+
+        let currentDetailsList = [];
+        try {
+          // Race details fetching with a 5.5-second timeout limit to avoid Vercel edge function timeouts
+          currentDetailsList = await Promise.race([
+            Promise.all(detailPromises),
+            new Promise((resolve) => setTimeout(() => resolve([]), 5500))
+          ]);
+        } catch (err) {
+          console.error("Failed fetching detail promises inside queue:", err);
+        }
+
+        return {
+          rawResults: currentRawResults,
+          detailsList: currentDetailsList
+        };
+      });
+
+      rawResults = queueResult.rawResults;
+      if (Array.isArray(queueResult.detailsList)) {
+        queueResult.detailsList.forEach(d => {
+          if (d) detailsMap.set(d.position, d.stores);
+        });
       }
+    } catch (err) {
+      if (err.message === "QueueTimeout") {
+        console.warn("Search API request queue wait timed out due to high concurrency");
+        return NextResponse.json({ error: "Server is busy processing other search requests. Please try again in a moment." }, { status: 429 });
+      }
+      console.error("Queue execution failed:", err);
+      // Fallback empty raw results on generic queue error
     }
 
     const cleanProducts = [];
     const topResults = rawResults.slice(0, 5);
-
-    // Fetch immersive store/comparison details concurrently for the top 3 search items
-    const detailPromises = topResults.slice(0, 3).map(async (item) => {
-      if (item.serpapi_immersive_product_api) {
-        try {
-          const detailUrl = `${item.serpapi_immersive_product_api}&api_key=${serpapiApiKey}`;
-          const res = await fetch(detailUrl, { signal: AbortSignal.timeout(5000) });
-          if (res.ok) {
-            const detailData = await res.json();
-            return {
-              position: item.position,
-              stores: detailData.product_results?.stores || []
-            };
-          }
-        } catch (err) {
-          console.warn(`Failed fetching immersive details for product ${item.title}:`, err);
-        }
-      }
-      return { position: item.position, stores: [] };
-    });
-
-    let detailsList = [];
-    try {
-      // Race details fetching with a 5.5-second timeout limit to avoid Vercel edge function timeouts
-      detailsList = await Promise.race([
-        Promise.all(detailPromises),
-        new Promise((resolve) => setTimeout(() => resolve([]), 5500))
-      ]);
-    } catch (err) {
-      console.error("Failed fetching detail promises:", err);
-    }
-
-    // Map stores list by product position
-    const detailsMap = new Map();
-    if (Array.isArray(detailsList)) {
-      detailsList.forEach(d => {
-        if (d) detailsMap.set(d.position, d.stores);
-      });
-    }
 
     // Map results to schema, merging direct checkout links and store chips from details
     for (const item of topResults) {
