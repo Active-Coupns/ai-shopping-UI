@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { auth } from "@/services/supabase";
 
 const TRUSTED_MERCHANTS = [
   "amazon", "flipkart", "croma", "reliance digital", "tatacliq", 
@@ -257,6 +258,19 @@ export async function POST(request) {
   console.log("SERPAPI_API_KEY config check: verified");
 
   try {
+    // Verify Supabase Session Token
+    const authHeader = request.headers.get("authorization") || request.headers.get("Authorization");
+    const token = authHeader?.split(" ")[1];
+
+    if (!token) {
+      return NextResponse.json({ error: "Unauthorized: Missing active session token" }, { status: 401 });
+    }
+
+    const { data: { user }, error: authError } = await auth.getUser(token);
+    if (authError || !user) {
+      return NextResponse.json({ error: "Unauthorized: Invalid or expired session token" }, { status: 401 });
+    }
+
     const { query, country } = await request.json();
     
     if (!query) {

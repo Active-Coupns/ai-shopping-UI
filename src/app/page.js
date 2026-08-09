@@ -1,13 +1,15 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, ShoppingBag, ArrowLeft, RefreshCw, Layers, ShieldAlert, Coins } from "lucide-react";
 import SearchHero from "@/components/SearchHero";
 import RocketLoader from "@/components/RocketLoader";
 import ProductCard from "@/components/ProductCard";
-import { mockProductsData } from "@/data/mockProducts";
+import AuthModal from "@/components/AuthModal";
+import ProfileMenu from "@/components/ProfileMenu";
 import { searchProducts } from "@/services/api";
+import { auth } from "@/services/supabase";
 
 export default function Home() {
   const [appState, setAppState] = useState("idle"); // idle | searching | results
@@ -17,7 +19,37 @@ export default function Home() {
   const [apiError, setApiError] = useState(null);
   const [isApiLoading, setIsApiLoading] = useState(false);
 
+  const [user, setUser] = useState(null);
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [authMode, setAuthMode] = useState("login");
+
+  useEffect(() => {
+    async function initSession() {
+      const { data: { session } } = await auth.getSession();
+      if (session?.user) {
+        setUser(session.user);
+      }
+    }
+    initSession();
+  }, []);
+
+  const handleLogout = async () => {
+    await auth.signOut();
+    setUser(null);
+    handleReset();
+  };
+
+  const handleAuthSuccess = (loggedUser) => {
+    setUser(loggedUser);
+  };
+
   const handleSearchSubmit = async (query) => {
+    if (!user) {
+      setAuthMode("login");
+      setIsAuthOpen(true);
+      return;
+    }
+
     setSearchQuery(query);
     setAppState("searching");
     setApiError(null);
@@ -25,8 +57,9 @@ export default function Home() {
     setProducts([]);
 
     try {
-      // Execute the local Next.js search API request
-      const response = await searchProducts(query, "IN");
+      // Execute the local Next.js search API request with target user country preference
+      const userCountry = user?.user_metadata?.country || "IN";
+      const response = await searchProducts(query, userCountry);
       const fetchedProducts = response.results || [];
 
       // Preload product images before releasing the search loader
@@ -60,7 +93,14 @@ export default function Home() {
       setApiError(null);
     } catch (err) {
       console.error("Local search API request failed:", err);
-      setApiError("No live deals found for this query. Try adjusting your search terms.");
+      if (err.message?.includes("401") || err.message?.includes("Unauthorized")) {
+        setApiError("Your session has expired. Please sign in again.");
+        setUser(null);
+        setAuthMode("login");
+        setIsAuthOpen(true);
+      } else {
+        setApiError("No live deals found for this query. Try adjusting your search terms.");
+      }
       setCreditsRemaining(null);
     } finally {
       setIsApiLoading(false);
@@ -101,10 +141,18 @@ export default function Home() {
           </div>
 
           <div className="flex items-center gap-4 text-xs md:text-sm">
-            <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-semibold shadow-inner">
+            <span className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-semibold shadow-inner">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
               <span>1,284 Active Shoppers</span>
             </span>
+            <ProfileMenu
+              user={user}
+              onLogout={handleLogout}
+              onOpenLogin={() => {
+                setAuthMode("login");
+                setIsAuthOpen(true);
+              }}
+            />
           </div>
         </div>
       </header>
@@ -244,6 +292,13 @@ export default function Home() {
           </div>
         </div>
       </footer>
+
+      <AuthModal
+        isOpen={isAuthOpen}
+        onClose={() => setIsAuthOpen(false)}
+        onAuthSuccess={handleAuthSuccess}
+        initialMode={authMode}
+      />
     </div>
   );
 }

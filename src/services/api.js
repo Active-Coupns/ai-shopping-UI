@@ -1,3 +1,5 @@
+import { auth } from "./supabase";
+
 /**
  * Executes search query by calling the Next.js internal search API endpoint.
  * @param {string} query - Product search query.
@@ -6,10 +8,15 @@
  */
 export async function searchProducts(query, country = "IN") {
   try {
+    const { data: { session } } = await auth.getSession();
+    const token = session?.access_token;
+    const authHeaders = token ? { "Authorization": `Bearer ${token}` } : {};
+
     const response = await fetch("/api/search", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        ...authHeaders
       },
       body: JSON.stringify({ query, country }),
     });
