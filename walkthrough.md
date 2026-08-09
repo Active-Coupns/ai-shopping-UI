@@ -1,37 +1,39 @@
 # Walkthrough - AI Shopping Assistant Platform
 
-We have successfully completed **Phase 1: Step 3 - Per-User Daily Search Limits (Quota System)** across the platform.
+We have successfully connected our application to the real **Supabase Cloud database instance** and improved the unauthenticated user UX.
 
 ## What Was Refactored & Deployed
 
 ### 📁 Project Repository & Structure
 The code is fully committed and pushed to the remote repository: **[Active-Coupns/ai-shopping-UI](https://github.com/Active-Coupns/ai-shopping-UI.git)**
 
-* **`src/services/supabase.js`**: Unified Supabase driver:
-  - **`updateUserMetadata` Helper** [NEW]: Supports saving custom session metadata (`search_count_today`, `last_search_date`) in both Mock Auth Mode and live Supabase Auth project databases.
-* **`src/app/api/search/route.js`**: Serverless search api route:
-  - **Daily Search Quota Enforcement**: Tracks per-user daily search count bound to their Supabase session ID. Limits searches strictly to a maximum of 10 per day.
-  - **HTTP 403 Forbidden Response**: If the daily search limit is reached, blocks API execution and returns an **HTTP 403 Forbidden** status with error code `QuotaReached`.
-  - **Payload Syncing**: Appends `searchesLeft` and updated token `newToken` in the search success payload.
-* **`src/components/ProfileMenu.jsx`**: Navbar user profile dropdown:
-  - **Live Quota Display**: Displays the remaining daily quota (e.g. `7 / 10 Left Today`) directly in the Navbar trigger button and the dropdown list.
-* **`src/components/QuotaModal.jsx`** [NEW]: A sleek glassmorphic limit-exhaustion popup modal dialog. Displays a polite notification prompting the user to return in 24 hours.
-* **`src/app/page.js`**: Home landing client page:
-  - **Real-time Counter Sync**: Hooks state variable `searchesLeft` to display remaining daily searches on success payloads.
-  - **Limit Exhaustion Catching**: Intercepts HTTP 403 / `QuotaReached` status responses from search requests, dynamically updating state counters to 0 and triggering the custom `QuotaModal` dialog cleanly without technical error overlays.
+* **`.env.local`**: Configured with live Supabase credentials:
+  - `NEXT_PUBLIC_SUPABASE_URL`: `https://ekpmaffkxzxwboevcnrm.supabase.co`
+  - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVrcG1hZmZreHp4d2JvZXZjbnJtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYyOTI0OTAsImV4cCI6MjEwMTg2ODQ5MH0.cNrI0LYSWBVgRJclKHFJ2mJkNJSJzjiBoKpOqoL9CZo`
+* **`src/services/supabase.js`**:
+  - Automatically switches off Mock Auth Mode to consume the real Supabase SDK client.
+  - **Server-Side Token Auth**: Updated `updateUserMetadata` to support token-based authentication on the server-side, initializing a dynamic user client instance for the request token header to update user quota metadata fields directly on the cloud database.
+* **`src/components/AuthModal.jsx`**:
+  - Added support for a custom `message` prop, displaying context-aware banner headers to prompt or alert the user during authentication.
+* **`src/app/page.js`**:
+  - Updated unauthenticated search interception logic to set a polite banner message inside the Auth Modal instead of rendering raw HTTP 401 overlays.
 
 ---
 
 ## Technical Features & API Integrations
 
-### 1. Quota Enforcement Verification
-* **11-Search Quota Simulator (`scratch/test-quota-limit.js`)**:
-  - Initialized a mock user with 9 searches today.
-  - Request #10 succeeded with **HTTP 200 OK** and returned `searchesLeft: 0`.
-  - Request #11 was blocked immediately with **HTTP 403 Forbidden** and returned `{ error: "QuotaReached", searchesLeft: 0 }`, confirming that the daily search limits and API protection are fully functional.
+### 1. Cloud Database Connection Verification
+* **Cloud Auth Tester (`scratch/test-real-supabase.js`)**:
+  - Initiated a real sign-up call for `tester_1786297282608@smartshop.com` to the Supabase Cloud REST gateway.
+  - Confirmed receipt of active user ID: `99e89ef7-1d8c-4b30-bb82-50a78a85839e`.
+  - Verified user metadata keys (`full_name`, `country`, `search_count_today`, `last_search_date`) are properly created and persisted on the cloud database.
 
-### 2. Verified Local Build
-Production build compiles cleanly in **4.1 seconds** and is deployed to the remote main repository.
+### 2. Unauthenticated Search Interception
+* When a guest attempts a search query without logging in, the app triggers the Auth Modal with the following notice:
+  *"Account Required to Search 🔒 To search products and compare prices, please create a free account or sign in first."*
+
+### 3. Verified Local Build
+Production build compiles cleanly in **6.7 seconds** and is deployed to the remote main repository.
 
 ---
 
@@ -41,7 +43,7 @@ Configure the following secrets in your Vercel/Supabase environment settings:
 
 | Variable Name | Description | Example |
 | :--- | :--- | :--- |
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project API gateway endpoint URL | `https://your-proj.supabase.co` |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project API gateway endpoint URL | `https://ekpmaffkxzxwboevcnrm.supabase.co` |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase project anonymous client API key | `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...` |
 | `SERPAPI_API_KEY` | SerpApi search scraping authorization key | `e9b1512a6388a398c05d44895597291a52d0677e7e312420aee30998467c3e30` |
 | `GEMINI_API_KEY` | Gemini AI search insights generation key | `YOUR_GEMINI_KEY` |
