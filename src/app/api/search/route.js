@@ -1,5 +1,16 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/services/supabase";
+import { redis } from "@/services/redis";
+
+function getCacheKey(country, query) {
+  const clean = query
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\s/g, "-");
+  return `cache:search:${(country || "in").toLowerCase()}:${clean}`;
+}
 
 class RequestQueue {
   constructor(concurrencyLimit = 3, waitTimeoutMs = 5000) {
@@ -335,6 +346,42 @@ export async function POST(request) {
       return NextResponse.json({ error: "Unauthorized: Invalid or expired session token" }, { status: 401 });
     }
 
+    const { query, country } = await request.json();
+
+    if (!query) {
+      return NextResponse.json({ products: [], error: "Query is required" }, { status: 200 });
+    }
+
+    // Keep user's query intact, only stripping currency symbols and double spaces
+    const cleanQuery = query
+      .replace(/[₹$€£,]/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    // Check Redis Cache First (Exempt from Quota limits!)
+    const cacheKey = getCacheKey(country, cleanQuery);
+    try {
+      const cachedDataStr = await redis.get(cacheKey);
+      if (cachedDataStr) {
+        console.log(`Cache HIT for key: ${cacheKey}`);
+        let cachedPayload = typeof cachedDataStr === "string" ? JSON.parse(cachedDataStr) : cachedDataStr;
+        
+        // Return cached results immediately, exempting user quota
+        const todayStr = new Date().toISOString().split("T")[0];
+        const lastDate = user.user_metadata?.last_search_date || "";
+        const count = user.user_metadata?.search_count_today || 0;
+        const currentSearchesLeft = lastDate === todayStr ? 10 - count : 10;
+
+        return NextResponse.json({
+          products: cachedPayload.products || [],
+          searchesLeft: currentSearchesLeft,
+          fromCache: true
+        }, { status: 200 });
+      }
+    } catch (cacheErr) {
+      console.warn("Redis cache read error:", cacheErr);
+    }
+
     // Daily Quota Verification (strictly capped to 10 searches per day)
     const todayStr = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
     let count = user.user_metadata?.search_count_today || 0;
@@ -357,18 +404,8 @@ export async function POST(request) {
 
     const { data: updateData } = await auth.updateUserMetadata(user.id, updatedMetadata, token);
     const newToken = updateData?.access_token || null;
-
-    const { query, country } = await request.json();
     
-    if (!query) {
-      return NextResponse.json({ products: [], error: "Query is required" }, { status: 200 });
-    }
 
-    // Keep user's query intact, only stripping currency symbols and double spaces
-    const cleanQuery = query
-      .replace(/[₹$€£,]/g, "")
-      .replace(/\s+/g, " ")
-      .trim();
 
     let rawResults = [];
     const detailsMap = new Map();
@@ -641,6 +678,14 @@ Do not include markdown code block formatting (like \`\`\`json). Return ONLY raw
 
     const mappedProducts = cleanProducts.slice(0, 5);
     console.log("Filtered Products mapped count:", mappedProducts.length);
+
+    // Save fresh search results to Redis Cache with a 6-Hour TTL (21600 seconds)
+    try {
+      await redis.set(cacheKey, JSON.stringify({ products: mappedProducts }), { ex: 21600 });
+      console.log(`Cache MISS. Saved fresh results to key: ${cacheKey}`);
+    } catch (cacheWriteErr) {
+      console.warn("Failed to write to Redis Cache:", cacheWriteErr);
+    }
 
     return NextResponse.json({
       products: mappedProducts,
