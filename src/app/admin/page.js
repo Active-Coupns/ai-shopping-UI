@@ -54,6 +54,16 @@ export default function AdminPage() {
     async function initAdmin() {
       const { data: { session } } = await auth.getSession();
       
+      const email = session?.user?.email || "";
+      const isAdmin = email.includes("admin") || session?.user?.user_metadata?.is_admin === true;
+      const isDev = process.env.NODE_ENV === "development" || (typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"));
+
+      if (!isAdmin && !isDev) {
+        // Enforce secure guard in production by redirecting back to home page
+        router.push("/");
+        return;
+      }
+
       if (session?.user) {
         setUser(session.user);
       } else {
@@ -212,9 +222,11 @@ export default function AdminPage() {
               <Settings className="w-5 h-5 text-brand-indigo" />
               <span className="text-md md:text-lg font-bold text-white tracking-tight flex items-center gap-2">
                 ShopSmart Admin Controls
-                <span className="text-[10px] font-extrabold uppercase bg-amber-500/10 border border-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full tracking-wide">
-                  Dev Bypass Active ⚡
-                </span>
+                {(!user || user.email === "dev-admin@example.com") && (
+                  <span className="text-[10px] font-extrabold uppercase bg-amber-500/10 border border-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full tracking-wide">
+                    Dev Bypass Active ⚡
+                  </span>
+                )}
               </span>
             </div>
           </div>
