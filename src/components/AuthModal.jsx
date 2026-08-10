@@ -25,7 +25,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
         if (!fullName.trim()) {
           throw new Error("Full name is required");
         }
-        const { data, error: signUpError } = await auth.signUp({
+        const { data: signUpData, error: signUpError } = await auth.signUp({
           email,
           password,
           options: {
@@ -38,20 +38,25 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
           }
         });
         if (signUpError) throw signUpError;
-        setVerificationSent(true);
+
+        // Auto-login directly upon successful signup
+        const { data: signInData, error: signInError } = await auth.signInWithPassword({
+          email,
+          password
+        });
+        if (signInError) throw signInError;
+
+        if (signInData?.user) {
+          alert("Account created successfully! Welcome to ShopSmart AI 🎉");
+          onAuthSuccess(signInData.user);
+          onClose();
+        }
       } else if (mode === "login") {
         const { data, error: signInError } = await auth.signInWithPassword({
           email,
           password
         });
         if (signInError) throw signInError;
-        
-        // Guard unverified email sign-ins in production
-        const isMock = data?.user?.id && data.user.id.startsWith("mock-");
-        if (data?.user && !data.user.email_confirmed_at && !isMock) {
-          await auth.signOut();
-          throw new Error("Please confirm your email address before logging in.");
-        }
 
         if (data?.user) {
           onAuthSuccess(data.user);
