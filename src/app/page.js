@@ -2,13 +2,14 @@
 
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, ShoppingBag, ArrowLeft, RefreshCw, Layers, ShieldAlert, Coins } from "lucide-react";
+import { Sparkles, ShoppingBag, ArrowLeft, RefreshCw, Layers, ShieldAlert, Coins, Tag, AlertCircle } from "lucide-react";
 import SearchHero from "@/components/SearchHero";
 import RocketLoader from "@/components/RocketLoader";
 import ProductCard from "@/components/ProductCard";
 import AuthModal from "@/components/AuthModal";
 import ProfileMenu from "@/components/ProfileMenu";
 import QuotaModal from "@/components/QuotaModal";
+import CouponCard from "@/components/CouponCard";
 import { searchProducts } from "@/services/api";
 import { auth } from "@/services/supabase";
 
@@ -27,6 +28,10 @@ export default function Home() {
 
   const [searchesLeft, setSearchesLeft] = useState(10);
   const [isQuotaOpen, setIsQuotaOpen] = useState(false);
+
+  const [searchIntent, setSearchIntent] = useState("E-COMMERCE");
+  const [coupons, setCoupons] = useState([]);
+  const [couponNotAvailable, setCouponNotAvailable] = useState(false);
 
   useEffect(() => {
     async function initSession() {
@@ -123,6 +128,9 @@ export default function Home() {
       }
 
       setProducts(fetchedProducts);
+      setSearchIntent(response.intent || "E-COMMERCE");
+      setCoupons(response.coupons || []);
+      setCouponNotAvailable(response.error === "NotAvailable");
       setSearchesLeft(response.searchesLeft !== undefined ? response.searchesLeft : 10);
       setApiError(null);
     } catch (err) {
@@ -154,6 +162,9 @@ export default function Home() {
     setAppState("idle");
     setSearchQuery("");
     setApiError(null);
+    setSearchIntent("E-COMMERCE");
+    setCoupons([]);
+    setCouponNotAvailable(false);
   };
 
   return (
@@ -286,35 +297,81 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Grid Dashboard or User-Friendly Empty/Error State */}
-              {products.length === 0 ? (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="max-w-md mx-auto text-center py-16 px-6 glass-panel rounded-2xl border-brand-indigo/20 shadow-[0_0_20px_rgba(99,102,241,0.1)] mt-8"
-                >
-                  <div className="w-16 h-16 bg-brand-indigo/10 border border-brand-indigo/20 text-brand-indigo rounded-full flex items-center justify-center mx-auto mb-6">
-                    <Sparkles className="w-8 h-8" />
-                  </div>
-                  <h3 className="text-xl font-bold text-white mb-2">No Live Deals Found</h3>
-                  <p className="text-sm text-slate-400 mb-6 leading-relaxed">
-                    {apiError ? apiError : "No live deals found for this query. Try adjusting your search terms."}
-                  </p>
-                  <button
-                    onClick={handleReset}
-                    className="px-6 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-xs md:text-sm font-semibold text-slate-200 hover:text-white transition-all cursor-pointer shadow-md active:scale-95"
+              {/* Intent-Aware Results Views */}
+              {searchIntent === "SERVICE_COUPON" ? (
+                couponNotAvailable ? (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="max-w-md mx-auto text-center py-16 px-6 glass-panel rounded-2xl border-brand-indigo/20 shadow-[0_0_20px_rgba(99,102,241,0.1)] mt-8"
                   >
-                    Go Back to Search
-                  </button>
-                </motion.div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-                  <AnimatePresence mode="popLayout">
-                    {products.map((product) => (
-                      <ProductCard key={product.id} product={product} />
+                    <div className="w-16 h-16 bg-brand-violet/10 border border-brand-violet/20 text-brand-violet rounded-full flex items-center justify-center mx-auto mb-6">
+                      <AlertCircle className="w-8 h-8" />
+                    </div>
+                    <h3 className="text-xl font-bold text-white mb-2">Service Not Available</h3>
+                    <p className="text-sm text-slate-400 mb-6 leading-relaxed">
+                      This service or coupon is currently not available on our platform.
+                    </p>
+                    <button
+                      onClick={handleReset}
+                      className="px-6 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-xs md:text-sm font-semibold text-slate-200 hover:text-white transition-all cursor-pointer shadow-md active:scale-95"
+                    >
+                      Go Back to Search
+                    </button>
+                  </motion.div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+                    {coupons.map((coupon) => (
+                      <CouponCard key={coupon.id} coupon={coupon} />
                     ))}
-                  </AnimatePresence>
-                </div>
+                  </div>
+                )
+              ) : (
+                products.length === 0 ? (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="max-w-md mx-auto text-center py-16 px-6 glass-panel rounded-2xl border-brand-indigo/20 shadow-[0_0_20px_rgba(99,102,241,0.1)] mt-8"
+                  >
+                    <div className="w-16 h-16 bg-brand-indigo/10 border border-brand-indigo/20 text-brand-indigo rounded-full flex items-center justify-center mx-auto mb-6">
+                      <Sparkles className="w-8 h-8" />
+                    </div>
+                    <h3 className="text-xl font-bold text-white mb-2">No Live Deals Found</h3>
+                    <p className="text-sm text-slate-400 mb-6 leading-relaxed">
+                      {apiError ? apiError : "No live deals found for this query. Try adjusting your search terms."}
+                    </p>
+                    <button
+                      onClick={handleReset}
+                      className="px-6 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-xs md:text-sm font-semibold text-slate-200 hover:text-white transition-all cursor-pointer shadow-md active:scale-95"
+                    >
+                      Go Back to Search
+                    </button>
+                  </motion.div>
+                ) : (
+                  <div className="space-y-12">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+                      <AnimatePresence mode="popLayout">
+                        {products.map((product) => (
+                          <ProductCard key={product.id} product={product} />
+                        ))}
+                      </AnimatePresence>
+                    </div>
+
+                    {coupons.length > 0 && (
+                      <div className="pt-8 border-t border-slate-900">
+                        <h3 className="text-lg md:text-xl font-bold text-white mb-6 flex items-center gap-2">
+                          <Tag className="w-5 h-5 text-brand-violet animate-pulse" />
+                          <span>Today's Verified Store Vouchers</span>
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                          {coupons.map((coupon) => (
+                            <CouponCard key={coupon.id} coupon={coupon} />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )
               )}
             </motion.div>
           )}

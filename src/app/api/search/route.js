@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/services/supabase";
 import { redis } from "@/services/redis";
+import { getAdminSettings } from "@/services/admin";
 
 function getCacheKey(country, query) {
   const clean = query
@@ -374,6 +375,9 @@ export async function POST(request) {
 
         return NextResponse.json({
           products: cachedPayload.products || [],
+          coupons: cachedPayload.coupons || [],
+          intent: cachedPayload.intent || "E-COMMERCE",
+          error: cachedPayload.error || null,
           searchesLeft: currentSearchesLeft,
           fromCache: true
         }, { status: 200 });
@@ -404,6 +408,118 @@ export async function POST(request) {
 
     const { data: updateData } = await auth.updateUserMetadata(user.id, updatedMetadata, token);
     const newToken = updateData?.access_token || null;
+
+    // Fetch active settings (API Keys & Manual Coupons)
+    const settings = await getAdminSettings(user, token);
+    const userRegion = (country || "IN").toUpperCase();
+
+    // 2. Gemini Intent Classification (with Fast-Path Keyword Fallback)
+    let intent = "E-COMMERCE";
+    const serviceKeywords = [
+      "coupon", "coupons", "discount", "discounts", "promo", "voucher", "vouchers",
+      "zomato", "swiggy", "uber", "ola", "rapido", "makemytrip", "easemytrip", "cleartrip",
+      "bookmyshow", "netflix", "spotify", "prime video", "hotstar", "youtube premium"
+    ];
+    const queryLower = cleanQuery.toLowerCase();
+    const isServiceQuery = serviceKeywords.some(keyword => queryLower.includes(keyword));
+
+    if (isServiceQuery) {
+      intent = "SERVICE_COUPON";
+      console.log(`Local Keyword classifier resolved: ${intent} for query: "${cleanQuery}"`);
+    } else {
+      try {
+        const geminiApiKey = process.env.GEMINI_API_KEY || "YOUR_GEMINI_KEY";
+        const classificationPrompt = `Classify the shopping search query: "${cleanQuery}".
+Determine if the user is looking for:
+A) Physical products to buy (e.g., "smartphones", "laptops", "nike shoes", "water bottles") -> Classify as "E-COMMERCE".
+B) Non-physical service discounts, coupons, rides, food delivery, or hotel bookings (e.g., "uber coupons", "zomato discounts", "swiggy coupon code", "makemytrip promo codes") -> Classify as "SERVICE_COUPON".
+
+Respond strictly in JSON with this structure:
+{
+  "intent": "E-COMMERCE" | "SERVICE_COUPON"
+}`;
+
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`;
+        const classificationResponse = await fetch(geminiUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: classificationPrompt }] }],
+            generationConfig: {
+              responseMimeType: "application/json"
+            }
+          }),
+          signal: AbortSignal.timeout(4000)
+        });
+
+        if (classificationResponse.ok) {
+          const classData = await classificationResponse.json();
+          let classText = classData.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
+          const parsedClass = JSON.parse(classText.trim());
+          if (parsedClass.intent === "E-COMMERCE" || parsedClass.intent === "SERVICE_COUPON") {
+            intent = parsedClass.intent;
+            console.log(`AI Intent classification: ${intent} for query: "${cleanQuery}"`);
+          }
+        }
+      } catch (err) {
+        console.warn("AI Intent classification failed, falling back to E-COMMERCE:", err.message);
+        intent = "E-COMMERCE";
+      }
+    }
+
+    if (intent === "SERVICE_COUPON") {
+      const queryLower = cleanQuery.toLowerCase();
+      const matchedCoupons = (settings.coupons || []).filter(coupon => {
+        const storeName = (coupon.store || "").toLowerCase();
+        const matchesStore = queryLower.includes(storeName) || storeName.includes(queryLower);
+        const matchesRegion = coupon.region === userRegion || coupon.region === "GLOBAL";
+        return matchesStore && matchesRegion;
+      });
+
+      if (matchedCoupons.length === 0) {
+        // Return 200 with error 'NotAvailable' to bypass product scraper and display polite notice
+        try {
+          await redis.set(cacheKey, JSON.stringify({
+            products: [],
+            coupons: [],
+            intent: "SERVICE_COUPON",
+            error: "NotAvailable"
+          }), { ex: 21600 });
+        } catch (cacheErr) {
+          console.warn("Failed to write empty service coupons to Redis:", cacheErr);
+        }
+
+        return NextResponse.json({
+          products: [],
+          coupons: [],
+          intent: "SERVICE_COUPON",
+          error: "NotAvailable",
+          searchesLeft: 10 - newCount,
+          newToken
+        }, { status: 200 });
+      }
+
+      // Save to Redis Cache (ex: 21600)
+      try {
+        await redis.set(cacheKey, JSON.stringify({
+          products: [],
+          coupons: matchedCoupons,
+          intent: "SERVICE_COUPON"
+        }), { ex: 21600 });
+      } catch (cacheErr) {
+        console.warn("Failed to write service coupons to Redis:", cacheErr);
+      }
+
+      return NextResponse.json({
+        products: [],
+        coupons: matchedCoupons,
+        intent: "SERVICE_COUPON",
+        searchesLeft: 10 - newCount,
+        newToken
+      }, { status: 200 });
+    }
     
 
 
@@ -679,9 +795,32 @@ Do not include markdown code block formatting (like \`\`\`json). Return ONLY raw
     const mappedProducts = cleanProducts.slice(0, 5);
     console.log("Filtered Products mapped count:", mappedProducts.length);
 
+    // Fetch store coupons matching userRegion and store names of our top products
+    const matchedStoreCoupons = [];
+    try {
+      (settings.coupons || []).forEach(coupon => {
+        const couponStoreLower = (coupon.store || "").toLowerCase().trim();
+        const matchesStore = mappedProducts.some(p => {
+          const productStoreLower = (p.platform || "").toLowerCase().trim();
+          return productStoreLower.includes(couponStoreLower) || couponStoreLower.includes(productStoreLower);
+        });
+        const matchesRegion = coupon.region === userRegion || coupon.region === "GLOBAL";
+        if (matchesStore && matchesRegion) {
+          matchedStoreCoupons.push(coupon);
+        }
+      });
+      console.log(`Matched ${matchedStoreCoupons.length} store coupons for e-commerce stores.`);
+    } catch (couponMatchErr) {
+      console.error("Failed matching store coupons:", couponMatchErr);
+    }
+
     // Save fresh search results to Redis Cache with a 6-Hour TTL (21600 seconds)
     try {
-      await redis.set(cacheKey, JSON.stringify({ products: mappedProducts }), { ex: 21600 });
+      await redis.set(cacheKey, JSON.stringify({ 
+        products: mappedProducts,
+        coupons: matchedStoreCoupons,
+        intent: "E-COMMERCE"
+      }), { ex: 21600 });
       console.log(`Cache MISS. Saved fresh results to key: ${cacheKey}`);
     } catch (cacheWriteErr) {
       console.warn("Failed to write to Redis Cache:", cacheWriteErr);
@@ -689,6 +828,8 @@ Do not include markdown code block formatting (like \`\`\`json). Return ONLY raw
 
     return NextResponse.json({
       products: mappedProducts,
+      coupons: matchedStoreCoupons,
+      intent: "E-COMMERCE",
       searchesLeft: 10 - newCount,
       newToken
     }, { status: 200 });

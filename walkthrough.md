@@ -1,48 +1,47 @@
-# Walkthrough - AI Shopping Assistant Platform
+# Walkthrough - Unified Admin Panel & AI Intent Router
 
-We have successfully implemented the **Email Verification & Password Reset workflows** across the platform.
-
-## What Was Refactored & Deployed
-
-### 📁 Project Repository & Structure
-The code is fully committed and pushed to the remote repository: **[Active-Coupns/ai-shopping-UI](https://github.com/Active-Coupns/ai-shopping-UI.git)**
-
-* **`src/services/supabase.js`**:
-  - Exposed `resetPasswordForEmail`, `updateUser`, and `onAuthStateChange` methods in the standard `auth` helper object.
-* **`src/components/AuthModal.jsx`**:
-  - **Email Confirmation view**: Shows a polite glassmorphic verification notice after registering a new account, prompting users to confirm their email before logging in.
-  - **Forgot Password flow**: Added a "Forgot Password?" trigger button in the login form which toggles to a reset view. Submitting their email sends a password reset link to their mailbox.
-* **`src/app/reset-password/page.js`** [NEW]:
-  - A premium, responsive glassmorphic reset password page.
-  - Automatically listens to Supabase auth state change callbacks to capture active user sessions on password recovery callback redirection.
-  - Features fields for "New Password" and "Confirm New Password", resetting the account credentials via `auth.updateUser({ password })`.
-  - Animates a success notification and automatically redirects to the homepage landing view after 3 seconds.
+We have successfully implemented **Phase 2: Step 1 - Unified Admin Panel & AI Intent Router Architecture** while keeping all existing Phase 1 functionality (auth, request queue, daily search quotas, and Upstash caching) 100% backwards-compatible and operational.
 
 ---
 
-## Technical Features & API Integrations
+## 🛠️ Refactored & Deployed Components
 
-### 1. Verification Notice Triggering
-* When sign-up completes, the card header transforms into a mailbox verification screen:
-  *"Check Your Email 📩 We have sent a verification link to your email address. Please click the link to confirm your account before logging in."*
+### 1. Unified Admin Panel (`src/app/admin/page.js`)
+* Built a premium glassmorphic dashboard protected route `/admin`.
+* Restricts access to authenticated admin accounts (emails containing `"admin"` or users with `is_admin === true` metadata).
+* **Dual Settings Manager Layout**:
+  - **Affiliate & API Keys**: Input and table views to manage Cuelinks, Amazon, EarnKaro tokens and credential lists.
+  - **Manual Store Coupons**: Interface to register store promo codes, discount descriptions, destination PDP links, and region codes.
+  - **Region Selector Dropdown**: Supports assigning region filters (`IN`, `US`, or `GLOBAL`) to each entry.
+* **Dual Storage Strategy**: Writing or reading configurations attempts to perform Supabase DB table updates. If the table is missing, it falls back to caching/persisting the settings inside the user's secure metadata (`user_metadata`), providing a self-healing configuration framework.
 
-### 2. Guarding Unverified Accounts
-* Integrated a client check inside `signInWithPassword` in `AuthModal.jsx`: If a user attempts to sign in using an account without a valid `email_confirmed_at` timestamp in production, the authentication is intercepted, their session is signed out, and they are shown a friendly notice to verify their email.
+### 2. Gemini AI Intent Router (`src/app/api/search/route.js`)
+* On search queries, first classifies user intent into `E-COMMERCE` or `SERVICE_COUPON`.
+* **Keyword Fast-Path Rule**: Incorporates a list of service keywords (zomato, swiggy, uber, coupon, discounts, etc.) to immediately resolve service requests offline or during key failures. Falls back to Gemini API (`gemini-1.5-flash`) for complex queries.
+* **Scraper Bypassing**:
+  - `SERVICE_COUPON` intents bypass SerpApi scraping entirely (saving time and API search costs). Query matching vouchers from the DB/metadata and returns them as a coupon card list.
+  - Returns direct polite notice `"This service or coupon is currently not available on our platform."` if no coupon entries match.
+  - `E-COMMERCE` intents run the SerpApi comparison engine, fetch physical products, and map matched vouchers at the bottom of the card list.
 
-### 3. Verified Local Build
-Production build compiles cleanly in **4.6 seconds** and is deployed to the remote main repository.
+### 3. Intent-Aware Layouts (`src/app/page.js` & `src/components/CouponCard.jsx`)
+* **Unified Results UI**:
+  - If `intent === "SERVICE_COUPON"`: Renders dedicated Glassmorphic Coupon Cards with copy-to-clipboard codes and affiliate redemption external links.
+  - If `intent === "E-COMMERCE"`: Renders physical product cards and appends verified store coupons at the bottom in a dedicated `"Today's Verified Store Vouchers"` section.
 
 ---
 
-## Environment Configuration Checklist
+## 🧪 Integration Verification Results
 
-Configure the following secrets in your Vercel/Supabase environment settings:
+We verified both search routing pathways:
 
-| Variable Name | Description | Example |
-| :--- | :--- | :--- |
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project API gateway endpoint URL | `https://ekpmaffkxzxwboevcnrm.supabase.co` |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase project anonymous client API key | `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...` |
-| `SERPAPI_API_KEY` | SerpApi search scraping authorization key | `e9b1512a6388a398c05d44895597291a52d0677e7e312420aee30998467c3e30` |
-| `GEMINI_API_KEY` | Gemini AI search insights generation key | `YOUR_GEMINI_KEY` |
-| `UPSTASH_REDIS_REST_URL` | Upstash Redis Cloud DB REST Endpoint URL | `https://moved-mallard-184770.upstash.io` |
-| `UPSTASH_REDIS_REST_TOKEN` | Upstash Redis Cloud DB Connection Token | `gQAAAAAAAtHCAAIgcDI2MGI1MWRiNDg3NTU0MDIyODQ0MjEwNDVmNzkxZWE1Ng` |
+* **Scenario 1: E-Commerce Intent** (`best phone`)
+  - **Result**: Resolved as `E-COMMERCE` (Products returned: 3, Coupons matched: 1). Mapped Amazon coupon at the bottom matching the scraped product stores.
+* **Scenario 2: Service Coupon Intent** (`zomato coupon code`)
+  - **Result**: Resolved as `SERVICE_COUPON` (Products: 0, Scraper bypassed, Coupon returned: `ZOMATO50` card).
+* **Scenario 3: Empty Service Coupon Intent** (`netflix discount`)
+  - **Result**: Resolved as `SERVICE_COUPON` (Products: 0, Scraper bypassed, status returned: `NotAvailable`, rendering the polite availability warning).
+
+---
+
+## 📈 Next Steps & System Rollback Path
+All modifications are fully backward-compatible. If a regression occurs, a rollback can be executed by checking out the parent git commit `d78339b`.

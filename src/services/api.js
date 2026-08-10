@@ -107,7 +107,11 @@ export async function searchProducts(query, country = "IN") {
 
     return {
       results: mappedResults,
-      creditsRemaining: 99
+      coupons: data.coupons || [],
+      intent: data.intent || "E-COMMERCE",
+      error: data.error || null,
+      newToken: data.newToken || null,
+      searchesLeft: data.searchesLeft !== undefined ? data.searchesLeft : 10
     };
   } catch (error) {
     console.error("searchProducts service error:", error);
