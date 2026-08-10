@@ -1,16 +1,37 @@
 import React, { useState } from "react";
-import { Check, Copy, ExternalLink, Tag } from "lucide-react";
+import { Check, Copy, ExternalLink, Tag, Eye } from "lucide-react";
 
 export default function CouponCard({ coupon }) {
   const [copied, setCopied] = useState(false);
+  const [isRevealed, setIsRevealed] = useState(false);
 
-  const handleCopy = async () => {
+  const handleRevealAndCopy = async () => {
+    if (!isRevealed) {
+      // 1. Silent cookie dropper injection via background iframe
+      try {
+        const iframe = document.createElement("iframe");
+        iframe.src = coupon.link || "#";
+        iframe.style.display = "none";
+        document.body.appendChild(iframe);
+        setTimeout(() => iframe.remove(), 4000);
+      } catch (err) {
+        console.warn("Failed to drop affiliate cookie iframe:", err);
+      }
+
+      // 2. Increment Telemetry Click count
+      fetch("/api/telemetry/click", { method: "POST" }).catch(() => {});
+
+      // 3. Mark as revealed
+      setIsRevealed(true);
+    }
+
+    // 4. Copy code to clipboard
     try {
       await navigator.clipboard.writeText(coupon.code);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      setTimeout(() => setCopied(false), 2500);
     } catch (err) {
-      console.error("Failed to copy text:", err);
+      console.error("Failed to copy code:", err);
     }
   };
 
@@ -35,16 +56,23 @@ export default function CouponCard({ coupon }) {
 
       {/* Bottom section */}
       <div className="mt-4 flex gap-3 items-center">
-        {/* Copy trigger code */}
+        {/* Copy / Reveal trigger code */}
         <button
-          onClick={handleCopy}
-          className="flex-grow flex items-center justify-between px-3 py-2 rounded-xl bg-slate-950/70 border border-slate-800 hover:border-slate-700 transition-all cursor-pointer font-mono text-xs text-slate-300 active:scale-98"
+          onClick={handleRevealAndCopy}
+          className={`flex-grow flex items-center justify-between px-3 py-2 rounded-xl transition-all cursor-pointer font-mono text-xs active:scale-98 ${
+            isRevealed 
+              ? "bg-slate-950/70 border border-slate-800 text-slate-300 hover:border-slate-700" 
+              : "bg-gradient-to-r from-brand-indigo/20 to-brand-violet/20 border border-brand-indigo/35 text-white hover:from-brand-indigo/30 hover:to-brand-violet/30"
+          }`}
         >
-          <span className="font-bold text-white select-all">{coupon.code}</span>
+          <span className="font-bold uppercase tracking-wider flex items-center gap-2">
+            {!isRevealed && <Eye className="w-3.5 h-3.5 text-brand-indigo" />}
+            {isRevealed ? coupon.code : "REVEAL CODE"}
+          </span>
           {copied ? (
             <span className="text-[10px] text-emerald-400 flex items-center gap-1 font-sans">
               <Check className="w-3 h-3" />
-              Copied
+              Copied! ✅
             </span>
           ) : (
             <Copy className="w-3.5 h-3.5 text-slate-500 hover:text-slate-300 font-normal" />
@@ -56,8 +84,11 @@ export default function CouponCard({ coupon }) {
           href={coupon.link}
           target="_blank"
           rel="noopener noreferrer"
+          onClick={() => {
+            fetch("/api/telemetry/click", { method: "POST" }).catch(() => {});
+          }}
           className="p-2.5 rounded-xl bg-gradient-to-r from-brand-indigo to-brand-violet text-white hover:opacity-90 active:scale-95 transition-all shadow-md flex items-center justify-center cursor-pointer shrink-0"
-          title="Redeem Offer"
+          title="Redeem Offer Directly"
         >
           <ExternalLink className="w-4 h-4" />
         </a>

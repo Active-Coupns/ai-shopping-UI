@@ -66,7 +66,7 @@ export async function searchProducts(query, country = "IN") {
         return {
           store: offer.store,
           price: formattedOfferPrice,
-          link: offer.link,
+          link: offer.buyNowUrl || offer.link || "#",
           is_lowest: offer.is_lowest
         };
       });
@@ -98,8 +98,8 @@ export async function searchProducts(query, country = "IN") {
         aiReason: p.description || "Matches your performance, quality, and budget requirements.",
         specs,
         coupon,
-        affiliateUrl: p.link || "#",
-        revealUrl: p.link || "#",
+        affiliateUrl: p.buyNowUrl || p.link || "#",
+        revealUrl: p.buyNowUrl || p.link || "#",
         currency: currencyCode,
         priceComparison
       };

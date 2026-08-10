@@ -45,6 +45,9 @@ export default function ProductCard({ product }) {
     }
     setIsRedirecting(true);
     
+    // Fire click telemetry event
+    fetch("/api/telemetry/click", { method: "POST" }).catch(() => {});
+    
     // Simulate redirection delay
     setTimeout(() => {
       setIsRedirecting(false);

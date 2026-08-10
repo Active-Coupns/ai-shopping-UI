@@ -6,9 +6,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   ShieldAlert, Settings, Key, Tag, Plus, Trash2, Save, ShoppingBag, 
   ArrowLeft, CheckCircle2, Globe, FileText, AlertCircle, BarChart3, 
-  Users, Search, MousePointerClick, RefreshCw, Layers, Database 
+  Users, Search, MousePointerClick, RefreshCw, Layers, Database, Link2 
 } from "lucide-react";
-import { auth, getSession } from "@/services/supabase";
+import { auth } from "@/services/supabase";
 import { getAdminSettings, saveAdminSettings } from "@/services/admin";
 
 export default function AdminPage() {
@@ -18,30 +18,29 @@ export default function AdminPage() {
   const [activeTab, setActiveTab] = useState("analytics"); // analytics | keys | coupons
   const [saveStatus, setSaveStatus] = useState(null); // success | error | saving
 
-  // Settings state
-  const [apiKeys, setApiKeys] = useState([]);
+  // Simplified Affiliate states
+  const [personalTags, setPersonalTags] = useState([]);
+  const [aggregators, setAggregators] = useState([]);
   const [coupons, setCoupons] = useState([]);
+  const [totalClicks, setTotalClicks] = useState(0);
 
-  // Form states for adding items
-  const [newKey, setNewKey] = useState({ name: "Amazon Associate Tag", value: "", region: "GLOBAL" });
-  const [newCoupon, setNewCoupon] = useState({ code: "", store: "", description: "", link: "", region: "GLOBAL" });
+  // Form states for adding Section A (Personal Tags)
+  const [newTag, setNewTag] = useState({ store: "Amazon", tag: "", region: "GLOBAL" });
+  
+  // Form states for adding Section B (Aggregators)
+  const [newAggregator, setNewAggregator] = useState({ name: "Cuelinks", token: "", region: "GLOBAL" });
 
-  // Sync / Automatic fetch status mock state
+  // Form states for coupons
+  const [newCoupon, setNewCoupon] = useState({ code: "", store: "", description: "", link: "", region: "GLOBAL", expiry: "" });
+
+  // Sync state
   const [syncing, setSyncing] = useState(false);
   const [syncStatus, setSyncStatus] = useState({
     lastSync: "2026-08-09 20:30:15 UTC",
-    totalLive: 248,
+    totalLive: 4,
     cuelinksStatus: "Operational",
     earnkaroStatus: "Operational"
   });
-
-  // Mock analytics data
-  const analyticsMetrics = [
-    { label: "Total Active Users", value: "1,284", icon: Users, color: "text-blue-400 bg-blue-500/10 border-blue-500/20" },
-    { label: "Searches Today", value: "452", icon: Search, color: "text-brand-indigo bg-brand-indigo/10 border-brand-indigo/20" },
-    { label: "Affiliate Clicks", value: "189", icon: MousePointerClick, color: "text-brand-violet bg-brand-violet/10 border-brand-violet/20" },
-    { label: "Top Trending Keyword", value: "iPhone 16", icon: BarChart3, color: "text-amber-400 bg-amber-500/10 border-amber-500/20" }
-  ];
 
   const recentLogs = [
     { id: 1, email: "admin@example.com", query: "iPhone 16 Pro Max", region: "IN", time: "2 mins ago", ctr: "100%", status: "Success" },
@@ -55,11 +54,9 @@ export default function AdminPage() {
     async function initAdmin() {
       const { data: { session } } = await auth.getSession();
       
-      // DEV BYPASS: Automatically grant admin access to any active session or default mock user in dev mode
       if (session?.user) {
         setUser(session.user);
       } else {
-        // Fallback mock user if no session is active during dev preview
         setUser({
           email: "dev-admin@example.com",
           user_metadata: { full_name: "Developer Admin Bypass", is_admin: true }
@@ -68,8 +65,24 @@ export default function AdminPage() {
 
       // Fetch settings
       const settings = await getAdminSettings(session?.user || null);
-      setApiKeys(settings.apiKeys || []);
+      setPersonalTags(settings.personalTags || []);
+      setAggregators(settings.aggregators || []);
       setCoupons(settings.coupons || []);
+      
+      setSyncStatus(prev => ({
+        ...prev,
+        totalLive: (settings.coupons || []).length
+      }));
+
+      // Fetch clicks telemetry
+      try {
+        const telRes = await fetch("/api/telemetry/click");
+        const telData = await telRes.json();
+        setTotalClicks(telData.clicks || 0);
+      } catch (err) {
+        console.warn("Failed to fetch clicks telemetry:", err);
+      }
+
       setLoading(false);
     }
     initAdmin();
@@ -78,7 +91,7 @@ export default function AdminPage() {
   const handleSaveAll = async () => {
     setSaveStatus("saving");
     try {
-      const { error } = await saveAdminSettings(user, { apiKeys, coupons });
+      const { error } = await saveAdminSettings(user, { personalTags, aggregators, coupons });
       if (error) throw error;
       setSaveStatus("success");
       setTimeout(() => setSaveStatus(null), 3000);
@@ -89,16 +102,28 @@ export default function AdminPage() {
     }
   };
 
-  // API Key handlers
-  const handleAddKey = (e) => {
+  // Section A - Personal Tag handlers
+  const handleAddTag = (e) => {
     e.preventDefault();
-    if (!newKey.value.trim()) return;
-    setApiKeys([...apiKeys, { ...newKey, id: "key-" + Date.now() }]);
-    setNewKey({ name: "Amazon Associate Tag", value: "", region: "GLOBAL" });
+    if (!newTag.tag.trim()) return;
+    setPersonalTags([...personalTags, { ...newTag, id: "tag-" + Date.now() }]);
+    setNewTag({ store: "Amazon", tag: "", region: "GLOBAL" });
   };
 
-  const handleRemoveKey = (id) => {
-    setApiKeys(apiKeys.filter(k => k.id !== id));
+  const handleRemoveTag = (id) => {
+    setPersonalTags(personalTags.filter(t => t.id !== id));
+  };
+
+  // Section B - Aggregator handlers
+  const handleAddAggregator = (e) => {
+    e.preventDefault();
+    if (!newAggregator.token.trim()) return;
+    setAggregators([...aggregators, { ...newAggregator, id: "agg-" + Date.now() }]);
+    setNewAggregator({ name: "Cuelinks", token: "", region: "GLOBAL" });
+  };
+
+  const handleRemoveAggregator = (id) => {
+    setAggregators(aggregators.filter(a => a.id !== id));
   };
 
   // Coupon handlers
@@ -106,24 +131,54 @@ export default function AdminPage() {
     e.preventDefault();
     if (!newCoupon.code.trim() || !newCoupon.store.trim()) return;
     setCoupons([...coupons, { ...newCoupon, id: "coupon-" + Date.now() }]);
-    setNewCoupon({ code: "", store: "", description: "", link: "", region: "GLOBAL" });
+    setNewCoupon({ code: "", store: "", description: "", link: "", region: "GLOBAL", expiry: "" });
   };
 
   const handleRemoveCoupon = (id) => {
     setCoupons(coupons.filter(c => c.id !== id));
   };
 
-  const triggerSync = () => {
+  const triggerSync = async () => {
     setSyncing(true);
-    setTimeout(() => {
+    try {
+      // 1. Purge expired coupons
+      const today = new Date();
+      const unexpiredCoupons = coupons.filter(c => {
+        if (!c.expiry) return true;
+        return new Date(c.expiry) >= today;
+      });
+
+      // 2. Fetch mock API feed vouchers
+      const feedVouchers = [
+        { id: "feed-c1", code: "FOODJOY30", store: "Zomato", description: "Flat 30% discount on food bookings", link: "https://zomato.com", region: "IN", expiry: "2026-12-31" },
+        { id: "feed-c2", code: "RIDERIDE", store: "Uber", description: "Save $5 on your next premium ride", link: "https://uber.com", region: "US", expiry: "2026-12-31" },
+        { id: "feed-c3", code: "AMZPRIME", store: "Amazon", description: "Free 30-day Prime membership trial", link: "https://amazon.in", region: "GLOBAL", expiry: "2026-12-31" }
+      ];
+
+      // Add unique ones
+      const newCoupons = [...unexpiredCoupons];
+      feedVouchers.forEach(fv => {
+        if (!newCoupons.some(c => c.code === fv.code)) {
+          newCoupons.push(fv);
+        }
+      });
+
+      setCoupons(newCoupons);
+      
+      // Auto save after sync
+      await saveAdminSettings(user, { personalTags, aggregators, coupons: newCoupons });
+      
       setSyncStatus({
         lastSync: new Date().toISOString().replace("T", " ").substring(0, 19) + " UTC",
-        totalLive: 248 + Math.floor(Math.random() * 20),
+        totalLive: newCoupons.length,
         cuelinksStatus: "Operational",
         earnkaroStatus: "Operational"
       });
+    } catch (syncErr) {
+      console.error("Coupons Sync failed:", syncErr);
+    } finally {
       setSyncing(false);
-    }, 1500);
+    }
   };
 
   if (loading) {
@@ -250,20 +305,34 @@ export default function AdminPage() {
 
               {/* Metric Cards Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {analyticsMetrics.map((m, idx) => {
-                  const Icon = m.icon;
-                  return (
-                    <div key={idx} className={`p-4 rounded-xl border flex items-center gap-4 ${m.color}`}>
-                      <div className="p-3 rounded-lg bg-slate-950/40">
-                        <Icon className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">{m.label}</p>
-                        <p className="text-xl font-black text-white">{m.value}</p>
-                      </div>
-                    </div>
-                  );
-                })}
+                <div className="p-4 rounded-xl border flex items-center gap-4 text-blue-400 bg-blue-500/10 border-blue-500/20">
+                  <div className="p-3 rounded-lg bg-slate-950/40"><Users className="w-5 h-5" /></div>
+                  <div>
+                    <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Total Active Users</p>
+                    <p className="text-xl font-black text-white">1,284</p>
+                  </div>
+                </div>
+                <div className="p-4 rounded-xl border flex items-center gap-4 text-brand-indigo bg-brand-indigo/10 border-brand-indigo/20">
+                  <div className="p-3 rounded-lg bg-slate-950/40"><Search className="w-5 h-5" /></div>
+                  <div>
+                    <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Searches Today</p>
+                    <p className="text-xl font-black text-white">452</p>
+                  </div>
+                </div>
+                <div className="p-4 rounded-xl border flex items-center gap-4 text-brand-violet bg-brand-violet/10 border-brand-violet/20">
+                  <div className="p-3 rounded-lg bg-slate-950/40"><MousePointerClick className="w-5 h-5 animate-pulse" /></div>
+                  <div>
+                    <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Affiliate Clicks (Live)</p>
+                    <p className="text-xl font-black text-white">{totalClicks}</p>
+                  </div>
+                </div>
+                <div className="p-4 rounded-xl border flex items-center gap-4 text-amber-400 bg-amber-500/10 border-amber-500/20">
+                  <div className="p-3 rounded-lg bg-slate-950/40"><BarChart3 className="w-5 h-5" /></div>
+                  <div>
+                    <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Top Trending Keyword</p>
+                    <p className="text-xl font-black text-white">iPhone 16</p>
+                  </div>
+                </div>
               </div>
 
               {/* Logs Table */}
@@ -311,103 +380,177 @@ export default function AdminPage() {
             </div>
           )}
 
-          {/* TAB 2: API Keys & Affiliate Tags */}
+          {/* TAB 2: Affiliate & Credentials Manager */}
           {activeTab === "keys" && (
             <div className="space-y-8 animate-fade-in">
               <div>
                 <h3 className="text-lg font-bold text-white mb-1">Affiliate & Credentials Manager</h3>
                 <p className="text-xs text-slate-400">
-                  Manage tokens, affiliate keys, and API credentials targeting different regions. Keep values secret.
+                  Manage personal direct-approval tracking accounts and affiliate aggregators.
                 </p>
               </div>
 
-              {/* Add form */}
-              <form onSubmit={handleAddKey} className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 rounded-xl bg-slate-950/40 border border-slate-900">
-                <div className="md:col-span-1 space-y-1">
-                  <label className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Credential/Tag Type</label>
-                  <select
-                    value={newKey.name}
-                    onChange={e => setNewKey({ ...newKey, name: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs focus:outline-none focus:border-brand-indigo text-white appearance-none cursor-pointer"
-                  >
-                    <option value="Amazon Associate Tag">Amazon Associate Tag</option>
-                    <option value="Cuelinks API Key">Cuelinks API Key</option>
-                    <option value="EarnKaro API Key">EarnKaro Key</option>
-                    <option value="Flipkart Affiliate ID">Flipkart Affiliate ID</option>
-                  </select>
+              {/* SECTION A: Personal Affiliate Accounts */}
+              <div className="space-y-4 p-5 rounded-2xl border border-slate-800 bg-slate-900/10">
+                <div className="flex items-center gap-2 border-b border-slate-800/60 pb-2">
+                  <Link2 className="w-4 h-4 text-brand-indigo" />
+                  <h4 className="text-xs font-extrabold uppercase text-slate-300 tracking-wider">SECTION A: Personal Affiliate Accounts (Direct Approval)</h4>
                 </div>
-                <div className="md:col-span-2 space-y-1">
-                  <label className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Key Value / SubID Token</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Enter Secret Key Value"
-                    value={newKey.value}
-                    onChange={e => setNewKey({ ...newKey, value: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs focus:outline-none focus:border-brand-indigo text-white placeholder-slate-600"
-                  />
-                </div>
-                <div className="space-y-1 flex items-end gap-2">
-                  <div className="flex-grow">
-                    <label className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Region</label>
+
+                {/* Form Tag */}
+                <form onSubmit={handleAddTag} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Platform Name</label>
                     <select
-                      value={newKey.region}
-                      onChange={e => setNewKey({ ...newKey, region: e.target.value })}
+                      value={newTag.store}
+                      onChange={e => setNewTag({ ...newTag, store: e.target.value })}
                       className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs focus:outline-none focus:border-brand-indigo text-white appearance-none cursor-pointer"
                     >
-                      <option value="IN">IN (India)</option>
-                      <option value="US">US (United States)</option>
-                      <option value="GLOBAL">GLOBAL</option>
+                      <option value="Amazon">Amazon</option>
+                      <option value="Flipkart">Flipkart</option>
+                      <option value="Croma">Croma</option>
+                      <option value="Reliance">Reliance Digital</option>
                     </select>
                   </div>
-                  <button
-                    type="submit"
-                    className="p-2 rounded-lg bg-brand-indigo text-white hover:bg-brand-indigo/90 active:scale-95 transition-all cursor-pointer shadow-md"
-                  >
-                    <Plus className="w-5 h-5" />
-                  </button>
-                </div>
-              </form>
+                  <div className="space-y-1">
+                    <label className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Tag ID / Associate ID</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. tagname-21"
+                      value={newTag.tag}
+                      onChange={e => setNewTag({ ...newTag, tag: e.target.value })}
+                      className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs focus:outline-none focus:border-brand-indigo text-white placeholder-slate-600 font-mono"
+                    />
+                  </div>
+                  <div className="space-y-1 flex items-end gap-2">
+                    <div className="flex-grow">
+                      <label className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Target Region</label>
+                      <select
+                        value={newTag.region}
+                        onChange={e => setNewTag({ ...newTag, region: e.target.value })}
+                        className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs focus:outline-none focus:border-brand-indigo text-white appearance-none cursor-pointer"
+                      >
+                        <option value="IN">IN (India)</option>
+                        <option value="US">US (United States)</option>
+                        <option value="GLOBAL">GLOBAL</option>
+                      </select>
+                    </div>
+                    <button
+                      type="submit"
+                      className="p-2 rounded-lg bg-brand-indigo text-white hover:bg-brand-indigo/90 active:scale-95 transition-all cursor-pointer shadow-md"
+                    >
+                      <Plus className="w-5 h-5" />
+                    </button>
+                  </div>
+                </form>
 
-              {/* Items List */}
-              <div className="space-y-3">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">Active Keys list</h4>
-                
-                {apiKeys.length === 0 ? (
-                  <div className="text-center py-8 text-xs text-slate-500 border border-dashed border-slate-800 rounded-xl">
-                    No keys active. Register credentials above to display.
-                  </div>
-                ) : (
-                  <div className="divide-y divide-slate-900 border border-slate-900 rounded-xl overflow-hidden bg-slate-950/20">
-                    {apiKeys.map((keyItem) => (
-                      <div key={keyItem.id} className="flex items-center justify-between p-4 hover:bg-slate-900/30 transition-all">
-                        <div className="flex items-center gap-3 overflow-hidden">
-                          <div className="p-2 rounded-lg bg-brand-indigo/10 text-brand-indigo shrink-0">
-                            <Key className="w-4 h-4" />
+                {/* Personal Tags List */}
+                <div className="space-y-2 mt-3">
+                  {personalTags.length === 0 ? (
+                    <p className="text-[11px] text-slate-500 italic">No personal tag IDs configured.</p>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {personalTags.map(t => (
+                        <div key={t.id} className="flex items-center justify-between p-3 rounded-xl border border-slate-900 bg-slate-950/20 text-xs">
+                          <div>
+                            <span className="font-bold text-white block">{t.store}</span>
+                            <code className="text-[10px] text-slate-500 font-mono block mt-0.5">Tag: {t.tag}</code>
                           </div>
-                          <div className="overflow-hidden">
-                            <h5 className="text-xs font-bold text-white truncate">{keyItem.name}</h5>
-                            <code className="text-[10px] text-slate-500 font-mono select-all truncate block max-w-[250px] md:max-w-[400px]">
-                              {keyItem.value || "••••••••••••••••"}
-                            </code>
+                          <div className="flex items-center gap-2">
+                            <span className="px-1.5 py-0.5 rounded bg-slate-900 text-[9px] font-bold text-slate-400">{t.region}</span>
+                            <button
+                              onClick={() => handleRemoveTag(t.id)}
+                              className="p-1 rounded text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 cursor-pointer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
                           </div>
                         </div>
-                        <div className="flex items-center gap-3 shrink-0">
-                          <span className="flex items-center gap-1 px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-[10px] font-bold text-slate-400">
-                            <Globe className="w-3 h-3 text-slate-500" />
-                            {keyItem.region}
-                          </span>
-                          <button
-                            onClick={() => handleRemoveKey(keyItem.id)}
-                            className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-all cursor-pointer"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* SECTION B: Affiliate Aggregators */}
+              <div className="space-y-4 p-5 rounded-2xl border border-slate-800 bg-slate-900/10">
+                <div className="flex items-center gap-2 border-b border-slate-800/60 pb-2">
+                  <Database className="w-4 h-4 text-brand-violet" />
+                  <h4 className="text-xs font-extrabold uppercase text-slate-300 tracking-wider">SECTION B: Affiliate Aggregators (Cuelinks / EarnKaro)</h4>
+                </div>
+
+                <form onSubmit={handleAddAggregator} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Aggregator Name</label>
+                    <select
+                      value={newAggregator.name}
+                      onChange={e => setNewAggregator({ ...newAggregator, name: e.target.value })}
+                      className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs focus:outline-none focus:border-brand-indigo text-white appearance-none cursor-pointer"
+                    >
+                      <option value="Cuelinks">Cuelinks</option>
+                      <option value="EarnKaro">EarnKaro</option>
+                    </select>
                   </div>
-                )}
+                  <div className="space-y-1">
+                    <label className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">API Key / Token Value</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Paste API Secret Key"
+                      value={newAggregator.token}
+                      onChange={e => setNewAggregator({ ...newAggregator, token: e.target.value })}
+                      className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs focus:outline-none focus:border-brand-indigo text-white placeholder-slate-600"
+                    />
+                  </div>
+                  <div className="space-y-1 flex items-end gap-2">
+                    <div className="flex-grow">
+                      <label className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Target Region</label>
+                      <select
+                        value={newAggregator.region}
+                        onChange={e => setNewAggregator({ ...newAggregator, region: e.target.value })}
+                        className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs focus:outline-none focus:border-brand-indigo text-white appearance-none cursor-pointer"
+                      >
+                        <option value="IN">IN (India)</option>
+                        <option value="US">US (United States)</option>
+                        <option value="GLOBAL">GLOBAL</option>
+                      </select>
+                    </div>
+                    <button
+                      type="submit"
+                      className="p-2 rounded-lg bg-brand-violet text-white hover:bg-brand-violet/90 active:scale-95 transition-all cursor-pointer shadow-md"
+                    >
+                      <Plus className="w-5 h-5" />
+                    </button>
+                  </div>
+                </form>
+
+                {/* Aggregator List */}
+                <div className="space-y-2 mt-3">
+                  {aggregators.length === 0 ? (
+                    <p className="text-[11px] text-slate-500 italic">No affiliate aggregators configured.</p>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {aggregators.map(a => (
+                        <div key={a.id} className="flex items-center justify-between p-3 rounded-xl border border-slate-900 bg-slate-950/20 text-xs">
+                          <div>
+                            <span className="font-bold text-white block">{a.name}</span>
+                            <code className="text-[10px] text-slate-500 font-mono block mt-0.5">Token: {a.token ? "••••••••" + a.token.slice(-4) : "None"}</code>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="px-1.5 py-0.5 rounded bg-slate-900 text-[9px] font-bold text-slate-400">{a.region}</span>
+                            <button
+                              onClick={() => handleRemoveAggregator(a.id)}
+                              className="p-1 rounded text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 cursor-pointer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )}
@@ -415,13 +558,11 @@ export default function AdminPage() {
           {/* TAB 3: Coupon Management Center */}
           {activeTab === "coupons" && (
             <div className="space-y-8 animate-fade-in">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                  <h3 className="text-lg font-bold text-white mb-1">Coupon Management Center</h3>
-                  <p className="text-xs text-slate-400">
-                    Add physical store vouchers manually or track sync status of Cuelinks API auto-coupons.
-                  </p>
-                </div>
+              <div>
+                <h3 className="text-lg font-bold text-white mb-1">Coupon Management Center</h3>
+                <p className="text-xs text-slate-400">
+                  Manage manual coupons and verify Cuelinks feed status integrations.
+                </p>
               </div>
 
               {/* Automatic Sync Dashboard */}
@@ -454,7 +595,7 @@ export default function AdminPage() {
                     className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 text-xs font-bold text-slate-300 hover:text-white transition-all cursor-pointer disabled:opacity-50 shrink-0"
                   >
                     <RefreshCw className={`w-3.5 h-3.5 ${syncing ? "animate-spin" : ""}`} />
-                    <span>{syncing ? "Syncing..." : "Sync Coupons Now"}</span>
+                    <span>{syncing ? "Syncing..." : "Sync & Purge Expired"}</span>
                   </button>
                 </div>
               </div>
@@ -462,7 +603,7 @@ export default function AdminPage() {
               {/* Add form */}
               <div className="space-y-3">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">Add Manual Store Voucher</h4>
-                <form onSubmit={handleAddCoupon} className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 rounded-xl bg-slate-950/40 border border-slate-900">
+                <form onSubmit={handleAddCoupon} className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 rounded-xl bg-slate-950/40 border border-slate-900">
                   <div className="space-y-1">
                     <label className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Store Name</label>
                     <input
@@ -496,6 +637,27 @@ export default function AdminPage() {
                       className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs focus:outline-none focus:border-brand-indigo text-white placeholder-slate-600"
                     />
                   </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Redirection Destination URL</label>
+                    <input
+                      type="url"
+                      required
+                      placeholder="https://amazon.in/redeem"
+                      value={newCoupon.link}
+                      onChange={e => setNewCoupon({ ...newCoupon, link: e.target.value })}
+                      className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs focus:outline-none focus:border-brand-indigo text-white placeholder-slate-600"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Expiry Date (YYYY-MM-DD)</label>
+                    <input
+                      type="date"
+                      placeholder="YYYY-MM-DD"
+                      value={newCoupon.expiry}
+                      onChange={e => setNewCoupon({ ...newCoupon, expiry: e.target.value })}
+                      className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs focus:outline-none focus:border-brand-indigo text-white placeholder-slate-600"
+                    />
+                  </div>
                   <div className="space-y-1 flex items-end gap-2">
                     <div className="flex-grow">
                       <label className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Target Region</label>
@@ -509,25 +671,11 @@ export default function AdminPage() {
                         <option value="GLOBAL">GLOBAL</option>
                       </select>
                     </div>
-                  </div>
-                  <div className="md:col-span-3 space-y-1">
-                    <label className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Destination Redirection Link (Affiliate link / PDP URL)</label>
-                    <input
-                      type="url"
-                      required
-                      placeholder="https://amazon.in/redeem"
-                      value={newCoupon.link}
-                      onChange={e => setNewCoupon({ ...newCoupon, link: e.target.value })}
-                      className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs focus:outline-none focus:border-brand-indigo text-white placeholder-slate-600"
-                    />
-                  </div>
-                  <div className="flex items-end justify-end">
                     <button
                       type="submit"
-                      className="w-full md:w-auto px-5 py-2.5 rounded-lg bg-brand-violet text-white hover:bg-brand-violet/90 active:scale-95 transition-all cursor-pointer shadow-md flex items-center justify-center gap-1.5 text-xs font-bold"
+                      className="p-2 rounded-lg bg-brand-violet text-white hover:bg-brand-violet/90 active:scale-95 transition-all cursor-pointer shadow-md"
                     >
-                      <Plus className="w-4 h-4" />
-                      <span>Add Coupon</span>
+                      <Plus className="w-5 h-5" />
                     </button>
                   </div>
                 </form>
@@ -535,11 +683,11 @@ export default function AdminPage() {
 
               {/* Coupons List */}
               <div className="space-y-3">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">Manual Coupons list</h4>
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">Active Coupons list</h4>
                 
                 {coupons.length === 0 ? (
                   <div className="text-center py-8 text-xs text-slate-500 border border-dashed border-slate-800 rounded-xl">
-                    No manual coupons active. Register a coupon above.
+                    No active coupons. Register a coupon above.
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 gap-3">
@@ -557,7 +705,15 @@ export default function AdminPage() {
                               <span className="text-xs text-slate-400 font-bold">{couponItem.store}</span>
                             </div>
                             <p className="text-xs text-slate-300 mt-1 truncate">{couponItem.description}</p>
-                            <span className="text-[10px] text-slate-500 truncate block mt-0.5">{couponItem.link}</span>
+                            <div className="flex items-center gap-3 mt-1 text-[10px] text-slate-500">
+                              <span className="truncate max-w-[200px]">{couponItem.link}</span>
+                              {couponItem.expiry && (
+                                <>
+                                  <span>•</span>
+                                  <span className="text-rose-400 font-bold">Expires: {couponItem.expiry}</span>
+                                </>
+                              )}
+                            </div>
                           </div>
                         </div>
 

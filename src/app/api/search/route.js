@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/services/supabase";
 import { redis } from "@/services/redis";
 import { getAdminSettings } from "@/services/admin";
+import { monetizeUrl } from "@/services/affiliate";
 
 function getCacheKey(country, query) {
   const clean = query
@@ -471,12 +472,17 @@ Respond strictly in JSON with this structure:
 
     if (intent === "SERVICE_COUPON") {
       const queryLower = cleanQuery.toLowerCase();
-      const matchedCoupons = (settings.coupons || []).filter(coupon => {
+      const rawMatched = (settings.coupons || []).filter(coupon => {
         const storeName = (coupon.store || "").toLowerCase();
         const matchesStore = queryLower.includes(storeName) || storeName.includes(queryLower);
         const matchesRegion = coupon.region === userRegion || coupon.region === "GLOBAL";
         return matchesStore && matchesRegion;
       });
+
+      const matchedCoupons = rawMatched.map(coupon => ({
+        ...coupon,
+        link: monetizeUrl(coupon.link, coupon.store, userRegion, settings)
+      }));
 
       if (matchedCoupons.length === 0) {
         // Return 200 with error 'NotAvailable' to bypass product scraper and display polite notice
@@ -665,7 +671,8 @@ Respond strictly in JSON with this structure:
             offers.push({
               store: s.name || s.store || "Online Store",
               price: sPriceVal,
-              link: cleanedLink
+              link: cleanedLink,
+              buyNowUrl: monetizeUrl(cleanedLink, s.name || s.store || "Online Store", userRegion, settings)
             });
           }
         });
@@ -690,6 +697,7 @@ Respond strictly in JSON with this structure:
               store: platform,
               price: priceVal,
               link: cleanedTopLink,
+              buyNowUrl: monetizeUrl(cleanedTopLink, platform, userRegion, settings),
               is_lowest: true
             }
           ];
@@ -716,6 +724,7 @@ Respond strictly in JSON with this structure:
         rating: String(item.rating || "4.5"),
         reviewsCount: Number(item.reviews || 100),
         link: String(directLink),
+        buyNowUrl: String(monetizeUrl(directLink, resolvedPlatform, userRegion, settings)),
         platform: String(resolvedPlatform),
         price: Number(resolvedPrice),
         price_comparison: offers,
