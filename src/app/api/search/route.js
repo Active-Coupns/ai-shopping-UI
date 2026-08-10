@@ -647,6 +647,13 @@ Respond strictly in JSON with this structure:
       // Map Store Link: Pass item.link or item.direct_link or item.product_link directly
       const rawLink = item.link || item.direct_link || item.product_link || "";
       let directLink = cleanProductUrl(rawLink);
+
+      // Zero Google Aggregator Link Leak Policy: Drop listing if it points to a Google aggregator or contains SerpApi redirects
+      if (!isValidDirectPDPUrl(directLink)) {
+        console.log(`[Aggregator Guard] Dropping aggregator main product listing: ${directLink}`);
+        continue;
+      }
+
       let resolvedPrice = priceVal;
       let resolvedPlatform = platform;
 

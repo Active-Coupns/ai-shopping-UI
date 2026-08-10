@@ -7,15 +7,17 @@ export default function CouponCard({ coupon }) {
 
   const handleRevealAndCopy = async () => {
     if (!isRevealed) {
-      // 1. Silent cookie dropper injection via background iframe
-      try {
-        const iframe = document.createElement("iframe");
-        iframe.src = coupon.link || "#";
-        iframe.style.display = "none";
-        document.body.appendChild(iframe);
-        setTimeout(() => iframe.remove(), 4000);
-      } catch (err) {
-        console.warn("Failed to drop affiliate cookie iframe:", err);
+      // 1. Silent cookie dropper injection via background iframe (only for valid external links)
+      if (coupon.link && coupon.link.startsWith("http")) {
+        try {
+          const iframe = document.createElement("iframe");
+          iframe.src = coupon.link;
+          iframe.style.display = "none";
+          document.body.appendChild(iframe);
+          setTimeout(() => iframe.remove(), 4000);
+        } catch (err) {
+          console.warn("Failed to drop affiliate cookie iframe:", err);
+        }
       }
 
       // 2. Increment Telemetry Click count
@@ -25,13 +27,24 @@ export default function CouponCard({ coupon }) {
       setIsRevealed(true);
     }
 
-    // 4. Copy code to clipboard
+    // 4. Copy code to clipboard (with absolute compatibility fallback)
     try {
-      await navigator.clipboard.writeText(coupon.code);
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(coupon.code);
+      } else {
+        const tempInput = document.createElement("input");
+        tempInput.value = coupon.code;
+        tempInput.style.position = "absolute";
+        tempInput.style.left = "-9999px";
+        document.body.appendChild(tempInput);
+        tempInput.select();
+        document.execCommand("copy");
+        document.body.removeChild(tempInput);
+      }
       setCopied(true);
       setTimeout(() => setCopied(false), 2500);
     } catch (err) {
-      console.error("Failed to copy code:", err);
+      console.warn("Clipboard copy fallback failed:", err);
     }
   };
 
