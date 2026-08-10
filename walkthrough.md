@@ -1,49 +1,30 @@
-# Walkthrough - Master Monetization & Coupon Reveal Engine
+# Walkthrough - Bug Fixes & Dynamic Affiliate Configurations
 
-We have successfully implemented **Phase 2: Step 2 - Master Monetization & Coupon Reveal Engine Architecture** while ensuring 100% backward-compatibility and zero regressions.
-
----
-
-## 🛠️ Refactored & Deployed Components
-
-### 1. Simplified Credentials Panel (`src/app/admin/page.js` & `src/services/admin.js`)
-* Restructured the admin configuration dashboard and settings service schema:
-  - **Section A: Personal Affiliate Accounts**: Stores direct Approval platform names (e.g. Amazon, Flipkart), custom tag IDs, and target regions.
-  - **Section B: Affiliate Aggregators**: Stores affiliate aggregator names (Cuelinks, EarnKaro), API token secrets, and target regions.
-* Added a compatibility adapter that maps older `apiKeys` configurations to the new arrays during loading.
-
-### 2. Pre-processed Affiliate Link Engine (`src/services/affiliate.js` & `/api/search/route.js`)
-* Wrapped scraped e-commerce URLs inside the backend route `POST` query builder before returning them (eliminating client redirect latency).
-* **3-Step Link Fallback Router**:
-  1. Checks for matching direct-approval **Personal Tags** (matching platform/merchant name and search region). If found, injects the parameters (e.g. `tag=myshop-20`).
-  2. Falls back to **Affiliate Aggregators** (Cuelinks or EarnKaro) redirect wraps matching the target search region.
-  3. Falls back to returning the clean merchant PDP URL.
-* Populates alternative comparison offers and main results with monetized affiliate URLs inside `buyNowUrl`.
-
-### 3. "Reveal Code" & Silent Iframe Dropper (`src/components/CouponCard.jsx`)
-* Re-implemented Coupon Card click workflows:
-  - **Initial State**: Renders masked codes (`••••••••` / `"REVEAL CODE"`).
-  - **On Click ("Reveal Code")**:
-    1. Injects a hidden, temporary background `iframe` into the document tree targeting the monetized affiliate url (silently dropping the affiliate cookie in the browser cache without directing the user away from the platform).
-    2. Displays the unmasked coupon code.
-    3. Copies the coupon code to the user's clipboard and displays a toast notification.
-    4. Triggers click telemetry events.
-
-### 4. Telemetry click tracker (`src/app/api/telemetry/click/route.js` & `/admin`)
-* Added click telemetry routing endpoint:
-  - `POST /api/telemetry/click`: Increments click counts inside Redis key `telemetry:affiliate_clicks`.
-  - `GET /api/telemetry/click`: Returns total click counts.
-* Linked "Buy Now" and "Reveal Code" CTA triggers to log click events.
-* Updated `/admin` analytics cards to render live click count telemetry.
-
-### 5. Automated Coupon Purge & Sync Feed (`src/services/couponSync.js` & `/admin`)
-* Added automated coupon sync feed processor.
-* Auto-purges expired coupons (compares expiry date to current time) and imports new offers from Cuelinks/EarnKaro simulated daily feeds.
+We have successfully resolved the critical issues on the production build, ensuring absolute safety, no broken redirects, proper UI overlays, and complete dynamic keys configuration support.
 
 ---
 
-## 🧪 Integration Verification Results
+## 🛠️ Implemented Fixes & Corrections
 
-We verified all engine modules using local mock requests:
-* **Pre-processed Link wrapping**: Checked Target US search response. Clean PDP Target URL was successfully wrapped in EarnKaro redirect (`https://earnkaro.com/redirect?key=earnkaroKeyABC&url=...`), verifying the aggregator fallback pipeline.
-* **Telemetry clicks**: Click logs successfully incremented Redis telemetry keys (Clicks: `0 -> 1 -> 2` events), displaying correctly on the Admin dashboard.
+### 1. Purged Hardcoded Affiliate Keys & 404 Prevention
+* Removed all dummy/placeholder values (e.g. `cuelinksTokenXYZ`, `earnkaroKeyABC`, etc.) from `src/services/admin.js` and initialized default lists as completely empty arrays `[]`.
+* **Dummy Key Filter**: Hardened `monetizeUrl` in `src/services/affiliate.js` to evaluate tags/tokens and verify they are not placeholder values. If keys are empty or match dummy test patterns, the engine strictly returns the **raw, clean merchant destination URL** directly (no aggregator wraps).
+* This completely eliminates invalid redirects and prevents 404 Page Not Found errors on production.
+
+### 2. Fixed Profile Dropdown mobile z-index Overlay Bug
+* **Header z-index elevation**: Elevated `<header>` z-index class to `relative z-50` inside `src/app/page.js` to keep it floating above all main elements (which remain at `z-10`).
+* **Glassmorphism dropdown**: Re-styled `ProfileMenu` dropdown in `src/components/ProfileMenu.jsx` to render a glassmorphic background (`bg-slate-950/90 backdrop-blur-md`) and highest depth shadow (`shadow-2xl z-50`).
+* This ensures the user menu floats above all homepage contents (including hero texts and search inputs) on all viewports without bleeding issues.
+
+### 3. Dynamic Affiliate Platform & Redirection URL Manager
+* **Custom Platform input**: Removed hardcoded select dropdown parameters for Platform/Store Name in Section A and Section B, replacing them with dynamic text inputs.
+* **Target Redirection URL Template**: Added support for custom redirection templates (e.g., `https://custom.com/redirect?token={token}&url={url}`) inside Section B aggregators.
+* The monetization engine automatically interpolates `{token}` and `{url}` markers dynamically for custom platforms.
+
+---
+
+## 🧪 Build & Repository Status
+
+* **Next.js Production Build**: Compiles successfully with zero warnings/errors (`Exit Code 0`).
+* **GitHub Repository Commit**: Pushed successfully to **[Active-Coupns/ai-shopping-UI](https://github.com/Active-Coupns/ai-shopping-UI.git)** (Commit: `16e96c5`).
+* **Verification**: Running local node checks verified that empty settings or placeholder keys result in clean merchant URLs returned directly.
