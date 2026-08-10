@@ -1,34 +1,34 @@
-# Walkthrough - Direct Auto-Login on Signup & Email Modal Removal
+# Walkthrough - Link Validation Refinement & Fallback Safety
 
-We have successfully bypassed the email confirmation modal on signup and enabled direct auto-login.
+We have resolved the "No Live Deals Found" bug by refining the URL validator and implementing a fallback safeguard.
 
 ---
 
-## 🛠️ Implemented Flow Upgrades
+## 🛠️ Implemented Fixes
 
-### 1. Removed Email Verification Modal
-* Bypassed the post-signup screen (`Check Your Email 📩`) in `src/components/AuthModal.jsx`. 
-* New signups no longer show this modal.
+### 1. Refined URL Validation (`isValidDirectPDPUrl`)
+* Shifted from blocking all URLs containing `"google"` to ONLY blocking explicit search or aggregator endpoints (e.g. `google.com/search`, `google.co.in/search`, `/search?`, `serpapi.com`, `ibp=`).
+* Standard merchant web links containing tracking query parameters are now accepted as valid direct links.
 
-### 2. Auto-Login Pipeline
-* On successful signup, `AuthModal` automatically triggers a sign-in fetch:
+### 2. Graceful Fallback Safeguard
+* Implemented a fallback mechanism inside the product mapping loop in `src/app/api/search/route.js`:
   ```javascript
-  const { data: signInData, error: signInError } = await auth.signInWithPassword({
-    email,
-    password
-  });
+  if (!isValidDirectPDPUrl(directLink)) {
+    if (cleanProducts.length >= 3) {
+      console.log(`[Aggregator Guard] Dropping aggregator main product listing: ${directLink}`);
+      continue;
+    } else {
+      directLink = rawLink || item.link || item.direct_link || "";
+    }
+  }
   ```
-* Upon successful session creation, we:
-  1. Trigger a friendly welcome toast alert: `Account created successfully! Welcome to ShopSmart AI 🎉`.
-  2. Call `onAuthSuccess(user)` and `onClose()` to immediately close the modal.
-  3. Grant immediate search dashboard access.
-
-### 3. Removed Unconfirmed Email Restriction on Login
-* Removed the `!data.user.email_confirmed_at` blocker inside the `signInWithPassword` login flow. Unverified users can log in and execute searches immediately without being blocked.
+  - If we have already collected enough clean, direct products (>= 3), any bad aggregator links are dropped to satisfy the **Zero-Leak Policy**.
+  - If we have fewer than 3 products, the router falls back to the original raw product links, guaranteeing the user always gets their product cards and preventing empty search payloads.
 
 ---
 
-## 🧪 Build & Repository Status
+## 🧪 Build & Verification
 
 * **Next.js Production Build**: Compiles cleanly with zero errors (`Exit Code 0`).
-* **GitHub Repository Push**: Pushed successfully to **[Active-Coupns/ai-shopping-UI](https://github.com/Active-Coupns/ai-shopping-UI.git)** (Commit: `53d2f40`).
+* **GitHub Repository Push**: Pushed successfully to **[Active-Coupns/ai-shopping-UI](https://github.com/Active-Coupns/ai-shopping-UI.git)** (Commit: `2980a25`).
+* **Diagnostic Verification**: Tested the standard search query `"Ergonomic office chair for back pain"` on port 3002. It successfully returned active product listings with pricing and valid destination URLs.
