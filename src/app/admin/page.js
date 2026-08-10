@@ -25,10 +25,10 @@ export default function AdminPage() {
   const [totalClicks, setTotalClicks] = useState(0);
 
   // Form states for adding Section A (Personal Tags)
-  const [newTag, setNewTag] = useState({ store: "Amazon", tag: "", region: "GLOBAL" });
+  const [newTag, setNewTag] = useState({ store: "", tag: "", region: "GLOBAL" });
   
   // Form states for adding Section B (Aggregators)
-  const [newAggregator, setNewAggregator] = useState({ name: "Cuelinks", token: "", region: "GLOBAL" });
+  const [newAggregator, setNewAggregator] = useState({ name: "", token: "", redirectUrl: "", region: "GLOBAL" });
 
   // Form states for coupons
   const [newCoupon, setNewCoupon] = useState({ code: "", store: "", description: "", link: "", region: "GLOBAL", expiry: "" });
@@ -115,9 +115,9 @@ export default function AdminPage() {
   // Section A - Personal Tag handlers
   const handleAddTag = (e) => {
     e.preventDefault();
-    if (!newTag.tag.trim()) return;
+    if (!newTag.tag.trim() || !newTag.store.trim()) return;
     setPersonalTags([...personalTags, { ...newTag, id: "tag-" + Date.now() }]);
-    setNewTag({ store: "Amazon", tag: "", region: "GLOBAL" });
+    setNewTag({ store: "", tag: "", region: "GLOBAL" });
   };
 
   const handleRemoveTag = (id) => {
@@ -127,9 +127,9 @@ export default function AdminPage() {
   // Section B - Aggregator handlers
   const handleAddAggregator = (e) => {
     e.preventDefault();
-    if (!newAggregator.token.trim()) return;
+    if (!newAggregator.token.trim() || !newAggregator.name.trim()) return;
     setAggregators([...aggregators, { ...newAggregator, id: "agg-" + Date.now() }]);
-    setNewAggregator({ name: "Cuelinks", token: "", region: "GLOBAL" });
+    setNewAggregator({ name: "", token: "", redirectUrl: "", region: "GLOBAL" });
   };
 
   const handleRemoveAggregator = (id) => {
@@ -408,21 +408,18 @@ export default function AdminPage() {
                   <Link2 className="w-4 h-4 text-brand-indigo" />
                   <h4 className="text-xs font-extrabold uppercase text-slate-300 tracking-wider">SECTION A: Personal Affiliate Accounts (Direct Approval)</h4>
                 </div>
-
                 {/* Form Tag */}
                 <form onSubmit={handleAddTag} className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-1">
                     <label className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Platform Name</label>
-                    <select
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Amazon, Flipkart, Nike"
                       value={newTag.store}
                       onChange={e => setNewTag({ ...newTag, store: e.target.value })}
-                      className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs focus:outline-none focus:border-brand-indigo text-white appearance-none cursor-pointer"
-                    >
-                      <option value="Amazon">Amazon</option>
-                      <option value="Flipkart">Flipkart</option>
-                      <option value="Croma">Croma</option>
-                      <option value="Reliance">Reliance Digital</option>
-                    </select>
+                      className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs focus:outline-none focus:border-brand-indigo text-white placeholder-slate-600"
+                    />
                   </div>
                   <div className="space-y-1">
                     <label className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Tag ID / Associate ID</label>
@@ -492,17 +489,17 @@ export default function AdminPage() {
                   <h4 className="text-xs font-extrabold uppercase text-slate-300 tracking-wider">SECTION B: Affiliate Aggregators (Cuelinks / EarnKaro)</h4>
                 </div>
 
-                <form onSubmit={handleAddAggregator} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <form onSubmit={handleAddAggregator} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div className="space-y-1">
                     <label className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Aggregator Name</label>
-                    <select
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Cuelinks, EarnKaro, Custom"
                       value={newAggregator.name}
                       onChange={e => setNewAggregator({ ...newAggregator, name: e.target.value })}
-                      className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs focus:outline-none focus:border-brand-indigo text-white appearance-none cursor-pointer"
-                    >
-                      <option value="Cuelinks">Cuelinks</option>
-                      <option value="EarnKaro">EarnKaro</option>
-                    </select>
+                      className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs focus:outline-none focus:border-brand-indigo text-white placeholder-slate-600"
+                    />
                   </div>
                   <div className="space-y-1">
                     <label className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">API Key / Token Value</label>
@@ -513,6 +510,16 @@ export default function AdminPage() {
                       value={newAggregator.token}
                       onChange={e => setNewAggregator({ ...newAggregator, token: e.target.value })}
                       className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs focus:outline-none focus:border-brand-indigo text-white placeholder-slate-600"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Target Redirection URL Template (Optional)</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. https://custom.com/redirect?token={token}&url={url}"
+                      value={newAggregator.redirectUrl || ""}
+                      onChange={e => setNewAggregator({ ...newAggregator, redirectUrl: e.target.value })}
+                      className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs focus:outline-none focus:border-brand-indigo text-white placeholder-slate-600 font-mono text-[10px]"
                     />
                   </div>
                   <div className="space-y-1 flex items-end gap-2">
@@ -545,11 +552,14 @@ export default function AdminPage() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {aggregators.map(a => (
                         <div key={a.id} className="flex items-center justify-between p-3 rounded-xl border border-slate-900 bg-slate-950/20 text-xs">
-                          <div>
+                          <div className="overflow-hidden mr-2">
                             <span className="font-bold text-white block">{a.name}</span>
-                            <code className="text-[10px] text-slate-500 font-mono block mt-0.5">Token: {a.token ? "••••••••" + a.token.slice(-4) : "None"}</code>
+                            <code className="text-[10px] text-slate-500 font-mono block mt-0.5 truncate">Token: {a.token ? "••••" + a.token.slice(-4) : "None"}</code>
+                            {a.redirectUrl && (
+                              <code className="text-[9px] text-brand-indigo font-mono block truncate mt-0.5">{a.redirectUrl}</code>
+                            )}
                           </div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 shrink-0">
                             <span className="px-1.5 py-0.5 rounded bg-slate-900 text-[9px] font-bold text-slate-400">{a.region}</span>
                             <button
                               onClick={() => handleRemoveAggregator(a.id)}

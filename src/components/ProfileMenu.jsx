@@ -56,7 +56,7 @@ export default function ProfileMenu({ user, onLogout, onOpenLogin, searchesLeft 
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-64 rounded-xl border border-slate-800 bg-slate-950 p-4 shadow-xl z-50 animate-in fade-in slide-in-from-top-1 duration-200">
+        <div className="absolute right-0 mt-2 w-64 rounded-xl border border-slate-800/80 bg-slate-950/90 backdrop-blur-md p-4 shadow-2xl z-50 animate-in fade-in slide-in-from-top-1 duration-200">
           {/* User Details */}
           <div className="flex items-center gap-3 pb-3 mb-3 border-b border-slate-900">
             <div className="w-10 h-10 rounded-lg bg-gradient-to-tr from-brand-indigo to-brand-violet flex items-center justify-center text-white text-sm font-bold">

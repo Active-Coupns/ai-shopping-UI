@@ -1,14 +1,8 @@
 import { supabase, isMockAuthMode, auth } from "./supabase";
 
 const defaultSettings = {
-  personalTags: [
-    { id: "p1", store: "Amazon", tag: "myshop-20", region: "US" },
-    { id: "p2", store: "Flipkart", tag: "myshop20-21", region: "IN" }
-  ],
-  aggregators: [
-    { id: "a1", name: "Cuelinks", token: "cuelinksTokenXYZ", region: "IN" },
-    { id: "a2", name: "EarnKaro", token: "earnkaroKeyABC", region: "GLOBAL" }
-  ],
+  personalTags: [],
+  aggregators: [],
   coupons: [
     { id: "c1", code: "ZOMATO50", store: "Zomato", description: "50% off on your first food order", link: "https://zomato.com", region: "IN" },
     { id: "c2", code: "UBERFREE", store: "Uber", description: "Get a free cab ride up to $15", link: "https://uber.com", region: "US" },
@@ -56,11 +50,6 @@ function normalizeSettings(raw) {
     });
   }
 
-  // Ensure initial structures are filled if empty
-  if (normalized.personalTags.length === 0 && normalized.aggregators.length === 0) {
-    normalized.personalTags = [...defaultSettings.personalTags];
-    normalized.aggregators = [...defaultSettings.aggregators];
-  }
   if (normalized.coupons.length === 0) {
     normalized.coupons = [...defaultSettings.coupons];
   }

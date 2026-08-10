@@ -1,3 +1,20 @@
+const isDummyKey = (val) => {
+  if (!val) return true;
+  const v = val.toLowerCase().trim();
+  return (
+    v === "" ||
+    v.includes("tokenxyz") ||
+    v.includes("keyabc") ||
+    v.includes("myshop") ||
+    v.includes("placeholder") ||
+    v.includes("your_") ||
+    v.includes("dummy") ||
+    v.includes("mock") ||
+    v === "cuelinkstokenxyz" ||
+    v === "earnkarokeyabc"
+  );
+};
+
 /**
  * Wraps a clean product merchant URL with affiliate tags or aggregator redirects.
  * @param {string} url - Clean target merchant PDP URL.
@@ -21,7 +38,7 @@ export function monetizeUrl(url, store, region, settings) {
     return matchesStore && matchesRegion;
   });
 
-  if (matchedTag && matchedTag.tag) {
+  if (matchedTag && matchedTag.tag && !isDummyKey(matchedTag.tag)) {
     try {
       const urlObj = new URL(url);
       if (storeClean.includes("amazon")) {
@@ -47,8 +64,17 @@ export function monetizeUrl(url, store, region, settings) {
     return matchesRegion && a.token;
   });
 
-  if (matchedAggregator) {
+  if (matchedAggregator && matchedAggregator.token && !isDummyKey(matchedAggregator.token)) {
     const nameClean = (matchedAggregator.name || "").toLowerCase().trim();
+    const template = matchedAggregator.redirectUrl || "";
+    
+    if (template && (template.includes("{token}") || template.includes("{url}"))) {
+      console.log(`[Affiliate Engine] Wrapped URL using Custom Aggregator Template: ${nameClean}`);
+      return template
+        .replace("{token}", matchedAggregator.token)
+        .replace("{url}", encodeURIComponent(url));
+    }
+    
     if (nameClean.includes("cuelinks")) {
       console.log(`[Affiliate Engine] Wrapped URL using Cuelinks for region ${regionClean}`);
       return `https://cuelinks.com/redirection?token=${matchedAggregator.token}&url=${encodeURIComponent(url)}`;
