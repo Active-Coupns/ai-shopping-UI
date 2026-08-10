@@ -2,27 +2,29 @@
 
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, Loader2 } from "lucide-react";
+import { Check, Loader2, Compass, Shield, Database, Search } from "lucide-react";
 
-const STEPS = [
-  { id: 1, text: "🧠 Understanding query intent & constraints...", duration: 800 },
-  { id: 2, text: "🔎 Searching Amazon, Flipkart, & major stores...", duration: 800 },
-  { id: 3, text: "📊 AI comparing specs, prices & user reviews...", duration: 800 },
-  { id: 4, text: "🎟️ Matching best affiliate deals & store coupons...", duration: 800 }
+const STAGES = [
+  { id: 1, text: "🧠 Analyzing query intent & specifications...", duration: 1800, icon: Compass },
+  { id: 2, text: "🌐 Scanning inventories across major online stores...", duration: 2200, icon: Search },
+  { id: 3, text: "📊 Evaluating historical price trends & seller ratings...", duration: 1800, icon: Database },
+  { id: 4, text: "🎟️ Checking live verified coupon vouchers...", duration: 1800, icon: Shield }
 ];
 
-// Particle helper for rocket exhaust
-const exhaustParticles = Array.from({ length: 15 }).map((_, i) => ({
-  id: i,
-  angle: (Math.random() - 0.5) * 20, // Spread angle
-  speed: 40 + Math.random() * 60,
-  delay: Math.random() * 0.5,
-  size: 4 + Math.random() * 8,
-}));
+const SHOPPING_TRIVIA = [
+  "Checking verified coupon codes saves our users an average of 18% per checkout! 🎟️",
+  "The Upstash Redis cache speeds up identical search requests to under 150ms! ⚡",
+  "Our SerpApi search engine crawls live product listings from over 15 major online stores! 🌐",
+  "ShopSmart's AI Intent Classifier bypasses scraping entirely for coupon-related searches! 🧠",
+  "Did you know? The most searched shopping term on ShopSmart is 'Laptop under 50k'! 💻",
+  "Outbound PDP direct link guards filter out 100% of malicious Google aggregator redirects! 🛡️"
+];
 
 export default function RocketLoader({ query, onComplete, apiLoading }) {
-  const [currentStep, setCurrentStep] = useState(1);
-  const [completedSteps, setCompletedSteps] = useState([]);
+  const [currentStage, setCurrentStage] = useState(1);
+  const [completedStages, setCompletedStages] = useState([]);
+  const [triviaIndex, setTriviaIndex] = useState(0);
+  const [progress, setProgress] = useState(0);
   
   const apiLoadingRef = React.useRef(apiLoading);
   
@@ -30,27 +32,53 @@ export default function RocketLoader({ query, onComplete, apiLoading }) {
     apiLoadingRef.current = apiLoading;
   }, [apiLoading]);
 
+  // Trivia rotation interval
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTriviaIndex((prev) => (prev + 1) % SHOPPING_TRIVIA.length);
+    }, 2500);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Stage transition and progress loader simulation
   useEffect(() => {
     let timers = [];
     let accumulatedTime = 0;
+    const totalDuration = STAGES.reduce((acc, s) => acc + s.duration, 0);
 
-    STEPS.forEach((step, index) => {
-      // Timer to set active step
+    // Progress bar tick interval
+    const progressInterval = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 98) {
+          if (!apiLoadingRef.current) {
+            clearInterval(progressInterval);
+            return 100;
+          }
+          return 98; // Hold near 100 until API resolves
+        }
+        return prev + 1;
+      });
+    }, totalDuration / 98);
+
+    STAGES.forEach((stage, index) => {
+      // Timer to activate stage
       const activeTimer = setTimeout(() => {
-        setCurrentStep(step.id);
+        setCurrentStage(stage.id);
       }, accumulatedTime);
       timers.push(activeTimer);
 
-      // Timer to mark step as completed
-      accumulatedTime += step.duration;
+      accumulatedTime += stage.duration;
+
+      // Timer to complete stage
       const completeTimer = setTimeout(() => {
-        setCompletedSteps((prev) => [...prev, step.id]);
-        if (index === STEPS.length - 1) {
-          // Last step completed. Wait if API is still loading
+        setCompletedStages((prev) => [...prev, stage.id]);
+        if (index === STAGES.length - 1) {
+          // Last stage completed. Wait if API is still loading
           const checkCompletion = () => {
             if (apiLoadingRef.current) {
               setTimeout(checkCompletion, 100);
             } else {
+              setProgress(100);
               setTimeout(onComplete, 400);
             }
           };
@@ -62,149 +90,89 @@ export default function RocketLoader({ query, onComplete, apiLoading }) {
 
     return () => {
       timers.forEach((t) => clearTimeout(t));
+      clearInterval(progressInterval);
     };
   }, [onComplete]);
 
+  const activeIconIndex = STAGES.findIndex(s => s.id === currentStage);
+  const CurrentIcon = STAGES[activeIconIndex >= 0 ? activeIconIndex : 0].icon;
+
   return (
-    <div className="w-full max-w-xl mx-auto px-6 py-12 flex flex-col items-center justify-center min-h-[500px]">
-      {/* Query Banner */}
+    <div className="w-full max-w-xl mx-auto px-6 py-8 flex flex-col items-center justify-center min-h-[520px]">
+      
+      {/* Query Banner Header */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mb-12 text-center"
+        className="mb-8 text-center w-full"
       >
-        <span className="text-slate-500 text-xs font-semibold uppercase tracking-wider block mb-2">Analyzing Query</span>
-        <div className="inline-block px-4 py-2 rounded-xl glass-panel text-white font-medium text-sm border-brand-indigo/30 shadow-[0_0_20px_rgba(99,102,241,0.15)] max-w-md truncate">
+        <span className="text-slate-500 text-[10px] font-black uppercase tracking-wider block mb-2 font-mono">
+          Radar Target Query
+        </span>
+        <div className="inline-block px-5 py-2.5 rounded-xl bg-slate-950/60 border border-slate-900 text-white font-mono text-xs max-w-full truncate shadow-inner">
           &ldquo;{query}&rdquo;
         </div>
       </motion.div>
 
-      {/* Rocket Flight Path Visualizer */}
-      <div className="relative w-full h-48 flex items-center justify-center mb-16 overflow-hidden">
-        {/* Glow behind flight path */}
-        <div className="absolute w-24 h-48 bg-gradient-to-t from-brand-indigo/20 to-transparent blur-xl pointer-events-none"></div>
+      {/* Futuristic concentric radar visualizer */}
+      <div className="relative w-48 h-48 mb-10 flex items-center justify-center">
+        {/* Concentric rings */}
+        <div className="absolute inset-0 rounded-full border border-slate-800/30 scale-100" />
+        <div className="absolute inset-4 rounded-full border border-slate-800/50 scale-100" />
+        <div className="absolute inset-8 rounded-full border border-slate-800/80 scale-100" />
+        <div className="absolute inset-16 rounded-full border border-slate-900 scale-100" />
 
-        {/* The Rocket and its fire trail */}
+        {/* Sweep scanner line */}
         <motion.div
-          initial={{ y: 80, scale: 0.8, opacity: 0 }}
+          animate={{ rotate: 360 }}
+          transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+          className="absolute inset-0 rounded-full pointer-events-none origin-center z-10"
+          style={{
+            background: "conic-gradient(from 0deg, transparent 50%, rgba(168, 85, 247, 0.15) 90%, rgba(99, 102, 241, 0.4) 100%)"
+          }}
+        />
+
+        {/* Central glowing orb with active indicator icon */}
+        <motion.div
           animate={{
-            y: [-40, -100, -200], // Fly upwards and out
-            scale: [1, 1.05, 1.15],
-            opacity: [0, 1, 1, 0] // Fade-out near top
+            scale: [1, 1.06, 1],
+            boxShadow: [
+              "0 0 15px rgba(99, 102, 241, 0.3)",
+              "0 0 35px rgba(168, 85, 247, 0.5)",
+              "0 0 15px rgba(99, 102, 241, 0.3)"
+            ]
           }}
-          transition={{
-            duration: 3.2,
-            times: [0, 0.4, 0.8, 1],
-            ease: "easeInOut"
-          }}
-          className="relative flex flex-col items-center"
+          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+          className="w-20 h-20 rounded-full bg-gradient-to-tr from-brand-indigo via-brand-violet to-purple-600 flex items-center justify-center p-1 relative z-20 shadow-lg"
         >
-          {/* Flame particles */}
-          <div className="absolute top-16 flex justify-center w-full">
-            {exhaustParticles.map((p) => (
-              <motion.div
-                key={p.id}
-                initial={{ opacity: 1, scale: 1, y: 0, x: 0 }}
-                animate={{
-                  opacity: 0,
-                  scale: 0.1,
-                  y: p.speed,
-                  x: Math.sin(p.angle) * p.speed * 0.3
-                }}
-                transition={{
-                  duration: 0.6,
-                  repeat: Infinity,
-                  delay: p.delay,
-                  ease: "easeOut"
-                }}
-                className="absolute rounded-full bg-gradient-to-t from-red-500 via-orange-400 to-yellow-300 blur-[1px]"
-                style={{ width: p.size, height: p.size }}
-              />
-            ))}
+          <div className="w-full h-full rounded-full bg-slate-950 flex items-center justify-center border border-slate-900">
+            <CurrentIcon className="w-8 h-8 text-brand-indigo animate-pulse" />
           </div>
-
-          {/* SVG Rocket */}
-          <svg
-            className="w-16 h-16 drop-shadow-[0_0_20px_rgba(99,102,241,0.8)] text-white"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            {/* Custom high-tech rocket SVG */}
-            <path d="M4.5 16.5c-1.5 1.25-2.5 3.5-2.5 3.5s2.25-1 3.5-2.5M19.5 16.5c1.5 1.25 2.5 3.5 2.5 3.5s-2.25-1-3.5-2.5" />
-            <path d="M12 2C7.5 2 4.5 6 4.5 12.5C4.5 15.5 6 18 6 18h12s1.5-2.5 1.5-5.5C19.5 6 16.5 2 12 2Z" fill="url(#rocketGrad)" />
-            <circle cx="12" cy="10" r="2" fill="#090d16" />
-            <path d="M9 18v3h6v-3" />
-            
-            <defs>
-              <linearGradient id="rocketGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#a855f7" />
-                <stop offset="100%" stopColor="#6366f1" />
-              </linearGradient>
-            </defs>
-          </svg>
-
-          {/* Thruster core glow */}
-          <motion.div
-            animate={{ scale: [1, 1.2, 1] }}
-            transition={{ repeat: Infinity, duration: 0.15 }}
-            className="w-4 h-4 bg-yellow-400 rounded-full blur-[2px] mt-[-6px]"
-          />
         </motion.div>
-
-        {/* Launch sparkles/star particles floating down */}
-        <div className="absolute inset-0 pointer-events-none">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <motion.div
-              key={i}
-              initial={{
-                x: Math.random() * 400 - 200,
-                y: -50,
-                opacity: 0,
-                scale: 0.5
-              }}
-              animate={{
-                y: 250,
-                opacity: [0, 0.6, 0.6, 0],
-                scale: [0.5, 1, 0.5]
-              }}
-              transition={{
-                duration: 1.5 + Math.random() * 1.5,
-                repeat: Infinity,
-                delay: Math.random() * 2
-              }}
-              className="absolute w-1.5 h-1.5 bg-brand-violet/50 rounded-full blur-[1px]"
-            />
-          ))}
-        </div>
       </div>
 
-      {/* Checklist status step indicators */}
-      <div className="w-full flex flex-col gap-4">
-        {STEPS.map((step) => {
-          const isActive = currentStep === step.id;
-          const isCompleted = completedSteps.includes(step.id);
+      {/* Checklist progress and stage indicators */}
+      <div className="w-full space-y-3.5 mb-8">
+        {STAGES.map((stage) => {
+          const isActive = currentStage === stage.id;
+          const isCompleted = completedStages.includes(stage.id);
 
           return (
             <motion.div
-              key={step.id}
+              key={stage.id}
               initial={{ opacity: 0.2, x: -10 }}
               animate={{
-                opacity: isActive ? 1 : isCompleted ? 0.65 : 0.25,
-                x: isActive ? 0 : 0,
-                scale: isActive ? 1.02 : 1
+                opacity: isActive ? 1 : isCompleted ? 0.7 : 0.25,
+                scale: isActive ? 1.01 : 1
               }}
-              className={`flex items-center gap-4 px-5 py-4 rounded-xl glass-panel transition-all duration-300 ${
+              className={`flex items-center gap-3.5 px-4.5 py-3 rounded-xl border transition-all duration-300 ${
                 isActive
-                  ? "border-brand-indigo/40 bg-brand-indigo/5 shadow-[0_0_15px_rgba(99,102,241,0.1)]"
-                  : "border-transparent"
+                  ? "border-brand-indigo/30 bg-brand-indigo/5 shadow-[0_0_15px_rgba(99,102,241,0.08)]"
+                  : "border-transparent bg-slate-950/20"
               }`}
             >
-              {/* Left icon indicators */}
-              <div className="relative flex items-center justify-center w-6 h-6">
+              {/* Left indicator check icon */}
+              <div className="relative flex items-center justify-center w-5 h-5 shrink-0">
                 <AnimatePresence mode="wait">
                   {isCompleted ? (
                     <motion.div
@@ -223,54 +191,54 @@ export default function RocketLoader({ query, onComplete, apiLoading }) {
                       animate={{ scale: 1 }}
                       exit={{ scale: 0 }}
                     >
-                      <Loader2 className="w-5 h-5 text-brand-indigo animate-spin" />
+                      <Loader2 className="w-4 h-4 text-brand-indigo animate-spin" />
                     </motion.div>
                   ) : (
                     <motion.div
                       key="pending"
                       initial={{ scale: 0.5 }}
                       animate={{ scale: 1 }}
-                      className="w-4 h-4 rounded-full border border-slate-700 bg-slate-900"
+                      className="w-3.5 h-3.5 rounded-full border border-slate-800 bg-slate-950"
                     />
                   )}
                 </AnimatePresence>
               </div>
 
-              {/* Step Text */}
-              <span
-                className={`text-sm md:text-base font-medium transition-all duration-300 ${
-                  isActive ? "text-white" : isCompleted ? "text-slate-300" : "text-slate-600"
-                }`}
-              >
-                {step.text}
+              {/* Stage Description Text */}
+              <span className={`text-xs md:text-sm font-semibold tracking-wide ${isActive ? "text-white" : isCompleted ? "text-slate-300" : "text-slate-600"}`}>
+                {stage.text}
               </span>
-
-              {/* Pulsing indicator when active */}
-              {isActive && (
-                <span className="ml-auto flex h-2 w-2 relative">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-indigo opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-indigo"></span>
-                </span>
-              )}
             </motion.div>
           );
         })}
       </div>
 
-      {/* Dynamic spinner for serverless API pipelines */}
-      <AnimatePresence>
-        {completedSteps.length === STEPS.length && apiLoading && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
+      {/* Glowing Neon Progress Bar */}
+      <div className="w-full bg-slate-950 border border-slate-900/60 rounded-full h-2.5 overflow-hidden mb-6 p-0.5 shadow-inner">
+        <motion.div
+          animate={{ width: `${progress}%` }}
+          transition={{ duration: 0.3, ease: "easeOut" }}
+          className="h-full rounded-full bg-gradient-to-r from-brand-indigo via-brand-violet to-purple-500 shadow-[0_0_10px_rgba(99,102,241,0.5)]"
+          style={{ width: "0%" }}
+        />
+      </div>
+
+      {/* Shopping Trivia Rotating Banner */}
+      <div className="w-full glass-panel border border-slate-900 rounded-xl p-4 min-h-[70px] flex items-center justify-center text-center">
+        <AnimatePresence mode="wait">
+          <motion.p
+            key={triviaIndex}
+            initial={{ opacity: 0, y: 5 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            className="w-full mt-6 flex items-center justify-center gap-2.5 px-4 py-3.5 rounded-xl bg-brand-indigo/10 border border-brand-indigo/20 text-brand-indigo text-xs md:text-sm font-semibold shadow-inner"
+            exit={{ opacity: 0, y: -5 }}
+            transition={{ duration: 0.4 }}
+            className="text-[11px] md:text-xs font-semibold text-slate-400 leading-relaxed font-mono"
           >
-            <Loader2 className="w-4 h-4 animate-spin text-brand-indigo" />
-            <span>AI Assistant is synthesizing search results & ratings...</span>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            {SHOPPING_TRIVIA[triviaIndex]}
+          </motion.p>
+        </AnimatePresence>
+      </div>
+
     </div>
   );
 }

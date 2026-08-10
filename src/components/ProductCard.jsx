@@ -30,6 +30,10 @@ export default function ProductCard({ product }) {
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   
+  const ratingVal = parseFloat(product.rating) || 4.5;
+  const discountVal = parseInt(product.discountPercent) || 0;
+  const dealScore = Math.min(100, Math.floor(70 + ratingVal * 5 + discountVal * 0.5));
+  
   const initialImg = product.image_url || product.image || product.thumbnail || product.product_image || "/laptop.jpg";
   const [imgSrc, setImgSrc] = useState(initialImg);
   const [imgFailed, setImgFailed] = useState(false);
@@ -109,8 +113,16 @@ export default function ProductCard({ product }) {
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -30 }}
-        transition={{ duration: 0.5 }}
-        className="glass-panel glass-panel-hover rounded-2xl p-5 flex flex-col justify-between h-full relative overflow-hidden shadow-xl"
+        whileHover={{
+          scale: 1.025,
+          rotateY: 4,
+          rotateX: -3,
+          borderColor: "rgba(168, 85, 247, 0.4)",
+          boxShadow: "0 0 30px rgba(99, 102, 241, 0.2)"
+        }}
+        transition={{ type: "spring", stiffness: 350, damping: 25 }}
+        className="glass-panel rounded-2xl p-5 flex flex-col justify-between h-full relative overflow-hidden shadow-xl border border-slate-800/80 transition-all duration-300"
+        style={{ transformStyle: "preserve-3d" }}
       >
         {/* Top Info Section */}
         <div>
@@ -163,10 +175,14 @@ export default function ProductCard({ product }) {
               />
             )}
             {product.tag && (
-              <span className="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-gradient-to-r from-brand-indigo to-brand-violet text-white shadow-lg">
+              <span className="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-gradient-to-r from-brand-indigo to-brand-violet text-white shadow-lg z-20">
                 {product.tag}
               </span>
             )}
+            <div className="absolute top-2.5 right-2.5 px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-wider bg-slate-950/80 border border-brand-violet/30 text-white z-20 flex items-center gap-1 shadow-md">
+              <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
+              <span>Score: {dealScore}/100 🔥</span>
+            </div>
           </div>
 
           {/* Title & Price - ALWAYS visible */}

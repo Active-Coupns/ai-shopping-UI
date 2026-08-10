@@ -1,9 +1,13 @@
+"use client";
+
 import React, { useState } from "react";
 import { Check, Copy, ExternalLink, Tag, Eye } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function CouponCard({ coupon }) {
   const [copied, setCopied] = useState(false);
   const [isRevealed, setIsRevealed] = useState(false);
+  const [particles, setParticles] = useState([]);
 
   const handleRevealAndCopy = async () => {
     if (!isRevealed) {
@@ -20,14 +24,25 @@ export default function CouponCard({ coupon }) {
         }
       }
 
-      // 2. Increment Telemetry Click count
+      // 2. Spawn local confetti/particles burst
+      const burst = Array.from({ length: 28 }).map((_, i) => ({
+        id: `cpart-${i}-${Date.now()}`,
+        x: (Math.random() - 0.5) * 160,
+        y: -30 - Math.random() * 100, // burst upwards
+        size: Math.random() * 5 + 2.5,
+        color: Math.random() > 0.5 ? "#6366f1" : "#a855f7"
+      }));
+      setParticles(burst);
+      setTimeout(() => setParticles([]), 2000);
+
+      // 3. Increment Telemetry Click count
       fetch("/api/telemetry/click", { method: "POST" }).catch(() => {});
 
-      // 3. Mark as revealed
+      // 4. Mark as revealed
       setIsRevealed(true);
     }
 
-    // 4. Copy code to clipboard (with absolute compatibility fallback)
+    // 5. Copy code to clipboard (with absolute compatibility fallback)
     try {
       if (navigator.clipboard && navigator.clipboard.writeText) {
         await navigator.clipboard.writeText(coupon.code);
@@ -49,7 +64,39 @@ export default function CouponCard({ coupon }) {
   };
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/60 p-5 md:p-6 backdrop-blur-md hover:border-slate-700 transition-all flex flex-col justify-between h-48 shadow-lg group">
+    <motion.div
+      whileHover={{
+        scale: 1.025,
+        rotateY: 4,
+        rotateX: -3,
+        borderColor: "rgba(168, 85, 247, 0.4)",
+        boxShadow: "0 0 30px rgba(99, 102, 241, 0.2)"
+      }}
+      transition={{ type: "spring", stiffness: 350, damping: 25 }}
+      className="relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/60 p-5 md:p-6 backdrop-blur-md transition-all flex flex-col justify-between h-48 shadow-lg group"
+      style={{ transformStyle: "preserve-3d" }}
+    >
+      {/* Confetti Particles Burst celebration */}
+      <AnimatePresence>
+        {particles.map(p => (
+          <motion.div
+            key={p.id}
+            initial={{ x: 0, y: 0, opacity: 1, scale: 1 }}
+            animate={{ x: p.x, y: p.y, opacity: 0, scale: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 1.5, ease: "easeOut" }}
+            className="absolute rounded-full pointer-events-none z-30"
+            style={{
+              width: p.size,
+              height: p.size,
+              backgroundColor: p.color,
+              left: "50%",
+              top: "50%",
+            }}
+          />
+        ))}
+      </AnimatePresence>
+
       {/* Glow highlight */}
       <div className="absolute top-0 right-0 w-24 h-24 bg-brand-violet/10 rounded-full blur-2xl pointer-events-none group-hover:bg-brand-violet/20 transition-all" />
 
@@ -106,6 +153,6 @@ export default function CouponCard({ coupon }) {
           <ExternalLink className="w-4 h-4" />
         </a>
       </div>
-    </div>
+    </motion.div>
   );
 }
