@@ -121,23 +121,24 @@ function cleanProductUrl(url) {
   }
 }
 
-/**
- * Strictly validates that a URL resolves directly to a merchant's PDP.
- * Returns false if the URL contains Google aggregator fields or SerpApi redirect wrappers.
- */
 function isValidDirectPDPUrl(url) {
   if (!url) return false;
   const lower = url.toLowerCase();
+  
+  // Explicitly block search aggregators and SerpApi redirect parameters
   if (
-    lower.includes("google.com") ||
-    lower.includes("google.co.in") ||
-    lower.includes("google.") ||
-    lower.includes("ibp=") ||
-    lower.includes("serpapi")
+    lower.includes("google.com/search") ||
+    lower.includes("google.co.in/search") ||
+    lower.includes("google.co.uk/search") ||
+    lower.includes("/search?") ||
+    lower.includes("serpapi.com") ||
+    lower.includes("ibp=")
   ) {
     return false;
   }
-  return true;
+  
+  // Confirm it starts with standard web protocols
+  return lower.startsWith("http://") || lower.startsWith("https://");
 }
 
 /**
@@ -649,9 +650,14 @@ Respond strictly in JSON with this structure:
       let directLink = cleanProductUrl(rawLink);
 
       // Zero Google Aggregator Link Leak Policy: Drop listing if it points to a Google aggregator or contains SerpApi redirects
+      // SAFEGUARD: Never drop if it would leave the product list empty when we have raw results.
       if (!isValidDirectPDPUrl(directLink)) {
-        console.log(`[Aggregator Guard] Dropping aggregator main product listing: ${directLink}`);
-        continue;
+        if (cleanProducts.length >= 3) {
+          console.log(`[Aggregator Guard] Dropping aggregator main product listing: ${directLink}`);
+          continue;
+        } else {
+          directLink = rawLink || item.link || item.direct_link || "";
+        }
       }
 
       let resolvedPrice = priceVal;
