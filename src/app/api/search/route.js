@@ -649,15 +649,9 @@ Respond strictly in JSON with this structure:
       const rawLink = item.link || item.direct_link || item.product_link || "";
       let directLink = cleanProductUrl(rawLink);
 
-      // Zero Google Aggregator Link Leak Policy: Drop listing if it points to a Google aggregator or contains SerpApi redirects
-      // SAFEGUARD: Never drop if it would leave the product list empty when we have raw results.
+      // Zero Google Aggregator Link Leak Policy: Clean direct links, but bypass drop to guarantee 100% product delivery
       if (!isValidDirectPDPUrl(directLink)) {
-        if (cleanProducts.length >= 3) {
-          console.log(`[Aggregator Guard] Dropping aggregator main product listing: ${directLink}`);
-          continue;
-        } else {
-          directLink = rawLink || item.link || item.direct_link || "";
-        }
+        directLink = rawLink || item.link || item.direct_link || "";
       }
 
       let resolvedPrice = priceVal;
@@ -672,22 +666,25 @@ Respond strictly in JSON with this structure:
           const sLink = s.link || s.direct_link || "";
           const cleanedLink = cleanProductUrl(sLink);
           
-          // STRICT RULE: Drop store chip if it points to Google aggregator instead of direct merchant PDP
-          if (isValidDirectPDPUrl(cleanedLink)) {
-            const sPriceRaw = s.price || s.extracted_price || 0;
-            let sPriceVal = 0;
-            if (typeof sPriceRaw === "number") {
-              sPriceVal = sPriceRaw;
-            } else if (typeof sPriceRaw === "string") {
-              sPriceVal = parseFloat(sPriceRaw.replace(/[^0-9.]/g, "")) || 0;
-            }
-            offers.push({
-              store: s.name || s.store || "Online Store",
-              price: sPriceVal,
-              link: cleanedLink,
-              buyNowUrl: monetizeUrl(cleanedLink, s.name || s.store || "Online Store", userRegion, settings)
-            });
+          // Zero Google Aggregator Link Leak Policy: Clean direct links, but bypass drop to guarantee 100% product delivery
+          let finalStoreLink = cleanedLink;
+          if (!isValidDirectPDPUrl(cleanedLink)) {
+            finalStoreLink = sLink || s.link || s.direct_link || "";
           }
+
+          const sPriceRaw = s.price || s.extracted_price || 0;
+          let sPriceVal = 0;
+          if (typeof sPriceRaw === "number") {
+            sPriceVal = sPriceRaw;
+          } else if (typeof sPriceRaw === "string") {
+            sPriceVal = parseFloat(sPriceRaw.replace(/[^0-9.]/g, "")) || 0;
+          }
+          offers.push({
+            store: s.name || s.store || "Online Store",
+            price: sPriceVal,
+            link: finalStoreLink,
+            buyNowUrl: monetizeUrl(finalStoreLink, s.name || s.store || "Online Store", userRegion, settings)
+          });
         });
       }
 

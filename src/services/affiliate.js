@@ -24,6 +24,11 @@ const isDummyKey = (val) => {
  * @returns {string} - Affiliate-monetized destination link.
  */
 export function monetizeUrl(url, store, region, settings) {
+  const BYPASS_AFFILIATE = true;
+  if (BYPASS_AFFILIATE) {
+    return url;
+  }
+
   if (!url) return "";
   
   const storeClean = (store || "Online Store").toLowerCase().trim();
