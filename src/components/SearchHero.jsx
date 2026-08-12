@@ -53,13 +53,38 @@ export default function SearchHero({ onSubmit }) {
     return () => clearTimeout(timer);
   }, [placeholder, charIndex, isDeleting, queryIndex]);
 
+  const [lastSubmitTime, setLastSubmitTime] = useState(0);
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+
+  // 300ms Input Debounce Guard
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedQuery(query);
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [query]);
+
   const handleSubmit = (e) => {
     e.preventDefault();
+    
+    // Throttling Guard: Prevent button double-click spams within 1.5 seconds
+    const now = Date.now();
+    if (now - lastSubmitTime < 1500) {
+      console.log("[Throttle Guard] Prevented double submit API spam");
+      return;
+    }
+    setLastSubmitTime(now);
+
     const finalQuery = query.trim() || EXAMPLE_QUERIES[queryIndex];
     onSubmit(finalQuery);
   };
 
   const handleChipClick = (text) => {
+    // Throttling Chip clicks too
+    const now = Date.now();
+    if (now - lastSubmitTime < 1500) return;
+    setLastSubmitTime(now);
+
     setQuery(text);
     onSubmit(text);
   };

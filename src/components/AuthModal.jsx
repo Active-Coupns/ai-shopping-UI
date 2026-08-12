@@ -25,6 +25,19 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
         if (!fullName.trim()) {
           throw new Error("Full name is required");
         }
+
+        // Block disposable/temp email domains
+        const emailLower = (email || "").toLowerCase().trim();
+        const blockedDomains = [
+          "tempmail.com", "10minutemail.com", "guerrillamail.com", "mailinator.com",
+          "yopmail.com", "temp-mail.org", "dispostable.com", "getairmail.com",
+          "trashmail.com", "maildrop.cc", "mailnesia.com", "mintemail.com"
+        ];
+        const domain = emailLower.split("@")[1];
+        if (blockedDomains.includes(domain)) {
+          throw new Error("Please use a permanent business or personal email address.");
+        }
+
         const { data: signUpData, error: signUpError } = await auth.signUp({
           email,
           password,
