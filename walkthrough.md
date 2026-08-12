@@ -1,31 +1,37 @@
-# Walkthrough - Monetization Bypass Mode & Permanent Search Fixes
+# Walkthrough - System Security Hardening & Documentation
 
-We have integrated a monetization pass-through bypass toggle and refined the search result parser, permanently resolving the "No Live Deals Found" bug.
+We have successfully generated clean, client-ready systems documentation and implemented robust client-side security guards.
 
 ---
 
-## 🛠️ Implemented Fixes
+## 📋 Hardening Implementations
 
-### 1. Monetization Pass-Through Bypass (`src/services/affiliate.js`)
-* Introduced a default configuration flag inside `monetizeUrl`:
+### 1. Client-Ready Architecture Document (`ARCHITECTURE.md`)
+* Generated an [ARCHITECTURE.md](file:///C:/Users/ASUS/.gemini/antigravity/scratch/ai-shopping-assistant/ARCHITECTURE.md) system document in the project root covering:
+  * Executive Systems Overview and Mermaid Data Flow.
+  * Frontend & Backend Tech Stack specifications.
+  * AI Classifier & Scraper Pipeline details (complying fully with the **Strict Vendor Anonymity Directive** by referencing generic connector and ingestion terms).
+  * Regional US-East Vercel/Supabase infrastructure locations and CCPA compliance.
+  * System rate limits, PII sanitization, and DB transport encryption layers.
+
+### 2. Disposable Email & Bot Signup Blocker (`src/components/AuthModal.jsx`)
+* Added a signup validation filter that blocks accounts registering with disposable email domains (e.g. `tempmail.com`, `10minutemail.com`, `guerrillamail.com`, `mailinator.com`, etc.).
+* Displays a validation error: `Please use a permanent business or personal email address.`
+
+### 3. Frontend Search Debouncing & Click Throttling (`src/components/SearchHero.jsx`)
+* **Keystroke Debouncing**: Added a `300ms` debounce timer tracking search input query changes to prevent excessive re-renders during keyboard entry.
+* **Button Throttling**: Added a submission safety check:
   ```javascript
-  const BYPASS_AFFILIATE = true;
-  if (BYPASS_AFFILIATE) {
-    return url;
+  const now = Date.now();
+  if (now - lastSubmitTime < 1500) {
+    return;
   }
   ```
-* In this mode, the monetization engine skips all wrapper, tag, and tracking check evaluations and returns the **raw, unmodified merchant PDP destination URL** immediately.
-* This leaves the entire affiliate tag/aggregator router structure **100% intact** for future configuration while eliminating redirect anomalies.
-
-### 2. Guaranteed Product & Comparison Chip Delivery (`src/app/api/search/route.js`)
-* Commented out all `continue` drop statements in the search result mapping loops for both main product cards and comparative store chips.
-* Main product URLs and alternative stores now utilize raw merchant fallbacks (`rawLink` / `sLink`) if the cleaned link fails standard validation checks.
-* This guarantees that **100% of products** successfully fetched by SerpApi are delivered to the frontend, permanently preventing "No Live Deals Found" screens.
+  - Limits submit actions to once every 1.5 seconds, preventing double-click submission spam and duplicate API hits.
 
 ---
 
-## 🧪 Build & Verification
+## 🧪 Build Status
 
 * **Next.js Production Build**: Compiles cleanly with zero errors (`Exit Code 0`).
-* **GitHub Repository Push**: Pushed successfully to **[Active-Coupns/ai-shopping-UI](https://github.com/Active-Coupns/ai-shopping-UI.git)** (Commit: `d63ca50`).
-* **Diagnostic Verification**: Verified standard searches (`"Ergonomic office chair for back pain"` and `"iPhone 16"`) successfully return complete card lists on port 3002.
+* **GitHub Repository Push**: Pushed successfully to **[Active-Coupns/ai-shopping-UI](https://github.com/Active-Coupns/ai-shopping-UI.git)** (Commit: `6572ba4`).
