@@ -1,23 +1,25 @@
-# Walkthrough - Minimal Core System Architecture Refactor
+# Walkthrough - System Architecture HTML/PDF Compilation
 
-We have refactored the architecture document to prioritize the core functional system components, preparing for the Enterprise Security Upgrade upsell pitch.
+We have successfully compiled the architecture documentation into clean, printable HTML and PDF formats.
 
 ---
 
-## 📋 Architectural Adjustments
+## 📄 Documentation Compiled Outputs
 
-### 1. Refactored Core Architecture Document (`ARCHITECTURE.md`)
-* Rewrote [ARCHITECTURE.md](file:///C:/Users/ASUS/.gemini/antigravity/scratch/ai-shopping-assistant/ARCHITECTURE.md) to serve as a **strictly minimal core system architecture** specification.
-* Covered:
-  * Executive Summary of the core shopping engine.
-  * A clear **Mermaid-based core data flow diagram** mapping user queries through serverless routes and cached database matches.
-  * Concise tech stack summary table for Frontend, Backend, Cache, DB/Auth, and AI/Connectors.
-  * Regional US-East Vercel/Supabase infrastructure locations and compliance markers.
-* **Strictly Removed** all mentions of upsell-ready enterprise security modules (including temp-mail blocker, AES-256 DB encryption, PII anonymizer, anti-tracking IP shield, and input debouncers/throttlers) to align with business monetization pitches.
+### 1. Styled HTML Format (`ARCHITECTURE.html`)
+* Created a responsive, styled [ARCHITECTURE.html](file:///C:/Users/ASUS/.gemini/antigravity/scratch/ai-shopping-assistant/ARCHITECTURE.html) file in the project root.
+* Features:
+  * Google Fonts (Outfit & Space Mono).
+  * Beautiful custom dark styling variables mirroring the cyberpunk dark/glassmorphic theme.
+  * Live Mermaid JS engine loaded via CDN, rendering the block data flow diagram dynamically.
+
+### 2. Compiled PDF Format (`ARCHITECTURE.pdf`)
+* Compiled [ARCHITECTURE.pdf](file:///C:/Users/ASUS/.gemini/antigravity/scratch/ai-shopping-assistant/ARCHITECTURE.pdf) directly into the project root directory.
+* Generated using a Node Puppeteer script, preserving page backgrounds and A4 margin spacings.
 
 ---
 
 ## 🧪 Build Status
 
 * **Next.js Production Build**: Compiles cleanly with zero errors (`Exit Code 0`).
-* **GitHub Repository Push**: Pushed successfully to **[Active-Coupns/ai-shopping-UI](https://github.com/Active-Coupns/ai-shopping-UI.git)** (Commit: `9d4e458`).
+* **Availability**: Both `ARCHITECTURE.html` and `ARCHITECTURE.pdf` are now available in your active workspace root directory for direct preview or download.
