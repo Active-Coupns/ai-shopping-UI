@@ -1,15 +1,16 @@
-# Walkthrough - System Security Hardening & Documentation
+# Walkthrough - System Security Hardening & Documentation (Refined)
 
-We have successfully generated clean, client-ready systems documentation and implemented robust client-side security guards.
+We have successfully generated the revised, text-diagram system documentation and verified all client-side security guards.
 
 ---
 
 ## 📋 Hardening Implementations
 
-### 1. Client-Ready Architecture Document (`ARCHITECTURE.md`)
-* Generated an [ARCHITECTURE.md](file:///C:/Users/ASUS/.gemini/antigravity/scratch/ai-shopping-assistant/ARCHITECTURE.md) system document in the project root covering:
-  * Executive Systems Overview and Mermaid Data Flow.
-  * Frontend & Backend Tech Stack specifications.
+### 1. Refined Architecture Document (`ARCHITECTURE.md`)
+* Generated an [ARCHITECTURE.md](file:///C:/Users/ASUS/.gemini/antigravity/scratch/ai-shopping-assistant/ARCHITECTURE.md) system document in the project root containing:
+  * Executive Systems Overview.
+  * A clear **text-based ASCII block diagram** illustrating client-server-cache boundaries.
+  * Frontend & Backend tech stack specifications.
   * AI Classifier & Scraper Pipeline details (complying fully with the **Strict Vendor Anonymity Directive** by referencing generic connector and ingestion terms).
   * Regional US-East Vercel/Supabase infrastructure locations and CCPA compliance.
   * System rate limits, PII sanitization, and DB transport encryption layers.
@@ -34,4 +35,4 @@ We have successfully generated clean, client-ready systems documentation and imp
 ## 🧪 Build Status
 
 * **Next.js Production Build**: Compiles cleanly with zero errors (`Exit Code 0`).
-* **GitHub Repository Push**: Pushed successfully to **[Active-Coupns/ai-shopping-UI](https://github.com/Active-Coupns/ai-shopping-UI.git)** (Commit: `6572ba4`).
+* **GitHub Repository Push**: Pushed successfully to **[Active-Coupns/ai-shopping-UI](https://github.com/Active-Coupns/ai-shopping-UI.git)** (Commit: `bb8b379` / updated `ARCHITECTURE.md`).
