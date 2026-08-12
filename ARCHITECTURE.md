@@ -1,89 +1,46 @@
-# ShopSmart AI - Enterprise System Architecture & Security Documentation
+# ShopSmart AI - Core System Architecture Documentation
 
-This document outlines the system architecture, component design, data flow, regional infrastructure compliance, and security-by-design framework for the ShopSmart AI platform.
+This document outlines the core system architecture, data flow, tech stack, and regional infrastructure layout for the ShopSmart AI platform.
 
 ---
 
 ## 1. Executive Summary
 
-ShopSmart AI is a high-performance, intelligent shopping assistant that identifies optimal purchase routes for users in real-time. The platform utilizes advanced natural language intent parsing to distinguish between e-commerce product recommendations and direct service coupons. It aggregates live pricing data across merchant platforms, identifies active discount vouchers, and generates unified matching insights for users under a low-latency caching system.
+ShopSmart AI is a high-performance, intelligent shopping assistant and coupon discovery platform. The engine evaluates natural language user search queries, classifies search intents dynamically, and aggregates real-time merchant deals and verified store coupons to present unified shopping recommendations.
 
 ---
 
-## 2. High-Level System Architecture
+## 2. Core Data Flow Diagram
 
-The following block diagram describes the system's end-to-end data flow and interaction boundaries between serverless APIs, storage databases, and third-party orchestration layers:
-
-```
-+---------------------------------------------------------------------------------+
-|                                 CLIENT LAYER                                    |
-|                                                                                 |
-|                        [ Client Browser UI (Next.js) ]                          |
-+---------------------------------------------------------------------------------+
-                                         |
-                                         v (HTTPS Request + Auth JWT)
-+---------------------------------------------------------------------------------+
-|                            APPLICATION & API LAYER                              |
-|                                                                                 |
-|                      [ Next.js Serverless API Route ]                           |
-|                                        |                                        |
-|         +------------------------------+------------------------------+         |
-|         |                              |                              |         |
-|         v (Read/Write Session)         v (Read/Write Cache & Queue)   v         |
-|  [ Supabase Auth ]             [ Upstash Redis ]               [ Supabase DB ]  |
-+---------------------------------------------------------------------------------+
-                                         |
-                                         v (AI Intent Routing)
-+---------------------------------------------------------------------------------+
-|                           DATA & INTELLIGENCE LAYER                             |
-|                                                                                 |
-|         +-------------------------------------------------------------+         |
-|         |        [ Proprietary Intent Classification AI /             |         |
-|         |         Third-Party LLM Orchestration Layer ]               |         |
-|         +------------------------------+------------------------------+         |
-|                                        |                                        |
-|                +-----------------------+-----------------------+                |
-|                | (E-COMMERCE)                                  | (SERVICE)      |
-|                v                                               v                |
-|  [ Enterprise Multi-Store Data Ingestion                       [ Store Vouchers |
-|    Pipeline / Third-Party E-Commerce Connectors ]               Database Query ] |
-+---------------------------------------------------------------------------------+
+```mermaid
+graph TD
+    User[Client Browser UI] -->|Search Query| SearchAPI[Next.js Serverless API Route]
+    SearchAPI -->|Check Cache| CacheCheck[Upstash Redis Cache Check]
+    CacheCheck -->|Cache HIT| User
+    CacheCheck -->|Cache MISS| IntentAI[Proprietary Intent Classification AI / Third-Party LLM Orchestration Layer]
+    IntentAI -->|E-Commerce Search| Scraper[Enterprise Multi-Store Data Ingestion Pipeline / Third-Party E-Commerce Connectors]
+    IntentAI -->|Service Coupon Search| CouponDB[Store Vouchers Database Query]
+    Scraper -->|Unified Deals Payload| User
+    CouponDB -->|Vouchers Payload| User
 ```
 
 ---
 
-## 3. Detailed Component Breakdown
+## 3. Technology Stack
 
-### Client Layer
-* **Next.js & React Framework**: Implements dynamic page hydration and responsive layouts.
-* **Vanilla CSS Style Engine**: Tailored dark-theme system configures variables for glassmorphism panels, ambient background glow meshes, and high-tech typography.
-* **Framer Motion Animations**: Features smooth 3D perspective tilts on product grid components, pulse-animated interactive radar scanning meters, and particle explosion bursts.
-
-### Application & API Layer
-* **Next.js Serverless Routes**: Exposes low-latency HTTP endpoint boundaries (`/api/search`, `/api/telemetry/click`).
-* **Upstash Redis Caching**: Minimizes vendor API costs and optimizes response speeds to under 150ms by caching search payloads.
-* **Request Concurrency Queue**: Regulates simultaneous API requests via a custom client queue, preventing rate-limiting blocks.
-* **Supabase PostgreSQL & Session Provider**: Manages persistent customer account metadata, telemetry click counters, administrative platforms, and user credentials.
-
-### Data & Intelligence Layer
-* **Proprietary Intent Classification AI / Third-Party LLM Orchestration Layer**: Evaluates natural language queries to classify intents into `E-COMMERCE` (runs scrapers) or `SERVICE_COUPON` (bypasses scraping and fetches local database codes).
-* **Enterprise Multi-Store Data Ingestion Pipeline / Third-Party E-Commerce Connectors**: Queries merchant index details, cleans tracking parameters from URLs, and returns direct purchase destinations.
+| Component Layer | Technology Stack | Description |
+| :--- | :--- | :--- |
+| **Frontend** | Next.js (App Router), Tailwind CSS, Framer Motion, Lucide Icons | Responsive UI layer utilizing 3D perspective tilts, pulse radar scanners, and dynamic confetti overlays. |
+| **Backend** | Next.js Serverless API Routes | Serverless endpoint routes managing search coordination and click telemetry logic. |
+| **Cache & Queue** | Upstash Redis | Low-latency in-memory cache and concurrency execution queues. |
+| **Database & Auth** | Supabase PostgreSQL | Manages persistent user sessions, active store details, manual coupons list, and telemetry metrics. |
+| **AI & Connectors** | Proprietary AI Intent Engine & Enterprise Multi-Store Data Ingestion Connectors | Custom natural language classifiers and web inventory search parsers (maintaining vendor anonymity). |
 
 ---
 
-## 4. Infrastructure & Data Residency
+## 4. Regional Infrastructure & Data Residency
 
-* **Hosting Architecture**: The entire application stack is deployed on the **Vercel Edge Network** with primary serverless endpoints operating in the **US-East (N. Virginia)** zone.
-* **Persistent Storage Systems**: The Supabase PostgreSQL database instances are hosted in the **US-East (N. Virginia)** AWS regional clusters.
-* **Caching Services**: Upstash Redis nodes are situated in the **US-East** zone.
-* **Compliance Framework**: This localized US-East regional infrastructure ensures 100% compliance with **US Data Residency** regulations, CCPA regulations, and data sovereignty compliance.
-
----
-
-## 5. Security-By-Design Framework
-
-* **Disposable Email Blocker**: Rejects registration requests utilizing temporary or throwaway domains, protecting database tables against automated bot signups.
-* **Input Debounce & Submit Throttling**: Limits input update frequencies to 300ms intervals and enforces a 1.5-second submission cooling throttle to mitigate denial-of-service API abuse.
-* **Data Transport Encryption**: Enforces SSL/TLS security protocols for all database transactions and session token transmissions.
-* **AES-256 Encryption Readiness**: Database tables are structured to support transparent column-level encryption for sensitive tokens.
-* **Sanitized Destination Links**: Direct destination PDP links undergo validation guards to unwrap redirects and strip third-party trackers, preventing tracking leaks.
+* **Core Services**: Hosted on **Vercel US-East** Serverless infrastructure.
+* **Persistent Database**: Hosted in the **Supabase US-East (N. Virginia)** AWS regional clusters.
+* **In-Memory Cache**: Managed on **Upstash AWS US-East** infrastructure.
+* **Compliance**: Enforces strict regional routing within the United States, guaranteeing full US Data Residency and CCPA data sovereignty compliance.
