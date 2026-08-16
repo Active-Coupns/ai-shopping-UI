@@ -5,17 +5,17 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Check, Loader2, Compass, Shield, Database, Search } from "lucide-react";
 
 const STAGES = [
-  { id: 1, text: "🧠 Analyzing query intent & specifications...", duration: 1800, icon: Compass },
-  { id: 2, text: "🌐 Scanning inventories across major online stores...", duration: 2200, icon: Search },
-  { id: 3, text: "📊 Evaluating historical price trends & seller ratings...", duration: 1800, icon: Database },
-  { id: 4, text: "🎟️ Checking live verified coupon vouchers...", duration: 1800, icon: Shield }
+  { id: 1, text: "🧠 Analyzing search intent & specifications...", duration: 1800, icon: Compass },
+  { id: 2, text: "🌐 Scanning multi-store merchant networks...", duration: 2200, icon: Search },
+  { id: 3, text: "📊 Comparing live prices and discounts...", duration: 1800, icon: Database },
+  { id: 4, text: "🎟️ Applying active coupon savings...", duration: 1800, icon: Shield }
 ];
 
 const SHOPPING_TRIVIA = [
   "Checking verified coupon codes saves our users an average of 18% per checkout! 🎟️",
-  "The Upstash Redis cache speeds up identical search requests to under 150ms! ⚡",
-  "Our SerpApi search engine crawls live product listings from over 15 major online stores! 🌐",
-  "ShopSmart's AI Intent Classifier bypasses scraping entirely for coupon-related searches! 🧠",
+  "In-memory database caching speeds up identical search requests to under 150ms! ⚡",
+  "Our multi-store search connectors scan live product listings from over 15 major online stores! 🌐",
+  "ShopSmart's proprietary intent classification AI bypasses scraping entirely for coupon-related searches! 🧠",
   "Did you know? The most searched shopping term on ShopSmart is 'Laptop under 50k'! 💻",
   "Outbound PDP direct link guards filter out 100% of malicious Google aggregator redirects! 🛡️"
 ];
