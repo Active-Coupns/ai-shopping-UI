@@ -1,25 +1,24 @@
-# Walkthrough - Search Result Count Expansion
+# Walkthrough - Google Aggregator Link Healing
 
-We have successfully expanded the search API results limit to return up to 10 product items per query, with zero visual components or UI-level regressions.
+We have successfully resolved the issue where clicking "Buy Now" on grouped listings opened Google Shopping search/comparison pages (`google.com/search?ibp=...`), replacing them with direct, premium retailer page links.
 
 ---
 
-## 🛠️ Implemented Modifications
+## 🛠️ Implemented Refactorings
 
-### 1. Increased Search Yield Slices (`src/app/api/search/route.js`)
-* Updated the array truncation parameters within the search API route:
-  * Expanded `currentTopResults` from `.slice(0, 5)` to `.slice(0, 10)` to parse up to 10 raw results from scraping queues.
-  * Increased the mapped product array compilation limit `topResults` from `.slice(0, 5)` to `.slice(0, 10)`.
-  * Updated the LLM specifications parser and custom insights generators to execute over `.slice(0, 10)` items.
-  * Truncated the cached response payloads in `mappedProducts` from `.slice(0, 5)` to `.slice(0, 10)`.
+### 1. Direct Retailer Search Generator (`src/app/api/search/route.js`)
+* Implemented the helper function `getRetailerDirectSearchLink(storeName, title, country)` to construct direct, customized product search queries on target merchant platforms (including Amazon, Flipkart, Myntra, Ajio, Croma, Vijay Sales, Walmart, Target, Best Buy, and Newegg).
 
-### 2. Safeguarded Product Link Exclusions
-* Refined the validation guards to prevent dropping listings that contain standard Google redirect pathways, falling back to raw URLs if unwrapping is unavailable. This guarantees 100% data yield under the expanded limit configuration.
+### 2. Self-Healing Link Fallbacks
+* Updated link selection blocks inside the search parser:
+  * For primary checkout items: If the decoded URL points to a Google Shopping or aggregator comparison endpoint (`google.com/search?ibp=`), it is healed to a direct retail store search link.
+  * For comparative offer listing entries: Each store link checks for Google leak paths and transforms them into clean merchant landing pages.
+  * For fallback product cards (when details endpoints are not queried): The top link heals to a retailer query instead of leaving the comparison page in place.
 
 ---
 
 ## 🧪 Build Status
 
 * **Next.js Production Build**: Compiles cleanly with zero errors (`Exit Code 0`).
-* **GitHub Repository Push**: Pushed successfully to **[Active-Coupns/ai-shopping-UI](https://github.com/Active-Coupns/ai-shopping-UI.git)** (Commit: `03a15a7`).
-* **Diagnostic Verification**: Verified standard searches (e.g. `"gaming laptop"`) return exactly 10 clean, sanitized product cards on port `3002`.
+* **GitHub Repository Push**: Pushed successfully to **[Active-Coupns/ai-shopping-UI](https://github.com/Active-Coupns/ai-shopping-UI.git)** (Commit: `8a40e55`).
+* **Verification Results**: Verified that the query `adidas shoes` returns 10 product items, resolving all `google.com/search?ibp=` redirects to direct `amazon.in` or `flipkart.com` query URLs.
