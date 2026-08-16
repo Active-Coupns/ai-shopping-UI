@@ -1,24 +1,28 @@
-# Walkthrough - Google Aggregator Link Healing
+# Walkthrough - Progress Loader Anonymization
 
-We have successfully resolved the issue where clicking "Buy Now" on grouped listings opened Google Shopping search/comparison pages (`google.com/search?ibp=...`), replacing them with direct, premium retailer page links.
+We have audited the query loading and progress states, successfully replacing all provider-specific terms, in-memory engine identifiers, and data-crawling system labels with clean, generic, and customer-facing terminology.
 
 ---
 
-## 🛠️ Implemented Refactorings
+## 🛠️ Implemented Modifications
 
-### 1. Direct Retailer Search Generator (`src/app/api/search/route.js`)
-* Implemented the helper function `getRetailerDirectSearchLink(storeName, title, country)` to construct direct, customized product search queries on target merchant platforms (including Amazon, Flipkart, Myntra, Ajio, Croma, Vijay Sales, Walmart, Target, Best Buy, and Newegg).
+### 1. Progress Step Descriptions (`src/components/RocketLoader.jsx`)
+* Replaced all backend/platform specific text strings with generic AI shopping phase summaries:
+  * Stage 1: `"🧠 Analyzing query intent & specifications..."` ➔ `"🧠 Analyzing search intent & specifications..."`
+  * Stage 2: `"🌐 Scanning inventories across major online stores..."` ➔ `"🌐 Scanning multi-store merchant networks..."`
+  * Stage 3: `"📊 Evaluating historical price trends & seller ratings..."` ➔ `"📊 Comparing live prices and discounts..."`
+  * Stage 4: `"🎟️ Checking live verified coupon vouchers..."` ➔ `"🎟️ Applying active coupon savings..."`
 
-### 2. Self-Healing Link Fallbacks
-* Updated link selection blocks inside the search parser:
-  * For primary checkout items: If the decoded URL points to a Google Shopping or aggregator comparison endpoint (`google.com/search?ibp=`), it is healed to a direct retail store search link.
-  * For comparative offer listing entries: Each store link checks for Google leak paths and transforms them into clean merchant landing pages.
-  * For fallback product cards (when details endpoints are not queried): The top link heals to a retailer query instead of leaving the comparison page in place.
+### 2. Shopping Trivia Refactorings (`src/components/RocketLoader.jsx`)
+* Removed any references to database platforms and indexing engines:
+  * `"The Upstash Redis cache..."` ➔ `"In-memory database caching..."`
+  * `"Our SerpApi search engine..."` ➔ `"Our multi-store search connectors..."`
+  * `"ShopSmart's AI Intent Classifier..."` ➔ `"ShopSmart's proprietary intent classification AI..."`
 
 ---
 
 ## 🧪 Build Status
 
 * **Next.js Production Build**: Compiles cleanly with zero errors (`Exit Code 0`).
-* **GitHub Repository Push**: Pushed successfully to **[Active-Coupns/ai-shopping-UI](https://github.com/Active-Coupns/ai-shopping-UI.git)** (Commit: `8a40e55`).
-* **Verification Results**: Verified that the query `adidas shoes` returns 10 product items, resolving all `google.com/search?ibp=` redirects to direct `amazon.in` or `flipkart.com` query URLs.
+* **GitHub Repository Push**: Pushed successfully to **[Active-Coupns/ai-shopping-UI](https://github.com/Active-Coupns/ai-shopping-UI.git)** (Commit: `df4d2c6`).
+* **Verification**: Audited all `.js` and `.jsx` files in the `src/` directory to verify that no public references to underlying third-party scraping pipelines or indexing engines exist.
