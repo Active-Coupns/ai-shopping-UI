@@ -577,7 +577,7 @@ Respond strictly in JSON with this structure:
           }
         }
 
-        const currentTopResults = currentRawResults.slice(0, 5);
+        const currentTopResults = currentRawResults.slice(0, 10);
 
         // Fetch immersive store/comparison details concurrently for the top 3 search items
         const detailPromises = currentTopResults.slice(0, 3).map(async (item) => {
@@ -632,7 +632,7 @@ Respond strictly in JSON with this structure:
     }
 
     const cleanProducts = [];
-    const topResults = rawResults.slice(0, 5);
+    const topResults = rawResults.slice(0, 10);
 
     // Map results to schema, merging direct checkout links and store chips from details
     for (const item of topResults) {
@@ -720,9 +720,9 @@ Respond strictly in JSON with this structure:
         }
       }
 
-      // STRICT RULE: If no valid direct merchant PDP link exists, drop the product card completely
+      // Clean direct links, but bypass drop to guarantee 100% product delivery
       if (!directLink || !isValidDirectPDPUrl(directLink)) {
-        continue;
+        directLink = rawLink || item.link || item.direct_link || "";
       }
 
       const category = detectCategory(cleanQuery, title);
@@ -758,7 +758,7 @@ Respond strictly in JSON with this structure:
     const geminiApiKey = process.env.GEMINI_API_KEY;
     if (geminiApiKey && cleanProducts.length > 0) {
       try {
-        const productsListText = cleanProducts.slice(0, 5).map((p, idx) => {
+        const productsListText = cleanProducts.slice(0, 10).map((p, idx) => {
           return `${idx + 1}. Title: ${p.title} | Store: ${p.store_name} | Price: ${p.price}`;
         }).join("\n");
 
@@ -801,7 +801,7 @@ Do not include markdown code block formatting (like \`\`\`json). Return ONLY raw
           }
           const parsedResults = JSON.parse(rawText);
           if (Array.isArray(parsedResults)) {
-            cleanProducts.slice(0, 5).forEach((p, idx) => {
+            cleanProducts.slice(0, 10).forEach((p, idx) => {
               const res = parsedResults[idx];
               if (res) {
                 if (res.ai_insight) {
@@ -822,7 +822,7 @@ Do not include markdown code block formatting (like \`\`\`json). Return ONLY raw
       }
     }
 
-    const mappedProducts = cleanProducts.slice(0, 5);
+    const mappedProducts = cleanProducts.slice(0, 10);
     console.log("Filtered Products mapped count:", mappedProducts.length);
 
     // Fetch store coupons matching userRegion and store names of our top products
