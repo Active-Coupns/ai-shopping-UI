@@ -481,8 +481,13 @@ Respond strictly in JSON with this structure:
       });
 
       const matchedCoupons = rawMatched.map(coupon => ({
-        ...coupon,
-        link: monetizeUrl(coupon.link, coupon.store, userRegion, settings)
+        store_name: coupon.store,
+        store: coupon.store,
+        code: coupon.code,
+        description: coupon.description,
+        link: monetizeUrl(coupon.link, coupon.store, userRegion, settings),
+        deal_link: monetizeUrl(coupon.link, coupon.store, userRegion, settings),
+        region: coupon.region
       }));
 
       if (matchedCoupons.length === 0) {
@@ -729,17 +734,23 @@ Respond strictly in JSON with this structure:
 
       cleanProducts.push({
         title: String(title),
-        description: String(fallbackDesc),
-        image: String(image),
-        rating: String(item.rating || "4.5"),
-        reviewsCount: Number(item.reviews || 100),
-        link: String(directLink),
-        buyNowUrl: String(monetizeUrl(directLink, resolvedPlatform, userRegion, settings)),
-        platform: String(resolvedPlatform),
         price: Number(resolvedPrice),
-        price_comparison: offers,
-        hasDirectPDP: true,
-        detailed_specs: parsedSpecs
+        original_price: item.original_price ? Number(item.original_price) : null,
+        store_name: String(resolvedPlatform),
+        rating: String(item.rating || "4.5"),
+        review_count: Number(item.reviews || 100),
+        image_url: String(image),
+        deal_link: String(monetizeUrl(directLink, resolvedPlatform, userRegion, settings)),
+        
+        // UI Helper properties:
+        description: String(fallbackDesc),
+        specs: parsedSpecs,
+        price_comparison: offers.map(o => ({
+          store_name: o.store_name || o.store,
+          price: o.price,
+          deal_link: o.deal_link || o.buyNowUrl || o.link,
+          is_lowest: o.is_lowest
+        }))
       });
     }
 
@@ -748,7 +759,7 @@ Respond strictly in JSON with this structure:
     if (geminiApiKey && cleanProducts.length > 0) {
       try {
         const productsListText = cleanProducts.slice(0, 5).map((p, idx) => {
-          return `${idx + 1}. Title: ${p.title} | Store: ${p.platform} | Price: ${p.price}`;
+          return `${idx + 1}. Title: ${p.title} | Store: ${p.store_name} | Price: ${p.price}`;
         }).join("\n");
 
         const prompt = `You are a friendly, expert personal shopping consultant advising a friend on their search for: "${cleanQuery}".
@@ -800,7 +811,7 @@ Do not include markdown code block formatting (like \`\`\`json). Return ONLY raw
                   p.description = `👤 Best For: ${bfor}\n\n💡 Why This Deal: ${wdeal}\n\n⚠️ Trade-off: ${toff}`;
                 }
                 if (res.detailed_specs && Array.isArray(res.detailed_specs)) {
-                  p.detailed_specs = res.detailed_specs;
+                  p.specs = res.detailed_specs;
                 }
               }
             });
@@ -820,12 +831,20 @@ Do not include markdown code block formatting (like \`\`\`json). Return ONLY raw
       (settings.coupons || []).forEach(coupon => {
         const couponStoreLower = (coupon.store || "").toLowerCase().trim();
         const matchesStore = mappedProducts.some(p => {
-          const productStoreLower = (p.platform || "").toLowerCase().trim();
+          const productStoreLower = (p.store_name || "").toLowerCase().trim();
           return productStoreLower.includes(couponStoreLower) || couponStoreLower.includes(productStoreLower);
         });
         const matchesRegion = coupon.region === userRegion || coupon.region === "GLOBAL";
         if (matchesStore && matchesRegion) {
-          matchedStoreCoupons.push(coupon);
+          matchedStoreCoupons.push({
+            store_name: coupon.store,
+            store: coupon.store,
+            code: coupon.code,
+            description: coupon.description,
+            link: monetizeUrl(coupon.link, coupon.store, userRegion, settings),
+            deal_link: monetizeUrl(coupon.link, coupon.store, userRegion, settings),
+            region: coupon.region
+          });
         }
       });
       console.log(`Matched ${matchedStoreCoupons.length} store coupons for e-commerce stores.`);
@@ -855,6 +874,6 @@ Do not include markdown code block formatting (like \`\`\`json). Return ONLY raw
 
   } catch (err) {
     console.error("Serverless Search API Route error:", err);
-    return NextResponse.json({ products: [], error: `Server Error: ${err.message}` }, { status: 200 });
+    return NextResponse.json({ products: [], coupons: [], error: "Unable to fetch live deals at this moment" }, { status: 200 });
   }
 }

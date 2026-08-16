@@ -41,7 +41,7 @@ export async function searchProducts(query, country = "IN") {
         : 1999 + (idx * 1500) + Math.floor(Math.random() * 200));
       
       const discount = Math.floor(15 + (idx * 5) + Math.random() * 5); // 15% - 30% off
-      const calculatedOriginal = Math.round(basePrice / (1 - discount / 100));
+      const calculatedOriginal = p.original_price || Math.round(basePrice / (1 - discount / 100));
 
       const formattedPrice = new Intl.NumberFormat(locale, {
         style: "currency",
@@ -64,42 +64,40 @@ export async function searchProducts(query, country = "IN") {
         }).format(offer.price);
 
         return {
-          store: offer.store,
+          store: offer.store_name || offer.store || "Online Store",
           price: formattedOfferPrice,
-          link: offer.buyNowUrl || offer.link || "#",
+          link: offer.deal_link || offer.buyNowUrl || offer.link || "#",
           is_lowest: offer.is_lowest
         };
       });
 
-      // Extract rich technical specs from detailed_specs backend mapping
-      const specs = p.detailed_specs && Array.isArray(p.detailed_specs)
-        ? p.detailed_specs
-        : (p.detailed_specs && typeof p.detailed_specs === "object"
-            ? Object.entries(p.detailed_specs).map(([k, v]) => `${k}: ${v}`)
-            : [
-                "Verified Merchant Partner",
-                "Top Customer Satisfaction Rating",
-                "In Stock & Ready to Ship"
-              ]);
+      // Extract rich technical specs
+      const specs = p.specs && Array.isArray(p.specs)
+        ? p.specs
+        : [
+            "Verified Merchant Partner",
+            "Top Customer Satisfaction Rating",
+            "In Stock & Ready to Ship"
+          ];
 
       const coupon = null;
 
       return {
         id: `prod-${idx}-${Date.now()}`,
         title: p.title,
-        store: p.platform || "Online Store",
+        store: p.store_name || "Online Store",
         price: formattedPrice,
         originalPrice: formattedOriginal,
         discountPercent: discount,
         rating: p.rating || "4.5",
-        reviewsCount: Math.floor(150 + Math.random() * 850),
-        image: p.image,
+        reviewsCount: p.review_count || Math.floor(150 + Math.random() * 850),
+        image: p.image_url || p.image || "/laptop.jpg",
         tag: idx === 0 ? "AI Recommended" : idx === 1 ? "Best Value" : "Top Pick",
         aiReason: p.description || "Matches your performance, quality, and budget requirements.",
         specs,
         coupon,
-        affiliateUrl: p.buyNowUrl || p.link || "#",
-        revealUrl: p.buyNowUrl || p.link || "#",
+        affiliateUrl: p.deal_link || "#",
+        revealUrl: p.deal_link || "#",
         currency: currencyCode,
         priceComparison
       };
