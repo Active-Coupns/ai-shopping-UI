@@ -141,6 +141,53 @@ function isValidDirectPDPUrl(url) {
   return lower.startsWith("http://") || lower.startsWith("https://");
 }
 
+function getRetailerDirectSearchLink(storeName, title, country = "in") {
+  const q = encodeURIComponent(title);
+  const store = (storeName || "").toLowerCase().trim();
+  const isUS = (country || "").toLowerCase() === "us";
+
+  if (store.includes("amazon")) {
+    return isUS 
+      ? `https://www.amazon.com/s?k=${q}`
+      : `https://www.amazon.in/s?k=${q}`;
+  }
+  if (store.includes("flipkart")) {
+    return `https://www.flipkart.com/search?q=${q}`;
+  }
+  if (store.includes("ajio")) {
+    return `https://www.ajio.com/search/?text=${q}`;
+  }
+  if (store.includes("myntra")) {
+    return `https://www.myntra.com/search?q=${q}`;
+  }
+  if (store.includes("croma")) {
+    return `https://www.croma.com/searchB?q=${q}`;
+  }
+  if (store.includes("vijay")) {
+    return `https://www.vijaysales.com/search/${q}`;
+  }
+  if (store.includes("reliance")) {
+    return `https://www.reliancedigital.in/search?q=${q}`;
+  }
+  if (store.includes("tatacliq") || store.includes("cliq")) {
+    return `https://www.tatacliq.com/search/?text=${q}`;
+  }
+  if (store.includes("walmart")) {
+    return `https://www.walmart.com/search?q=${q}`;
+  }
+  if (store.includes("target")) {
+    return `https://www.target.com/s?searchTerm=${q}`;
+  }
+  if (store.includes("bestbuy") || store.includes("best buy")) {
+    return `https://www.bestbuy.com/site/searchpage.jsp?st=${q}`;
+  }
+  if (store.includes("newegg")) {
+    return `https://www.newegg.com/p/pl?d=${q}`;
+  }
+
+  return `https://www.google.com/search?q=${encodeURIComponent(storeName + " " + title)}`;
+}
+
 /**
  * Simplifies a long or complex natural query to ensure Google Shopping returns results.
  */
@@ -654,13 +701,13 @@ Respond strictly in JSON with this structure:
       const rawLink = item.link || item.direct_link || item.product_link || "";
       let directLink = cleanProductUrl(rawLink);
 
-      // Zero Google Aggregator Link Leak Policy: Clean direct links, but bypass drop to guarantee 100% product delivery
-      if (!isValidDirectPDPUrl(directLink)) {
-        directLink = rawLink || item.link || item.direct_link || "";
-      }
-
       let resolvedPrice = priceVal;
       let resolvedPlatform = platform;
+
+      // Zero Google Aggregator Link Leak Policy: If link is a Google intermediate page, resolve it to a direct retailer page query
+      if (!isValidDirectPDPUrl(directLink)) {
+        directLink = getRetailerDirectSearchLink(resolvedPlatform || platform, title, country);
+      }
 
       // Map comparison stores from details response
       const storesList = detailsMap.get(item.position) || [];
@@ -671,10 +718,10 @@ Respond strictly in JSON with this structure:
           const sLink = s.link || s.direct_link || "";
           const cleanedLink = cleanProductUrl(sLink);
           
-          // Zero Google Aggregator Link Leak Policy: Clean direct links, but bypass drop to guarantee 100% product delivery
+          // Zero Google Aggregator Link Leak Policy: If link is a Google intermediate page, resolve it to a direct retailer page query
           let finalStoreLink = cleanedLink;
           if (!isValidDirectPDPUrl(cleanedLink)) {
-            finalStoreLink = sLink || s.link || s.direct_link || "";
+            finalStoreLink = getRetailerDirectSearchLink(s.name || s.store || "Online Store", title, country);
           }
 
           const sPriceRaw = s.price || s.extracted_price || 0;
@@ -705,24 +752,25 @@ Respond strictly in JSON with this structure:
         resolvedPlatform = lowest.store;
       } else {
         const topLink = item.direct_link || item.link || "";
-        const cleanedTopLink = cleanProductUrl(topLink);
-        if (isValidDirectPDPUrl(cleanedTopLink)) {
-          offers = [
-            {
-              store: platform,
-              price: priceVal,
-              link: cleanedTopLink,
-              buyNowUrl: monetizeUrl(cleanedTopLink, platform, userRegion, settings),
-              is_lowest: true
-            }
-          ];
-          directLink = cleanedTopLink;
+        let cleanedTopLink = cleanProductUrl(topLink);
+        if (!isValidDirectPDPUrl(cleanedTopLink)) {
+          cleanedTopLink = getRetailerDirectSearchLink(platform, title, country);
         }
+        offers = [
+          {
+            store: platform,
+            price: priceVal,
+            link: cleanedTopLink,
+            buyNowUrl: monetizeUrl(cleanedTopLink, platform, userRegion, settings),
+            is_lowest: true
+          }
+        ];
+        directLink = cleanedTopLink;
       }
 
-      // Clean direct links, but bypass drop to guarantee 100% product delivery
+      // Zero Google Aggregator Link Leak Policy: If link is a Google intermediate page, resolve it to a direct retailer page query
       if (!directLink || !isValidDirectPDPUrl(directLink)) {
-        directLink = rawLink || item.link || item.direct_link || "";
+        directLink = getRetailerDirectSearchLink(resolvedPlatform || platform, title, country);
       }
 
       const category = detectCategory(cleanQuery, title);
