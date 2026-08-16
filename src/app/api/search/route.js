@@ -679,7 +679,7 @@ Respond strictly in JSON with this structure:
     }
 
     const cleanProducts = [];
-    const topResults = rawResults.slice(0, 10);
+    const topResults = rawResults.slice(0, 20);
 
     // Map results to schema, merging direct checkout links and store chips from details
     for (const item of topResults) {
@@ -704,11 +704,6 @@ Respond strictly in JSON with this structure:
       let resolvedPrice = priceVal;
       let resolvedPlatform = platform;
 
-      // Zero Google Aggregator Link Leak Policy: If link is a Google intermediate page, resolve it to a direct retailer page query
-      if (!isValidDirectPDPUrl(directLink)) {
-        directLink = getRetailerDirectSearchLink(resolvedPlatform || platform, title, country);
-      }
-
       // Map comparison stores from details response
       const storesList = detailsMap.get(item.position) || [];
       let offers = [];
@@ -718,25 +713,21 @@ Respond strictly in JSON with this structure:
           const sLink = s.link || s.direct_link || "";
           const cleanedLink = cleanProductUrl(sLink);
           
-          // Zero Google Aggregator Link Leak Policy: If link is a Google intermediate page, resolve it to a direct retailer page query
-          let finalStoreLink = cleanedLink;
-          if (!isValidDirectPDPUrl(cleanedLink)) {
-            finalStoreLink = getRetailerDirectSearchLink(s.name || s.store || "Online Store", title, country);
+          if (isValidDirectPDPUrl(cleanedLink)) {
+            const sPriceRaw = s.price || s.extracted_price || 0;
+            let sPriceVal = 0;
+            if (typeof sPriceRaw === "number") {
+              sPriceVal = sPriceRaw;
+            } else if (typeof sPriceRaw === "string") {
+              sPriceVal = parseFloat(sPriceRaw.replace(/[^0-9.]/g, "")) || 0;
+            }
+            offers.push({
+              store: s.name || s.store || "Online Store",
+              price: sPriceVal,
+              link: cleanedLink,
+              buyNowUrl: monetizeUrl(cleanedLink, s.name || s.store || "Online Store", userRegion, settings)
+            });
           }
-
-          const sPriceRaw = s.price || s.extracted_price || 0;
-          let sPriceVal = 0;
-          if (typeof sPriceRaw === "number") {
-            sPriceVal = sPriceRaw;
-          } else if (typeof sPriceRaw === "string") {
-            sPriceVal = parseFloat(sPriceRaw.replace(/[^0-9.]/g, "")) || 0;
-          }
-          offers.push({
-            store: s.name || s.store || "Online Store",
-            price: sPriceVal,
-            link: finalStoreLink,
-            buyNowUrl: monetizeUrl(finalStoreLink, s.name || s.store || "Online Store", userRegion, settings)
-          });
         });
       }
 
@@ -752,25 +743,25 @@ Respond strictly in JSON with this structure:
         resolvedPlatform = lowest.store;
       } else {
         const topLink = item.direct_link || item.link || "";
-        let cleanedTopLink = cleanProductUrl(topLink);
-        if (!isValidDirectPDPUrl(cleanedTopLink)) {
-          cleanedTopLink = getRetailerDirectSearchLink(platform, title, country);
+        const cleanedTopLink = cleanProductUrl(topLink);
+        if (isValidDirectPDPUrl(cleanedTopLink)) {
+          offers = [
+            {
+              store: platform,
+              price: priceVal,
+              link: cleanedTopLink,
+              buyNowUrl: monetizeUrl(cleanedTopLink, platform, userRegion, settings),
+              is_lowest: true
+            }
+          ];
+          directLink = cleanedTopLink;
         }
-        offers = [
-          {
-            store: platform,
-            price: priceVal,
-            link: cleanedTopLink,
-            buyNowUrl: monetizeUrl(cleanedTopLink, platform, userRegion, settings),
-            is_lowest: true
-          }
-        ];
-        directLink = cleanedTopLink;
       }
 
-      // Zero Google Aggregator Link Leak Policy: If link is a Google intermediate page, resolve it to a direct retailer page query
+      // Zero Google Aggregator Link Leak Policy: Strictly filter out and drop product if no valid merchant PDP link is resolved
       if (!directLink || !isValidDirectPDPUrl(directLink)) {
-        directLink = getRetailerDirectSearchLink(resolvedPlatform || platform, title, country);
+        console.log(`Dropping product "${title}" because no valid direct retailer PDP link could be resolved.`);
+        continue;
       }
 
       const category = detectCategory(cleanQuery, title);
