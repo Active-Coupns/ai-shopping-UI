@@ -228,6 +228,50 @@ function getDirectPDPFallback(storeName, title) {
   return `https://www.${domain}/product/${cleanTitle}`;
 }
 
+function unwrapLocalProductLink(item, country = "in") {
+  const candidates = [
+    item.direct_link,
+    item.link,
+    item.ad_link,
+    item.product_link,
+    item.merchant_url
+  ];
+  
+  for (const url of candidates) {
+    if (typeof url !== "string" || !url) continue;
+    
+    try {
+      const urlObj = new URL(url);
+      const redirectParams = [
+        "adurl",
+        "destination",
+        "merchant_url",
+        "url",
+        "u",
+        "r"
+      ];
+      for (const param of redirectParams) {
+        const val = urlObj.searchParams.get(param);
+        if (val && (val.startsWith("http://") || val.startsWith("https://"))) {
+          const decoded = decodeURIComponent(val);
+          if (isValidDirectPDPUrl(decoded)) {
+            return decoded;
+          }
+        }
+      }
+    } catch (e) {}
+    
+    const cleaned = cleanProductUrl(url);
+    if (isValidDirectPDPUrl(cleaned)) {
+      return cleaned;
+    }
+  }
+  
+  // Fallback to locally constructed direct merchant PDP link
+  const store = item.source || item.merchant || item.seller || "Online Store";
+  return getDirectPDPFallback(store, item.title);
+}
+
 /**
  * Simplifies a long or complex natural query to ensure Google Shopping returns results.
  */
@@ -623,7 +667,6 @@ Respond strictly in JSON with this structure:
 
 
     let rawResults = [];
-    const detailsMap = new Map();
 
     try {
       const queueResult = await searchQueue.enqueue(async () => {
@@ -664,105 +707,18 @@ Respond strictly in JSON with this structure:
           }
         }
 
-        const currentTopResults = currentRawResults.slice(0, 20);
-
-        // Selective Enrichment: Only fetch immersive details for items lacking a direct PDP link
-        const enrichmentCandidates = currentTopResults.filter(item => {
-          if (!item) return false;
-          const mainUrl = item.link || item.direct_link || item.product_link || "";
-          const isValidMain = isValidDirectPDPUrl(cleanProductUrl(mainUrl));
-          return !isValidMain && !!item.serpapi_immersive_product_api;
-        }).slice(0, 10);
-
-        console.log(`Selective Enrichment: Identified ${enrichmentCandidates.length} products needing details extraction.`);
-
-        const fetchDetailsForItem = async (item) => {
-          let uniqueId = item.position;
-          try {
-            const urlObj = new URL(item.serpapi_immersive_product_api);
-            const tokenVal = urlObj.searchParams.get("page_token") || urlObj.searchParams.get("product_id") || urlObj.searchParams.get("q");
-            if (tokenVal) {
-              uniqueId = tokenVal.slice(-40);
-            }
-          } catch (e) {}
-          const detailsCacheKey = `cache:immersive:${uniqueId}`;
-
-          try {
-            const cached = await redis.get(detailsCacheKey);
-            if (cached) {
-              console.log(`Cache HIT for immersive details key: ${detailsCacheKey}`);
-              const cachedData = typeof cached === "string" ? JSON.parse(cached) : cached;
-              return {
-                position: item.position,
-                stores: cachedData || []
-              };
-            }
-          } catch (cacheReadErr) {
-            console.warn("Failed reading immersive details cache:", cacheReadErr);
-          }
-
-          try {
-            // Introduce a 1500ms delay to space out sequential network fetches and avoid SerpApi 429 limits
-            await new Promise(resolve => setTimeout(resolve, 1500));
-            const detailUrl = `${item.serpapi_immersive_product_api}&api_key=${serpapiApiKey}`;
-            let res = await fetch(detailUrl, { signal: AbortSignal.timeout(6000) });
-            
-            if (res.status === 429) {
-              console.warn(`SerpApi returned 429 for "${item.title}". Retrying in 3000ms...`);
-              await new Promise(resolve => setTimeout(resolve, 3000));
-              res = await fetch(detailUrl, { signal: AbortSignal.timeout(6000) });
-            }
-
-            if (res.ok) {
-              const detailData = await res.json();
-              const stores = detailData.product_results?.stores || [];
-              try {
-                await redis.set(detailsCacheKey, JSON.stringify(stores), { ex: 86400 });
-                console.log(`Cache MISS. Saved immersive details key: ${detailsCacheKey}`);
-              } catch (cacheWriteErr) {
-                console.warn("Failed writing immersive details cache:", cacheWriteErr);
-              }
-              return {
-                position: item.position,
-                stores
-              };
-            } else {
-              console.warn(`SerpApi details fetch failed with status ${res.status} for product "${item.title}"`);
-            }
-          } catch (err) {
-            console.warn(`Failed fetching immersive details for product ${item.title}:`, err);
-          }
-          return { position: item.position, stores: [] };
-        };
-
-        const currentDetailsList = [];
-        
-        // Execute details fetches completely sequentially to respect SerpApi parallel rate limits
-        for (const item of enrichmentCandidates) {
-          const result = await fetchDetailsForItem(item);
-          currentDetailsList.push(result);
-        }
-
-        console.log(`Diagnostic detailsList count: ${currentDetailsList.length}, content: ${JSON.stringify(currentDetailsList.map(d => ({ pos: d?.position, stores_count: d?.stores?.length })))}`);
         return {
-          rawResults: currentRawResults,
-          detailsList: currentDetailsList
+          rawResults: currentRawResults
         };
       });
 
       rawResults = queueResult.rawResults;
-      if (Array.isArray(queueResult.detailsList)) {
-        queueResult.detailsList.forEach(d => {
-          if (d) detailsMap.set(d.position, d.stores);
-        });
-      }
     } catch (err) {
       if (err.message === "QueueTimeout") {
         console.warn("Search API request queue wait timed out due to high concurrency");
         return NextResponse.json({ error: "Server is busy processing other search requests. Please try again in a moment." }, { status: 429 });
       }
       console.error("Queue execution failed:", err);
-      // Fallback empty raw results on generic queue error
     }
 
     const cleanProducts = [];
@@ -784,80 +740,19 @@ Respond strictly in JSON with this structure:
         priceVal = parseFloat(priceRaw.replace(/[^0-9.]/g, "")) || 0;
       }
 
-      // Map Store Link: Pass item.link or item.direct_link or item.product_link directly
-      const rawLink = item.link || item.direct_link || item.product_link || "";
-      let directLink = cleanProductUrl(rawLink);
-
+      const directLink = unwrapLocalProductLink(item, country);
       let resolvedPrice = priceVal;
       let resolvedPlatform = platform;
 
-      // Map comparison stores from details response
-      const storesList = detailsMap.get(item.position) || [];
-      let offers = [];
-
-      if (Array.isArray(storesList) && storesList.length > 0) {
-        storesList.forEach(s => {
-          const sLink = s.link || s.direct_link || "";
-          const cleanedLink = cleanProductUrl(sLink);
-          
-          if (isValidDirectPDPUrl(cleanedLink)) {
-            const sPriceRaw = s.price || s.extracted_price || 0;
-            let sPriceVal = 0;
-            if (typeof sPriceRaw === "number") {
-              sPriceVal = sPriceRaw;
-            } else if (typeof sPriceRaw === "string") {
-              sPriceVal = parseFloat(sPriceRaw.replace(/[^0-9.]/g, "")) || 0;
-            }
-            offers.push({
-              store: s.name || s.store || "Online Store",
-              price: sPriceVal,
-              link: cleanedLink,
-              buyNowUrl: monetizeUrl(cleanedLink, s.name || s.store || "Online Store", userRegion, settings)
-            });
-          }
-        });
-      }
-
-      if (offers.length > 0) {
-        // Sort and pick lowest price offer details
-        offers.sort((a, b) => a.price - b.price);
-        offers.forEach((o, idx) => {
-          o.is_lowest = idx === 0;
-        });
-        const lowest = offers[0];
-        directLink = lowest.link;
-        resolvedPrice = lowest.price;
-        resolvedPlatform = lowest.store;
-      } else {
-        const topLink = item.direct_link || item.link || "";
-        const cleanedTopLink = cleanProductUrl(topLink);
-        if (isValidDirectPDPUrl(cleanedTopLink)) {
-          offers = [
-            {
-              store: platform,
-              price: priceVal,
-              link: cleanedTopLink,
-              buyNowUrl: monetizeUrl(cleanedTopLink, platform, userRegion, settings),
-              is_lowest: true
-            }
-          ];
-          directLink = cleanedTopLink;
-        } else {
-          // If the crawled details fail to resolve (e.g. 429 rate limit or timeout),
-          // fallback to a constructed direct merchant PDP link to guarantee high count yield and valid formatting.
-          const fallbackLink = getDirectPDPFallback(platform, title);
-          offers = [
-            {
-              store: platform,
-              price: priceVal,
-              link: fallbackLink,
-              buyNowUrl: monetizeUrl(fallbackLink, platform, userRegion, settings),
-              is_lowest: true
-            }
-          ];
-          directLink = fallbackLink;
+      const offers = [
+        {
+          store: platform,
+          price: priceVal,
+          link: directLink,
+          buyNowUrl: monetizeUrl(directLink, platform, userRegion, settings),
+          is_lowest: true
         }
-      }
+      ];
 
       // Zero Google Aggregator Link Leak Policy: Strictly filter out and drop product if no valid merchant PDP link is resolved
       if (!directLink || !isValidDirectPDPUrl(directLink)) {
