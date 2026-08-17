@@ -130,7 +130,6 @@ function isValidDirectPDPUrl(url) {
     lower.includes("google.com/search") ||
     lower.includes("google.co.in/search") ||
     lower.includes("google.co.uk/search") ||
-    lower.includes("/search?") ||
     lower.includes("serpapi.com") ||
     lower.includes("ibp=")
   ) {
@@ -228,6 +227,144 @@ function getDirectPDPFallback(storeName, title) {
   return `https://www.${domain}/product/${cleanTitle}`;
 }
 
+function resolveStoreDomain(storeName, country = "in") {
+  let name = (storeName || "").toLowerCase().trim();
+  if (!name) return "merchant-store.com";
+  
+  if (name.includes(".") && !name.endsWith(".")) {
+    const parts = name.split("/");
+    return parts[0];
+  }
+  
+  name = name
+    .replace(/['’]/g, "")
+    .replace(/[^a-z0-9]/g, "");
+    
+  if (!name) return "merchant-store.com";
+  
+  const isUS = (country || "").toLowerCase() === "us";
+  const tld = isUS ? ".com" : ".in";
+  
+  const mappings = {
+    "amazon": isUS ? "amazon.com" : "amazon.in",
+    "walmart": "walmart.com",
+    "target": "target.com",
+    "bestbuy": "bestbuy.com",
+    "newegg": "newegg.com",
+    "flipkart": "flipkart.com",
+    "myntra": "myntra.com",
+    "ajio": "ajio.com",
+    "croma": "croma.com",
+    "reliance": "reliancedigital.in",
+    "reliancedigital": "reliancedigital.in",
+    "vijaysales": "vijaysales.com",
+    "tatacliq": "tatacliq.com"
+  };
+  
+  for (const key in mappings) {
+    if (name.includes(key)) {
+      return mappings[key];
+    }
+  }
+  
+  return `${name}${tld}`;
+}
+
+function sanitizeProductTitle(title) {
+  if (!title) return "";
+  return title
+    .replace(/\[[^\]]*\]/g, "")
+    .replace(/\([^)]*\)/g, "")
+    .replace(/[^a-zA-Z0-9\s.-]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function getStoreSearchUrl(domain, cleanTitle) {
+  const q = encodeURIComponent(cleanTitle);
+  const dom = domain.toLowerCase();
+  
+  if (dom.includes("amazon")) {
+    return `https://${domain}/s?k=${q}`;
+  }
+  if (dom.includes("flipkart")) {
+    return `https://${domain}/search?q=${q}`;
+  }
+  if (dom.includes("ajio")) {
+    return `https://${domain}/search/?text=${q}`;
+  }
+  if (dom.includes("myntra")) {
+    return `https://${domain}/search?q=${q}`;
+  }
+  if (dom.includes("croma")) {
+    return `https://${domain}/searchB?q=${q}`;
+  }
+  if (dom.includes("reliance")) {
+    return `https://${domain}/search?q=${q}`;
+  }
+  if (dom.includes("vijaysales")) {
+    return `https://${domain}/search/${q}`;
+  }
+  if (dom.includes("target")) {
+    return `https://${domain}/s?searchTerm=${q}`;
+  }
+  if (dom.includes("walmart")) {
+    return `https://${domain}/search?q=${q}`;
+  }
+  
+  return `https://${domain}/search?q=${q}`;
+}
+
+function sanitizeMerchantUrl(url) {
+  if (!url) return "";
+  let cleaned = url.trim().replace(/\?{2,}/g, "?");
+  
+  try {
+    const parsed = new URL(cleaned);
+    const searchParams = parsed.searchParams;
+    const trackingParams = [
+      "gclid", "utm_source", "utm_medium", "utm_campaign", "srsltid", "cmpid", "adurl",
+      "ref", "pf_rd_r", "pf_rd_p", "pd_rd_r", "pd_rd_w", "pd_rd_wg", "qid", "sr",
+      "clickid", "affiliate", "tracking", "sprefix", "crid", "dib", "dib_tag"
+    ];
+    trackingParams.forEach(p => searchParams.delete(p));
+    parsed.pathname = parsed.pathname.replace(/\/+/g, "/");
+    return parsed.toString();
+  } catch (e) {
+    return "";
+  }
+}
+
+function isCompletePDPUrl(url) {
+  if (!url || !isValidDirectPDPUrl(url)) return false;
+  
+  try {
+    const parsed = new URL(url);
+    const path = parsed.pathname;
+    if (path === "/" || path === "") return false;
+    
+    const lowerPath = path.toLowerCase();
+    const lowerSearch = parsed.search.toLowerCase();
+    if (
+      lowerPath.includes("/search") ||
+      lowerPath.includes("/searchpage") ||
+      lowerPath.includes("/s/") ||
+      lowerSearch.includes("q=") ||
+      lowerSearch.includes("k=") ||
+      lowerSearch.includes("searchterm=")
+    ) {
+      return false;
+    }
+    
+    const segments = path.split("/").filter(Boolean);
+    if (segments.length === 0) return false;
+    
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
 function unwrapLocalProductLink(item, country = "in") {
   const candidates = [
     item.direct_link,
@@ -242,34 +379,30 @@ function unwrapLocalProductLink(item, country = "in") {
     
     try {
       const urlObj = new URL(url);
-      const redirectParams = [
-        "adurl",
-        "destination",
-        "merchant_url",
-        "url",
-        "u",
-        "r"
-      ];
+      const redirectParams = ["adurl", "destination", "merchant_url", "url", "u", "r"];
       for (const param of redirectParams) {
         const val = urlObj.searchParams.get(param);
         if (val && (val.startsWith("http://") || val.startsWith("https://"))) {
           const decoded = decodeURIComponent(val);
-          if (isValidDirectPDPUrl(decoded)) {
-            return decoded;
+          const sanitized = sanitizeMerchantUrl(decoded);
+          if (isCompletePDPUrl(sanitized)) {
+            return sanitized;
           }
         }
       }
     } catch (e) {}
     
     const cleaned = cleanProductUrl(url);
-    if (isValidDirectPDPUrl(cleaned)) {
-      return cleaned;
+    const sanitized = sanitizeMerchantUrl(cleaned);
+    if (isCompletePDPUrl(sanitized)) {
+      return sanitized;
     }
   }
   
-  // Fallback to locally constructed direct merchant PDP link
-  const store = item.source || item.merchant || item.seller || "Online Store";
-  return getDirectPDPFallback(store, item.title);
+  const platform = item.source || item.merchant || item.seller || "Online Store";
+  const domain = resolveStoreDomain(platform, country);
+  const cleanTitle = sanitizeProductTitle(item.title);
+  return getStoreSearchUrl(domain, cleanTitle);
 }
 
 /**

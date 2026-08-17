@@ -35,20 +35,8 @@ function isValidDirectPDPUrl(link) {
     lower.includes("google.com/search") ||
     lower.includes("google.co.in/search") ||
     lower.includes("google.co.uk/search") ||
-    lower.includes("/search?") ||
     lower.includes("serpapi.com") ||
     lower.includes("ibp=")
-  ) {
-    return false;
-  }
-  
-  // Enforce direct PDP rule (no generic search page shortcuts allowed)
-  if (
-    lower.includes("amazon.in/s?k=") ||
-    lower.includes("amazon.com/s?k=") ||
-    lower.includes("flipkart.com/search?q=") ||
-    lower.includes("ajio.com/search/?text=") ||
-    lower.includes("myntra.com/search?q=")
   ) {
     return false;
   }
