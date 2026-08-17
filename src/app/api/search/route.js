@@ -335,6 +335,29 @@ function sanitizeMerchantUrl(url) {
   }
 }
 
+function hasExactPDPPath(url) {
+  if (!url) return false;
+  try {
+    const parsed = new URL(url);
+    const path = parsed.pathname.toLowerCase();
+    if (
+      path.includes("/dp/") ||
+      path.includes("/gp/") ||
+      path.includes("/p/") ||
+      path.includes("/ip/") ||
+      path.includes("/product/") ||
+      path.includes("/products/") ||
+      path.includes("/item/") ||
+      path.includes("/pd/") ||
+      path.includes("/site/") ||
+      path.endsWith("/buy")
+    ) {
+      return true;
+    }
+  } catch (e) {}
+  return false;
+}
+
 function isCompletePDPUrl(url) {
   if (!url || !isValidDirectPDPUrl(url)) return false;
   
@@ -342,6 +365,10 @@ function isCompletePDPUrl(url) {
     const parsed = new URL(url);
     const path = parsed.pathname;
     if (path === "/" || path === "") return false;
+    
+    if (hasExactPDPPath(url)) {
+      return true;
+    }
     
     const lowerPath = path.toLowerCase();
     const lowerSearch = parsed.search.toLowerCase();
@@ -379,14 +406,29 @@ function unwrapLocalProductLink(item, country = "in") {
     
     try {
       const urlObj = new URL(url);
-      const redirectParams = ["adurl", "destination", "merchant_url", "url", "u", "r"];
+      const parentOrigin = urlObj.origin;
+      const redirectParams = [
+        "adurl",
+        "destination",
+        "merchant_url",
+        "url",
+        "target_url",
+        "q",
+        "u",
+        "r"
+      ];
       for (const param of redirectParams) {
-        const val = urlObj.searchParams.get(param);
-        if (val && (val.startsWith("http://") || val.startsWith("https://"))) {
-          const decoded = decodeURIComponent(val);
-          const sanitized = sanitizeMerchantUrl(decoded);
-          if (isCompletePDPUrl(sanitized)) {
-            return sanitized;
+        let val = urlObj.searchParams.get(param);
+        if (val) {
+          val = decodeURIComponent(val);
+          if (val.startsWith("/")) {
+            val = parentOrigin + val;
+          }
+          if (val.startsWith("http://") || val.startsWith("https://")) {
+            const sanitized = sanitizeMerchantUrl(val);
+            if (isCompletePDPUrl(sanitized)) {
+              return sanitized;
+            }
           }
         }
       }
