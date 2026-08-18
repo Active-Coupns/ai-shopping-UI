@@ -331,7 +331,7 @@ function sanitizeMerchantUrl(url) {
     parsed.pathname = parsed.pathname.replace(/\/+/g, "/");
     return parsed.toString();
   } catch (e) {
-    return "";
+    return cleaned;
   }
 }
 
@@ -392,6 +392,63 @@ function isCompletePDPUrl(url) {
   }
 }
 
+function extractEmbeddedUrl(str) {
+  if (!str) return "";
+  
+  let decoded = str;
+  for (let i = 0; i < 3; i++) {
+    const prev = decoded;
+    try {
+      decoded = decodeURIComponent(decoded);
+    } catch (e) {}
+    if (decoded === prev) break;
+  }
+  
+  const match = decoded.match(/(https?:\/\/[^\s"'<>]+)/i);
+  if (match) {
+    let candidate = match[1];
+    candidate = candidate.replace(/[,;\]\)]+$/, "");
+    return candidate;
+  }
+  return "";
+}
+
+function extractRedirectUrl(urlString) {
+  if (!urlString) return "";
+  try {
+    const urlObj = new URL(urlString);
+    const parentOrigin = urlObj.origin;
+    
+    for (const [key, val] of urlObj.searchParams.entries()) {
+      if (!val) continue;
+      
+      let decoded = val;
+      try {
+        decoded = decodeURIComponent(val);
+      } catch (e) {}
+      
+      if (decoded.startsWith("/")) {
+        const fullUrl = parentOrigin + decoded;
+        if (hasExactPDPPath(fullUrl) && isValidDirectPDPUrl(fullUrl)) {
+          return fullUrl;
+        }
+      }
+      
+      const embedded = extractEmbeddedUrl(decoded);
+      if (embedded && isValidDirectPDPUrl(embedded)) {
+        return embedded;
+      }
+    }
+  } catch (e) {}
+  
+  const embedded = extractEmbeddedUrl(urlString);
+  if (embedded && isValidDirectPDPUrl(embedded)) {
+    return embedded;
+  }
+  
+  return "";
+}
+
 function unwrapLocalProductLink(item, country = "in") {
   const candidates = [
     item.direct_link,
@@ -404,35 +461,13 @@ function unwrapLocalProductLink(item, country = "in") {
   for (const url of candidates) {
     if (typeof url !== "string" || !url) continue;
     
-    try {
-      const urlObj = new URL(url);
-      const parentOrigin = urlObj.origin;
-      const redirectParams = [
-        "adurl",
-        "destination",
-        "merchant_url",
-        "url",
-        "target_url",
-        "q",
-        "u",
-        "r"
-      ];
-      for (const param of redirectParams) {
-        let val = urlObj.searchParams.get(param);
-        if (val) {
-          val = decodeURIComponent(val);
-          if (val.startsWith("/")) {
-            val = parentOrigin + val;
-          }
-          if (val.startsWith("http://") || val.startsWith("https://")) {
-            const sanitized = sanitizeMerchantUrl(val);
-            if (isCompletePDPUrl(sanitized)) {
-              return sanitized;
-            }
-          }
-        }
+    const extracted = extractRedirectUrl(url);
+    if (extracted) {
+      const sanitized = sanitizeMerchantUrl(extracted);
+      if (isCompletePDPUrl(sanitized)) {
+        return sanitized;
       }
-    } catch (e) {}
+    }
     
     const cleaned = cleanProductUrl(url);
     const sanitized = sanitizeMerchantUrl(cleaned);
