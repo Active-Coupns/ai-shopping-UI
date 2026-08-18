@@ -951,6 +951,26 @@ Respond strictly in JSON with this structure:
       }
 
       const directLink = unwrapLocalProductLink(item, country);
+      let finalLink = directLink;
+      if (!isCompletePDPUrl(directLink) && item.serpapi_immersive_product_api) {
+        try {
+          const origin = request.nextUrl.origin;
+          const urlObj = new URL(item.serpapi_immersive_product_api);
+          const pageToken = urlObj.searchParams.get("page_token");
+          const productId = urlObj.searchParams.get("product_id");
+          
+          const redirectParams = new URLSearchParams({
+            fallback: directLink,
+            store: platform,
+            title: title
+          });
+          if (pageToken) redirectParams.set("page_token", pageToken);
+          else if (productId) redirectParams.set("product_id", productId);
+          
+          finalLink = `${origin}/api/redirect?${redirectParams.toString()}`;
+        } catch (e) {}
+      }
+
       let resolvedPrice = priceVal;
       let resolvedPlatform = platform;
 
@@ -958,14 +978,14 @@ Respond strictly in JSON with this structure:
         {
           store: platform,
           price: priceVal,
-          link: directLink,
-          buyNowUrl: monetizeUrl(directLink, platform, userRegion, settings),
+          link: finalLink,
+          buyNowUrl: monetizeUrl(finalLink, platform, userRegion, settings),
           is_lowest: true
         }
       ];
 
       // Zero Google Aggregator Link Leak Policy: Strictly filter out and drop product if no valid merchant PDP link is resolved
-      if (!directLink || !isValidDirectPDPUrl(directLink)) {
+      if (!finalLink || !isValidDirectPDPUrl(finalLink)) {
         console.log(`Dropping product "${title}" because no valid direct retailer PDP link could be resolved.`);
         continue;
       }
@@ -985,7 +1005,7 @@ Respond strictly in JSON with this structure:
         rating: String(item.rating || "4.5"),
         review_count: Number(item.reviews || 100),
         image_url: String(image),
-        deal_link: String(monetizeUrl(directLink, resolvedPlatform, userRegion, settings)),
+        deal_link: String(monetizeUrl(finalLink, resolvedPlatform, userRegion, settings)),
         
         // UI Helper properties:
         description: String(fallbackDesc),
