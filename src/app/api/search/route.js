@@ -347,9 +347,15 @@ function hasExactPDPPath(url) {
       path.includes("/ip/") ||
       path.includes("/product/") ||
       path.includes("/products/") ||
+      path.includes("/product-page/") ||
+      path.includes("/product_page/") ||
       path.includes("/item/") ||
       path.includes("/pd/") ||
       path.includes("/site/") ||
+      path.includes("/pre-order/") ||
+      path.includes("/buy/") ||
+      path.includes("/deal/") ||
+      path.includes("/goods/") ||
       path.endsWith("/buy")
     ) {
       return true;
