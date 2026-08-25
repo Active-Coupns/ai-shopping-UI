@@ -636,10 +636,19 @@ function detectCategory(query, title) {
   if (text.includes("laptop") || text.includes("notebook") || text.includes("computer") || text.includes("pc") || text.includes("macbook") || text.includes("chromebook")) {
     return "laptop";
   }
-  if (text.includes("headphone") || text.includes("earphone") || text.includes("earbuds") || text.includes("audio") || text.includes("sound") || text.includes("pods") || text.includes("noise") || text.includes("anc") || text.includes("wireless ear")) {
+  if (text.includes("phone") || text.includes("mobile") || text.includes("galaxy") || text.includes("iphone") || text.includes("smartphone") || text.includes("oneplus") || text.includes("redmi") || text.includes("poco") || text.includes("realme") || text.includes("pixel") || text.includes("xiaomi") || text.includes("samsung")) {
+    return "mobile";
+  }
+  if (text.includes("headphone") || text.includes("earphone") || text.includes("earbuds") || text.includes("audio") || text.includes("sound") || text.includes("pods") || text.includes("noise") || text.includes("anc") || text.includes("wireless ear") || text.includes("speaker")) {
     return "audio";
   }
-  if (text.includes("shoe") || text.includes("sneaker") || text.includes("shirt") || text.includes("cotton") || text.includes("wear") || text.includes("clothing") || text.includes("jeans") || text.includes("tshirt") || text.includes("t-shirt") || text.includes("pant")) {
+  if (text.includes("camera") || text.includes("lens") || text.includes("dslr") || text.includes("mirrorless") || text.includes("tablet") || text.includes("ipad") || text.includes("tv") || text.includes("television") || text.includes("watch") || text.includes("smartwatch")) {
+    return "electronics";
+  }
+  if (text.includes("chair") || text.includes("desk") || text.includes("table") || text.includes("furniture") || text.includes("cooker") || text.includes("blender") || text.includes("kettle") || text.includes("bottle") || text.includes("vacuum") || text.includes("fridge") || text.includes("oven")) {
+    return "home";
+  }
+  if (text.includes("shoe") || text.includes("sneaker") || text.includes("shirt") || text.includes("cotton") || text.includes("wear") || text.includes("clothing") || text.includes("jeans") || text.includes("tshirt") || text.includes("t-shirt") || text.includes("pant") || text.includes("boot") || text.includes("bag") || text.includes("backpack")) {
     return "fashion";
   }
   return "general";
@@ -667,7 +676,7 @@ function parseSpecsFromTitle(category, title, price, item = {}) {
     }
   }
 
-  let ramMatch = textToScan.match(/(\d+)\s*(?:gb|gig)\s*(?:ram|lpddr|ddr|memory)/i) || textToScan.match(/(\d+)\s*gb/i);
+  let ramMatch = textToScan.match(/(\d+)\s*(?:gb|gig)\s*(?:ram|lpddr|ddr|memory)/i) || textToScan.match(/\b(\d+)\s*gb\b/i);
   let ram = ramMatch ? `${ramMatch[1]}GB Memory` : null;
 
   let storageMatch = textToScan.match(/(\d+)\s*(?:gb|tb)\s*(?:ssd|hdd|storage|nvme|rom|emmc)/i);
@@ -718,6 +727,47 @@ function parseSpecsFromTitle(category, title, price, item = {}) {
     specs.push(storage || `Storage: 512GB High-Speed SSD`);
     specs.push(display || `Display: 14-inch Thin Bezel Screen`);
     specs.push(color || `Build: Premium Protective Shell Chassis`);
+  } else if (category === "mobile") {
+    const is5G = textToScan.includes("5g") || title.toLowerCase().includes("5g");
+    
+    let phoneRam = ram || "6GB LPDDR4X Memory";
+    let phoneStorage = storage || "128GB ROM Storage";
+    
+    let phoneBattery = "5000 mAh High-Capacity Battery";
+    if (battery) {
+      phoneBattery = `${battery} Battery`;
+    } else {
+      if (title.toLowerCase().includes("galaxy f23") || title.toLowerCase().includes("galaxy m")) {
+        phoneBattery = "6000 mAh Extended Battery";
+      }
+    }
+    
+    let phoneCamera = "50MP Triple Camera Setup";
+    if (camera) {
+      phoneCamera = `${camera} Primary Camera`;
+    } else {
+      if (title.toLowerCase().includes("f23") || title.toLowerCase().includes("m33")) {
+        phoneCamera = "50MP Triple-Lens Primary Camera";
+      } else if (title.toLowerCase().includes("pro")) {
+        phoneCamera = "64MP Quad-Lens AI Camera";
+      }
+    }
+    
+    let phoneProcessor = "Octa-Core Snapdragon Processor";
+    if (title.toLowerCase().includes("f23")) {
+      phoneProcessor = "Snapdragon 750G 5G Processor";
+    } else if (textToScan.includes("dimensity") || textToScan.includes("mediatek")) {
+      const dimMatch = textToScan.match(/dimensity\s*(\d+)/i);
+      phoneProcessor = dimMatch ? `MediaTek ${dimMatch[0]} Octa-Core` : "MediaTek Dimensity Octa-Core";
+    } else if (title.toLowerCase().includes("iphone")) {
+      phoneProcessor = "Apple A-Series Bionic Chipset";
+    }
+
+    specs.push(`Processor: ${phoneProcessor}`);
+    specs.push(`Memory: ${phoneRam}`);
+    specs.push(`Storage: ${phoneStorage}`);
+    specs.push(`Camera: ${phoneCamera}`);
+    specs.push(`Battery: ${phoneBattery}`);
   } else if (category === "audio") {
     const isTWS = textToScan.includes("earbuds") || textToScan.includes("tws") || textToScan.includes("earphone") || textToScan.includes("buds") || textToScan.includes("pods") || price < 1000;
     specs.push(`Form Factor: ${isTWS ? "True Wireless Earbuds" : "Over-Ear Wireless Headphones"}`);
@@ -734,6 +784,57 @@ function parseSpecsFromTitle(category, title, price, item = {}) {
     );
     specs.push(battery || `Battery: Up to ${isTWS ? "24" : "40"} Hours playtime`);
     specs.push(color || `Color Finish: Matte Black Textured`);
+  } else if (category === "electronics") {
+    let screen = null;
+    const screenMatch = textToScan.match(/(\d+(?:\.\d+)?)\s*(?:inch|\"|\-inch)/i);
+    if (screenMatch) screen = `Display Size: ${screenMatch[0]}`;
+
+    let resolution = "1080p Full HD Output";
+    if (textToScan.includes("4k") || textToScan.includes("uhd")) {
+      resolution = "4K Ultra HD HDR Resolution";
+    } else if (textToScan.includes("2k")) {
+      resolution = "2K Quad HD Resolution";
+    } else if (textToScan.includes("megapixel") || textToScan.includes("mp")) {
+      const camMatch = textToScan.match(/(\d+)\s*(?:mp)/i);
+      resolution = camMatch ? `Sensor: ${camMatch[0].toUpperCase()} Resolution` : "High-Resolution Image Sensor";
+    }
+
+    let connectivity = "Wi-Fi & Bluetooth Smart Sync";
+    if (textToScan.includes("hdmi") || textToScan.includes("usb")) {
+      connectivity = "HDMI, USB, and Optical Interface Ports";
+    }
+
+    specs.push(`Brand Partner: ${brand}`);
+    specs.push(screen || `Form Factor: Smart Electronics Device`);
+    specs.push(resolution);
+    specs.push(connectivity);
+    specs.push(`Build Type: Sturdy Protective Outer Frame`);
+  } else if (category === "home") {
+    let material = "Durable Composite Build Materials";
+    if (textToScan.includes("steel") || textToScan.includes("metal")) {
+      material = "Heavy-Duty Reinforced Steel/Metal";
+    } else if (textToScan.includes("wood") || textToScan.includes("wooden") || textToScan.includes("oak") || textToScan.includes("maple")) {
+      material = "Solid Finished Hardwood Panel";
+    } else if (textToScan.includes("plastic") || textToScan.includes("bpa")) {
+      material = "BPA-Free Food Grade Polymers";
+    }
+
+    let capacity = "Standard Home Kitchen Utility Size";
+    if (textToScan.includes("qt") || textToScan.includes("quart")) {
+      const qtMatch = textToScan.match(/(\d+(?:\.\d+)?)\s*(?:qt|quart)/i);
+      capacity = qtMatch ? `Capacity: ${qtMatch[0].toUpperCase()} Volume` : "Large Family Size Capacity";
+    } else if (textToScan.includes("liter") || textToScan.includes(" l ") || textToScan.endsWith("l")) {
+      const lMatch = textToScan.match(/(\d+(?:\.\d+)?)\s*(?:l|liter)/i);
+      capacity = lMatch ? `Capacity: ${lMatch[0].toUpperCase()} Volume` : "High Liquid Liter Capacity";
+    } else if (textToScan.includes("lbs") || textToScan.includes("load")) {
+      capacity = "Max Load: High weight endurance layout";
+    }
+
+    specs.push(`Brand Partner: ${brand}`);
+    specs.push(`Structure: Ergonomic Space-Saving Design`);
+    specs.push(material);
+    specs.push(capacity);
+    specs.push(color || `Color Finish: Classic Neutral Matte Tone`);
   } else if (category === "fashion") {
     specs.push(material || `Fabric: Premium Breathable Cotton Blend`);
     specs.push(textToScan.includes("slim") ? "Fit Profile: Modern Slim Fit Layout" : "Fit Profile: Comfort Regular Fit Layout");
@@ -794,6 +895,23 @@ function getDynamicInsight(category, title, price, platform, item = {}) {
     } else {
       bestFor = "Office productivity tasks, software coding, and general multitasking.";
     }
+  } else if (category === "mobile") {
+    const isPro = titleLower.includes("pro") || titleLower.includes("plus") || titleLower.includes("ultra") || price > 30000;
+    const isBudget = price < 15000;
+    
+    if (isPro) {
+      bestFor = "Heavy multitasking, high-frame gaming (BGMI/CoD), and high-resolution videography.";
+      whyDeal = `Features a high-tier chipset and premium display refresh rate at this price bracket on ${platform}.`;
+      tradeOff = "Slightly higher thermal levels under heavy gaming loads; charger may be sold separately.";
+    } else if (isBudget) {
+      bestFor = "Daily calling, social media, media streaming, and long battery standby needs.";
+      whyDeal = `Excellent value-for-money offering massive battery life and modern 5G connectivity on ${platform}.`;
+      tradeOff = "Plastic back panel is prone to fingerprints; standard low-light camera performance.";
+    } else {
+      bestFor = "Balanced everyday use, multitasking, streaming, and casual mobile photography.";
+      whyDeal = `Superb mid-range value package blending high-speed 5G performance with reliable camera sensors on ${platform}.`;
+      tradeOff = "Hybrid SIM slot limits simultaneous dual SIM and microSD storage expansions.";
+    }
   } else if (category === "audio") {
     if (titleLower.includes("anc") || titleLower.includes("noise cancel")) {
       bestFor = "Commuters, noisy office spaces, and distraction-free study sessions.";
@@ -801,6 +919,30 @@ function getDynamicInsight(category, title, price, platform, item = {}) {
       bestFor = "Gym workouts, outdoor jogging, and high-intensity sports routines.";
     } else {
       bestFor = "Casual music listening, hands-free voice calls, and media streaming.";
+    }
+  } else if (category === "electronics") {
+    if (titleLower.includes("camera") || titleLower.includes("dslr")) {
+      bestFor = "Vlogging, amateur content creation, and professional photography.";
+      whyDeal = `High-resolution sensor paired with optical image stabilization elements at this price point on ${platform}.`;
+      tradeOff = "Lens bundle may require separate filter threads for outdoor glare protection.";
+    } else if (titleLower.includes("tv")) {
+      bestFor = "Immersive home theater setups, movie nights, and console gaming.";
+      whyDeal = `Superb dynamic contrast panel and high audio speaker outputs on ${platform}.`;
+      tradeOff = "Slightly thicker bezel profile than premium flagship smart TVs.";
+    } else {
+      bestFor = "Daily smart entertainment, tracking fitness metrics, and media sync.";
+      whyDeal = `Robust system interface with long-lasting build endurance and reliable sensors on ${platform}.`;
+      tradeOff = "Sync app requires bluetooth connectivity to run continuous notifications.";
+    }
+  } else if (category === "home") {
+    if (titleLower.includes("chair") || titleLower.includes("desk")) {
+      bestFor = "Long office working hours, coding sessions, and studying comfort.";
+      whyDeal = `Heavy-duty frame with multi-level adjustment features for back support on ${platform}.`;
+      tradeOff = "Assembly guidelines can take up to 30 minutes to complete setup.";
+    } else {
+      bestFor = "Daily home cooking, family meals, and food/beverage preparation.";
+      whyDeal = `Excellent thermal heat control / food preservation build quality on ${platform}.`;
+      tradeOff = "Power consumption requires grounded electrical plug slots for safety.";
     }
   } else if (category === "fashion") {
     if (titleLower.includes("boot") || titleLower.includes("hike") || titleLower.includes("hiking")) {
@@ -822,7 +964,7 @@ function getDynamicInsight(category, title, price, platform, item = {}) {
 
   if (price < 1500) {
     whyDeal = `Exceptional entry-level bargain price of ${price} on ${platform} for instant savings.`;
-  } else {
+  } else if (!whyDeal) {
     let featureHighlight = "quality build standards";
     if (textToScan.includes("waterproof") || textToScan.includes("gore-tex")) {
       featureHighlight = "protective waterproof sealing";
@@ -838,31 +980,51 @@ function getDynamicInsight(category, title, price, platform, item = {}) {
     whyDeal = `Saves money by offering ${featureHighlight} at a very competitive market price on ${platform}.`;
   }
 
-  if (category === "laptop") {
-    if (price < 35000) {
-      tradeOff = "Limited processing speed; not built for heavy gaming or 4K rendering.";
+  if (tradeOff === "") {
+    if (category === "laptop") {
+      if (price < 35000) {
+        tradeOff = "Limited processing speed; not built for heavy gaming or 4K rendering.";
+      } else {
+        tradeOff = "Requires higher battery consumption under peak multi-core tasks.";
+      }
+    } else if (category === "mobile") {
+      if (price < 15000) {
+        tradeOff = "Plastic back panel is prone to fingerprints; standard low-light camera performance.";
+      } else {
+        tradeOff = "Charger may be sold separately in the retail box; hybrid SIM slot layout.";
+      }
+    } else if (category === "audio") {
+      if (price < 1500) {
+        tradeOff = "Basic plastic build finish; does not support advanced spatial audio tuning.";
+      } else {
+        tradeOff = "Charging case is slightly bulky to carry in small pant pockets.";
+      }
+    } else if (category === "electronics") {
+      if (titleLower.includes("camera")) {
+        tradeOff = "Requires high-speed memory cards to record 4K video feeds smoothly.";
+      } else {
+        tradeOff = "Firmware updates are recommended upon initial setup connection.";
+      }
+    } else if (category === "home") {
+      if (titleLower.includes("desk") || titleLower.includes("chair")) {
+        tradeOff = "Requires manual assembly; assembly package tools are included in box.";
+      } else {
+        tradeOff = "Requires stable voltage inputs; avoid sharing socket boards with high load devices.";
+      }
+    } else if (category === "fashion") {
+      if (titleLower.includes("boot") || titleLower.includes("leather")) {
+        tradeOff = "Requires initial wear-in period to attain optimal ankle flexibility.";
+      } else {
+        tradeOff = "Delicate fabric blend requiring gentle washing settings to prevent fading.";
+      }
     } else {
-      tradeOff = "Requires higher battery consumption under peak multi-core tasks.";
-    }
-  } else if (category === "audio") {
-    if (price < 1500) {
-      tradeOff = "Basic plastic build finish; does not support advanced spatial audio tuning.";
-    } else {
-      tradeOff = "Charging case is slightly bulky to carry in small pant pockets.";
-    }
-  } else if (category === "fashion") {
-    if (titleLower.includes("boot") || titleLower.includes("leather")) {
-      tradeOff = "Requires initial wear-in period to attain optimal ankle flexibility.";
-    } else {
-      tradeOff = "Delicate fabric blend requiring gentle washing settings to prevent fading.";
-    }
-  } else {
-    if (titleLower.includes("desk") || titleLower.includes("chair")) {
-      tradeOff = "Requires home assembly; package is relatively heavy to carry upstairs.";
-    } else if (price < 1500) {
-      tradeOff = "Lacks premium accessories or extra packaging box contents.";
-    } else {
-      tradeOff = "Retail warranty registration is required online immediately upon delivery.";
+      if (titleLower.includes("desk") || titleLower.includes("chair")) {
+        tradeOff = "Requires home assembly; package is relatively heavy to carry upstairs.";
+      } else if (price < 1500) {
+        tradeOff = "Lacks premium accessories or extra packaging box contents.";
+      } else {
+        tradeOff = "Retail warranty registration is required online immediately upon delivery.";
+      }
     }
   }
 
