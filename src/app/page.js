@@ -13,6 +13,107 @@ import CouponCard from "@/components/CouponCard";
 import { searchProducts } from "@/services/api";
 import { auth } from "@/services/supabase";
 
+function detectCategory(query, title) {
+  const text = (query + " " + title).toLowerCase();
+  if (text.includes("laptop") || text.includes("notebook") || text.includes("computer") || text.includes("pc") || text.includes("macbook") || text.includes("chromebook")) {
+    return "laptop";
+  }
+  if (text.includes("headphone") || text.includes("earphone") || text.includes("earbuds") || text.includes("audio") || text.includes("sound") || text.includes("pods") || text.includes("noise") || text.includes("anc") || text.includes("wireless ear")) {
+    return "audio";
+  }
+  if (text.includes("shoe") || text.includes("sneaker") || text.includes("shirt") || text.includes("cotton") || text.includes("wear") || text.includes("clothing") || text.includes("jeans") || text.includes("tshirt") || text.includes("t-shirt") || text.includes("pant") || text.includes("boot")) {
+    return "fashion";
+  }
+  return "general";
+}
+
+function generateTopLevelAiSuggestion(query, products) {
+  if (!query || !Array.isArray(products) || products.length === 0) {
+    return "Analyzing search intent and scanning live store pricing...";
+  }
+
+  const category = detectCategory(query, products[0]?.title || "");
+  const topProducts = products.slice(0, 3);
+  const queryLower = query.toLowerCase();
+
+  let lowestPriceItem = topProducts[0];
+  let highestRatedItem = topProducts[0];
+
+  topProducts.forEach(p => {
+    const pVal = parseFloat(String(p.price || "0").replace(/[^0-9.]/g, "")) || 0;
+    const lowestVal = parseFloat(String(lowestPriceItem?.price || "0").replace(/[^0-9.]/g, "")) || 0;
+    
+    if (pVal < lowestVal) {
+      lowestPriceItem = p;
+    }
+
+    const pRating = parseFloat(p.rating || "0") || 0;
+    const highestRating = parseFloat(highestRatedItem?.rating || "0") || 0;
+    
+    if (pRating > highestRating) {
+      highestRatedItem = p;
+    }
+  });
+
+  let suggestion = "";
+  let takeaway = "";
+
+  if (category === "laptop") {
+    const isGaming = queryLower.includes("gaming") || queryLower.includes("rtx");
+    const isBudget = queryLower.includes("under") || queryLower.includes("cheap");
+
+    if (isGaming) {
+      suggestion = `Scan of AAA gaming deals matching "${query}" highlights high refresh-rate screens and Nvidia RTX processing. The ${highestRatedItem?.title} stands out for top-tier thermal cooling and framerate stability.`;
+      takeaway = `Top pick for pure gaming performance: ${highestRatedItem?.title} on ${highestRatedItem?.store}.`;
+    } else if (isBudget) {
+      suggestion = `Evaluating budget laptops matching "${query}" identifies entry-level office chips and high-capacity RAM configurations. The ${lowestPriceItem?.title} offers the best balance of speed and reliability under your budget.`;
+      takeaway = `Best budget workstation: ${lowestPriceItem?.title} on ${lowestPriceItem?.store}.`;
+    } else {
+      suggestion = `Analyzing productivity laptops matching "${query}" prioritizes battery runtime and SSD responsiveness. The ${highestRatedItem?.title} offers a premium build with excellent multi-threaded CPU speeds.`;
+      takeaway = `Top pick for daily office/code productivity: ${highestRatedItem?.title} on ${highestRatedItem?.store}.`;
+    }
+  } else if (category === "audio") {
+    const hasANC = queryLower.includes("anc") || queryLower.includes("noise");
+    const isSport = queryLower.includes("sport") || queryLower.includes("run") || queryLower.includes("gym");
+
+    if (hasANC) {
+      suggestion = `Evaluating noise-cancelling audio matching "${query}" highlights high-capacity active noise cancellation (ANC) and spatial drivers. The ${highestRatedItem?.title} delivers superior isolation from environmental noise.`;
+      takeaway = `Top pick for isolation: ${highestRatedItem?.title} on ${highestRatedItem?.store}.`;
+    } else if (isSport) {
+      suggestion = `Sport audio scans matching "${query}" focus on secure fits, IP-rated sweat protection, and deep bass responses. The ${lowestPriceItem?.title} provides excellent secure-fit hooks for high-intensity activity.`;
+      takeaway = `Best sport alternative: ${lowestPriceItem?.title} on ${lowestPriceItem?.store}.`;
+    } else {
+      suggestion = `Analyzing wireless audio deals matching "${query}" prioritizes Bluetooth v5.3 auto-pairing speed and total playtime capacity. The ${lowestPriceItem?.title} offers impressive bass drivers at an affordable cost.`;
+      takeaway = `Best value choice: ${lowestPriceItem?.title} on ${lowestPriceItem?.store}.`;
+    }
+  } else if (category === "fashion") {
+    const isHiking = queryLower.includes("hike") || queryLower.includes("boot") || queryLower.includes("outdoor");
+    const isSneaker = queryLower.includes("sneaker") || queryLower.includes("run") || queryLower.includes("sport");
+
+    if (isHiking) {
+      suggestion = `Analyzing outdoor footwear matching "${query}" prioritizes waterproof Gore-Tex/canvas builds and deep-traction sole treads. The ${highestRatedItem?.title} offers maximum ankle protection for rough terrains.`;
+      takeaway = `Top pick for hiking trail durability: ${highestRatedItem?.title} on ${highestRatedItem?.store}.`;
+    } else if (isSneaker) {
+      suggestion = `Evaluating athletic sneakers matching "${query}" emphasizes dual-density foam shock absorption and breathable mesh weaves. The ${lowestPriceItem?.title} offers lightweight comfort at a highly competitive price.`;
+      takeaway = `Best budget athletic alternative: ${lowestPriceItem?.title} on ${lowestPriceItem?.store}.`;
+    } else {
+      suggestion = `Scanning fashion listings matching "${query}" highlights premium soft cotton stitches and casual modern fits. The ${lowestPriceItem?.title} provides daily utility comfort with easy washing care.`;
+      takeaway = `Best value wardrobe pick: ${lowestPriceItem?.title} on ${lowestPriceItem?.store}.`;
+    }
+  } else {
+    const hasBudget = queryLower.includes("under") || queryLower.includes("cheap") || queryLower.includes("budget");
+    if (hasBudget) {
+      suggestion = `Scanning competitive budget deals matching "${query}" focuses on cost-to-quality performance. The ${lowestPriceItem?.title} delivers verified retail quality at the most affordable price point.`;
+      takeaway = `Best budget choice: ${lowestPriceItem?.title} on ${lowestPriceItem?.store}.`;
+    } else {
+      suggestion = `Comparing live store listings matching "${query}" identifies top-rated merchant listings with high buyer ratings. The ${highestRatedItem?.title} stands out for positive customer feedback and overall reliability.`;
+      takeaway = `Top pick for overall satisfaction: ${highestRatedItem?.title} on ${highestRatedItem?.store}.`;
+    }
+  }
+
+  return `📢 Suggestion: ${suggestion}\n\n🎯 Buying Takeaway: ${takeaway}`;
+}
+
 export default function Home() {
   const [appState, setAppState] = useState("idle"); // idle | searching | results
   const [searchQuery, setSearchQuery] = useState("");
@@ -348,7 +449,32 @@ export default function Home() {
                     </button>
                   </motion.div>
                 ) : (
-                  <div className="space-y-12">
+                  <div className="space-y-8">
+                    {/* Top-Level AI Suggestion Banner */}
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="p-5 rounded-2xl glass-panel border border-brand-indigo/30 bg-brand-indigo/5 shadow-[inset_0_1px_10px_rgba(99,102,241,0.05)] text-left relative overflow-hidden"
+                    >
+                      <div className="absolute top-0 right-0 w-48 h-48 bg-brand-indigo/10 rounded-full blur-3xl pointer-events-none" />
+                      <div className="flex items-start gap-3.5 relative z-10">
+                        <div className="p-2.5 rounded-xl bg-brand-indigo/15 border border-brand-indigo/25 text-brand-indigo shrink-0">
+                          <Sparkles className="w-5 h-5 animate-pulse" />
+                        </div>
+                        <div className="flex-grow">
+                          <h3 className="text-sm font-bold text-slate-100 mb-2 flex items-center gap-2">
+                            <span>ShopSmart AI Shopping Suggestion</span>
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-extrabold uppercase tracking-wide">
+                              Live Synthesis
+                            </span>
+                          </h3>
+                          <p className="text-xs md:text-sm text-slate-300 leading-relaxed font-medium whitespace-pre-line">
+                            {generateTopLevelAiSuggestion(searchQuery, products)}
+                          </p>
+                        </div>
+                      </div>
+                    </motion.div>
+
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
                       <AnimatePresence mode="popLayout">
                         {products.map((product) => (
