@@ -1,6 +1,143 @@
 import { NextResponse } from "next/server";
 import { redis } from "@/services/redis";
 
+function isSearchUrl(url) {
+  if (!url) return false;
+  try {
+    const parsed = new URL(url);
+    const path = parsed.pathname.toLowerCase();
+    const search = parsed.search.toLowerCase();
+    return (
+      path.includes("/search") ||
+      path.includes("/searchpage") ||
+      path.includes("/s/") ||
+      path.includes("/s") ||
+      search.includes("q=") ||
+      search.includes("k=") ||
+      search.includes("searchterm=")
+    );
+  } catch (e) {
+    return false;
+  }
+}
+
+function hasExactPDPPath(url) {
+  if (!url) return false;
+  try {
+    const parsed = new URL(url);
+    const path = parsed.pathname.toLowerCase();
+    if (
+      path.includes("/dp/") ||
+      path.includes("/gp/") ||
+      path.includes("/p/") ||
+      path.includes("/ip/") ||
+      path.includes("/product/") ||
+      path.includes("/products/") ||
+      path.includes("/product-page/") ||
+      path.includes("/product_page/") ||
+      path.includes("/item/") ||
+      path.includes("/pd/") ||
+      path.includes("/site/") ||
+      path.includes("/pre-order/") ||
+      path.includes("/buy/") ||
+      path.includes("/deal/") ||
+      path.includes("/goods/") ||
+      path.endsWith("/buy")
+    ) {
+      return true;
+    }
+  } catch (e) {}
+  return false;
+}
+
+function cleanUrlParams(url) {
+  if (!url) return "";
+  try {
+    const parsed = new URL(url);
+    const searchParams = parsed.searchParams;
+    const trackingParams = [
+      "gclid", "utm_source", "utm_medium", "utm_campaign", "srsltid", "cmpid", "adurl",
+      "ref", "pf_rd_r", "pf_rd_p", "pd_rd_r", "pd_rd_w", "pd_rd_wg", "qid", "sr",
+      "clickid", "affiliate", "tracking", "sprefix", "crid", "dib", "dib_tag"
+    ];
+    trackingParams.forEach(p => searchParams.delete(p));
+    parsed.pathname = parsed.pathname.replace(/\/+/g, "/");
+    return parsed.toString();
+  } catch (e) {
+    return url;
+  }
+}
+
+function extractFirstPdpFromHtml(html, storeName, fallbackUrl) {
+  if (!html) return null;
+  
+  const urlRegex = /href=["']([^"']+)["']/g;
+  const urls = [];
+  let match;
+  
+  try {
+    const fallbackObj = new URL(fallbackUrl);
+    const origin = fallbackObj.origin;
+    
+    while ((match = urlRegex.exec(html)) !== null) {
+      let link = match[1];
+      if (link.startsWith("/")) {
+        link = origin + link;
+      }
+      if (link.startsWith("http://") || link.startsWith("https://")) {
+        urls.push(link);
+      }
+    }
+  } catch (e) {
+    const generalUrlRegex = /(https?:\/\/[^\s"'<>]+)/gi;
+    while ((match = generalUrlRegex.exec(html)) !== null) {
+      urls.push(match[1]);
+    }
+  }
+
+  const targetDomain = storeName.toLowerCase().replace("www.", "").split(".")[0];
+  for (const url of urls) {
+    try {
+      const parsed = new URL(url);
+      const host = parsed.hostname.toLowerCase();
+      if (host.includes(targetDomain)) {
+        const cleaned = cleanUrlParams(url);
+        if (hasExactPDPPath(cleaned)) {
+          return cleaned;
+        }
+      }
+    } catch (e) {}
+  }
+  
+  return null;
+}
+
+async function resolveSearchToPdp(searchUrl, storeName) {
+  if (!searchUrl) return null;
+  try {
+    const response = await fetch(searchUrl, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.5"
+      },
+      signal: AbortSignal.timeout(3000)
+    });
+    
+    if (response.ok) {
+      const html = await response.text();
+      const pdpUrl = extractFirstPdpFromHtml(html, storeName, searchUrl);
+      if (pdpUrl) {
+        console.log(`Dynamic Edge Resolver: Resolved search to direct PDP -> ${pdpUrl}`);
+        return pdpUrl;
+      }
+    }
+  } catch (err) {
+    console.warn(`Dynamic Edge Resolver failed to fetch/parse search page: ${err.message}`);
+  }
+  return null;
+}
+
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const pageToken = searchParams.get("page_token");
@@ -9,9 +146,19 @@ export async function GET(request) {
   const storeName = searchParams.get("store") || "Online Store";
   const title = searchParams.get("title") || "";
   
+  const handleFallback = async (fallbackUrl, store) => {
+    if (isSearchUrl(fallbackUrl)) {
+      const resolvedPdp = await resolveSearchToPdp(fallbackUrl, store);
+      if (resolvedPdp) {
+        return NextResponse.redirect(resolvedPdp);
+      }
+    }
+    return NextResponse.redirect(fallbackUrl || "https://google.com");
+  };
+
   if (!pageToken && !productId) {
-    console.log("Redirect API: Missing token and product_id parameters, redirecting to fallback:", fallback);
-    return NextResponse.redirect(fallback || "https://google.com");
+    console.log("Redirect API: Missing token and product_id parameters, executing fallback resolution:", fallback);
+    return await handleFallback(fallback, storeName);
   }
   
   const serpapiApiKey = process.env.SERPAPI_API_KEY || "adf7db9fe87b9bc68d4c0ebc9017846f52e9b8520d10cfa87c677713e34c4125";
@@ -82,18 +229,7 @@ export async function GET(request) {
           }
         }
         
-        try {
-          const finalParsed = new URL(finalUrl);
-          const finalParams = finalParsed.searchParams;
-          const trackingParams = [
-            "gclid", "utm_source", "utm_medium", "utm_campaign", "srsltid", "cmpid", "adurl",
-            "ref", "pf_rd_r", "pf_rd_p", "pd_rd_r", "pd_rd_w", "pd_rd_wg", "qid", "sr",
-            "clickid", "affiliate", "tracking", "sprefix", "crid", "dib", "dib_tag"
-          ];
-          trackingParams.forEach(p => finalParams.delete(p));
-          finalParsed.pathname = finalParsed.pathname.replace(/\/+/g, "/");
-          finalUrl = finalParsed.toString();
-        } catch (e) {}
+        finalUrl = cleanUrlParams(finalUrl);
         
         try {
           await redis.set(cacheKey, finalUrl, { ex: 86400 });
@@ -107,6 +243,6 @@ export async function GET(request) {
     console.error("Dynamic Redirect error resolving PDP:", err);
   }
   
-  console.log(`Dynamic Redirect: Fallback redirect to -> ${fallback}`);
-  return NextResponse.redirect(fallback || "https://google.com");
+  console.log(`Dynamic Redirect: Executing fallback resolution for -> ${fallback}`);
+  return await handleFallback(fallback, storeName);
 }
