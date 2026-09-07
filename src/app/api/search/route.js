@@ -1086,7 +1086,9 @@ export async function POST(request) {
         console.log(`Cache HIT for key: ${cacheKey}`);
         let cachedPayload = typeof cachedDataStr === "string" ? JSON.parse(cachedDataStr) : cachedDataStr;
         
-        const hasProducts = Array.isArray(cachedPayload.products) && cachedPayload.products.length > 0;
+        const hasProducts = Array.isArray(cachedPayload.products) && 
+          cachedPayload.products.length > 0 &&
+          !cachedPayload.products.some(p => (p.title || "").includes("Verified Market Deal") || (p.title || "").includes("Verified Deal"));
         const isServiceCoupon = cachedPayload.intent === "SERVICE_COUPON";
 
         if (hasProducts || isServiceCoupon) {
@@ -1105,7 +1107,7 @@ export async function POST(request) {
             fromCache: true
           }, { status: 200 });
         } else {
-          console.log(`Bypassing empty cached entry for key: ${cacheKey}`);
+          console.log(`Bypassing fallback/empty cached entry for key: ${cacheKey}`);
         }
       }
     } catch (cacheErr) {
@@ -1522,8 +1524,9 @@ Do not include markdown code block formatting (like \`\`\`json). Return ONLY raw
       console.error("Failed matching store coupons:", couponMatchErr);
     }
 
-    // Save fresh search results to Redis Cache with a 6-Hour TTL (21600 seconds) - ONLY cache if count is complete (8-10) to avoid caching low-yield cold starts
-    if (mappedProducts.length >= 8) {
+    // Save fresh search results to Redis Cache with a 6-Hour TTL (21600 seconds) - ONLY cache if real products (never fallback deals)
+    const isFallbackResult = mappedProducts.some(p => (p.title || "").includes("Verified Market Deal") || (p.title || "").includes("Verified Deal"));
+    if (mappedProducts.length >= 8 && !isFallbackResult) {
       try {
         await redis.set(cacheKey, JSON.stringify({ 
           products: mappedProducts,
@@ -1535,7 +1538,7 @@ Do not include markdown code block formatting (like \`\`\`json). Return ONLY raw
         console.warn("Failed to write to Redis Cache:", cacheWriteErr);
       }
     } else {
-      console.log(`Skipped caching key: ${cacheKey} due to low-yield product count: ${mappedProducts.length}`);
+      console.log(`Skipped caching key: ${cacheKey} (products count: ${mappedProducts.length}, fallback: ${isFallbackResult})`);
     }
 
     return NextResponse.json({
