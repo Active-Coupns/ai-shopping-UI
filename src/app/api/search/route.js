@@ -121,9 +121,24 @@ function cleanProductUrl(url) {
   }
 }
 
+function getBaseUrl(request) {
+  if (process.env.NEXT_PUBLIC_SITE_URL) return process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, "");
+  if (request) {
+    const host = request.headers?.get("x-forwarded-host") || request.headers?.get("host");
+    const proto = request.headers?.get("x-forwarded-proto") || "https";
+    if (host) return `${proto}://${host}`;
+    if (request.nextUrl?.origin && request.nextUrl.origin !== "null") return request.nextUrl.origin;
+  }
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  return "http://localhost:3000";
+}
+
 function isValidDirectPDPUrl(url) {
   if (!url) return false;
-  const lower = url.toLowerCase();
+  const lower = url.toLowerCase().trim();
+  
+  // Allow internal redirect route (whether relative or absolute)
+  if (lower.startsWith("/api/redirect")) return true;
   
   // Explicitly block search aggregators and SerpApi redirect parameters
   if (
@@ -549,7 +564,7 @@ function generateComparisonOffers(platform, priceVal, category, country = "in", 
     o.is_lowest = idx === 0;
   });
   
-  const origin = request?.nextUrl?.origin || "";
+  const origin = getBaseUrl(request);
   
   const mappedOffers = offers.map(o => {
     let finalLink = "";
@@ -1244,7 +1259,9 @@ Respond strictly in JSON with this structure:
         // Call SerpApi Google Shopping Endpoint directly
         const gl = (country || "in").toLowerCase();
         const hl = "en";
-        let serpapiUrl = `https://serpapi.com/search.json?engine=google_shopping&q=${encodeURIComponent(cleanQuery)}&gl=${gl}&hl=${hl}&api_key=${serpapiApiKey}`;
+        const googleDomain = gl === "in" ? "google.co.in" : "google.com";
+        const location = gl === "in" ? "India" : "United States";
+        let serpapiUrl = `https://serpapi.com/search.json?engine=google_shopping&q=${encodeURIComponent(cleanQuery)}&google_domain=${googleDomain}&location=${encodeURIComponent(location)}&gl=${gl}&hl=${hl}&api_key=${serpapiApiKey}`;
 
         try {
           scraperResponse = await fetch(serpapiUrl, { method: "GET" });
@@ -1261,7 +1278,7 @@ Respond strictly in JSON with this structure:
           const fallbackQuery = getSimplifiedQueryFallback(cleanQuery);
           if (fallbackQuery && fallbackQuery !== cleanQuery) {
             console.log(`Retrying search with simplified query fallback inside queue: "${fallbackQuery}"`);
-            const fallbackSerpapiUrl = `https://serpapi.com/search.json?engine=google_shopping&q=${encodeURIComponent(fallbackQuery)}&gl=${gl}&hl=${hl}&api_key=${serpapiApiKey}`;
+            const fallbackSerpapiUrl = `https://serpapi.com/search.json?engine=google_shopping&q=${encodeURIComponent(fallbackQuery)}&google_domain=${googleDomain}&location=${encodeURIComponent(location)}&gl=${gl}&hl=${hl}&api_key=${serpapiApiKey}`;
             try {
               scraperResponse = await fetch(fallbackSerpapiUrl, { method: "GET" });
               if (scraperResponse && scraperResponse.ok) {
