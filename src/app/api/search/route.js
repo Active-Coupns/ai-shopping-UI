@@ -777,40 +777,64 @@ function getDynamicInsight(category, title, price, platform, item = {}) {
   
   const cleanTitleWords = titleClean.replace(/[^a-zA-Z0-9\s-]/g, "").split(/\s+/).filter(Boolean);
   const productNoun = cleanTitleWords.length > 0 ? cleanTitleWords[cleanTitleWords.length - 1] : "product";
-  const productTitleShort = cleanTitleWords.slice(0, 3).join(" ");
+  const productTitleShort = cleanTitleWords.slice(0, 4).join(" ");
 
   let bestFor = "";
   let whyDeal = "";
   let tradeOff = "";
 
   if (category === "laptop") {
-    if (titleLower.includes("gaming") || titleLower.includes("rtx")) {
-      bestFor = `Immersive gaming performance, graphic rendering, and high-load tasks with the ${productTitleShort}.`;
+    if (titleLower.includes("macbook") || titleLower.includes("apple") || titleLower.includes("m1") || titleLower.includes("m2") || titleLower.includes("m3")) {
+      bestFor = `Professional creative design, software engineering, and quiet all-day battery efficiency with the ${productTitleShort}.`;
+    } else if (titleLower.includes("gaming") || titleLower.includes("rtx") || titleLower.includes("gtx") || titleLower.includes("rog") || titleLower.includes("tuf") || titleLower.includes("legion") || titleLower.includes("victus")) {
+      bestFor = `High-FPS AAA gaming, 3D rendering, and heavy thermal-cooled workstation processing using the ${productTitleShort}.`;
+    } else if (titleLower.includes("i7") || titleLower.includes("i9") || titleLower.includes("ryzen 7") || titleLower.includes("ryzen 9") || titleLower.includes("16gb") || titleLower.includes("32gb")) {
+      bestFor = `Heavy code compilation, data analysis, and power multitasking on the ${productTitleShort}.`;
     } else {
-      bestFor = `Smooth office productivity, web development, and school workstation tasks with the ${productTitleShort}.`;
+      bestFor = `Fast web browsing, Office productivity, and HD video conferencing with the ${productTitleShort}.`;
     }
   } else if (category === "mobile") {
-    bestFor = `Calling, texting, high-speed 5G browsing, and app multitasking on the ${productTitleShort}.`;
+    if (titleLower.includes("camera") || titleLower.includes("mp") || titleLower.includes("lens") || titleLower.includes("pro") || titleLower.includes("ultra")) {
+      bestFor = `High-resolution mobile photography, 4K video recording, and social media content creation on the ${productTitleShort}.`;
+    } else if (titleLower.includes("gaming") || titleLower.includes("snapdragon") || titleLower.includes("dimensity") || titleLower.includes("iqoo") || titleLower.includes("poco") || titleLower.includes("gt") || titleLower.includes("z9")) {
+      bestFor = `Lag-free mobile gaming, high-FPS esports, and intense app multitasking with the ${productTitleShort}.`;
+    } else if (titleLower.includes("5g") || titleLower.includes("12gb") || titleLower.includes("256gb") || titleLower.includes("512gb")) {
+      bestFor = `High-capacity storage, 5G video streaming, and power multitasking on the ${productTitleShort}.`;
+    } else if (titleLower.includes("max") || titleLower.includes("battery") || titleLower.includes("mah") || price < 15000) {
+      bestFor = `All-day battery longevity, reliable daily calling, and budget 5G utility with the ${productTitleShort}.`;
+    } else {
+      bestFor = `Fluid daily app performance, crisp display streaming, and sleek ergonomics with the ${productTitleShort}.`;
+    }
   } else if (category === "audio") {
-    bestFor = `Wireless music streaming, clear voice calls, and hands-free media playback using the ${productTitleShort}.`;
+    if (titleLower.includes("anc") || titleLower.includes("noise cancel") || titleLower.includes("bose") || titleLower.includes("sony")) {
+      bestFor = `Active noise-cancelling travel, distraction-free focus, and studio-grade acoustics with the ${productTitleShort}.`;
+    } else if (titleLower.includes("earbuds") || titleLower.includes("tws") || titleLower.includes("airpods") || titleLower.includes("airdopes")) {
+      bestFor = `Compact TWS hands-free calling, gym workouts, and low-latency audio using the ${productTitleShort}.`;
+    } else {
+      bestFor = `Deep bass music playback, comfortable acoustic listening, and wireless freedom with the ${productTitleShort}.`;
+    }
+  } else if (titleLower.includes("camera") || titleLower.includes("dslr") || titleLower.includes("eos") || titleLower.includes("alpha") || titleLower.includes("mirrorless")) {
+    bestFor = `Pro portrait photography, cinematic 4K video recording, and interchangeable lens optic performance with the ${productTitleShort}.`;
   } else if (category === "fashion") {
-    bestFor = `Stylish daily casual wear, outdoor comfort, and lifestyle modeling with the ${productTitleShort}.`;
+    bestFor = `Stylish daily casual wear, breathable fabric comfort, and lifestyle modeling with the ${productTitleShort}.`;
   } else {
-    bestFor = `Daily household utility, high-performance cooking, or specialized task convenience using the ${productTitleShort} ${productNoun}.`;
+    bestFor = `Practical daily utility, specialized performance, and trusted convenience with the ${productTitleShort} ${productNoun}.`;
   }
 
-  if (price < 1500) {
-    whyDeal = `Allows you to acquire the authentic ${productTitleShort} at an extremely competitive bargain price under 1,500 on ${platform}.`;
+  if (price < 3000) {
+    whyDeal = `Provides exceptional entry-level value under ₹3,000 on ${platform} with verified merchant return guarantees.`;
+  } else if (price >= 3000 && price < 25000) {
+    whyDeal = `Offers a strong cost-to-performance ratio and verified retail quality on ${platform}.`;
   } else {
-    whyDeal = `Offers premium-grade materials and verified longevity for the ${productNoun} at a competitive price on ${platform}.`;
+    whyDeal = `Delivers flagship-tier hardware engineering and verified merchant authenticity on ${platform}.`;
   }
 
-  if (price < 1500) {
-    tradeOff = `Entry-level variant of the ${productNoun}; does not contain advanced luxury accessories in the packaging box.`;
-  } else if (price > 10000) {
-    tradeOff = `Premium investment choice for the ${productNoun}; requires steady electricity and careful usage to prevent physical wear.`;
+  if (price < 15000) {
+    tradeOff = `Entry-to-mid range construction; fast charger or protective case may require separate purchase.`;
+  } else if (price >= 15000 && price < 50000) {
+    tradeOff = `Mid-tier retail variant; software update rollout and cloud features follow brand schedule.`;
   } else {
-    tradeOff = `Standard retail edition of the ${productNoun}; manufacturer warranty registration is required upon receipt.`;
+    tradeOff = `High-value investment tier; ensure official warranty registration upon delivery.`;
   }
 
   return `👤 Best For: ${bestFor}\n\n💡 Why This Deal: ${whyDeal}\n\n⚠️ Trade-off: ${tradeOff}`;
