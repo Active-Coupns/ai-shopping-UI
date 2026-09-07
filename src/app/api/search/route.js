@@ -1032,7 +1032,11 @@ function extractProductCoupons(item, storeName, priceVal, country = "in") {
 
 export async function POST(request) {
   const serpapiApiKey = process.env.SERPAPI_API_KEY;
-  console.log("SERPAPI_API_KEY config check: verified");
+  if (!serpapiApiKey) {
+    console.error("SERPAPI_API_KEY config check: MISSING in process.env!");
+  } else {
+    console.log("SERPAPI_API_KEY config check: verified");
+  }
 
   try {
     // Verify Supabase Session Token
@@ -1082,20 +1086,27 @@ export async function POST(request) {
         console.log(`Cache HIT for key: ${cacheKey}`);
         let cachedPayload = typeof cachedDataStr === "string" ? JSON.parse(cachedDataStr) : cachedDataStr;
         
-        // Return cached results immediately, exempting user quota
-        const todayStr = new Date().toISOString().split("T")[0];
-        const lastDate = user.user_metadata?.last_search_date || "";
-        const count = user.user_metadata?.search_count_today || 0;
-        const currentSearchesLeft = lastDate === todayStr ? 10 - count : 10;
+        const hasProducts = Array.isArray(cachedPayload.products) && cachedPayload.products.length > 0;
+        const isServiceCoupon = cachedPayload.intent === "SERVICE_COUPON";
 
-        return NextResponse.json({
-          products: cachedPayload.products || [],
-          coupons: cachedPayload.coupons || [],
-          intent: cachedPayload.intent || "E-COMMERCE",
-          error: cachedPayload.error || null,
-          searchesLeft: currentSearchesLeft,
-          fromCache: true
-        }, { status: 200 });
+        if (hasProducts || isServiceCoupon) {
+          // Return cached results immediately, exempting user quota
+          const todayStr = new Date().toISOString().split("T")[0];
+          const lastDate = user.user_metadata?.last_search_date || "";
+          const count = user.user_metadata?.search_count_today || 0;
+          const currentSearchesLeft = lastDate === todayStr ? 10 - count : 10;
+
+          return NextResponse.json({
+            products: cachedPayload.products || [],
+            coupons: cachedPayload.coupons || [],
+            intent: cachedPayload.intent || "E-COMMERCE",
+            error: cachedPayload.error || null,
+            searchesLeft: currentSearchesLeft,
+            fromCache: true
+          }, { status: 200 });
+        } else {
+          console.log(`Bypassing empty cached entry for key: ${cacheKey}`);
+        }
       }
     } catch (cacheErr) {
       console.warn("Redis cache read error:", cacheErr);
