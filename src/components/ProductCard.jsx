@@ -29,6 +29,16 @@ const formatPrice = (val, currency) => {
 export default function ProductCard({ product }) {
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [copiedCode, setCopiedCode] = useState(null);
+
+  const handleCopyCode = (code, e) => {
+    if (e) e.stopPropagation();
+    if (navigator?.clipboard?.writeText) {
+      navigator.clipboard.writeText(code);
+    }
+    setCopiedCode(code);
+    setTimeout(() => setCopiedCode(null), 2000);
+  };
   
   const ratingVal = parseFloat(product.rating) || 4.5;
   const discountVal = parseInt(product.discountPercent) || 0;
@@ -205,6 +215,51 @@ export default function ProductCard({ product }) {
                 </span>
               )}
             </div>
+
+            {/* Public Coupons & Bank Offers Chip */}
+            {((product.coupons && product.coupons.length > 0) || product.coupon) && (() => {
+              const activeCoupon = (product.coupons && product.coupons[0]) || product.coupon;
+              if (!activeCoupon) return null;
+
+              return (
+                <div className="mt-3 min-h-[54px] flex items-center justify-between p-2.5 rounded-xl bg-gradient-to-r from-purple-950/40 via-slate-900/60 to-indigo-950/40 border border-purple-500/30 transition-all hover:border-purple-500/50 shadow-md">
+                  <div className="flex items-center gap-2 overflow-hidden">
+                    <span className="p-1.5 rounded-lg bg-purple-500/20 text-purple-300 text-xs shrink-0">
+                      💳
+                    </span>
+                    <div className="truncate">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-bold text-white truncate">
+                          {activeCoupon.discount}
+                        </span>
+                        {activeCoupon.effective_price && (
+                          <span className="text-[10px] font-black text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
+                            Eff. {formatPrice(activeCoupon.effective_price, product.currency)}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[10px] text-slate-400 truncate">
+                        {activeCoupon.description}
+                      </p>
+                    </div>
+                  </div>
+
+                  {activeCoupon.code && (
+                    <button
+                      type="button"
+                      onClick={(e) => handleCopyCode(activeCoupon.code, e)}
+                      className="ml-2 px-2.5 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 active:scale-95 text-white text-[11px] font-bold transition-all shrink-0 flex items-center gap-1 shadow-md cursor-pointer"
+                    >
+                      {copiedCode === activeCoupon.code ? (
+                        <span className="text-emerald-300 font-extrabold">Copied! ✓</span>
+                      ) : (
+                        <span>📋 {activeCoupon.code}</span>
+                      )}
+                    </button>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* Price Comparison Chips */}
             {product.priceComparison && product.priceComparison.length > 0 && (

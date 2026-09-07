@@ -7,18 +7,29 @@ function isSearchUrl(url) {
     const parsed = new URL(url);
     const path = parsed.pathname.toLowerCase();
     const search = parsed.search.toLowerCase();
-    return (
-      path.includes("/search") ||
+    
+    if (hasExactPDPPath(url)) {
+      return false;
+    }
+    
+    if (
+      path === "/search" ||
+      path.startsWith("/search/") ||
+      path.startsWith("/s/") ||
+      path === "/s" ||
       path.includes("/searchpage") ||
-      path.includes("/s/") ||
-      path.includes("/s") ||
-      search.includes("q=") ||
-      search.includes("k=") ||
-      search.includes("searchterm=")
-    );
+      path.includes("google.com/search")
+    ) {
+      return true;
+    }
+    
+    if (search.includes("q=") || search.includes("k=") || search.includes("searchterm=")) {
+      return true;
+    }
   } catch (e) {
     return false;
   }
+  return false;
 }
 
 function hasExactPDPPath(url) {
@@ -121,7 +132,7 @@ async function resolveSearchToPdp(searchUrl, storeName) {
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
         "Accept-Language": "en-US,en;q=0.5"
       },
-      signal: AbortSignal.timeout(3000)
+      signal: AbortSignal.timeout(1500)
     });
     
     if (response.ok) {
@@ -142,18 +153,21 @@ export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const pageToken = searchParams.get("page_token");
   const productId = searchParams.get("product_id");
-  const fallback = searchParams.get("fallback");
+  const fallback = searchParams.get("fallback") || searchParams.get("url") || searchParams.get("link") || searchParams.get("target");
   const storeName = searchParams.get("store") || "Online Store";
   const title = searchParams.get("title") || "";
   
   const handleFallback = async (fallbackUrl, store) => {
-    if (isSearchUrl(fallbackUrl)) {
+    if (fallbackUrl && isSearchUrl(fallbackUrl)) {
       const resolvedPdp = await resolveSearchToPdp(fallbackUrl, store);
       if (resolvedPdp) {
         return NextResponse.redirect(resolvedPdp);
       }
     }
-    return NextResponse.redirect(fallbackUrl || "https://google.com");
+    if (fallbackUrl && (fallbackUrl.startsWith("http://") || fallbackUrl.startsWith("https://"))) {
+      return NextResponse.redirect(fallbackUrl);
+    }
+    return NextResponse.redirect("https://www.google.com");
   };
 
   if (!pageToken && !productId) {
@@ -161,7 +175,7 @@ export async function GET(request) {
     return await handleFallback(fallback, storeName);
   }
   
-  const serpapiApiKey = process.env.SERPAPI_API_KEY || "adf7db9fe87b9bc68d4c0ebc9017846f52e9b8520d10cfa87c677713e34c4125";
+  const serpapiApiKey = process.env.SERPAPI_API_KEY;
   
   const tokenVal = pageToken || productId || "generic";
   const uniqueId = tokenVal.slice(-40);

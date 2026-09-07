@@ -490,8 +490,8 @@ export default function Home() {
                           <span>Today's Verified Store Vouchers</span>
                         </h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                          {coupons.map((coupon) => (
-                            <CouponCard key={coupon.id} coupon={coupon} />
+                          {coupons.map((coupon, idx) => (
+                            <CouponCard key={coupon.id || `coupon-item-${idx}-${coupon.code || coupon.store}`} coupon={coupon} />
                           ))}
                         </div>
                       </div>

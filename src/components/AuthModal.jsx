@@ -86,7 +86,11 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
         setForgotSent(true);
       }
     } catch (err) {
-      setError(err.message || "Authentication failed. Please check your credentials.");
+      let msg = err.message || "Authentication failed. Please check your credentials.";
+      if (msg.includes("Failed to fetch")) {
+        msg = "Unable to connect to authentication service. Please check your internet connection and try again.";
+      }
+      setError(msg);
     } finally {
       setLoading(false);
     }
