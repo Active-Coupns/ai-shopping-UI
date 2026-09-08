@@ -571,18 +571,22 @@ function generateComparisonOffers(platform, priceVal, category, country = "in", 
     if (o.isPrimary) {
       const directLink = unwrapLocalProductLink(item, country);
       let redirectUrl = directLink;
-      if (!isCompletePDPUrl(directLink) && item.serpapi_immersive_product_api) {
+      if (!isCompletePDPUrl(directLink)) {
         try {
           const redirectParams = new URLSearchParams({
             fallback: directLink,
             store: cleanPlatform,
-            title: item.title
+            title: item.title || ""
           });
-          const urlObj = new URL(item.serpapi_immersive_product_api);
-          const pageToken = urlObj.searchParams.get("page_token");
-          const productId = urlObj.searchParams.get("product_id");
-          if (pageToken) redirectParams.set("page_token", pageToken);
-          else if (productId) redirectParams.set("product_id", productId);
+          if (item.serpapi_immersive_product_api) {
+            const urlObj = new URL(item.serpapi_immersive_product_api);
+            const pageToken = urlObj.searchParams.get("page_token");
+            const productId = urlObj.searchParams.get("product_id");
+            if (pageToken) redirectParams.set("page_token", pageToken);
+            else if (productId) redirectParams.set("product_id", productId);
+          } else if (item.product_id) {
+            redirectParams.set("product_id", item.product_id);
+          }
           
           redirectUrl = `${origin}/api/redirect?${redirectParams.toString()}`;
         } catch (e) {}
@@ -594,22 +598,24 @@ function generateComparisonOffers(platform, priceVal, category, country = "in", 
       const fallbackLink = getStoreSearchUrl(compDomain, cleanTitle);
       
       let redirectUrl = fallbackLink;
-      if (item.serpapi_immersive_product_api) {
-        try {
-          const redirectParams = new URLSearchParams({
-            fallback: fallbackLink,
-            store: o.store,
-            title: item.title
-          });
+      try {
+        const redirectParams = new URLSearchParams({
+          fallback: fallbackLink,
+          store: o.store,
+          title: item.title || ""
+        });
+        if (item.serpapi_immersive_product_api) {
           const urlObj = new URL(item.serpapi_immersive_product_api);
           const pageToken = urlObj.searchParams.get("page_token");
           const productId = urlObj.searchParams.get("product_id");
           if (pageToken) redirectParams.set("page_token", pageToken);
           else if (productId) redirectParams.set("product_id", productId);
-          
-          redirectUrl = `${origin}/api/redirect?${redirectParams.toString()}`;
-        } catch (e) {}
-      }
+        } else if (item.product_id) {
+          redirectParams.set("product_id", item.product_id);
+        }
+        
+        redirectUrl = `${origin}/api/redirect?${redirectParams.toString()}`;
+      } catch (e) {}
       finalLink = redirectUrl;
     }
     
