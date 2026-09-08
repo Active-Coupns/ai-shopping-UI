@@ -1551,7 +1551,13 @@ Do not include markdown code block formatting (like \`\`\`json). Return ONLY raw
       coupons: matchedStoreCoupons,
       intent: "E-COMMERCE",
       searchesLeft: 10 - newCount,
-      newToken
+      newToken,
+      debug: {
+        has_serpapi_key: !!serpapiApiKey,
+        key_length: serpapiApiKey ? serpapiApiKey.length : 0,
+        raw_count: rawResults.length,
+        is_fallback: isFallbackResult
+      }
     }, { status: 200 });
 
   } catch (err) {
