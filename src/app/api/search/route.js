@@ -137,8 +137,8 @@ function isValidDirectPDPUrl(url) {
   if (!url) return false;
   const lower = url.toLowerCase().trim();
   
-  // Allow internal redirect route (whether relative or absolute)
-  if (lower.startsWith("/api/redirect")) return true;
+  // Allow internal redirect route (whether relative or absolute domain)
+  if (lower.includes("/api/redirect")) return true;
   
   // Explicitly block search aggregators and SerpApi redirect parameters
   if (
@@ -1278,14 +1278,16 @@ Respond strictly in JSON with this structure:
         const gl = (country || "in").toLowerCase();
         const hl = "en";
         const googleDomain = gl === "in" ? "google.co.in" : "google.com";
-        const location = gl === "in" ? "India" : "United States";
-        let serpapiUrl = `https://serpapi.com/search.json?engine=google_shopping&q=${encodeURIComponent(cleanQuery)}&google_domain=${googleDomain}&location=${encodeURIComponent(location)}&gl=${gl}&hl=${hl}&api_key=${serpapiApiKey}`;
+        let serpapiUrl = `https://serpapi.com/search.json?engine=google_shopping&q=${encodeURIComponent(cleanQuery)}&google_domain=${googleDomain}&gl=${gl}&hl=${hl}&api_key=${serpapiApiKey}`;
 
         try {
           scraperResponse = await fetch(serpapiUrl, { method: "GET" });
           if (scraperResponse && scraperResponse.ok) {
             data = await scraperResponse.json();
             currentRawResults = data?.shopping_results || data?.inline_shopping_results || data?.organic_results || [];
+          } else {
+            const errText = scraperResponse ? await scraperResponse.text() : "No response";
+            console.error(`Primary SerpApi request failed with HTTP ${scraperResponse?.status}: ${errText}`);
           }
         } catch (err) {
           console.warn("Primary SerpApi search failed inside queue:", err);
@@ -1296,12 +1298,15 @@ Respond strictly in JSON with this structure:
           const fallbackQuery = getSimplifiedQueryFallback(cleanQuery);
           if (fallbackQuery && fallbackQuery !== cleanQuery) {
             console.log(`Retrying search with simplified query fallback inside queue: "${fallbackQuery}"`);
-            const fallbackSerpapiUrl = `https://serpapi.com/search.json?engine=google_shopping&q=${encodeURIComponent(fallbackQuery)}&google_domain=${googleDomain}&location=${encodeURIComponent(location)}&gl=${gl}&hl=${hl}&api_key=${serpapiApiKey}`;
+            const fallbackSerpapiUrl = `https://serpapi.com/search.json?engine=google_shopping&q=${encodeURIComponent(fallbackQuery)}&google_domain=${googleDomain}&gl=${gl}&hl=${hl}&api_key=${serpapiApiKey}`;
             try {
               scraperResponse = await fetch(fallbackSerpapiUrl, { method: "GET" });
               if (scraperResponse && scraperResponse.ok) {
                 data = await scraperResponse.json();
                 currentRawResults = data?.shopping_results || data?.inline_shopping_results || data?.organic_results || [];
+              } else {
+                const errText = scraperResponse ? await scraperResponse.text() : "No response";
+                console.error(`Fallback SerpApi request failed with HTTP ${scraperResponse?.status}: ${errText}`);
               }
             } catch (fallbackErr) {
               console.error("Fallback SerpApi search failed inside queue:", fallbackErr);
