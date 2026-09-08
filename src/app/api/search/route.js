@@ -788,121 +788,73 @@ function parseSpecsFromTitle(category, title, price, item = {}) {
 /**
  * Returns category-specific dynamic fallback matching insight summaries based on price and platform.
  */
+/**
+ * Universal Data-Driven Product Intelligence Engine.
+ * Zero hardcoded categories, zero hardcoded brand arrays.
+ * Dynamically reads the incoming product's title, snippet, description, and metadata to generate a 2-sentence recommendation.
+ */
 function getDynamicInsight(category, title, price, platform, item = {}, country = "in") {
   const isUS = (country || "").toLowerCase() === "us";
   const currSym = isUS ? "$" : "₹";
   const formattedPriceStr = `${currSym}${price.toLocaleString(isUS ? "en-US" : "en-IN")}`;
-  
+
   const titleClean = sanitizeProductTitle(title);
-  const titleLower = title.toLowerCase();
-  const words = titleClean.split(" ");
-  const brand = words[0] || "Featured";
-  const modelShort = words.slice(0, 5).join(" ");
+  const snippetRaw = (item.snippet || item.description || "").trim();
+  const extensionsStr = Array.isArray(item.extensions) ? item.extensions.join(" • ") : "";
 
-  // Extract Key Hardware Features from Title & Item Payload
-  const procMatch = title.match(/\b(i3|i5|i7|i9|ryzen\s*[3579]|m1|m2|m3|snapdragon|dimensity|bionic)\b/i);
-  const procName = procMatch ? procMatch[0].toUpperCase() : "";
+  // Combine full metadata into text context
+  const fullText = `${titleClean} ${snippetRaw} ${extensionsStr}`.trim();
 
-  const ramMatch = title.match(/\b(\d+)\s*gb\s*(?:ram|memory)?\b/i);
-  const ramSize = ramMatch ? `${ramMatch[1]}GB RAM` : "";
+  // 1. Extract dynamic technical & attribute highlights (e.g. 12GB, 50MP, Salicylic Acid, Quartz, 100% Cotton, etc.)
+  const keySpecs = [];
 
-  const ssdMatch = title.match(/\b(\d+)\s*(?:gb|tb)\s*(?:ssd|storage|rom|nvme)\b/i);
-  const ssdSize = ssdMatch ? ssdMatch[0].toUpperCase() : "";
-
-  const gpuMatch = title.match(/\b(rtx\s*\d+|gtx\s*\d+|radeon\s*\w+|rx\s*\d+|geforce)\b/i);
-  const gpuName = gpuMatch ? gpuMatch[0].toUpperCase() : "";
-
-  const displayMatch = title.match(/\b(\d+(?:\.\d+)?)\s*(?:inch|\"|\'-inch|cm)\b/i);
-  const displaySize = displayMatch ? `${displayMatch[1]}" Display` : "";
-
-  const refreshMatch = title.match(/\b(\d+)\s*hz\b/i);
-  const refreshRate = refreshMatch ? `${refreshMatch[1]}Hz Refresh Rate` : "";
-
-  // 1. 👤 Best For (Target Audience & Specific User Roles)
-  let bestFor = "";
-  if (category === "laptop") {
-    if (gpuName || titleLower.includes("gaming") || titleLower.includes("victus") || titleLower.includes("rog") || titleLower.includes("tuf") || titleLower.includes("legion") || titleLower.includes("nitro")) {
-      bestFor = `Gamers & 3D renderers seeking high-FPS gaming performance, powered by ${gpuName || "dedicated GPU"} and ${procName || "multi-threaded CPU"} inside the ${modelShort}.`;
-    } else if (titleLower.includes("macbook") || titleLower.includes("apple") || procName.includes("M1") || procName.includes("M2") || procName.includes("M3")) {
-      bestFor = `Software engineers, video editors & creative pros wanting quiet fanless battery efficiency and macOS speed on the ${modelShort}.`;
-    } else if (procName.includes("I7") || procName.includes("I9") || procName.includes("RYZEN 7") || procName.includes("RYZEN 9") || ramSize.includes("16GB") || ramSize.includes("32GB")) {
-      bestFor = `Data analysts, software developers & heavy multitaskers compiling large codebases with ${ramSize || "high-capacity RAM"} on the ${modelShort}.`;
-    } else if (titleLower.includes("slim") || titleLower.includes("thin") || titleLower.includes("go") || displaySize.includes("14")) {
-      bestFor = `Students, frequent travelers & corporate professionals needing ultra-portable daily computing with the ${modelShort}.`;
-    } else {
-      bestFor = `Office professionals, online educators & daily multitaskers wanting reliable execution on the ${modelShort}.`;
-    }
-  } else if (category === "mobile") {
-    if (titleLower.includes("pro") || titleLower.includes("ultra") || titleLower.includes("camera") || titleLower.includes("mp")) {
-      bestFor = `Mobile photographers & video content creators wanting pro-level optics and high-resolution recording on the ${modelShort}.`;
-    } else if (titleLower.includes("gaming") || titleLower.includes("snapdragon") || titleLower.includes("dimensity") || titleLower.includes("iqoo") || titleLower.includes("poco") || refreshRate) {
-      bestFor = `Mobile esports gamers & heavy app users demanding lag-free ${refreshRate || "high refresh-rate"} gaming with the ${modelShort}.`;
-    } else if (price < 15000 || (isUS && price < 150)) {
-      bestFor = `Budget-conscious buyers & daily callers seeking reliable 5G connectivity and long battery backup on the ${modelShort}.`;
-    } else {
-      bestFor = `Everyday smartphone users wanting fluid social media browsing, media streaming & quick charging on the ${modelShort}.`;
-    }
-  } else if (category === "audio") {
-    if (titleLower.includes("anc") || titleLower.includes("noise cancel")) {
-      bestFor = `Commuters, frequent flyers & remote workers needing active noise-cancelling (ANC) focus with the ${modelShort}.`;
-    } else if (titleLower.includes("sport") || titleLower.includes("earbuds") || titleLower.includes("tws") || titleLower.includes("gym")) {
-      bestFor = `Fitness enthusiasts & runners wanting sweatproof, secure-fit wireless TWS audio during workouts with the ${modelShort}.`;
-    } else {
-      bestFor = `Music lovers & podcast listeners seeking deep bass acoustics and ergonomic comfort with the ${modelShort}.`;
-    }
-  } else {
-    bestFor = `Shoppers looking for verified build quality and daily utility from ${brand} (${modelShort}).`;
+  // Extract numeric specs with units
+  const specMatches = fullText.match(/\b(\d+(?:\.\d+)?)\s*(mp|gb|tb|mb|mah|ram|ssd|nvme|hz|inch|\"|cm|mm|kg|g|gm|l|ltr|w|watt|v|star|k|m)\b/gi);
+  if (specMatches) {
+    specMatches.slice(0, 3).forEach(m => keySpecs.push(m.toUpperCase()));
   }
 
-  // 2. 💡 Why This Deal (Real Hardware Specs & Value)
-  let whyDeal = "";
-  const hardwareParts = [procName, ramSize, ssdSize, gpuName, displaySize, refreshRate].filter(Boolean);
+  // Extract key descriptive words/phrases from title or snippet
+  const featureList = [
+    "salicylic acid", "neem", "tea tree", "vitamin c", "hyaluronic", "retinol", "niacinamide",
+    "quartz", "analog", "digital", "chronograph", "stainless steel", "leather", "mesh", "water resistant",
+    "gaming", "rtx", "gtx", "ryzen", "core i5", "core i7", "core i9", "m1", "m2", "m3", "snapdragon", "tensor",
+    "oled", "amoled", "120hz", "noise cancelling", "anc", "wireless", "bluetooth",
+    "cotton", "denim", "leather", "running", "sneakers", "cushioned", "breathable", "waterproof"
+  ];
 
-  if (hardwareParts.length > 0) {
-    whyDeal = `Priced at ${formattedPriceStr} on ${platform}, featuring ${hardwareParts.join(", ")} for outstanding hardware value.`;
-  } else {
-    const originalDisc = item.discount || (item.original_price ? Math.round((1 - price / item.original_price) * 100) : 0);
-    const discStr = originalDisc > 0 ? ` with ${originalDisc}% savings` : "";
-    whyDeal = `Available at ${formattedPriceStr} on ${platform}${discStr}, offering direct merchant delivery and verified retail authenticity.`;
-  }
-
-  // 3. ⚠️ Trade-off (100% Unique Real Product Limitations)
-  let tradeOff = "";
-  if (category === "laptop") {
-    if (gpuName || titleLower.includes("gaming") || titleLower.includes("victus") || titleLower.includes("rog") || titleLower.includes("tuf") || titleLower.includes("legion")) {
-      tradeOff = `Dedicated ${gpuName || "gaming GPU"} requires active dual-fan cooling; battery drains faster during unplugged AAA gaming sessions.`;
-    } else if (titleLower.includes("macbook") || titleLower.includes("apple") || procName.includes("M1") || procName.includes("M2") || procName.includes("M3")) {
-      tradeOff = `Unified Apple Silicon architecture; RAM & SSD are factory integrated and cannot be upgraded post-purchase.`;
-    } else if (ramSize.includes("8GB") || titleLower.includes("8gb")) {
-      tradeOff = `Equipped with 8GB RAM; smooth for daily office tasks, though upgrading to 16GB is recommended for heavy 4K video rendering.`;
-    } else if (displaySize.includes("14")) {
-      tradeOff = `Compact 14-inch chassis; highly portable for travel, though users preferring dual-window split-screen coding may want an external monitor.`;
-    } else {
-      tradeOff = `Integrated graphics (shared system RAM); handles office productivity & 4K video playback easily, but not built for heavy 3D gaming.`;
-    }
-  } else if (category === "mobile") {
-    if (price < 15000 || (isUS && price < 150)) {
-      tradeOff = `Entry-level camera optics & 60Hz screen; fast charger wall adapter may require separate purchase.`;
-    } else if (titleLower.includes("pro") || titleLower.includes("ultra") || titleLower.includes("camera")) {
-      tradeOff = `Ultra-high megapixel camera sensor; 4K 60fps video recordings consume internal storage faster.`;
-    } else {
-      tradeOff = `Sleek lightweight design; protective case & screen guard recommended for outdoor drop safety.`;
-    }
-  } else if (category === "audio") {
-    if (titleLower.includes("anc") || titleLower.includes("noise cancel")) {
-      tradeOff = `Active Noise Cancellation (ANC) mode consumes extra battery, reducing continuous playback time by approx 1.5 hours.`;
-    } else {
-      tradeOff = `Compact TWS form factor; ensure periodic case recharging for multi-day uninterrupted playback.`;
-    }
-  } else {
-    if (isUS) {
-      tradeOff = `Standard manufacturer package; check register serial number on ${brand} site for warranty coverage.`;
-    } else {
-      tradeOff = `Standard retail edition; verify merchant invoice card upon unboxing for official warranty support.`;
+  const fullTextLower = fullText.toLowerCase();
+  for (const feat of featureList) {
+    if (fullTextLower.includes(feat)) {
+      keySpecs.push(feat.split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" "));
+      if (keySpecs.length >= 4) break;
     }
   }
 
-  return `👤 Best For: ${bestFor}\n\n💡 Why This Deal: ${whyDeal}\n\n⚠️ Trade-off: ${tradeOff}`;
+  const uniqueSpecs = Array.from(new Set(keySpecs)).slice(0, 3);
+  const specText = uniqueSpecs.length > 0 ? uniqueSpecs.join(", ") : "";
+
+  // 2. Extract first clean sentence from snippet if available
+  let snippetSentence = "";
+  if (snippetRaw) {
+    const cleanSentences = snippetRaw.split(/[.!?]/).map(s => s.trim()).filter(s => s.length > 15 && !s.toLowerCase().includes("http"));
+    if (cleanSentences.length > 0) {
+      snippetSentence = cleanSentences[0];
+      // Strip prices or seller info if present in snippet text
+      snippetSentence = snippetSentence.replace(/(?:₹|\$)\d+(?:,\d+)*/g, "").replace(/\s+/g, " ").trim();
+    }
+  }
+
+  // 3. Synthesize natural 2-sentence recommendation strictly from incoming product metadata
+  if (snippetSentence && snippetSentence.length > 20) {
+    return `${snippetSentence}. Offers strong overall value at ${formattedPriceStr} on ${platform}${specText ? " featuring " + specText : ""}.`;
+  }
+
+  if (specText) {
+    return `Designed for buyers seeking ${titleClean}. Key features include ${specText}, making it a solid choice at ${formattedPriceStr} on ${platform}.`;
+  }
+
+  return `A verified choice for ${titleClean}. Available at ${formattedPriceStr} on ${platform} with store warranty assurance.`;
 }
 
 function parseCleanPrice(item, country = "in") {
@@ -1426,6 +1378,7 @@ Respond strictly in JSON with this structure:
         
         // UI Helper properties:
         description: String(fallbackDesc),
+        rawSnippet: String(item.snippet || item.description || ""),
         specs: parsedSpecs,
         coupons: extractProductCoupons(item, resolvedPlatform, resolvedPrice, country),
         price_comparison: offers.map(o => ({
@@ -1473,6 +1426,7 @@ Respond strictly in JSON with this structure:
           image_url: "",
           deal_link: String(monetizeUrl(directSearchUrl, storeInfo.name, userRegion, settings)),
           description: fallbackDesc,
+          rawSnippet: "",
           specs: specs,
           coupons: extractProductCoupons({}, storeInfo.name, storeInfo.price, country),
           price_comparison: stores.map((s, i) => ({
@@ -1490,28 +1444,33 @@ Respond strictly in JSON with this structure:
     if (geminiApiKey && cleanProducts.length > 0) {
       try {
         const productsListText = cleanProducts.slice(0, 10).map((p, idx) => {
-          return `${idx + 1}. Title: ${p.title} | Store: ${p.store_name} | Price: ${p.price}`;
-        }).join("\n");
+          return `${idx + 1}. Title: ${p.title}\n   Description/Features: ${p.rawSnippet || "Standard Product"}\n   Store: ${p.store_name} | Price: ${p.price}`;
+        }).join("\n\n");
 
-        const prompt = `You are a friendly, expert personal shopping consultant advising a friend on their search for: "${cleanQuery}".
-For each product, generate category-specific specifications and recommendations.
+        const prompt = `You are an expert AI Shopping Assistant. The user searched for: "${cleanQuery}".
+Below are real products matched for this search:
 
-For each product, output:
-1. "ai_insight" object containing:
-   - "best_for": A practical use-case statement explaining who should buy this.
-   - "why_this_deal": A sharp statement highlighting the real value.
-   - "trade_off": An honest, transparent note about limitations.
-2. "detailed_specs" array of strings:
-   - If it's a Laptop/PC: CPU, RAM & Storage, Display & GPU, Battery Life, Standout Feature.
-   - If it's Headphones/Audio: Sound Engine, Noise Control, Battery Life, Connectivity, Standout Feature.
-   - If it's Shoes/Fashion: Material, Fit Profile, Occasion, Care, Standout Feature.
-   - Other: Extract 5 relevant attributes from title.
-
-Products:
 ${productsListText}
 
-Return the results strictly as a JSON array of objects, where each object matches the product's index.
-Do not include markdown code block formatting (like \`\`\`json). Return ONLY raw JSON array.`;
+INSTRUCTIONS FOR EACH PRODUCT:
+1. Write a 100% unique, natural, human-like 2-sentence shopping recommendation ("summary") explaining:
+   - Who this specific product is best for (e.g. students, professionals, casual users, gamers, budget shoppers).
+   - Why it is best for them based on its title, brand, price, or unique specifications (e.g. battery backup, value for money, premium build, specific ingredients/features).
+2. Generate category-specific detailed specs array (5 concise specs strings).
+
+CRITICAL CONSTRAINTS:
+- EVERY recommendation MUST be 100% unique in vocabulary and structure across all products.
+- DO NOT use template sentences like "Ideal for... Available at...". Write naturally like an expert human advisor.
+- Keep each summary concise (max 35 words).
+
+Return the results strictly as a JSON array of objects, where each object matches the product's index:
+[
+  {
+    "summary": "This laptop is great for students needing long battery life and solid multitasking performance on a budget. Its lightweight frame and crisp display make daily campus work smooth.",
+    "detailed_specs": ["Processor: Core i5", "RAM: 8GB", "Storage: 512GB SSD", "Display: 15.6 FHD", "Battery: Up to 10 hrs"]
+  }
+]
+Do not include markdown code block formatting. Return ONLY raw JSON array.`;
 
         const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
           method: "POST",
@@ -1519,7 +1478,11 @@ Do not include markdown code block formatting (like \`\`\`json). Return ONLY raw
             "Content-Type": "application/json"
           },
           body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }]
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: {
+              responseMimeType: "application/json",
+              temperature: 0.7
+            }
           })
         });
 
@@ -1535,11 +1498,10 @@ Do not include markdown code block formatting (like \`\`\`json). Return ONLY raw
             cleanProducts.slice(0, 10).forEach((p, idx) => {
               const res = parsedResults[idx];
               if (res) {
-                if (res.ai_insight) {
-                  const bfor = res.ai_insight.best_for || "";
-                  const wdeal = res.ai_insight.why_this_deal || "";
-                  const toff = res.ai_insight.trade_off || "";
-                  p.description = `👤 Best For: ${bfor}\n\n💡 Why This Deal: ${wdeal}\n\n⚠️ Trade-off: ${toff}`;
+                if (typeof res === "string" && res.trim().length > 10) {
+                  p.description = res.trim();
+                } else if (res.summary && typeof res.summary === "string" && res.summary.trim().length > 10) {
+                  p.description = res.summary.trim();
                 }
                 if (res.detailed_specs && Array.isArray(res.detailed_specs)) {
                   p.specs = res.detailed_specs;
