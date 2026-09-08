@@ -203,10 +203,6 @@ export default function ProductCard({ product }) {
                 {product.tag}
               </span>
             )}
-            <div className="absolute top-2.5 right-2.5 px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-wider bg-slate-950/80 border border-brand-violet/30 text-white z-20 flex items-center gap-1 shadow-md">
-              <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
-              <span>Score: {dealScore}/100 🔥</span>
-            </div>
           </div>
 
           {/* Title & Price - ALWAYS visible */}
