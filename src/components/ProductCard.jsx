@@ -275,37 +275,32 @@ export default function ProductCard({ product }) {
               );
             })()}
 
-            {/* Price Comparison Chips */}
+            {/* Price Comparison Chips (Read-Only Benchmarks - Option A) */}
             {product.priceComparison && product.priceComparison.length > 0 && (
               <div className="mt-3.5 border-t border-slate-800/80 pt-3">
-                <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider block mb-2">Compare Stores:</span>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Store Price Benchmarks:</span>
+                  <span className="text-[10px] text-slate-500 font-medium italic">Verified Info</span>
+                </div>
                 <div className="flex flex-wrap gap-2">
                   {product.priceComparison.map((offer, idx) => {
                     const offerStoreName = offer.store || offer.store_name || "Online Store";
-                    const isSelected = selectedStore.name.toLowerCase() === offerStoreName.toLowerCase();
+                    const isLowest = offer.is_lowest;
                     return (
-                      <button
+                      <div
                         key={idx}
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedStore({
-                            name: offerStoreName,
-                            url: offer.link,
-                            price: offer.price
-                          });
-                        }}
-                        className={`inline-flex flex-col items-start px-2.5 py-1.5 rounded-lg border text-left transition-all hover:scale-103 cursor-pointer ${
-                          isSelected
-                            ? "bg-brand-indigo/25 border-brand-indigo text-white font-extrabold shadow-[0_0_10px_rgba(99,102,241,0.3)] ring-1 ring-brand-indigo"
-                            : offer.is_lowest
-                            ? "bg-emerald-500/10 border-emerald-500/30 hover:border-emerald-500 text-emerald-400 font-bold"
-                            : "bg-slate-900/60 border-slate-800 hover:border-slate-700 text-slate-300"
+                        className={`inline-flex flex-col items-start px-2.5 py-1.5 rounded-lg border text-left cursor-default select-none transition-all ${
+                          isLowest
+                            ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 font-bold shadow-[0_0_8px_rgba(16,185,129,0.15)]"
+                            : "bg-slate-900/60 border-slate-800/80 text-slate-300"
                         }`}
                       >
-                        <span className="text-[9px] uppercase tracking-wider text-slate-400 font-semibold">{offerStoreName}</span>
-                        <span className="text-xs font-black mt-0.5">{offer.price} {offer.is_lowest && "✓"}</span>
-                      </button>
+                        <span className="text-[9px] uppercase tracking-wider text-slate-400 font-semibold flex items-center gap-1">
+                          {offerStoreName}
+                          {isLowest && <span className="text-[8px] bg-emerald-500/20 text-emerald-300 px-1 py-0.2 rounded font-extrabold">LOWEST</span>}
+                        </span>
+                        <span className="text-xs font-black mt-0.5">{offer.price}</span>
+                      </div>
                     );
                   })}
                 </div>
