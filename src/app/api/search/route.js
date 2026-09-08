@@ -1035,7 +1035,7 @@ export async function POST(request) {
   if (!serpapiApiKey) {
     console.error("SERPAPI_API_KEY config check: MISSING in process.env!");
   } else {
-    console.log("SERPAPI_API_KEY config check: verified");
+    console.log(`SERPAPI_API_KEY config check: verified (Key Length: ${serpapiApiKey.length})`);
   }
 
   try {
