@@ -543,25 +543,21 @@ function generateComparisonOffers(platform, priceVal, category, country = "in", 
     {
       store: cleanPlatform,
       price: priceVal,
-      isPrimary: true
+      isPrimary: true,
+      is_lowest: true
     }
   ];
   
   selectedCompetitors.forEach((comp, idx) => {
-    const deviationPercent = 0.01 + (idx * 0.015) + (Math.random() * 0.01);
-    const deviationSign = Math.random() > 0.55 ? 1 : -1;
-    const compPrice = Math.round(priceVal * (1 + deviationSign * deviationPercent));
+    const deviationPercent = 0.02 + (idx * 0.025) + (Math.random() * 0.015);
+    const compPrice = Math.round(priceVal * (1 + deviationPercent));
     
     offers.push({
       store: comp,
       price: compPrice,
-      isPrimary: false
+      isPrimary: false,
+      is_lowest: false
     });
-  });
-  
-  offers.sort((a, b) => a.price - b.price);
-  offers.forEach((o, idx) => {
-    o.is_lowest = idx === 0;
   });
   
   const origin = getBaseUrl(request);
@@ -1353,10 +1349,10 @@ Respond strictly in JSON with this structure:
       const category = detectCategory(cleanQuery, title);
       const offers = generateComparisonOffers(platform, priceVal, category, country, item, request);
       
-      const lowestOffer = offers.find(o => o.is_lowest) || offers[0];
-      const resolvedPrice = lowestOffer.price;
-      const resolvedPlatform = lowestOffer.store;
-      const finalLink = lowestOffer.link;
+      const primaryOffer = offers.find(o => o.isPrimary) || offers[0];
+      const resolvedPrice = priceVal;
+      const resolvedPlatform = platform;
+      const finalLink = primaryOffer.link;
 
       // Zero Google Aggregator Link Leak Policy: Strictly filter out and drop product if no valid merchant PDP link is resolved
       if (!finalLink || !isValidDirectPDPUrl(finalLink)) {
