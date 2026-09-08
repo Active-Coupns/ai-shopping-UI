@@ -788,70 +788,69 @@ function parseSpecsFromTitle(category, title, price, item = {}) {
 /**
  * Returns category-specific dynamic fallback matching insight summaries based on price and platform.
  */
-function getDynamicInsight(category, title, price, platform, item = {}) {
-  const titleClean = title.trim();
-  const titleLower = title.toLowerCase();
+function getDynamicInsight(category, title, price, platform, item = {}, country = "in") {
+  const isUS = (country || "").toLowerCase() === "us";
+  const currSym = isUS ? "$" : "₹";
+  const formattedPriceStr = `${currSym}${price.toLocaleString(isUS ? "en-US" : "en-IN")}`;
   
-  const cleanTitleWords = titleClean.replace(/[^a-zA-Z0-9\s-]/g, "").split(/\s+/).filter(Boolean);
-  const productNoun = cleanTitleWords.length > 0 ? cleanTitleWords[cleanTitleWords.length - 1] : "product";
-  const productTitleShort = cleanTitleWords.slice(0, 4).join(" ");
+  const titleClean = sanitizeProductTitle(title);
+  const words = titleClean.split(" ");
+  const brand = words[0] || "Featured";
+  const modelShort = words.slice(0, 5).join(" ");
+  
+  const ratingText = item.rating ? `rated ${item.rating}★` : "highly rated";
+  const reviewsText = item.reviews ? `by ${item.reviews}+ buyers` : "by verified shoppers";
 
   let bestFor = "";
-  let whyDeal = "";
-  let tradeOff = "";
+  const titleLower = title.toLowerCase();
 
   if (category === "laptop") {
     if (titleLower.includes("macbook") || titleLower.includes("apple") || titleLower.includes("m1") || titleLower.includes("m2") || titleLower.includes("m3")) {
-      bestFor = `Professional creative design, software engineering, and quiet all-day battery efficiency with the ${productTitleShort}.`;
+      bestFor = `Creative professionals & software engineers wanting silent fanless thermal efficiency and macOS compiler performance with the ${modelShort}.`;
     } else if (titleLower.includes("gaming") || titleLower.includes("rtx") || titleLower.includes("gtx") || titleLower.includes("rog") || titleLower.includes("tuf") || titleLower.includes("legion") || titleLower.includes("victus")) {
-      bestFor = `High-FPS AAA gaming, 3D rendering, and heavy thermal-cooled workstation processing using the ${productTitleShort}.`;
+      bestFor = `Gamers & 3D rendering artists demanding high-FPS gameplay and high GPU processing power on the ${modelShort}.`;
     } else if (titleLower.includes("i7") || titleLower.includes("i9") || titleLower.includes("ryzen 7") || titleLower.includes("ryzen 9") || titleLower.includes("16gb") || titleLower.includes("32gb")) {
-      bestFor = `Heavy code compilation, data analysis, and power multitasking on the ${productTitleShort}.`;
+      bestFor = `Power users compiling heavy code, data modeling, and multitasking on the ${modelShort}.`;
     } else {
-      bestFor = `Fast web browsing, Office productivity, and HD video conferencing with the ${productTitleShort}.`;
+      bestFor = `Students and office professionals looking for fluid daily productivity with the ${modelShort}.`;
     }
   } else if (category === "mobile") {
-    if (titleLower.includes("camera") || titleLower.includes("mp") || titleLower.includes("lens") || titleLower.includes("pro") || titleLower.includes("ultra")) {
-      bestFor = `High-resolution mobile photography, 4K video recording, and social media content creation on the ${productTitleShort}.`;
-    } else if (titleLower.includes("gaming") || titleLower.includes("snapdragon") || titleLower.includes("dimensity") || titleLower.includes("iqoo") || titleLower.includes("poco") || titleLower.includes("gt") || titleLower.includes("z9")) {
-      bestFor = `Lag-free mobile gaming, high-FPS esports, and intense app multitasking with the ${productTitleShort}.`;
-    } else if (titleLower.includes("5g") || titleLower.includes("12gb") || titleLower.includes("256gb") || titleLower.includes("512gb")) {
-      bestFor = `High-capacity storage, 5G video streaming, and power multitasking on the ${productTitleShort}.`;
-    } else if (titleLower.includes("max") || titleLower.includes("battery") || titleLower.includes("mah") || price < 15000) {
-      bestFor = `All-day battery longevity, reliable daily calling, and budget 5G utility with the ${productTitleShort}.`;
+    if (titleLower.includes("camera") || titleLower.includes("mp") || titleLower.includes("pro") || titleLower.includes("ultra")) {
+      bestFor = `Photography enthusiasts wanting crystal-clear camera optics and 4K video recording on the ${modelShort}.`;
+    } else if (titleLower.includes("gaming") || titleLower.includes("snapdragon") || titleLower.includes("dimensity") || titleLower.includes("iqoo") || titleLower.includes("poco")) {
+      bestFor = `Mobile esports gamers seeking high-FPS gaming without thermal throttling using the ${modelShort}.`;
     } else {
-      bestFor = `Fluid daily app performance, crisp display streaming, and sleek ergonomics with the ${productTitleShort}.`;
+      bestFor = `Daily smartphone users looking for fluid 5G connectivity and long battery backup on the ${modelShort}.`;
     }
   } else if (category === "audio") {
-    if (titleLower.includes("anc") || titleLower.includes("noise cancel") || titleLower.includes("bose") || titleLower.includes("sony")) {
-      bestFor = `Active noise-cancelling travel, distraction-free focus, and studio-grade acoustics with the ${productTitleShort}.`;
-    } else if (titleLower.includes("earbuds") || titleLower.includes("tws") || titleLower.includes("airpods") || titleLower.includes("airdopes")) {
-      bestFor = `Compact TWS hands-free calling, gym workouts, and low-latency audio using the ${productTitleShort}.`;
+    if (titleLower.includes("anc") || titleLower.includes("noise cancel")) {
+      bestFor = `Commuters and remote workers wanting active noise-cancelling focus with the ${modelShort}.`;
     } else {
-      bestFor = `Deep bass music playback, comfortable acoustic listening, and wireless freedom with the ${productTitleShort}.`;
+      bestFor = `Music lovers and podcast listeners seeking ergonomic wireless audio on the ${modelShort}.`;
     }
-  } else if (titleLower.includes("camera") || titleLower.includes("dslr") || titleLower.includes("eos") || titleLower.includes("alpha") || titleLower.includes("mirrorless")) {
-    bestFor = `Pro portrait photography, cinematic 4K video recording, and interchangeable lens optic performance with the ${productTitleShort}.`;
-  } else if (category === "fashion") {
-    bestFor = `Stylish daily casual wear, breathable fabric comfort, and lifestyle modeling with the ${productTitleShort}.`;
   } else {
-    bestFor = `Practical daily utility, specialized performance, and trusted convenience with the ${productTitleShort} ${productNoun}.`;
+    bestFor = `Shoppers looking for trusted build quality and daily utility from ${brand} (${modelShort}).`;
   }
 
-  if (price < 3000) {
-    whyDeal = `Provides exceptional entry-level value under ₹3,000 on ${platform} with verified merchant return guarantees.`;
-  } else if (price >= 3000 && price < 25000) {
-    whyDeal = `Offers a strong cost-to-performance ratio and verified retail quality on ${platform}.`;
-  } else {
-    whyDeal = `Delivers flagship-tier hardware engineering and verified merchant authenticity on ${platform}.`;
-  }
+  let whyDeal = `Available at ${formattedPriceStr} on ${platform} (${ratingText} ${reviewsText}), offering verified merchant authenticity and fast direct shipping.`;
 
-  if (price < 15000) {
-    tradeOff = `Entry-to-mid range construction; fast charger or protective case may require separate purchase.`;
-  } else if (price >= 15000 && price < 50000) {
-    tradeOff = `Mid-tier retail variant; software update rollout and cloud features follow brand schedule.`;
+  let tradeOff = "";
+  if (isUS) {
+    if (price < 100) {
+      tradeOff = `Budget entry model; protective accessories or extended warranty may require separate purchase.`;
+    } else if (price < 500) {
+      tradeOff = `Mid-tier consumer variant; checkout promotional discounts subject to stock availability.`;
+    } else {
+      tradeOff = `Premium investment tier; register serial number on official ${brand} site for manufacturer warranty.`;
+    }
   } else {
-    tradeOff = `High-value investment tier; ensure official warranty registration upon delivery.`;
+    if (price < 5000) {
+      tradeOff = `Entry-level value model; fast charger or protective sleeve may require separate purchase.`;
+    } else if (price < 35000) {
+      tradeOff = `Mid-tier retail variant; check ongoing bank card instant cashbacks for extra savings.`;
+    } else {
+      tradeOff = `High-value investment tier; verify seller warranty card upon unboxing.`;
+    }
   }
 
   return `👤 Best For: ${bestFor}\n\n💡 Why This Deal: ${whyDeal}\n\n⚠️ Trade-off: ${tradeOff}`;
@@ -1280,9 +1279,11 @@ Respond strictly in JSON with this structure:
 
         // Call SerpApi Google Shopping Endpoint directly
         const gl = (country || "in").toLowerCase();
+        const isUS = gl === "us";
         const hl = "en";
-        const googleDomain = gl === "in" ? "google.co.in" : "google.com";
-        let serpapiUrl = `https://serpapi.com/search.json?engine=google_shopping&q=${encodeURIComponent(cleanQuery)}&google_domain=${googleDomain}&gl=${gl}&hl=${hl}&api_key=${serpapiApiKey}`;
+        const googleDomain = isUS ? "google.com" : "google.co.in";
+        const locationParam = isUS ? "&location=United+States" : "&location=India";
+        let serpapiUrl = `https://serpapi.com/search.json?engine=google_shopping&q=${encodeURIComponent(cleanQuery)}&google_domain=${googleDomain}&gl=${gl}&hl=${hl}${locationParam}&api_key=${serpapiApiKey}`;
 
         try {
           scraperResponse = await fetch(serpapiUrl, { method: "GET" });
@@ -1302,7 +1303,7 @@ Respond strictly in JSON with this structure:
           const fallbackQuery = getSimplifiedQueryFallback(cleanQuery);
           if (fallbackQuery && fallbackQuery !== cleanQuery) {
             console.log(`Retrying search with simplified query fallback inside queue: "${fallbackQuery}"`);
-            const fallbackSerpapiUrl = `https://serpapi.com/search.json?engine=google_shopping&q=${encodeURIComponent(fallbackQuery)}&google_domain=${googleDomain}&gl=${gl}&hl=${hl}&api_key=${serpapiApiKey}`;
+            const fallbackSerpapiUrl = `https://serpapi.com/search.json?engine=google_shopping&q=${encodeURIComponent(fallbackQuery)}&google_domain=${googleDomain}&gl=${gl}&hl=${hl}${locationParam}&api_key=${serpapiApiKey}`;
             try {
               scraperResponse = await fetch(fallbackSerpapiUrl, { method: "GET" });
               if (scraperResponse && scraperResponse.ok) {
@@ -1361,7 +1362,7 @@ Respond strictly in JSON with this structure:
 
       // Parse Specs & Generate local dynamic matching insights based on specific title + price tier
       const parsedSpecs = parseSpecsFromTitle(category, title, resolvedPrice, item);
-      const fallbackDesc = getDynamicInsight(category, title, resolvedPrice, resolvedPlatform, item);
+      const fallbackDesc = getDynamicInsight(category, title, resolvedPrice, resolvedPlatform, item, country);
       const image = item.thumbnail || "";
 
       cleanProducts.push({

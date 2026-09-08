@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { User, LogOut, ChevronDown, Globe, Mail } from "lucide-react";
 
-export default function ProfileMenu({ user, onLogout, onOpenLogin, searchesLeft = 10 }) {
+export default function ProfileMenu({ user, onLogout, onOpenLogin, searchesLeft = 10, selectedCountry = "IN", onCountryChange }) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -29,7 +29,7 @@ export default function ProfileMenu({ user, onLogout, onOpenLogin, searchesLeft 
 
   const name = user.user_metadata?.full_name || user.email?.split("@")[0] || "User";
   const email = user.email || "";
-  const country = user.user_metadata?.country || "IN";
+  const activeCountry = selectedCountry || user.user_metadata?.country || "IN";
   const initials = name
     .split(" ")
     .map((n) => n[0])
@@ -78,9 +78,26 @@ export default function ProfileMenu({ user, onLogout, onOpenLogin, searchesLeft 
                 <Globe className="w-3.5 h-3.5 text-slate-500" />
                 <span>Target Country</span>
               </span>
-              <span className="font-bold text-brand-indigo bg-brand-indigo/10 px-2 py-0.5 rounded-md text-[10px]">
-                {country === "US" ? "USA (US)" : "India (IN)"}
-              </span>
+              <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => onCountryChange && onCountryChange("IN")}
+                  className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
+                    activeCountry.toUpperCase() === "IN" ? "bg-brand-indigo text-white shadow" : "text-slate-400 hover:text-white"
+                  }`}
+                >
+                  🇮🇳 IN
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onCountryChange && onCountryChange("US")}
+                  className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
+                    activeCountry.toUpperCase() === "US" ? "bg-brand-indigo text-white shadow" : "text-slate-400 hover:text-white"
+                  }`}
+                >
+                  🇺🇸 US
+                </button>
+              </div>
             </div>
 
             <div className="flex items-center justify-between text-xs py-1.5 px-2.5 rounded-lg bg-slate-900/50 text-slate-300">

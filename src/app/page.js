@@ -127,9 +127,9 @@ export default function Home() {
   const [authMode, setAuthMode] = useState("login");
   const [authMessage, setAuthMessage] = useState(null);
 
+  const [selectedCountry, setSelectedCountry] = useState("IN");
   const [searchesLeft, setSearchesLeft] = useState(10);
   const [isQuotaOpen, setIsQuotaOpen] = useState(false);
-
   const [searchIntent, setSearchIntent] = useState("E-COMMERCE");
   const [coupons, setCoupons] = useState([]);
   const [couponNotAvailable, setCouponNotAvailable] = useState(false);
@@ -139,6 +139,9 @@ export default function Home() {
       const { data: { session } } = await auth.getSession();
       if (session?.user) {
         setUser(session.user);
+        if (session.user.user_metadata?.country) {
+          setSelectedCountry(session.user.user_metadata.country.toUpperCase());
+        }
         
         // Sync real-time remaining searches from user metadata
         const todayStr = new Date().toISOString().split("T")[0];
@@ -154,6 +157,26 @@ export default function Home() {
     initSession();
   }, []);
 
+  const handleCountryChange = async (newCountry) => {
+    const code = newCountry.toUpperCase();
+    setSelectedCountry(code);
+    if (user) {
+      const updatedUser = {
+        ...user,
+        user_metadata: {
+          ...(user.user_metadata || {}),
+          country: code
+        }
+      };
+      setUser(updatedUser);
+      try {
+        await auth.updateUserMetadata(user.id, { country: code });
+      } catch (e) {
+        console.warn("Gracefully updated local country metadata state:", e);
+      }
+    }
+  };
+
   const handleLogout = async () => {
     await auth.signOut();
     setUser(null);
@@ -162,6 +185,9 @@ export default function Home() {
 
   const handleAuthSuccess = (loggedUser) => {
     setUser(loggedUser);
+    if (loggedUser?.user_metadata?.country) {
+      setSelectedCountry(loggedUser.user_metadata.country.toUpperCase());
+    }
   };
 
   const handleSearchSubmit = async (query) => {
@@ -179,9 +205,8 @@ export default function Home() {
     setProducts([]);
 
     try {
-      // Execute the local Next.js search API request with target user country preference
-      const userCountry = user?.user_metadata?.country || "IN";
-      const response = await searchProducts(query, userCountry);
+      // Execute the local Next.js search API request with target active country preference
+      const response = await searchProducts(query, selectedCountry);
       const fetchedProducts = response.results || [];
 
       // Preload product images before releasing the search loader
@@ -305,6 +330,8 @@ export default function Home() {
                 setIsAuthOpen(true);
               }}
               searchesLeft={searchesLeft}
+              selectedCountry={selectedCountry}
+              onCountryChange={handleCountryChange}
             />
           </div>
         </div>
