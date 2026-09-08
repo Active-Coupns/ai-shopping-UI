@@ -177,8 +177,7 @@ export async function GET(request) {
   
   const serpapiApiKey = process.env.SERPAPI_API_KEY || 
                         process.env.SERP_API_KEY || 
-                        process.env.SERPAPI_KEY || 
-                        "d01f7fb0d597a6cbaa7b9a0e6a04c61c1eb1da33375409b65acf4dbc60593bdb";
+                        process.env.SERPAPI_KEY;
   
   const tokenVal = pageToken || productId || "generic";
   const uniqueId = tokenVal.slice(-40);
