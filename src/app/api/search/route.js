@@ -150,6 +150,18 @@ function isValidDirectPDPUrl(url) {
   ) {
     return false;
   }
+
+  // Strictly block Quick-Commerce / Instant Delivery networks (Zepto, Blinkit, Instamart, Dunzo, BB Now)
+  if (
+    lower.includes("zepto") ||
+    lower.includes("zeptonow") ||
+    lower.includes("blinkit") ||
+    lower.includes("instamart") ||
+    lower.includes("dunzo") ||
+    lower.includes("bbnow")
+  ) {
+    return false;
+  }
   
   // Confirm it starts with standard web protocols
   return lower.startsWith("http://") || lower.startsWith("https://");
@@ -1343,6 +1355,20 @@ Respond strictly in JSON with this structure:
 
       const title = item.title || item.name || "";
       const platform = item.source || item.merchant || item.seller || "Online Store";
+      const platformLower = String(platform).toLowerCase();
+
+      // Block Quick-Commerce / Instant Grocery networks (Zepto, Blinkit, Instamart, Dunzo)
+      if (
+        platformLower.includes("zepto") ||
+        platformLower.includes("blinkit") ||
+        platformLower.includes("instamart") ||
+        platformLower.includes("dunzo") ||
+        platformLower.includes("bb now") ||
+        platformLower.includes("bbnow")
+      ) {
+        console.log(`Dropping quick-commerce result "${title}" from platform "${platform}".`);
+        continue;
+      }
 
       // Extract price using clean Lakhs/thousands parser
       const priceVal = parseCleanPrice(item, country);
@@ -1566,7 +1592,7 @@ Do not include markdown code block formatting. Return ONLY raw JSON array.`;
       products: mappedProducts,
       coupons: matchedStoreCoupons,
       intent: "E-COMMERCE",
-      searchesLeft: 10 - newCount,
+      searchesLeft: process.env.NODE_ENV !== "production" ? 999 : 99,
       newToken,
       debug: {
         has_serpapi_key: !!serpapiApiKey,
