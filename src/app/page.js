@@ -340,49 +340,53 @@ export default function Home() {
 
       {/* Header / Navbar */}
       <header className="relative z-50 w-full glass-panel border-x-0 border-t-0 shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 md:h-20 flex items-center justify-between">
-          <div className="flex items-center gap-2 cursor-pointer" onClick={handleReset}>
-            <div className="w-9 h-9 md:w-10 md:h-10 rounded-xl bg-gradient-to-tr from-brand-indigo to-brand-violet flex items-center justify-center text-white shadow-[0_0_15px_rgba(99,102,241,0.4)]">
-              <ShoppingBag className="w-5 h-5" />
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-14 sm:h-16 md:h-20 flex items-center justify-between">
+          <div className="flex items-center gap-1.5 sm:gap-2 cursor-pointer shrink-0" onClick={handleReset}>
+            <div className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-xl bg-gradient-to-tr from-brand-indigo to-brand-violet flex items-center justify-center text-white shadow-[0_0_15px_rgba(99,102,241,0.4)]">
+              <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <span className="text-lg md:text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-100 to-slate-300">
+            <span className="text-sm sm:text-lg md:text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-100 to-slate-300">
               ShopSmart <span className="text-brand-indigo">AI</span>
             </span>
           </div>
 
-          <div className="flex items-center gap-3 text-xs md:text-sm">
+          <div className="flex items-center gap-1.5 sm:gap-3 text-xs md:text-sm shrink-0">
             <span className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-semibold shadow-inner">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
               <span>1,284 Active Shoppers</span>
             </span>
 
             {/* Direct Header Region Switcher Pill */}
-            <div className="flex items-center gap-1 p-1 rounded-xl bg-slate-900/90 border border-slate-800 shadow-md">
+            <div className="flex items-center gap-0.5 sm:gap-1 p-0.5 sm:p-1 rounded-xl bg-slate-900/90 border border-slate-800 shadow-md">
               <button
                 type="button"
+                suppressHydrationWarning
                 onClick={() => handleCountryChange("IN")}
                 title="Switch search region to India (INR ₹)"
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                className={`flex items-center gap-1 px-1.5 sm:px-2.5 py-1 rounded-lg text-[11px] sm:text-xs font-bold transition-all cursor-pointer ${
                   selectedCountry === "IN"
                     ? "bg-gradient-to-r from-brand-indigo to-brand-violet text-white shadow-md"
                     : "text-slate-400 hover:text-white hover:bg-slate-800/50"
                 }`}
               >
                 <span>🇮🇳</span>
-                <span>IN (₹)</span>
+                <span className="hidden sm:inline">IN (₹)</span>
+                <span className="sm:hidden">IN</span>
               </button>
               <button
                 type="button"
+                suppressHydrationWarning
                 onClick={() => handleCountryChange("US")}
                 title="Switch search region to United States (USD $)"
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                className={`flex items-center gap-1 px-1.5 sm:px-2.5 py-1 rounded-lg text-[11px] sm:text-xs font-bold transition-all cursor-pointer ${
                   selectedCountry === "US"
                     ? "bg-gradient-to-r from-brand-indigo to-brand-violet text-white shadow-md"
                     : "text-slate-400 hover:text-white hover:bg-slate-800/50"
                 }`}
               >
                 <span>🇺🇸</span>
-                <span>US ($)</span>
+                <span className="hidden sm:inline">US ($)</span>
+                <span className="sm:hidden">US</span>
               </button>
             </div>
 
@@ -414,7 +418,7 @@ export default function Home() {
               transition={{ duration: 0.3 }}
               className="w-full"
             >
-              <SearchHero onSubmit={handleSearchSubmit} />
+              <SearchHero country={selectedCountry} onSubmit={handleSearchSubmit} />
             </motion.div>
           )}
 

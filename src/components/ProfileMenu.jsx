@@ -18,6 +18,8 @@ export default function ProfileMenu({ user, onLogout, onOpenLogin, searchesLeft 
   if (!user) {
     return (
       <button
+        type="button"
+        suppressHydrationWarning
         onClick={onOpenLogin}
         className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-brand-indigo to-brand-violet hover:from-brand-indigo/90 hover:to-brand-violet/90 text-xs md:text-sm font-semibold text-white transition-all shadow-md active:scale-95 cursor-pointer"
       >
@@ -41,6 +43,8 @@ export default function ProfileMenu({ user, onLogout, onOpenLogin, searchesLeft 
     <div className="relative" ref={dropdownRef}>
       {/* Trigger Button */}
       <button
+        type="button"
+        suppressHydrationWarning
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-slate-900/60 border border-slate-800 hover:border-slate-700 transition-all text-left cursor-pointer active:scale-98"
       >
@@ -81,6 +85,7 @@ export default function ProfileMenu({ user, onLogout, onOpenLogin, searchesLeft 
               <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800">
                 <button
                   type="button"
+                  suppressHydrationWarning
                   onClick={() => onCountryChange && onCountryChange("IN")}
                   className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
                     activeCountry.toUpperCase() === "IN" ? "bg-brand-indigo text-white shadow" : "text-slate-400 hover:text-white"
@@ -90,6 +95,7 @@ export default function ProfileMenu({ user, onLogout, onOpenLogin, searchesLeft 
                 </button>
                 <button
                   type="button"
+                  suppressHydrationWarning
                   onClick={() => onCountryChange && onCountryChange("US")}
                   className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
                     activeCountry.toUpperCase() === "US" ? "bg-brand-indigo text-white shadow" : "text-slate-400 hover:text-white"
@@ -113,6 +119,8 @@ export default function ProfileMenu({ user, onLogout, onOpenLogin, searchesLeft 
 
           {/* Logout Action */}
           <button
+            type="button"
+            suppressHydrationWarning
             onClick={() => {
               setIsOpen(false);
               onLogout();

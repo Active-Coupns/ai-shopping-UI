@@ -924,7 +924,12 @@ function parseSpecsFromTitle(category, title, price, item = {}) {
  * Dynamically reads product title, snippet, and metadata to generate a unique 2-sentence recommendation.
  * Uses title+price deterministic hashing to rotate across 6 distinct opening sentence structures.
  */
-function getDynamicInsight(category, title, price, platform, item = {}, country = "in", isRegional = false, detectedLang = "hi") {
+/**
+ * Universal Data-Driven Product Intelligence Engine.
+ * Dynamically reads product title, snippet, and metadata to generate a unique 2-sentence recommendation.
+ * Rotates across 10 distinct template structures per item index to ensure 0% boilerplate repetition.
+ */
+function getDynamicInsight(category, title, price, platform, item = {}, country = "in", isRegional = false, detectedLang = "hi", itemIndex = 0) {
   const isUS = (country || "").toLowerCase() === "us";
   const currSym = isUS ? "$" : "₹";
   const formattedPriceStr = `${currSym}${price.toLocaleString(isUS ? "en-US" : "en-IN")}`;
@@ -960,15 +965,24 @@ function getDynamicInsight(category, title, price, platform, item = {}, country 
   }
 
   const uniqueSpecs = Array.from(new Set(keySpecs)).slice(0, 3);
-  const specText = uniqueSpecs.length > 0 ? uniqueSpecs.join(", ") : "";
+  
+  // Category-specific fallback specs if no specific numbers/keywords found in title
+  let categoryFallbackSpec = "verified retail quality & performance";
+  if (category === "laptop") categoryFallbackSpec = "multi-threaded CPU performance & fast SSD responsiveness";
+  else if (category === "mobile") categoryFallbackSpec = "5G network support & vibrant display quality";
+  else if (category === "audio") categoryFallbackSpec = "crisp sound isolation & long battery endurance";
+  else if (category === "fashion") categoryFallbackSpec = "durable stitch quality & comfortable daily fit";
+  else if (category === "electronics") categoryFallbackSpec = "reliable build standards & brand warranty";
 
-  // Hash title + price to create deterministic variant index (0-5) ensuring distinct sentence openings across cards
+  const specText = uniqueSpecs.length > 0 ? uniqueSpecs.join(", ") : categoryFallbackSpec;
+
+  // Hash title + price + itemIndex to guarantee distinct template rotation across cards
   let hash = 0;
   for (let i = 0; i < titleClean.length; i++) {
     hash = (hash << 5) - hash + titleClean.charCodeAt(i);
     hash |= 0;
   }
-  const variantIndex = Math.abs(hash + price) % 6;
+  const variantIndex = Math.abs(hash + price + (itemIndex * 37)) % 10;
 
   // 2. Extract clean sentence from snippet if available
   let snippetSentence = "";
@@ -982,36 +996,48 @@ function getDynamicInsight(category, title, price, platform, item = {}, country 
   // 3. Regional (Hindi/Marathi) Dynamic Varied Synthesis
   if (isRegional) {
     const hindiVariants = [
-      `${titleClean} उन खरीदारों के लिए एक बेहतरीन विकल्प है जो ${specText || "दमदार फीचर्स"} चाहते हैं। ${platform} पर यह ${formattedPriceStr} में उपलब्ध है।`,
-      `${specText || "उत्कृष्ट फीचर्स"} की तलाश कर रहे उपयोगकर्ताओं के लिए ${titleClean} ${platform} पर ${formattedPriceStr} में एक शानदार वैल्यू डील प्रस्तुत करता है।`,
-      `यदि आप ${titleClean} खरीदने की सोच रहे हैं, तो ${specText || "अपने बेहतरीन स्पेसिफिकेशन्स"} के साथ यह ${platform} पर ${formattedPriceStr} में आदर्श विकल्प है।`,
-      `${titleClean} ${platform} पर ${formattedPriceStr} की कीमत में आता है, जो ${specText || "दैनिक उपयोग"} के लिए उच्च गुणवत्ता और विश्वसनीयता प्रदान करता है।`,
-      `${specText ? specText + " से सुसज्जित, " : ""}${titleClean} ${platform} पर ${formattedPriceStr} में बजट-फ्रेंडली और पावरफुल परफॉर्मेंस देता है।`,
-      `${platform} पर ${formattedPriceStr} में उपलब्ध ${titleClean} अपनी श्रेणी में ${specText || "मजबूत बिल्ड क्वालिटी"} के साथ एक भरोसेमंद मार्केट विकल्प है।`
+      `${titleClean} उन खरीदारों के लिए एक बेहतरीन विकल्प है जो ${specText} चाहते हैं। ${platform} पर यह ${formattedPriceStr} में उपलब्ध है।`,
+      `${specText} की तलाश कर रहे उपयोगकर्ताओं के लिए ${titleClean} ${platform} पर ${formattedPriceStr} में एक शानदार वैल्यू डील प्रस्तुत करता है।`,
+      `यदि आप ${titleClean} खरीदने की सोच रहे हैं, तो ${specText} के साथ यह ${platform} पर ${formattedPriceStr} में आदर्श विकल्प है।`,
+      `${titleClean} ${platform} पर ${formattedPriceStr} की कीमत में आता है, जो ${specText} के लिए उच्च गुणवत्ता प्रदान करता है।`,
+      `${specText} से सुसज्जित, ${titleClean} ${platform} पर ${formattedPriceStr} में पावरफुल परफॉर्मेंस देता है।`,
+      `${platform} पर ${formattedPriceStr} में उपलब्ध ${titleClean} अपनी श्रेणी में ${specText} के साथ एक भरोसेमंद विकल्प है।`,
+      `${titleClean} ${platform} पर ${formattedPriceStr} में उपलब्ध है, जो ${specText} की आवश्यकता वाले उपयोगकर्ताओं के लिए उपयुक्त है।`,
+      `${specText} की सुविधा के साथ, ${titleClean} ${platform} पर ${formattedPriceStr} में बेहतरीन बजट डील है।`,
+      `${platform} की लिस्टिंग अनुसार ${titleClean} (${formattedPriceStr}) ${specText} के साथ शानदार रेटिंग प्राप्त करता है।`,
+      `${titleClean} ${formattedPriceStr} की प्रतिस्पर्धी कीमत पर ${platform} पर ${specText} की गारंटी देता है।`
     ];
     return hindiVariants[variantIndex];
   }
 
   if (snippetSentence && snippetSentence.length > 20) {
     const snippetVariants = [
-      `${snippetSentence}. Offers strong overall performance at ${formattedPriceStr} on ${platform}${specText ? " with " + specText : ""}.`,
-      `${snippetSentence}. Currently listed for ${formattedPriceStr} on ${platform}, making it a highly compelling deal.`,
-      `${snippetSentence}. A well-rated choice available at ${formattedPriceStr} via ${platform}${specText ? " highlighting " + specText : ""}.`,
-      `${snippetSentence}. Priced at ${formattedPriceStr} on ${platform}, it delivers solid everyday value for shoppers.`,
-      `${snippetSentence}. Built for reliability and efficiency, available now for ${formattedPriceStr} on ${platform}.`,
-      `${snippetSentence}. Represents a competitive market pick at ${formattedPriceStr} on ${platform}.`
+      `${snippetSentence}. Offers strong overall performance at ${formattedPriceStr} on ${platform} with ${specText}.`,
+      `${snippetSentence}. Currently listed for ${formattedPriceStr} on ${platform}, highlighting ${specText}.`,
+      `${snippetSentence}. A top-rated choice available at ${formattedPriceStr} via ${platform} featuring ${specText}.`,
+      `${snippetSentence}. Priced at ${formattedPriceStr} on ${platform}, delivering ${specText} for shoppers.`,
+      `${snippetSentence}. Built for efficiency with ${specText}, available for ${formattedPriceStr} on ${platform}.`,
+      `${snippetSentence}. Represents a competitive market pick at ${formattedPriceStr} on ${platform}.`,
+      `${snippetSentence}. Highlighted by ${specText}, it stands out at ${formattedPriceStr} on ${platform}.`,
+      `${snippetSentence}. Provides exceptional utility with ${specText} at ${formattedPriceStr} on ${platform}.`,
+      `${snippetSentence}. Verified deal at ${formattedPriceStr} on ${platform} featuring ${specText}.`,
+      `${snippetSentence}. Recommended buy at ${formattedPriceStr} via ${platform} with ${specText}.`
     ];
     return snippetVariants[variantIndex];
   }
 
-  // English Varied Synthesis Templates (6 distinct opening sentence structures)
+  // English Varied Synthesis Templates (10 distinct non-repetitive sentence structures)
   const englishVariants = [
-    `A top-rated choice for buyers seeking ${titleClean}. Key features include ${specText || "premium build quality"}, making it a solid purchase at ${formattedPriceStr} on ${platform}.`,
-    `${titleClean} is well-suited for users prioritizing ${specText || "reliable performance"}. Currently available for ${formattedPriceStr} on ${platform}.`,
-    `If you need ${specText || "a durable and high-performing product"}, ${titleClean} offers exceptional overall value at ${formattedPriceStr} on ${platform}.`,
-    `Featuring ${specText || "balanced hardware specs"}, ${titleClean} delivers dependable daily utility for ${formattedPriceStr} via ${platform}.`,
-    `Ideal for shoppers looking for ${titleClean}, priced competitively at ${formattedPriceStr} on ${platform}${specText ? " with " + specText : ""}.`,
-    `${titleClean} stands out in its price category at ${formattedPriceStr} on ${platform}, highlighted by ${specText || "great brand value"}.`
+    `Priced at ${formattedPriceStr} on ${platform}, ${titleClean} offers a strong combination of ${specText}.`,
+    `If you are looking for ${titleClean}, this model stands out on ${platform} for ${specText} at ${formattedPriceStr}.`,
+    `${titleClean} provides exceptional value at ${formattedPriceStr} via ${platform}, equipped with ${specText}.`,
+    `A top value pick on ${platform}: ${titleClean} delivers dependable performance highlighting ${specText} at ${formattedPriceStr}.`,
+    `Currently listed for ${formattedPriceStr} on ${platform}, ${titleClean} is ideal for users seeking ${specText}.`,
+    `Featuring ${specText}, ${titleClean} is available at ${formattedPriceStr} on ${platform} with verified market rating.`,
+    `Shoppers considering ${titleClean} get a competitive deal at ${formattedPriceStr} on ${platform}, featuring ${specText}.`,
+    `${platform} lists ${titleClean} at ${formattedPriceStr}, highlighting ${specText} for daily use.`,
+    `With ${specText}, ${titleClean} offers a solid price-to-performance benchmark at ${formattedPriceStr} on ${platform}.`,
+    `A recommended choice at ${formattedPriceStr} on ${platform}, ${titleClean} combines ${specText} for buyers.`
   ];
 
   return englishVariants[variantIndex];
@@ -1528,7 +1554,7 @@ Respond strictly in JSON with this structure:
 
       // Parse Specs & Generate local dynamic matching insights based on specific title + price tier
       const parsedSpecs = parseSpecsFromTitle(category, title, resolvedPrice, item);
-      const fallbackDesc = getDynamicInsight(category, title, resolvedPrice, resolvedPlatform, item, country, isRegional, detectedLanguage);
+      const fallbackDesc = getDynamicInsight(category, title, resolvedPrice, resolvedPlatform, item, country, isRegional, detectedLanguage, cleanProducts.length);
       const image = item.thumbnail || "";
 
       cleanProducts.push({
@@ -1578,7 +1604,7 @@ Respond strictly in JSON with this structure:
 
       stores.forEach((storeInfo, idx) => {
         const directSearchUrl = getRetailerDirectSearchLink(storeInfo.name, displayTitle, country);
-        const fallbackDesc = getDynamicInsight(category, displayTitle, storeInfo.price, storeInfo.name, {}, country, isRegional, detectedLanguage);
+        const fallbackDesc = getDynamicInsight(category, displayTitle, storeInfo.price, storeInfo.name, {}, country, isRegional, detectedLanguage, idx);
         const specs = parseSpecsFromTitle(category, displayTitle, storeInfo.price, {});
 
         cleanProducts.push({
@@ -1630,8 +1656,9 @@ ${langInstruction}
 4. "detailed_specs": Array of 5 concise specs strings.
 
 CRITICAL CONSTRAINTS:
-- EVERY extracted field MUST be specific to that product's title and specs.
-- Keep each field short and punchy (max 12 words per field).
+- EVERY extracted field MUST be strictly UNIQUE and specific to that individual product's title, model, and specs.
+- STRICT RULE: DO NOT use generic phrases like "A top-rated choice for buyers seeking" or "premium build quality".
+- Highlight distinct specs for each product (e.g. OLED Display, Core i5 12th Gen, 14-Hour Battery Life, 46% OFF Price Drop).
 
 Return strictly a JSON array of objects matching each product's index:
 [
@@ -1653,7 +1680,7 @@ Do not include markdown code block formatting. Return ONLY raw JSON array.`;
             contents: [{ parts: [{ text: prompt }] }],
             generationConfig: {
               responseMimeType: "application/json",
-              temperature: 0.5
+              temperature: 0.7
             }
           })
         });

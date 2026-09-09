@@ -2,13 +2,13 @@
 
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, Loader2, Compass, Shield, Database, Search } from "lucide-react";
+import { Check, Loader2, Compass, Shield, Database, Search, Zap, Sparkles } from "lucide-react";
 
 const STAGES = [
-  { id: 1, text: "🧠 Analyzing search intent & specifications...", duration: 1800, icon: Compass },
-  { id: 2, text: "🌐 Scanning multi-store merchant networks...", duration: 2200, icon: Search },
-  { id: 3, text: "📊 Comparing live prices and discounts...", duration: 1800, icon: Database },
-  { id: 4, text: "🎟️ Applying active coupon savings...", duration: 1800, icon: Shield }
+  { id: 1, text: "🧠 Analyzing search intent & specs...", duration: 1600, icon: Compass },
+  { id: 2, text: "🌐 Scanning merchant networks (Amazon, Flipkart, Croma)...", duration: 2000, icon: Search },
+  { id: 3, text: "📊 Benchmarking live store prices & discount offers...", duration: 1600, icon: Database },
+  { id: 4, text: "🎟️ Verifying active coupon vouchers...", duration: 1600, icon: Shield }
 ];
 
 const SHOPPING_TRIVIA = [
@@ -18,6 +18,13 @@ const SHOPPING_TRIVIA = [
   "ShopSmart's proprietary intent classification AI bypasses scraping entirely for coupon-related searches! 🧠",
   "Did you know? The most searched shopping term on ShopSmart is 'Laptop under 50k'! 💻",
   "Outbound PDP direct link guards filter out 100% of malicious Google aggregator redirects! 🛡️"
+];
+
+const STORE_NODES = [
+  { name: "Amazon.in", color: "bg-[#ff9900]/20 text-amber-300 border-[#ff9900]/40", pos: "top-0 left-1/2 -translate-x-1/2 -translate-y-4" },
+  { name: "Flipkart", color: "bg-[#2874f0]/20 text-blue-300 border-[#2874f0]/40", pos: "bottom-0 left-1/2 -translate-x-1/2 translate-y-4" },
+  { name: "Croma", color: "bg-[#00e6c3]/20 text-[#00e6c3] border-[#00e6c3]/40", pos: "top-1/2 right-0 translate-x-6 -translate-y-1/2" },
+  { name: "Reliance", color: "bg-red-500/20 text-red-300 border-red-500/40", pos: "top-1/2 left-0 -translate-x-6 -translate-y-1/2" }
 ];
 
 export default function RocketLoader({ query, onComplete, apiLoading }) {
@@ -36,7 +43,7 @@ export default function RocketLoader({ query, onComplete, apiLoading }) {
   useEffect(() => {
     const interval = setInterval(() => {
       setTriviaIndex((prev) => (prev + 1) % SHOPPING_TRIVIA.length);
-    }, 2500);
+    }, 2400);
     return () => clearInterval(interval);
   }, []);
 
@@ -46,7 +53,6 @@ export default function RocketLoader({ query, onComplete, apiLoading }) {
     let accumulatedTime = 0;
     const totalDuration = STAGES.reduce((acc, s) => acc + s.duration, 0);
 
-    // Progress bar tick interval
     const progressInterval = setInterval(() => {
       setProgress((prev) => {
         if (prev >= 98) {
@@ -54,14 +60,13 @@ export default function RocketLoader({ query, onComplete, apiLoading }) {
             clearInterval(progressInterval);
             return 100;
           }
-          return 98; // Hold near 100 until API resolves
+          return 98;
         }
         return prev + 1;
       });
     }, totalDuration / 98);
 
     STAGES.forEach((stage, index) => {
-      // Timer to activate stage
       const activeTimer = setTimeout(() => {
         setCurrentStage(stage.id);
       }, accumulatedTime);
@@ -69,11 +74,9 @@ export default function RocketLoader({ query, onComplete, apiLoading }) {
 
       accumulatedTime += stage.duration;
 
-      // Timer to complete stage
       const completeTimer = setTimeout(() => {
         setCompletedStages((prev) => [...prev, stage.id]);
         if (index === STAGES.length - 1) {
-          // Last stage completed. Wait if API is still loading
           const checkCompletion = () => {
             if (apiLoadingRef.current) {
               setTimeout(checkCompletion, 100);
@@ -98,61 +101,79 @@ export default function RocketLoader({ query, onComplete, apiLoading }) {
   const CurrentIcon = STAGES[activeIconIndex >= 0 ? activeIconIndex : 0].icon;
 
   return (
-    <div className="w-full max-w-xl mx-auto px-6 py-8 flex flex-col items-center justify-center min-h-[520px]">
+    <div className="w-full max-w-xl mx-auto px-6 py-8 flex flex-col items-center justify-center min-h-[540px] relative">
       
+      {/* Background ambient lighting */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-brand-indigo/15 rounded-full blur-3xl pointer-events-none" />
+
       {/* Query Banner Header */}
       <motion.div
-        initial={{ opacity: 0, y: 10 }}
+        initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mb-8 text-center w-full"
+        className="mb-8 text-center w-full relative z-10"
       >
-        <span className="text-slate-500 text-[10px] font-black uppercase tracking-wider block mb-2 font-mono">
-          Radar Target Query
-        </span>
-        <div className="inline-block px-5 py-2.5 rounded-xl bg-slate-950/60 border border-slate-900 text-white font-mono text-xs max-w-full truncate shadow-inner">
-          &ldquo;{query}&rdquo;
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-indigo/15 border border-brand-indigo/35 text-[10px] font-extrabold uppercase tracking-widest text-brand-indigo mb-2 shadow-sm">
+          <Sparkles className="w-3.5 h-3.5 text-brand-indigo animate-pulse" />
+          <span>Radar Scan Target Query</span>
+        </div>
+        <div className="inline-block px-5 py-2.5 rounded-2xl glass-panel-accent text-white font-semibold text-xs max-w-full truncate shadow-xl border border-slate-800">
+          &ldquo;<span className="text-brand-indigo font-bold">{query}</span>&rdquo;
         </div>
       </motion.div>
 
-      {/* Futuristic concentric radar visualizer */}
-      <div className="relative w-48 h-48 mb-10 flex items-center justify-center">
-        {/* Concentric rings */}
-        <div className="absolute inset-0 rounded-full border border-slate-800/30 scale-100" />
-        <div className="absolute inset-4 rounded-full border border-slate-800/50 scale-100" />
-        <div className="absolute inset-8 rounded-full border border-slate-800/80 scale-100" />
+      {/* Holographic AI Radar Visualizer with Floating Store Nodes */}
+      <div className="relative w-56 h-56 mb-10 flex items-center justify-center relative z-10">
+        
+        {/* Outer glowing halo */}
+        <div className="absolute inset-0 rounded-full border border-brand-indigo/25 scale-100 animate-pulse" />
+        <div className="absolute inset-4 rounded-full border border-slate-800/80 scale-100" />
+        <div className="absolute inset-10 rounded-full border border-brand-violet/20 scale-100" />
         <div className="absolute inset-16 rounded-full border border-slate-900 scale-100" />
 
-        {/* Sweep scanner line */}
+        {/* Floating Store Nodes */}
+        {STORE_NODES.map((node, idx) => (
+          <motion.div
+            key={idx}
+            animate={{ y: [0, -4, 0] }}
+            transition={{ duration: 2.5, repeat: Infinity, delay: idx * 0.4 }}
+            className={`absolute z-30 px-2.5 py-1 rounded-full border text-[10px] font-extrabold tracking-wide uppercase shadow-lg backdrop-blur-md ${node.color} ${node.pos}`}
+          >
+            {node.name}
+          </motion.div>
+        ))}
+
+        {/* 360 Sweep scanner radar line */}
         <motion.div
           animate={{ rotate: 360 }}
-          transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+          transition={{ duration: 3.5, repeat: Infinity, ease: "linear" }}
           className="absolute inset-0 rounded-full pointer-events-none origin-center z-10"
           style={{
-            background: "conic-gradient(from 0deg, transparent 50%, rgba(168, 85, 247, 0.15) 90%, rgba(99, 102, 241, 0.4) 100%)"
+            background: "conic-gradient(from 0deg, transparent 50%, rgba(168, 85, 247, 0.25) 85%, rgba(99, 102, 241, 0.6) 100%)"
           }}
         />
 
-        {/* Central glowing orb with active indicator icon */}
+        {/* Central glowing orb with active indicator icon & percentage */}
         <motion.div
           animate={{
             scale: [1, 1.06, 1],
             boxShadow: [
-              "0 0 15px rgba(99, 102, 241, 0.3)",
-              "0 0 35px rgba(168, 85, 247, 0.5)",
-              "0 0 15px rgba(99, 102, 241, 0.3)"
+              "0 0 20px rgba(99, 102, 241, 0.4)",
+              "0 0 45px rgba(168, 85, 247, 0.7)",
+              "0 0 20px rgba(99, 102, 241, 0.4)"
             ]
           }}
           transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-          className="w-20 h-20 rounded-full bg-gradient-to-tr from-brand-indigo via-brand-violet to-purple-600 flex items-center justify-center p-1 relative z-20 shadow-lg"
+          className="w-24 h-24 rounded-full bg-gradient-to-tr from-brand-indigo via-brand-violet to-emerald-400 flex flex-col items-center justify-center p-1 relative z-20 shadow-2xl"
         >
-          <div className="w-full h-full rounded-full bg-slate-950 flex items-center justify-center border border-slate-900">
-            <CurrentIcon className="w-8 h-8 text-brand-indigo animate-pulse" />
+          <div className="w-full h-full rounded-full bg-slate-950/95 flex flex-col items-center justify-center border border-brand-indigo/40 p-2 text-center">
+            <CurrentIcon className="w-7 h-7 text-brand-indigo animate-pulse mb-0.5" />
+            <span className="text-xs font-black text-white font-mono">{progress}%</span>
           </div>
         </motion.div>
       </div>
 
-      {/* Checklist progress and stage indicators */}
-      <div className="w-full space-y-3.5 mb-8">
+      {/* Checklist stage cards */}
+      <div className="w-full space-y-3 mb-8 relative z-10">
         {STAGES.map((stage) => {
           const isActive = currentStage === stage.id;
           const isCompleted = completedStages.includes(stage.id);
@@ -162,13 +183,15 @@ export default function RocketLoader({ query, onComplete, apiLoading }) {
               key={stage.id}
               initial={{ opacity: 0.2, x: -10 }}
               animate={{
-                opacity: isActive ? 1 : isCompleted ? 0.7 : 0.25,
-                scale: isActive ? 1.01 : 1
+                opacity: isActive ? 1 : isCompleted ? 0.8 : 0.3,
+                scale: isActive ? 1.015 : 1
               }}
-              className={`flex items-center gap-3.5 px-4.5 py-3 rounded-xl border transition-all duration-300 ${
+              className={`flex items-center gap-3.5 px-4.5 py-3 rounded-2xl border transition-all duration-300 ${
                 isActive
-                  ? "border-brand-indigo/30 bg-brand-indigo/5 shadow-[0_0_15px_rgba(99,102,241,0.08)]"
-                  : "border-transparent bg-slate-950/20"
+                  ? "border-brand-indigo/40 bg-slate-900/90 shadow-[0_0_20px_rgba(99,102,241,0.15)]"
+                  : isCompleted
+                  ? "border-emerald-500/25 bg-slate-950/60"
+                  : "border-slate-800/40 bg-slate-950/30"
               }`}
             >
               {/* Left indicator check icon */}
@@ -180,7 +203,7 @@ export default function RocketLoader({ query, onComplete, apiLoading }) {
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
                       exit={{ scale: 0 }}
-                      className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center text-emerald-950 font-bold"
+                      className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center text-slate-950 font-bold shadow-[0_0_10px_rgba(16,185,129,0.4)]"
                     >
                       <Check className="w-3.5 h-3.5 stroke-[3px]" />
                     </motion.div>
@@ -205,7 +228,7 @@ export default function RocketLoader({ query, onComplete, apiLoading }) {
               </div>
 
               {/* Stage Description Text */}
-              <span className={`text-xs md:text-sm font-semibold tracking-wide ${isActive ? "text-white" : isCompleted ? "text-slate-300" : "text-slate-600"}`}>
+              <span className={`text-xs md:text-sm font-semibold tracking-wide ${isActive ? "text-white font-bold" : isCompleted ? "text-slate-300" : "text-slate-600"}`}>
                 {stage.text}
               </span>
             </motion.div>
@@ -213,18 +236,18 @@ export default function RocketLoader({ query, onComplete, apiLoading }) {
         })}
       </div>
 
-      {/* Glowing Neon Progress Bar */}
-      <div className="w-full bg-slate-950 border border-slate-900/60 rounded-full h-2.5 overflow-hidden mb-6 p-0.5 shadow-inner">
+      {/* Glowing Progress Bar */}
+      <div className="w-full bg-slate-950 border border-slate-800 rounded-full h-3 overflow-hidden mb-6 p-0.5 shadow-inner relative z-10">
         <motion.div
           animate={{ width: `${progress}%` }}
           transition={{ duration: 0.3, ease: "easeOut" }}
-          className="h-full rounded-full bg-gradient-to-r from-brand-indigo via-brand-violet to-purple-500 shadow-[0_0_10px_rgba(99,102,241,0.5)]"
+          className="h-full rounded-full bg-gradient-to-r from-brand-indigo via-brand-violet to-emerald-400 shadow-[0_0_15px_rgba(99,102,241,0.6)]"
           style={{ width: "0%" }}
         />
       </div>
 
-      {/* Shopping Trivia Rotating Banner */}
-      <div className="w-full glass-panel border border-slate-900 rounded-xl p-4 min-h-[70px] flex items-center justify-center text-center">
+      {/* Shopping Trivia Banner */}
+      <div className="w-full glass-panel-accent rounded-2xl p-4 min-h-[65px] flex items-center justify-center text-center relative z-10 border border-slate-800">
         <AnimatePresence mode="wait">
           <motion.p
             key={triviaIndex}
@@ -232,7 +255,7 @@ export default function RocketLoader({ query, onComplete, apiLoading }) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -5 }}
             transition={{ duration: 0.4 }}
-            className="text-[11px] md:text-xs font-semibold text-slate-400 leading-relaxed font-mono"
+            className="text-[11px] md:text-xs font-semibold text-slate-300 leading-relaxed font-mono"
           >
             {SHOPPING_TRIVIA[triviaIndex]}
           </motion.p>
