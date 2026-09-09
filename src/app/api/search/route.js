@@ -133,7 +133,39 @@ function getBaseUrl(request) {
   return "http://localhost:3000";
 }
 
-function isValidDirectPDPUrl(url) {
+/**
+ * Dual-Region Smart Quick-Commerce & Hyperlocal Delivery Exclusion Engine (IN + US)
+ */
+function isQuickCommerceOrHyperlocal(platformOrUrl, country = "in") {
+  if (!platformOrUrl) return false;
+  const lower = String(platformOrUrl).toLowerCase().trim();
+
+  // 1. Universal Quick-Commerce & Local Delivery Pattern Exclusions
+  const universalQuickCommKeywords = [
+    "zepto", "zeptonow", "blinkit", "blink it", "instamart", "dunzo", "bbnow", "bb now",
+    "instacart", "doordash", "gopuff", "ubereats", "uber eats", "postmates", "shipt", "drizly", "seamless",
+    "darkstore", "quick-commerce", "10min-delivery", "express-grocery", "dashpass"
+  ];
+
+  for (const kw of universalQuickCommKeywords) {
+    if (lower.includes(kw)) return true;
+  }
+
+  // 2. Region-Specific Exclusions
+  const isUS = String(country).toLowerCase() === "us";
+
+  if (isUS) {
+    const usQuickComm = ["instacart", "doordash", "gopuff", "ubereats", "shipt", "postmates", "drizly", "seamless"];
+    if (usQuickComm.some(k => lower.includes(k))) return true;
+  } else {
+    const inQuickComm = ["zepto", "zeptonow", "blinkit", "instamart", "dunzo", "bbnow", "zomato", "swiggy"];
+    if (inQuickComm.some(k => lower.includes(k))) return true;
+  }
+
+  return false;
+}
+
+function isValidDirectPDPUrl(url, country = "in") {
   if (!url) return false;
   const lower = url.toLowerCase().trim();
   
@@ -151,15 +183,8 @@ function isValidDirectPDPUrl(url) {
     return false;
   }
 
-  // Strictly block Quick-Commerce / Instant Delivery networks (Zepto, Blinkit, Instamart, Dunzo, BB Now)
-  if (
-    lower.includes("zepto") ||
-    lower.includes("zeptonow") ||
-    lower.includes("blinkit") ||
-    lower.includes("instamart") ||
-    lower.includes("dunzo") ||
-    lower.includes("bbnow")
-  ) {
+  // Strictly block Quick-Commerce & Hyperlocal delivery networks for both IN and US
+  if (isQuickCommerceOrHyperlocal(lower, country)) {
     return false;
   }
   
@@ -1357,16 +1382,9 @@ Respond strictly in JSON with this structure:
       const platform = item.source || item.merchant || item.seller || "Online Store";
       const platformLower = String(platform).toLowerCase();
 
-      // Block Quick-Commerce / Instant Grocery networks (Zepto, Blinkit, Instamart, Dunzo)
-      if (
-        platformLower.includes("zepto") ||
-        platformLower.includes("blinkit") ||
-        platformLower.includes("instamart") ||
-        platformLower.includes("dunzo") ||
-        platformLower.includes("bb now") ||
-        platformLower.includes("bbnow")
-      ) {
-        console.log(`Dropping quick-commerce result "${title}" from platform "${platform}".`);
+      // Block Quick-Commerce / Instant Delivery networks for both IN & US (Zepto, Blinkit, Instamart, Instacart, DoorDash, GoPuff, etc.)
+      if (isQuickCommerceOrHyperlocal(platform, country) || isQuickCommerceOrHyperlocal(item.link || item.direct_link, country)) {
+        console.log(`Dropping quick-commerce result "${title}" from platform "${platform}" in region "${country}".`);
         continue;
       }
 
@@ -1382,7 +1400,7 @@ Respond strictly in JSON with this structure:
       const finalLink = primaryOffer.link;
 
       // Zero Google Aggregator Link Leak Policy: Strictly filter out and drop product if no valid merchant PDP link is resolved
-      if (!finalLink || !isValidDirectPDPUrl(finalLink)) {
+      if (!finalLink || !isValidDirectPDPUrl(finalLink, country)) {
         console.log(`Dropping product "${title}" because no valid direct retailer PDP link could be resolved.`);
         continue;
       }
