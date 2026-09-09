@@ -159,7 +159,13 @@ export default function Home() {
 
   const handleCountryChange = async (newCountry) => {
     const code = newCountry.toUpperCase();
+    if (code === selectedCountry) return;
+
     setSelectedCountry(code);
+    try {
+      localStorage.setItem("user_selected_country", code);
+    } catch (e) {}
+
     if (user) {
       const updatedUser = {
         ...user,
@@ -174,6 +180,34 @@ export default function Home() {
       } catch (e) {
         console.warn("Gracefully updated local country metadata state:", e);
       }
+    }
+
+    // Automatically re-run search for the new target region if search results are currently active
+    if (appState === "results" && searchQuery) {
+      handleSearchSubmitForCountry(searchQuery, code);
+    }
+  };
+
+  const handleSearchSubmitForCountry = async (query, targetCountry) => {
+    setSearchQuery(query);
+    setAppState("searching");
+    setApiError(null);
+    setIsApiLoading(true);
+    setProducts([]);
+
+    try {
+      const response = await searchProducts(query, targetCountry);
+      const fetchedProducts = response.results || [];
+      setProducts(fetchedProducts);
+      setSearchIntent(response.intent || "E-COMMERCE");
+      setCoupons(response.coupons || []);
+      setCouponNotAvailable(response.error === "NotAvailable");
+      setSearchesLeft(response.searchesLeft !== undefined ? response.searchesLeft : 10);
+      setApiError(null);
+    } catch (err) {
+      console.error("Local search API request failed:", err);
+    } finally {
+      setIsApiLoading(false);
     }
   };
 
@@ -316,11 +350,42 @@ export default function Home() {
             </span>
           </div>
 
-          <div className="flex items-center gap-4 text-xs md:text-sm">
-            <span className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-semibold shadow-inner">
+          <div className="flex items-center gap-3 text-xs md:text-sm">
+            <span className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-semibold shadow-inner">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
               <span>1,284 Active Shoppers</span>
             </span>
+
+            {/* Direct Header Region Switcher Pill */}
+            <div className="flex items-center gap-1 p-1 rounded-xl bg-slate-900/90 border border-slate-800 shadow-md">
+              <button
+                type="button"
+                onClick={() => handleCountryChange("IN")}
+                title="Switch search region to India (INR ₹)"
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  selectedCountry === "IN"
+                    ? "bg-gradient-to-r from-brand-indigo to-brand-violet text-white shadow-md"
+                    : "text-slate-400 hover:text-white hover:bg-slate-800/50"
+                }`}
+              >
+                <span>🇮🇳</span>
+                <span>IN (₹)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleCountryChange("US")}
+                title="Switch search region to United States (USD $)"
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  selectedCountry === "US"
+                    ? "bg-gradient-to-r from-brand-indigo to-brand-violet text-white shadow-md"
+                    : "text-slate-400 hover:text-white hover:bg-slate-800/50"
+                }`}
+              >
+                <span>🇺🇸</span>
+                <span>US ($)</span>
+              </button>
+            </div>
+
             <ProfileMenu
               user={user}
               onLogout={handleLogout}
