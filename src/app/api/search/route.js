@@ -7,11 +7,100 @@ import { monetizeUrl } from "@/services/affiliate";
 function getCacheKey(country, query) {
   const clean = query
     .toLowerCase()
-    .replace(/[^a-z0-9]/g, " ")
+    .replace(/[^\w\u0900-\u097F]/g, " ")
     .replace(/\s+/g, " ")
     .trim()
     .replace(/\s/g, "-");
-  return `cache:search:${(country || "in").toLowerCase()}:${clean}`;
+  return `cache:search:${(country || "in").toLowerCase()}:${clean || "default"}`;
+}
+
+/**
+ * Layer 1: Zero-Latency Multi-Lingual Query Normalization Engine (Hindi, Marathi, Hinglish)
+ */
+function normalizeMultiLingualQuery(rawQuery) {
+  if (!rawQuery) return { normalizedQuery: "", originalQuery: "", isRegional: false, detectedLanguage: "en" };
+
+  const query = String(rawQuery).trim();
+  const hasDevanagari = /[\u0900-\u097F]/.test(query);
+
+  const hindiTerms = [
+    { pattern: /सबसे\s+अच्छा|सबसे\s+बढ़िया|अच्छे|अच्छा/g, replacement: "best" },
+    { pattern: /सबसे\s+सस्ता|सबसे\s+सस्ते|सस्ता|सस्ते/g, replacement: "budget cheap" },
+    { pattern: /गेमिंग/g, replacement: "gaming" },
+    { pattern: /लैपटॉप/g, replacement: "laptop" },
+    { pattern: /मोबाइल|फोन/g, replacement: "mobile phone" },
+    { pattern: /जूते|जूता/g, replacement: "shoes" },
+    { pattern: /कपड़े|कपड़ा/g, replacement: "clothing clothes" },
+    { pattern: /अगरबत्ती/g, replacement: "incense sticks agarbatti" },
+    { pattern: /घड़ी|स्मार्टवॉच/g, replacement: "smartwatch" },
+    { pattern: /टीवी|टेलीविजन/g, replacement: "tv television" },
+    { pattern: /वाशिंग\s+मशीन/g, replacement: "washing machine" },
+    { pattern: /फ्रिज|रेफ्रिजरेटर/g, replacement: "refrigerator fridge" },
+    { pattern: /इयरफोन|हेडफोन/g, replacement: "headphones earphones" },
+    { pattern: /किताबें|किताब/g, replacement: "books" },
+    { pattern: /खिलौने|खिलौना/g, replacement: "toys" },
+    { pattern: /चश्मा/g, replacement: "sunglasses" },
+    { pattern: /पर्स|वॉलेट/g, replacement: "wallet bag" },
+    { pattern: /साड़ी|साडी/g, replacement: "saree" },
+    { pattern: /कुर्ती/g, replacement: "kurti" },
+  ];
+
+  const marathiTerms = [
+    { pattern: /सर्वात\s+छान|उत्तम|काढून\s+द्या|पाहिजे/g, replacement: "best" },
+    { pattern: /कमी\s+किमतीचा|कमी\s+किमतीत|स्वस्त/g, replacement: "budget cheap" },
+    { pattern: /मोबाईल/g, replacement: "mobile phone" },
+    { pattern: /कपडे/g, replacement: "clothes" },
+  ];
+
+  const hinglishTerms = [
+    { pattern: /\bsabse\s+achha\b|\bsabse\s+badiya\b|\bachha\b/gi, replacement: "best" },
+    { pattern: /\bsabse\s+sasta\b|\bsasta\b|\bsaste\b/gi, replacement: "budget cheap" },
+    { pattern: /\bgaming\b/gi, replacement: "gaming" },
+    { pattern: /\blaptop\b/gi, replacement: "laptop" },
+    { pattern: /\bphone\b|\bmobile\b/gi, replacement: "phone" },
+    { pattern: /\bchahiye\b|\bdikhao\b|\bbatao\b/gi, replacement: "" },
+  ];
+
+  let cleaned = query;
+  let isRegional = hasDevanagari;
+  let detectedLang = hasDevanagari ? "hi" : "en";
+
+  if (hasDevanagari) {
+    if (/पाहिजे|आहे|कोणता|कमी\s+किमतीचा|सर्वात/.test(query)) {
+      detectedLang = "mr";
+      marathiTerms.forEach(({ pattern, replacement }) => {
+        cleaned = cleaned.replace(pattern, replacement);
+      });
+    }
+
+    hindiTerms.forEach(({ pattern, replacement }) => {
+      cleaned = cleaned.replace(pattern, replacement);
+    });
+
+    cleaned = cleaned.replace(/[\u0900-\u097F]+/g, " ").trim();
+  } else {
+    const isHinglish = /\b(sabse|sasta|saste|achha|badiya|chahiye|dikhao|batao|wala|wali)\b/i.test(query);
+    if (isHinglish) {
+      isRegional = true;
+      detectedLang = "hinglish";
+      hinglishTerms.forEach(({ pattern, replacement }) => {
+        cleaned = cleaned.replace(pattern, replacement);
+      });
+    }
+  }
+
+  cleaned = cleaned.replace(/\s+/g, " ").trim();
+
+  if (!cleaned) {
+    cleaned = query;
+  }
+
+  return {
+    normalizedQuery: cleaned,
+    originalQuery: query,
+    isRegional,
+    detectedLanguage: detectedLang
+  };
 }
 
 class RequestQueue {
@@ -830,7 +919,12 @@ function parseSpecsFromTitle(category, title, price, item = {}) {
  * Zero hardcoded categories, zero hardcoded brand arrays.
  * Dynamically reads the incoming product's title, snippet, description, and metadata to generate a 2-sentence recommendation.
  */
-function getDynamicInsight(category, title, price, platform, item = {}, country = "in") {
+/**
+ * Universal Data-Driven Product Intelligence Engine.
+ * Dynamically reads product title, snippet, and metadata to generate a unique 2-sentence recommendation.
+ * Uses title+price deterministic hashing to rotate across 6 distinct opening sentence structures.
+ */
+function getDynamicInsight(category, title, price, platform, item = {}, country = "in", isRegional = false, detectedLang = "hi") {
   const isUS = (country || "").toLowerCase() === "us";
   const currSym = isUS ? "$" : "₹";
   const formattedPriceStr = `${currSym}${price.toLocaleString(isUS ? "en-US" : "en-IN")}`;
@@ -842,16 +936,13 @@ function getDynamicInsight(category, title, price, platform, item = {}, country 
   // Combine full metadata into text context
   const fullText = `${titleClean} ${snippetRaw} ${extensionsStr}`.trim();
 
-  // 1. Extract dynamic technical & attribute highlights (e.g. 12GB, 50MP, Salicylic Acid, Quartz, 100% Cotton, etc.)
+  // 1. Extract dynamic technical & attribute highlights
   const keySpecs = [];
-
-  // Extract numeric specs with units
   const specMatches = fullText.match(/\b(\d+(?:\.\d+)?)\s*(mp|gb|tb|mb|mah|ram|ssd|nvme|hz|inch|\"|cm|mm|kg|g|gm|l|ltr|w|watt|v|star|k|m)\b/gi);
   if (specMatches) {
     specMatches.slice(0, 3).forEach(m => keySpecs.push(m.toUpperCase()));
   }
 
-  // Extract key descriptive words/phrases from title or snippet
   const featureList = [
     "salicylic acid", "neem", "tea tree", "vitamin c", "hyaluronic", "retinol", "niacinamide",
     "quartz", "analog", "digital", "chronograph", "stainless steel", "leather", "mesh", "water resistant",
@@ -871,27 +962,59 @@ function getDynamicInsight(category, title, price, platform, item = {}, country 
   const uniqueSpecs = Array.from(new Set(keySpecs)).slice(0, 3);
   const specText = uniqueSpecs.length > 0 ? uniqueSpecs.join(", ") : "";
 
-  // 2. Extract first clean sentence from snippet if available
+  // Hash title + price to create deterministic variant index (0-5) ensuring distinct sentence openings across cards
+  let hash = 0;
+  for (let i = 0; i < titleClean.length; i++) {
+    hash = (hash << 5) - hash + titleClean.charCodeAt(i);
+    hash |= 0;
+  }
+  const variantIndex = Math.abs(hash + price) % 6;
+
+  // 2. Extract clean sentence from snippet if available
   let snippetSentence = "";
   if (snippetRaw) {
     const cleanSentences = snippetRaw.split(/[.!?]/).map(s => s.trim()).filter(s => s.length > 15 && !s.toLowerCase().includes("http"));
     if (cleanSentences.length > 0) {
-      snippetSentence = cleanSentences[0];
-      // Strip prices or seller info if present in snippet text
-      snippetSentence = snippetSentence.replace(/(?:₹|\$)\d+(?:,\d+)*/g, "").replace(/\s+/g, " ").trim();
+      snippetSentence = cleanSentences[0].replace(/(?:₹|\$)\d+(?:,\d+)*/g, "").replace(/\s+/g, " ").trim();
     }
   }
 
-  // 3. Synthesize natural 2-sentence recommendation strictly from incoming product metadata
+  // 3. Regional (Hindi/Marathi) Dynamic Varied Synthesis
+  if (isRegional) {
+    const hindiVariants = [
+      `${titleClean} उन खरीदारों के लिए एक बेहतरीन विकल्प है जो ${specText || "दमदार फीचर्स"} चाहते हैं। ${platform} पर यह ${formattedPriceStr} में उपलब्ध है।`,
+      `${specText || "उत्कृष्ट फीचर्स"} की तलाश कर रहे उपयोगकर्ताओं के लिए ${titleClean} ${platform} पर ${formattedPriceStr} में एक शानदार वैल्यू डील प्रस्तुत करता है।`,
+      `यदि आप ${titleClean} खरीदने की सोच रहे हैं, तो ${specText || "अपने बेहतरीन स्पेसिफिकेशन्स"} के साथ यह ${platform} पर ${formattedPriceStr} में आदर्श विकल्प है।`,
+      `${titleClean} ${platform} पर ${formattedPriceStr} की कीमत में आता है, जो ${specText || "दैनिक उपयोग"} के लिए उच्च गुणवत्ता और विश्वसनीयता प्रदान करता है।`,
+      `${specText ? specText + " से सुसज्जित, " : ""}${titleClean} ${platform} पर ${formattedPriceStr} में बजट-फ्रेंडली और पावरफुल परफॉर्मेंस देता है।`,
+      `${platform} पर ${formattedPriceStr} में उपलब्ध ${titleClean} अपनी श्रेणी में ${specText || "मजबूत बिल्ड क्वालिटी"} के साथ एक भरोसेमंद मार्केट विकल्प है।`
+    ];
+    return hindiVariants[variantIndex];
+  }
+
   if (snippetSentence && snippetSentence.length > 20) {
-    return `${snippetSentence}. Offers strong overall value at ${formattedPriceStr} on ${platform}${specText ? " featuring " + specText : ""}.`;
+    const snippetVariants = [
+      `${snippetSentence}. Offers strong overall performance at ${formattedPriceStr} on ${platform}${specText ? " with " + specText : ""}.`,
+      `${snippetSentence}. Currently listed for ${formattedPriceStr} on ${platform}, making it a highly compelling deal.`,
+      `${snippetSentence}. A well-rated choice available at ${formattedPriceStr} via ${platform}${specText ? " highlighting " + specText : ""}.`,
+      `${snippetSentence}. Priced at ${formattedPriceStr} on ${platform}, it delivers solid everyday value for shoppers.`,
+      `${snippetSentence}. Built for reliability and efficiency, available now for ${formattedPriceStr} on ${platform}.`,
+      `${snippetSentence}. Represents a competitive market pick at ${formattedPriceStr} on ${platform}.`
+    ];
+    return snippetVariants[variantIndex];
   }
 
-  if (specText) {
-    return `Designed for buyers seeking ${titleClean}. Key features include ${specText}, making it a solid choice at ${formattedPriceStr} on ${platform}.`;
-  }
+  // English Varied Synthesis Templates (6 distinct opening sentence structures)
+  const englishVariants = [
+    `A top-rated choice for buyers seeking ${titleClean}. Key features include ${specText || "premium build quality"}, making it a solid purchase at ${formattedPriceStr} on ${platform}.`,
+    `${titleClean} is well-suited for users prioritizing ${specText || "reliable performance"}. Currently available for ${formattedPriceStr} on ${platform}.`,
+    `If you need ${specText || "a durable and high-performing product"}, ${titleClean} offers exceptional overall value at ${formattedPriceStr} on ${platform}.`,
+    `Featuring ${specText || "balanced hardware specs"}, ${titleClean} delivers dependable daily utility for ${formattedPriceStr} via ${platform}.`,
+    `Ideal for shoppers looking for ${titleClean}, priced competitively at ${formattedPriceStr} on ${platform}${specText ? " with " + specText : ""}.`,
+    `${titleClean} stands out in its price category at ${formattedPriceStr} on ${platform}, highlighted by ${specText || "great brand value"}.`
+  ];
 
-  return `A verified choice for ${titleClean}. Available at ${formattedPriceStr} on ${platform} with store warranty assurance.`;
+  return englishVariants[variantIndex];
 }
 
 function parseCleanPrice(item, country = "in") {
@@ -1113,14 +1236,12 @@ export async function POST(request) {
       return NextResponse.json({ products: [], error: "Query is required" }, { status: 200 });
     }
 
-    // Keep user's query intact, only stripping currency symbols and double spaces
-    const cleanQuery = query
-      .replace(/[₹$€£,]/g, "")
-      .replace(/\s+/g, " ")
-      .trim();
+    // Layer 1: Zero-Latency Multi-Lingual Query Normalization (Hindi, Marathi, Hinglish, English)
+    const { normalizedQuery, originalQuery, isRegional, detectedLanguage } = normalizeMultiLingualQuery(query);
+    const cleanQuery = normalizedQuery || query.replace(/[₹$€£,]/g, "").replace(/\s+/g, " ").trim();
 
     // Check Redis Cache First (Exempt from Quota limits!)
-    const cacheKey = getCacheKey(country, cleanQuery);
+    const cacheKey = getCacheKey(country, originalQuery || cleanQuery);
     try {
       const cachedDataStr = await redis.get(cacheKey);
       if (cachedDataStr) {
@@ -1407,7 +1528,7 @@ Respond strictly in JSON with this structure:
 
       // Parse Specs & Generate local dynamic matching insights based on specific title + price tier
       const parsedSpecs = parseSpecsFromTitle(category, title, resolvedPrice, item);
-      const fallbackDesc = getDynamicInsight(category, title, resolvedPrice, resolvedPlatform, item, country);
+      const fallbackDesc = getDynamicInsight(category, title, resolvedPrice, resolvedPlatform, item, country, isRegional, detectedLanguage);
       const image = item.thumbnail || "";
 
       cleanProducts.push({
@@ -1457,7 +1578,7 @@ Respond strictly in JSON with this structure:
 
       stores.forEach((storeInfo, idx) => {
         const directSearchUrl = getRetailerDirectSearchLink(storeInfo.name, displayTitle, country);
-        const fallbackDesc = getDynamicInsight(category, displayTitle, storeInfo.price, storeInfo.name, {});
+        const fallbackDesc = getDynamicInsight(category, displayTitle, storeInfo.price, storeInfo.name, {}, country, isRegional, detectedLanguage);
         const specs = parseSpecsFromTitle(category, displayTitle, storeInfo.price, {});
 
         cleanProducts.push({
@@ -1484,33 +1605,40 @@ Respond strictly in JSON with this structure:
     }
 
     // Call Gemini AI on the top products to generate custom insights (if API key is present)
-    const geminiApiKey = process.env.GEMINI_API_KEY;
+    const geminiApiKey = process.env.GEMINI_API_KEY || settings?.gemini_api_key;
     if (geminiApiKey && cleanProducts.length > 0) {
       try {
         const productsListText = cleanProducts.slice(0, 10).map((p, idx) => {
           return `${idx + 1}. Title: ${p.title}\n   Description/Features: ${p.rawSnippet || "Standard Product"}\n   Store: ${p.store_name} | Price: ${p.price}`;
         }).join("\n\n");
 
-        const prompt = `You are an expert AI Shopping Assistant. The user searched for: "${cleanQuery}".
-Below are real products matched for this search:
+        const langInstruction = isRegional 
+          ? `CRITICAL LANGUAGE REQUIREMENT: The user searched in ${detectedLanguage === 'mr' ? 'Marathi' : 'Hindi/Hinglish'} ("${originalQuery}"). Extract target_user, key_strength, and value_factor in natural, fluent ${detectedLanguage === 'mr' ? 'Marathi' : 'Hindi'} script (Devanagari).`
+          : `Extract target_user, key_strength, and value_factor in clear, concise English.`;
+
+        const prompt = `You are an expert AI Shopping Intelligence Engine. The user searched for: "${originalQuery || cleanQuery}".
+Below are real products matched for this search with their title, price, store, and specs snippet:
 
 ${productsListText}
 
 INSTRUCTIONS FOR EACH PRODUCT:
-1. Write a 100% unique, natural, human-like 2-sentence shopping recommendation ("summary") explaining:
-   - Who this specific product is best for (e.g. students, professionals, casual users, gamers, budget shoppers).
-   - Why it is best for them based on its title, brand, price, or unique specifications (e.g. battery backup, value for money, premium build, specific ingredients/features).
-2. Generate category-specific detailed specs array (5 concise specs strings).
+Analyze the product text and extract 3 structured attributes:
+1. "target_user": Who this specific product is ideal for (e.g. "स्टूडेंट्स और डेली ऑफिस वर्क" or "Professional Video Editors & Gamers").
+2. "key_strength": The single standout feature or spec strength (e.g. "144Hz FHD डिस्प्ले और Dedicated RTX GPU" or "10 घंटे बैटरी बैकअप").
+3. "value_factor": The budget or market value proposition (e.g. "₹50k बजट सेगमेंट में सबसे टिकाऊ विकल्प" or "High value for money deal").
+${langInstruction}
+4. "detailed_specs": Array of 5 concise specs strings.
 
 CRITICAL CONSTRAINTS:
-- EVERY recommendation MUST be 100% unique in vocabulary and structure across all products.
-- DO NOT use template sentences like "Ideal for... Available at...". Write naturally like an expert human advisor.
-- Keep each summary concise (max 35 words).
+- EVERY extracted field MUST be specific to that product's title and specs.
+- Keep each field short and punchy (max 12 words per field).
 
-Return the results strictly as a JSON array of objects, where each object matches the product's index:
+Return strictly a JSON array of objects matching each product's index:
 [
   {
-    "summary": "This laptop is great for students needing long battery life and solid multitasking performance on a budget. Its lightweight frame and crisp display make daily campus work smooth.",
+    "target_user": "...",
+    "key_strength": "...",
+    "value_factor": "...",
     "detailed_specs": ["Processor: Core i5", "RAM: 8GB", "Storage: 512GB SSD", "Display: 15.6 FHD", "Battery: Up to 10 hrs"]
   }
 ]
@@ -1525,7 +1653,7 @@ Do not include markdown code block formatting. Return ONLY raw JSON array.`;
             contents: [{ parts: [{ text: prompt }] }],
             generationConfig: {
               responseMimeType: "application/json",
-              temperature: 0.7
+              temperature: 0.5
             }
           })
         });
@@ -1541,13 +1669,22 @@ Do not include markdown code block formatting. Return ONLY raw JSON array.`;
           if (Array.isArray(parsedResults)) {
             cleanProducts.slice(0, 10).forEach((p, idx) => {
               const res = parsedResults[idx];
-              if (res) {
-                if (typeof res === "string" && res.trim().length > 10) {
-                  p.description = res.trim();
+              if (res && typeof res === "object") {
+                if (res.target_user && res.key_strength) {
+                  const targetUser = String(res.target_user).trim();
+                  const keyStrength = String(res.key_strength).trim();
+                  const valueFactor = res.value_factor ? String(res.value_factor).trim() : "";
+                  
+                  if (isRegional) {
+                    p.description = `🎯 Best For: ${targetUser}\n⚡ Highlight: ${keyStrength}${valueFactor ? '\n💰 Value: ' + valueFactor : ''}`;
+                  } else {
+                    p.description = `🎯 Ideal For: ${targetUser}\n⚡ Key Strength: ${keyStrength}${valueFactor ? '\n💰 Price Advantage: ' + valueFactor : ''}`;
+                  }
                 } else if (res.summary && typeof res.summary === "string" && res.summary.trim().length > 10) {
                   p.description = res.summary.trim();
                 }
-                if (res.detailed_specs && Array.isArray(res.detailed_specs)) {
+
+                if (res.detailed_specs && Array.isArray(res.detailed_specs) && res.detailed_specs.length > 0) {
                   p.specs = res.detailed_specs;
                 }
               }
