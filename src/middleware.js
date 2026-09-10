@@ -1,5 +1,8 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
+const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || "pk_test_ZWxlY3RyaWMtY3ViLTQ5NDQuY2xlcmsuYWNjb3VudHMuZGV2JA";
+const secretKey = process.env.CLERK_SECRET_KEY || "sk_test_wMH1KcNxkOWdhyo2ndsO64JXQKoBoEmKceKyp5eyFn";
+
 const isPublicRoute = createRouteMatcher([
   "/",
   "/sign-in(.*)",
@@ -10,11 +13,17 @@ const isPublicRoute = createRouteMatcher([
   "/api/telemetry/(.*)"
 ]);
 
-export default clerkMiddleware(async (auth, req) => {
-  if (!isPublicRoute(req)) {
-    await auth.protect();
+export default clerkMiddleware(
+  async (auth, req) => {
+    if (!isPublicRoute(req)) {
+      await auth.protect();
+    }
+  },
+  {
+    publishableKey,
+    secretKey,
   }
-});
+);
 
 export const config = {
   matcher: [

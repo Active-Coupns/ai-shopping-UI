@@ -17,9 +17,11 @@ export const metadata = {
   description: "Experience the future of smart shopping. AI-powered specifications matching, affiliate coupons, and real-time comparison across Amazon, Flipkart, & more.",
 };
 
+const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || "pk_test_ZWxlY3RyaWMtY3ViLTQ5NDQuY2xlcmsuYWNjb3VudHMuZGV2JA";
+
 export default function RootLayout({ children }) {
   return (
-    <ClerkProvider>
+    <ClerkProvider publishableKey={publishableKey}>
       <html
         lang="en"
         className={`${outfit.variable} ${inter.variable} h-full antialiased`}
