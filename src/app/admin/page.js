@@ -6,9 +6,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   ShieldAlert, Settings, Key, Tag, Plus, Trash2, Save, ShoppingBag, 
   ArrowLeft, CheckCircle2, Globe, FileText, AlertCircle, BarChart3, 
-  Users, Search, MousePointerClick, RefreshCw, Layers, Database, Link2 
+  Users, Search, MousePointerClick, RefreshCw, Layers, Database, Link2, Lock 
 } from "lucide-react";
-import { useUser } from "@clerk/nextjs";
+import { useUser, SignIn, SignInButton, UserButton } from "@clerk/nextjs";
 import { getAdminSettings, saveAdminSettings } from "@/services/admin";
 
 export default function AdminPage() {
@@ -54,22 +54,16 @@ export default function AdminPage() {
   useEffect(() => {
     async function initAdmin() {
       if (!isLoaded) return;
-      const email = clerkUser?.primaryEmailAddress?.emailAddress || "";
-      const isAdmin = email.includes("admin") || clerkUser?.publicMetadata?.is_admin === true;
-      const isDev = process.env.NODE_ENV === "development" || (typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"));
 
-      if (!isAdmin && !isDev) {
-        // Enforce secure guard in production by redirecting back to home page
-        router.push("/");
+      if (!clerkUser) {
+        setLoading(false);
         return;
       }
 
-      const activeUser = clerkUser ? {
+      const email = clerkUser?.primaryEmailAddress?.emailAddress || "";
+      const activeUser = {
         email,
         user_metadata: { full_name: clerkUser.fullName || email.split("@")[0], is_admin: true }
-      } : {
-        email: "dev-admin@example.com",
-        user_metadata: { full_name: "Developer Admin Bypass", is_admin: true }
       };
 
       setUser(activeUser);
@@ -192,10 +186,57 @@ export default function AdminPage() {
     }
   };
 
-  if (loading) {
+  if (!isLoaded || loading) {
     return (
       <div className="min-h-screen bg-[#020617] flex items-center justify-center">
         <span className="w-8 h-8 border-4 border-brand-indigo/30 border-t-brand-indigo rounded-full animate-spin inline-block" />
+      </div>
+    );
+  }
+
+  if (!clerkUser) {
+    return (
+      <div className="min-h-screen relative flex flex-col items-center justify-center bg-[#020617] text-slate-200 p-4">
+        {/* Glow Effects */}
+        <div className="absolute top-0 inset-x-0 h-[500px] flex justify-between pointer-events-none z-0">
+          <div className="w-[35%] h-full bg-brand-violet/10 bg-glow-purple rounded-full mix-blend-screen -translate-x-[20%] -translate-y-[20%]"></div>
+          <div className="w-[35%] h-full bg-brand-indigo/10 bg-glow-blue rounded-full mix-blend-screen translate-x-[20%] -translate-y-[10%]"></div>
+        </div>
+
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="relative z-10 w-full max-w-md p-6 sm:p-8 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-2xl text-center backdrop-blur-xl"
+        >
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-brand-indigo to-brand-violet flex items-center justify-center text-white mx-auto mb-4 shadow-[0_0_20px_rgba(99,102,241,0.4)]">
+            <Lock className="w-6 h-6" />
+          </div>
+
+          <h2 className="text-xl font-bold text-white mb-2">Admin Portal Authentication 🔒</h2>
+          <p className="text-xs text-slate-400 mb-6 leading-relaxed">
+            Please sign in with your authorized account to access the ShopSmart AI Admin Panel.
+          </p>
+
+          <div className="flex flex-col gap-3">
+            <SignInButton mode="modal">
+              <button
+                type="button"
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-brand-indigo to-brand-violet hover:from-brand-indigo/90 hover:to-brand-violet/90 text-xs sm:text-sm font-bold text-white transition-all shadow-md active:scale-98 cursor-pointer flex items-center justify-center gap-2"
+              >
+                <Lock className="w-4 h-4" />
+                <span>Sign In to Access Admin Controls</span>
+              </button>
+            </SignInButton>
+
+            <button
+              type="button"
+              onClick={() => router.push("/")}
+              className="py-2.5 rounded-xl bg-slate-800/60 hover:bg-slate-800 text-xs font-semibold text-slate-400 hover:text-white border border-slate-700/60 transition-all cursor-pointer"
+            >
+              &larr; Return to Homepage
+            </button>
+          </div>
+        </motion.div>
       </div>
     );
   }
@@ -223,11 +264,6 @@ export default function AdminPage() {
               <Settings className="w-5 h-5 text-brand-indigo" />
               <span className="text-md md:text-lg font-bold text-white tracking-tight flex items-center gap-2">
                 ShopSmart Admin Controls
-                {(!user || user.email === "dev-admin@example.com") && (
-                  <span className="text-[10px] font-extrabold uppercase bg-amber-500/10 border border-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full tracking-wide">
-                    Dev Bypass Active ⚡
-                  </span>
-                )}
               </span>
             </div>
           </div>
@@ -259,6 +295,7 @@ export default function AdminPage() {
               <Save className="w-4 h-4" />
               <span>Save Settings</span>
             </button>
+            <UserButton showName={true} />
           </div>
         </div>
       </header>
