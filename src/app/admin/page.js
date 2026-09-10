@@ -60,10 +60,19 @@ export default function AdminPage() {
         return;
       }
 
-      const email = clerkUser?.primaryEmailAddress?.emailAddress || "";
+      const email = clerkUser?.primaryEmailAddress?.emailAddress?.toLowerCase() || "";
+      const isDev = process.env.NODE_ENV === "development" || (typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"));
+      
+      // Admin check: Clerk metadata is_admin/role OR email contains admin OR developer on localhost
+      const isAdmin = 
+        clerkUser?.publicMetadata?.is_admin === true || 
+        clerkUser?.publicMetadata?.role === "admin" || 
+        email.includes("admin") ||
+        isDev;
+
       const activeUser = {
         email,
-        user_metadata: { full_name: clerkUser.fullName || email.split("@")[0], is_admin: true }
+        user_metadata: { full_name: clerkUser.fullName || email.split("@")[0], is_admin: isAdmin }
       };
 
       setUser(activeUser);
@@ -236,6 +245,44 @@ export default function AdminPage() {
               &larr; Return to Homepage
             </button>
           </div>
+        </motion.div>
+      </div>
+    );
+  }
+
+  if (user && !user.user_metadata?.is_admin) {
+    return (
+      <div className="min-h-screen relative flex flex-col items-center justify-center bg-[#020617] text-slate-200 p-4">
+        {/* Glow Effects */}
+        <div className="absolute top-0 inset-x-0 h-[500px] flex justify-between pointer-events-none z-0">
+          <div className="w-[35%] h-full bg-brand-violet/10 bg-glow-purple rounded-full mix-blend-screen -translate-x-[20%] -translate-y-[20%]"></div>
+          <div className="w-[35%] h-full bg-brand-indigo/10 bg-glow-blue rounded-full mix-blend-screen translate-x-[20%] -translate-y-[10%]"></div>
+        </div>
+
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="relative z-10 w-full max-w-md p-6 sm:p-8 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-2xl text-center backdrop-blur-xl"
+        >
+          <div className="w-12 h-12 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center mx-auto mb-4">
+            <ShieldAlert className="w-6 h-6" />
+          </div>
+
+          <h2 className="text-xl font-bold text-white mb-2">Access Denied 🚫</h2>
+          <p className="text-xs text-slate-400 mb-2 leading-relaxed">
+            Your account <code className="text-brand-indigo font-bold">{user.email}</code> does not have Administrator permissions.
+          </p>
+          <p className="text-[11px] text-slate-500 mb-6">
+            Please contact the system administrator to assign admin role metadata to your account.
+          </p>
+
+          <button
+            type="button"
+            onClick={() => router.push("/")}
+            className="w-full py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-white border border-slate-700 transition-all cursor-pointer"
+          >
+            &larr; Return to Main Application
+          </button>
         </motion.div>
       </div>
     );
