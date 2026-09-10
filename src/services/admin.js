@@ -1,5 +1,3 @@
-import { supabase, isMockAuthMode, auth } from "./supabase";
-
 const defaultSettings = {
   personalTags: [],
   aggregators: [],
@@ -11,9 +9,6 @@ const defaultSettings = {
   ]
 };
 
-/**
- * Normalizes loaded settings to ensure all required arrays are present.
- */
 function normalizeSettings(raw) {
   if (!raw) return defaultSettings;
   
@@ -23,7 +18,6 @@ function normalizeSettings(raw) {
     coupons: raw.coupons || []
   };
 
-  // Compatibility Adapter: If raw has old apiKeys, split them into personalTags and aggregators
   if (Array.isArray(raw.apiKeys)) {
     raw.apiKeys.forEach(k => {
       const nameLower = (k.name || "").toLowerCase();
@@ -57,132 +51,28 @@ function normalizeSettings(raw) {
   return normalized;
 }
 
-/**
- * Gets admin settings (API keys & Coupons) from Supabase table or falls back to user metadata.
- */
-export async function getAdminSettings(user = null, token = null) {
-  if (isMockAuthMode()) {
-    if (user && user.user_metadata?.admin_settings) {
-      return normalizeSettings(user.user_metadata.admin_settings);
-    }
-    return defaultSettings;
-  }
-
+export async function getAdminSettings() {
   try {
-    // Attempt database table read
-    const { data, error } = await supabase
-      .from("admin_settings")
-      .select("*");
-    
-    if (!error && data && data.length > 0) {
-      // Map rows back to settings structure
-      const personalTags = data.filter(item => item.type === "personal_tag").map(item => ({
-        id: item.id,
-        store: item.name,
-        tag: item.value,
-        region: item.region
-      }));
-      const aggregators = data.filter(item => item.type === "aggregator").map(item => ({
-        id: item.id,
-        name: item.name,
-        token: item.value,
-        region: item.region
-      }));
-      const coupons = data.filter(item => item.type === "coupon").map(item => ({
-        id: item.id,
-        code: item.code,
-        store: item.store,
-        description: item.description,
-        link: item.link,
-        region: item.region
-      }));
-      
-      // Fallback if DB table is empty but exists
-      if (personalTags.length === 0 && aggregators.length === 0 && coupons.length === 0) {
-        if (user && user.user_metadata?.admin_settings) {
-          return normalizeSettings(user.user_metadata.admin_settings);
-        }
-        return defaultSettings;
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("shopsmart_admin_settings");
+      if (stored) {
+        return normalizeSettings(JSON.parse(stored));
       }
-
-      return { personalTags, aggregators, coupons };
     }
-  } catch (dbErr) {
-    console.warn("Supabase database admin_settings table not accessible, using metadata fallback:", dbErr.message);
+  } catch (e) {
+    console.warn("Failed to load admin settings from localStorage:", e);
   }
-
-  // Fallback to active user metadata
-  if (user && user.user_metadata?.admin_settings) {
-    return normalizeSettings(user.user_metadata.admin_settings);
-  }
-
   return defaultSettings;
 }
 
-/**
- * Saves admin settings securely to Supabase DB or falls back to user metadata.
- */
-export async function saveAdminSettings(user, settings, token = null) {
-  if (!user) throw new Error("Unauthenticated");
-
-  const todayStr = new Date().toISOString();
+export async function saveAdminSettings(user, settings) {
   const normalized = normalizeSettings(settings);
-
-  // 1. Update user metadata as a secure fallback
-  const { data: updateData, error: updateError } = await auth.updateUserMetadata(user.id, {
-    admin_settings: normalized
-  }, token);
-
-  if (isMockAuthMode()) {
-    return { data: updateData?.user, error: updateError };
-  }
-
-  // 2. Try to write to Supabase DB table
   try {
-    // For simple DB representation, we delete old settings and insert new ones
-    await supabase.from("admin_settings").delete().neq("id", "0");
-
-    const rows = [];
-    normalized.personalTags.forEach(tagItem => {
-      rows.push({
-        id: tagItem.id,
-        type: "personal_tag",
-        name: tagItem.store,
-        value: tagItem.tag,
-        region: tagItem.region,
-        updated_at: todayStr
-      });
-    });
-    normalized.aggregators.forEach(aggItem => {
-      rows.push({
-        id: aggItem.id,
-        type: "aggregator",
-        name: aggItem.name,
-        value: aggItem.token,
-        region: aggItem.region,
-        updated_at: todayStr
-      });
-    });
-    normalized.coupons.forEach(coupon => {
-      rows.push({
-        id: coupon.id,
-        type: "coupon",
-        code: coupon.code,
-        store: coupon.store,
-        description: coupon.description,
-        link: coupon.link,
-        region: coupon.region,
-        updated_at: todayStr
-      });
-    });
-
-    const { error: dbError } = await supabase.from("admin_settings").insert(rows);
-    if (dbError) {
-      console.warn("DB settings insert failed, metadata fallback saved successfully:", dbError.message);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("shopsmart_admin_settings", JSON.stringify(normalized));
     }
-  } catch (err) {
-    console.warn("DB settings save failed, metadata fallback saved successfully:", err.message);
+  } catch (e) {
+    console.warn("Failed to save admin settings to localStorage:", e);
   }
-
-  return { data: updateData?.user, error: updateError };
+  return { data: normalized, error: null };
 }

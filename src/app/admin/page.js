@@ -8,11 +8,12 @@ import {
   ArrowLeft, CheckCircle2, Globe, FileText, AlertCircle, BarChart3, 
   Users, Search, MousePointerClick, RefreshCw, Layers, Database, Link2 
 } from "lucide-react";
-import { auth } from "@/services/supabase";
+import { useUser } from "@clerk/nextjs";
 import { getAdminSettings, saveAdminSettings } from "@/services/admin";
 
 export default function AdminPage() {
   const router = useRouter();
+  const { user: clerkUser, isLoaded } = useUser();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("analytics"); // analytics | keys | coupons
@@ -52,10 +53,9 @@ export default function AdminPage() {
 
   useEffect(() => {
     async function initAdmin() {
-      const { data: { session } } = await auth.getSession();
-      
-      const email = session?.user?.email || "";
-      const isAdmin = email.includes("admin") || session?.user?.user_metadata?.is_admin === true;
+      if (!isLoaded) return;
+      const email = clerkUser?.primaryEmailAddress?.emailAddress || "";
+      const isAdmin = email.includes("admin") || clerkUser?.publicMetadata?.is_admin === true;
       const isDev = process.env.NODE_ENV === "development" || (typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"));
 
       if (!isAdmin && !isDev) {

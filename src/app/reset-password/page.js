@@ -4,7 +4,6 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Lock, Sparkles, ShoppingBag, Eye, EyeOff, ShieldAlert, CheckCircle2 } from "lucide-react";
-import { auth, isMockAuthMode } from "@/services/supabase";
 
 export default function ResetPasswordPage() {
   const router = useRouter();
@@ -20,79 +19,12 @@ export default function ResetPasswordPage() {
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
-    if (isMockAuthMode()) {
-      setHasSession(true);
-      setLoadingSession(false);
-      return;
-    }
-
-    async function checkSession() {
-      const { data: { session } } = await auth.getSession();
-      if (session) {
-        setHasSession(true);
-        setLoadingSession(false);
-      } else {
-        // Listen to state change (email links auto-login on hash parse)
-        const { data } = auth.onAuthStateChange((event, session) => {
-          if (session) {
-            setHasSession(true);
-          }
-          setLoadingSession(false);
-        });
-
-        // Fallback check after 2 seconds
-        const timeout = setTimeout(async () => {
-          const { data: { session: s } } = await auth.getSession();
-          if (s) setHasSession(true);
-          setLoadingSession(false);
-        }, 2000);
-
-        return () => {
-          if (data?.subscription) {
-            data.subscription.unsubscribe();
-          }
-          clearTimeout(timeout);
-        };
-      }
-    }
-    checkSession();
-  }, []);
+    router.replace("/sign-in");
+  }, [router]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(null);
-    setIsSubmitting(true);
-
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters long.");
-      setIsSubmitting(false);
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setError("Passwords do not match.");
-      setIsSubmitting(false);
-      return;
-    }
-
-    try {
-      if (isMockAuthMode()) {
-        // Mock reset completion
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-      } else {
-        const { error: updateError } = await auth.updateUser({ password });
-        if (updateError) throw updateError;
-      }
-      setSuccess(true);
-      setTimeout(() => {
-        // Redirect to landing page to sign in
-        router.push("/");
-      }, 3000);
-    } catch (err) {
-      setError(err.message || "Failed to update password. Please request a new reset link.");
-    } finally {
-      setIsSubmitting(false);
-    }
+    router.push("/sign-in");
   };
 
   return (

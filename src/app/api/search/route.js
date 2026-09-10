@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/services/supabase";
+import { getAuth } from "@clerk/nextjs/server";
 import { redis } from "@/services/redis";
 import { getAdminSettings } from "@/services/admin";
 import { monetizeUrl } from "@/services/affiliate";
@@ -1229,21 +1229,22 @@ export async function POST(request) {
   }
 
   try {
-    // Verify Supabase Session Token
-    const authHeader = request.headers.get("authorization") || request.headers.get("Authorization");
-    const token = authHeader?.split(" ")[1];
+    // Verify Clerk Session Token / Auth State
+    const { userId } = getAuth(request);
 
     let user = null;
-    if (token) {
-      try {
-        const { data, error: authError } = await auth.getUser(token);
-        user = data?.user;
-      } catch (e) {
-        console.warn("Search API: Token validation exception, falling back to local user session:", e);
-      }
-    }
-
-    if (!user) {
+    if (userId) {
+      user = {
+        id: userId,
+        email: "user@shopsmart.ai",
+        user_metadata: {
+          full_name: "Valued Shopper",
+          country: "IN",
+          search_count_today: 0,
+          last_search_date: new Date().toISOString().split("T")[0]
+        }
+      };
+    } else {
       user = {
         id: "default-active-session",
         email: "user@shopsmart.ai",
@@ -1634,7 +1635,7 @@ Respond strictly in JSON with this structure:
     const geminiApiKey = process.env.GEMINI_API_KEY || settings?.gemini_api_key;
     if (geminiApiKey && cleanProducts.length > 0) {
       try {
-        const productsListText = cleanProducts.slice(0, 10).map((p, idx) => {
+        const productsListText = cleanProducts.slice(0, 6).map((p, idx) => {
           return `${idx + 1}. Title: ${p.title}\n   Description/Features: ${p.rawSnippet || "Standard Product"}\n   Store: ${p.store_name} | Price: ${p.price}`;
         }).join("\n\n");
 
@@ -1694,7 +1695,7 @@ Do not include markdown code block formatting. Return ONLY raw JSON array.`;
           }
           const parsedResults = JSON.parse(rawText);
           if (Array.isArray(parsedResults)) {
-            cleanProducts.slice(0, 10).forEach((p, idx) => {
+            cleanProducts.slice(0, 6).forEach((p, idx) => {
               const res = parsedResults[idx];
               if (res && typeof res === "object") {
                 if (res.target_user && res.key_strength) {
@@ -1723,7 +1724,7 @@ Do not include markdown code block formatting. Return ONLY raw JSON array.`;
       }
     }
 
-    const mappedProducts = cleanProducts.slice(0, 10);
+    const mappedProducts = cleanProducts.slice(0, 6);
     console.log("Filtered Products mapped count:", mappedProducts.length);
 
     // Fetch store coupons matching userRegion and store names of our top products

@@ -1,3 +1,4 @@
+import { ClerkProvider } from "@clerk/nextjs";
 import { Outfit, Inter } from "next/font/google";
 import "./globals.css";
 
@@ -18,14 +19,15 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html
-      lang="en"
-      className={`${outfit.variable} ${inter.variable} h-full antialiased dark`}
-    >
-      <body className="min-h-full flex flex-col bg-dark-bg text-slate-100 selection:bg-brand-indigo/30 selection:text-brand-indigo-300">
-        {children}
-      </body>
-    </html>
+    <ClerkProvider>
+      <html
+        lang="en"
+        className={`${outfit.variable} ${inter.variable} h-full antialiased dark`}
+      >
+        <body className="min-h-full flex flex-col bg-dark-bg text-slate-100 selection:bg-brand-indigo/30 selection:text-brand-indigo-300">
+          {children}
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }
-

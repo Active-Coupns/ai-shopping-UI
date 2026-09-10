@@ -134,13 +134,14 @@ export default function SearchHero({ country = "IN", onSubmit }) {
 
         <div className="relative glass-panel rounded-2xl sm:rounded-3xl p-2 sm:p-3 shadow-2xl border border-brand-indigo/40 bg-slate-950/90 backdrop-blur-2xl">
           {/* Search Form: Integrated Inline Glass Input + Trigger Button */}
-          <form onSubmit={handleSubmit} className="flex items-center gap-1.5 bg-slate-900/90 border border-slate-800 rounded-xl sm:rounded-2xl p-1 sm:p-1.5 shadow-inner">
+          <form onSubmit={handleSubmit} suppressHydrationWarning className="flex items-center gap-1.5 bg-slate-900/90 border border-slate-800 rounded-xl sm:rounded-2xl p-1 sm:p-1.5 shadow-inner">
             <div className="pl-2 text-brand-indigo flex items-center justify-center shrink-0">
               <Search className="w-4 h-4 sm:w-5 sm:h-5 text-brand-indigo" />
             </div>
             
             <input
               type="text"
+              suppressHydrationWarning
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={placeholder ? placeholder + " |" : "Search products, laptops, phones..."}

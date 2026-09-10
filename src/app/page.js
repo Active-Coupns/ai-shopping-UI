@@ -3,15 +3,14 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, ShoppingBag, ArrowLeft, RefreshCw, Layers, ShieldAlert, Coins, Tag, AlertCircle } from "lucide-react";
+import { SignedIn, SignedOut, SignInButton, UserButton, useUser, useClerk } from "@clerk/nextjs";
 import SearchHero from "@/components/SearchHero";
 import RocketLoader from "@/components/RocketLoader";
 import ProductCard from "@/components/ProductCard";
-import AuthModal from "@/components/AuthModal";
 import ProfileMenu from "@/components/ProfileMenu";
 import QuotaModal from "@/components/QuotaModal";
 import CouponCard from "@/components/CouponCard";
 import { searchProducts } from "@/services/api";
-import { auth } from "@/services/supabase";
 
 function detectCategory(query, title) {
   const text = (query + " " + title).toLowerCase();
@@ -115,6 +114,9 @@ function generateTopLevelAiSuggestion(query, products) {
 }
 
 export default function Home() {
+  const { isSignedIn, user: clerkUser, isLoaded } = useUser();
+  const { openSignIn } = useClerk();
+
   const [appState, setAppState] = useState("idle"); // idle | searching | results
   const [searchQuery, setSearchQuery] = useState("");
   const [products, setProducts] = useState([]);
@@ -122,40 +124,12 @@ export default function Home() {
   const [apiError, setApiError] = useState(null);
   const [isApiLoading, setIsApiLoading] = useState(false);
 
-  const [user, setUser] = useState(null);
-  const [isAuthOpen, setIsAuthOpen] = useState(false);
-  const [authMode, setAuthMode] = useState("login");
-  const [authMessage, setAuthMessage] = useState(null);
-
   const [selectedCountry, setSelectedCountry] = useState("IN");
   const [searchesLeft, setSearchesLeft] = useState(10);
   const [isQuotaOpen, setIsQuotaOpen] = useState(false);
   const [searchIntent, setSearchIntent] = useState("E-COMMERCE");
   const [coupons, setCoupons] = useState([]);
   const [couponNotAvailable, setCouponNotAvailable] = useState(false);
-
-  useEffect(() => {
-    async function initSession() {
-      const { data: { session } } = await auth.getSession();
-      if (session?.user) {
-        setUser(session.user);
-        if (session.user.user_metadata?.country) {
-          setSelectedCountry(session.user.user_metadata.country.toUpperCase());
-        }
-        
-        // Sync real-time remaining searches from user metadata
-        const todayStr = new Date().toISOString().split("T")[0];
-        const lastDate = session.user.user_metadata?.last_search_date || "";
-        const count = session.user.user_metadata?.search_count_today || 0;
-        if (lastDate === todayStr) {
-          setSearchesLeft(10 - count);
-        } else {
-          setSearchesLeft(10);
-        }
-      }
-    }
-    initSession();
-  }, []);
 
   const handleCountryChange = async (newCountry) => {
     const code = newCountry.toUpperCase();
@@ -165,22 +139,6 @@ export default function Home() {
     try {
       localStorage.setItem("user_selected_country", code);
     } catch (e) {}
-
-    if (user) {
-      const updatedUser = {
-        ...user,
-        user_metadata: {
-          ...(user.user_metadata || {}),
-          country: code
-        }
-      };
-      setUser(updatedUser);
-      try {
-        await auth.updateUserMetadata(user.id, { country: code });
-      } catch (e) {
-        console.warn("Gracefully updated local country metadata state:", e);
-      }
-    }
 
     // Automatically re-run search for the new target region if search results are currently active
     if (appState === "results" && searchQuery) {
@@ -211,24 +169,9 @@ export default function Home() {
     }
   };
 
-  const handleLogout = async () => {
-    await auth.signOut();
-    setUser(null);
-    handleReset();
-  };
-
-  const handleAuthSuccess = (loggedUser) => {
-    setUser(loggedUser);
-    if (loggedUser?.user_metadata?.country) {
-      setSelectedCountry(loggedUser.user_metadata.country.toUpperCase());
-    }
-  };
-
   const handleSearchSubmit = async (query) => {
-    if (!user) {
-      setAuthMessage("Account Required to Search 🔒\nTo search products and compare prices, please create a free account or sign in first.");
-      setAuthMode("signup");
-      setIsAuthOpen(true);
+    if (!isSignedIn) {
+      openSignIn();
       return;
     }
 
@@ -259,32 +202,14 @@ export default function Home() {
             });
           });
 
-          // Wait for all images or a maximum timeout of 1.5s
+          // Wait for all images or a maximum timeout of 800ms for instant feel
           await Promise.race([
             Promise.all(preloadPromises),
-            new Promise((resolve) => setTimeout(resolve, 1500))
+            new Promise((resolve) => setTimeout(resolve, 800))
           ]);
         } catch (preloadErr) {
           console.error("Product image preloading error:", preloadErr);
         }
-      }
-
-      // Sync target session changes if backend refreshed the token payload
-      if (response.newToken) {
-        const todayStr = new Date().toISOString().split("T")[0];
-        const updatedUser = {
-          ...user,
-          user_metadata: {
-            ...user.user_metadata,
-            search_count_today: (user.user_metadata?.search_count_today || 0) + 1,
-            last_search_date: todayStr
-          }
-        };
-        localStorage.setItem("mock_supabase_session", JSON.stringify({
-          access_token: response.newToken,
-          user: updatedUser
-        }));
-        setUser(updatedUser);
       }
 
       setProducts(fetchedProducts);
@@ -300,9 +225,7 @@ export default function Home() {
         setIsQuotaOpen(true);
       } else if (err.message?.includes("401") || err.message?.includes("Unauthorized")) {
         setApiError("Your session has expired. Please sign in again.");
-        setUser(null);
-        setAuthMode("login");
-        setIsAuthOpen(true);
+        openSignIn();
       } else if (err.message?.includes("429") || err.message?.includes("busy") || err.message?.includes("Too Many Requests")) {
         setApiError("The server is currently busy processing other searches. Please wait a moment and try again.");
       } else {
@@ -390,18 +313,27 @@ export default function Home() {
               </button>
             </div>
 
-            <ProfileMenu
-              user={user}
-              onLogout={handleLogout}
-              onOpenLogin={() => {
-                setAuthMessage(null);
-                setAuthMode("login");
-                setIsAuthOpen(true);
-              }}
-              searchesLeft={searchesLeft}
-              selectedCountry={selectedCountry}
-              onCountryChange={handleCountryChange}
-            />
+            {isLoaded ? (
+              isSignedIn ? (
+                <div className="flex items-center gap-2.5">
+                  <span className="hidden md:inline-flex text-xs font-semibold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">
+                    {searchesLeft} / 10 Searches Left
+                  </span>
+                  <UserButton showName={false} />
+                </div>
+              ) : (
+                <SignInButton mode="modal">
+                  <button
+                    type="button"
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-brand-indigo to-brand-violet hover:from-brand-indigo/90 hover:to-brand-violet/90 text-xs md:text-sm font-semibold text-white transition-all shadow-md active:scale-95 cursor-pointer"
+                  >
+                    Sign In
+                  </button>
+                </SignInButton>
+              )
+            ) : (
+              <div className="w-20 h-8 rounded-xl bg-slate-800/50 animate-pulse" />
+            )}
           </div>
         </div>
       </header>
@@ -612,14 +544,6 @@ export default function Home() {
           </div>
         </div>
       </footer>
-
-      <AuthModal
-        isOpen={isAuthOpen}
-        onClose={() => setIsAuthOpen(false)}
-        onAuthSuccess={handleAuthSuccess}
-        initialMode={authMode}
-        message={authMessage}
-      />
 
       <QuotaModal
         isOpen={isQuotaOpen}

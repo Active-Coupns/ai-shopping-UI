@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Mail, Lock, User, Globe, Sparkles } from "lucide-react";
-import { auth } from "@/services/supabase";
 
 export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode = "login", message = null }) {
   const [mode, setMode] = useState(initialMode); // login | signup | forgot
