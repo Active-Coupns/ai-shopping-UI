@@ -109,15 +109,15 @@ export default function ProductCard({ product }) {
   };
 
   const renderSpecs = () => (
-    <div className="p-3.5 rounded-xl bg-slate-950/40 border border-slate-800/80">
-      <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider block mb-2 flex items-center gap-1.5">
+    <div className="p-3.5 rounded-xl bg-slate-50/90 border border-slate-200/90">
+      <span className="text-[10px] font-bold uppercase text-slate-600 tracking-wider block mb-2 flex items-center gap-1.5">
         <ShieldCheck className="w-3.5 h-3.5 text-brand-indigo" />
         <span>Verified Technical Specifications</span>
       </span>
       <ul className="space-y-1.5">
         {product.specs.map((spec, idx) => (
-          <li key={idx} className="flex items-start gap-2 text-xs text-slate-300 font-medium">
-            <CheckCircle className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+          <li key={idx} className="flex items-start gap-2 text-xs text-slate-700 font-medium">
+            <CheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
             <span>{spec}</span>
           </li>
         ))}
@@ -135,13 +135,13 @@ export default function ProductCard({ product }) {
         whileHover={{
           y: -6,
           borderColor: "rgba(168, 85, 247, 0.45)",
-          boxShadow: "0 16px 35px -10px rgba(99, 102, 241, 0.25)"
+          boxShadow: "0 16px 35px -10px rgba(99, 102, 241, 0.15)"
         }}
         transition={{ type: "spring", stiffness: 350, damping: 25 }}
-        className="glass-panel-accent rounded-2xl p-5 flex flex-col justify-between h-full relative overflow-hidden shadow-2xl border border-slate-800/90 transition-all duration-300 group"
+        className="glass-panel-accent rounded-2xl p-5 flex flex-col justify-between h-full relative overflow-hidden shadow-lg border border-slate-200/90 bg-white/95 text-slate-900 transition-all duration-300 group"
       >
         {/* Glowing top ambient light */}
-        <div className="absolute top-0 right-0 w-32 h-32 bg-brand-indigo/10 rounded-full blur-2xl pointer-events-none group-hover:bg-brand-violet/20 transition-all" />
+        <div className="absolute top-0 right-0 w-32 h-32 bg-brand-indigo/10 rounded-full blur-2xl pointer-events-none group-hover:bg-brand-violet/15 transition-all" />
 
         {/* Top Info Section */}
         <div>
@@ -149,8 +149,8 @@ export default function ProductCard({ product }) {
           <div className="flex items-center justify-between gap-3 mb-3">
             {getStoreBadge()}
             
-            <div className="flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-lg bg-slate-950/80 border border-slate-800 text-slate-200">
-              <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
+            <div className="flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-800 shadow-xs">
+              <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
               <span>{product.rating}</span>
               <span className="text-slate-500 font-normal">({product.reviewsCount})</span>
             </div>
@@ -158,17 +158,17 @@ export default function ProductCard({ product }) {
 
           {/* 🔥 Best Deal Badge */}
           <div className="mb-3.5 flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-[10px] font-extrabold text-emerald-400 uppercase tracking-wider shadow-sm">
-              <Zap className="w-3 h-3 text-emerald-400 animate-pulse" />
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-300 text-[10px] font-extrabold text-emerald-700 uppercase tracking-wider shadow-xs">
+              <Zap className="w-3 h-3 text-emerald-600 animate-pulse" />
               Best Verified Deal on {selectedStore.name}
             </span>
           </div>
 
           {/* Product Image */}
-          <div className="relative w-full h-48 rounded-xl overflow-hidden mb-4 bg-slate-950/90 border border-slate-800/90 flex items-center justify-center group-hover:border-brand-indigo/30 transition-colors">
+          <div className="relative w-full h-48 rounded-xl overflow-hidden mb-4 bg-slate-50 border border-slate-200/90 flex items-center justify-center group-hover:border-brand-indigo/40 transition-colors">
             {imgFailed ? (
-              <div className="flex flex-col items-center justify-center gap-2 text-slate-500 w-full h-full bg-slate-950/50">
-                <ShoppingBag className="w-10 h-10 text-slate-600 animate-pulse" />
+              <div className="flex flex-col items-center justify-center gap-2 text-slate-400 w-full h-full bg-slate-50">
+                <ShoppingBag className="w-10 h-10 text-slate-400 animate-pulse" />
                 <span className="text-[10px] uppercase font-bold tracking-widest text-slate-500">No Product Image</span>
               </div>
             ) : (
@@ -191,11 +191,11 @@ export default function ProductCard({ product }) {
                     setImgSrc(fallback);
                   }
                 }}
-                className="object-contain w-full h-full p-3 transform group-hover:scale-105 transition-transform duration-500 bg-slate-950/40"
+                className="object-contain w-full h-full p-3 transform group-hover:scale-105 transition-transform duration-500 bg-slate-50"
               />
             )}
             {product.tag && (
-              <span className="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-md text-[10px] font-extrabold uppercase tracking-wider bg-gradient-to-r from-brand-indigo to-brand-violet text-white shadow-lg z-20">
+              <span className="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-md text-[10px] font-extrabold uppercase tracking-wider bg-gradient-to-r from-brand-indigo to-brand-violet text-white shadow-md z-20">
                 {product.tag}
               </span>
             )}
@@ -203,20 +203,20 @@ export default function ProductCard({ product }) {
 
           {/* Title & Price */}
           <div className="mb-4">
-            <h3 className="text-base md:text-lg font-bold text-white line-clamp-2 leading-tight mb-2 group-hover:text-brand-indigo transition-colors">
+            <h3 className="text-base md:text-lg font-bold text-slate-900 line-clamp-2 leading-tight mb-2 group-hover:text-brand-indigo transition-colors">
               {product.title}
             </h3>
             <div className="flex items-baseline gap-2.5">
-              <span className="text-2xl md:text-3xl font-black text-white tracking-tight">
+              <span className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">
                 {formatPrice(selectedStore.price || product.price, product.currency)}
               </span>
               {product.originalPrice && (
-                <span className="text-xs md:text-sm text-slate-500 line-through font-semibold">
+                <span className="text-xs md:text-sm text-slate-400 line-through font-semibold">
                   {formatPrice(product.originalPrice, product.currency)}
                 </span>
               )}
               {product.discountPercent && (
-                <span className="text-xs text-emerald-400 font-extrabold bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-md">
+                <span className="text-xs text-emerald-700 font-extrabold bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">
                   {product.discountPercent}% OFF
                 </span>
               )}
@@ -228,23 +228,23 @@ export default function ProductCard({ product }) {
               if (!activeCoupon) return null;
 
               return (
-                <div className="mt-3.5 min-h-[54px] flex items-center justify-between p-2.5 rounded-xl bg-gradient-to-r from-purple-950/40 via-slate-900/60 to-indigo-950/40 border border-purple-500/35 transition-all hover:border-purple-500/50 shadow-md">
+                <div className="mt-3.5 min-h-[54px] flex items-center justify-between p-2.5 rounded-xl bg-gradient-to-r from-purple-50 via-indigo-50/60 to-slate-50 border border-purple-200 transition-all hover:border-purple-300 shadow-xs">
                   <div className="flex items-center gap-2 overflow-hidden">
-                    <span className="p-1.5 rounded-lg bg-purple-500/20 text-purple-300 text-xs shrink-0">
+                    <span className="p-1.5 rounded-lg bg-purple-100 text-purple-700 text-xs shrink-0">
                       💳
                     </span>
                     <div className="truncate">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-bold text-white truncate">
+                        <span className="text-xs font-bold text-slate-900 truncate">
                           {activeCoupon.discount}
                         </span>
                         {activeCoupon.effective_price && (
-                          <span className="text-[10px] font-black text-emerald-400 bg-emerald-500/15 px-1.5 py-0.5 rounded border border-emerald-500/20">
+                          <span className="text-[10px] font-black text-emerald-700 bg-emerald-100 border border-emerald-200 px-1.5 py-0.5 rounded">
                             Eff. {formatPrice(activeCoupon.effective_price, product.currency)}
                           </span>
                         )}
                       </div>
-                      <p className="text-[10px] text-slate-400 truncate">
+                      <p className="text-[10px] text-slate-600 truncate">
                         {activeCoupon.description}
                       </p>
                     </div>
@@ -254,10 +254,10 @@ export default function ProductCard({ product }) {
                     <button
                       type="button"
                       onClick={(e) => handleCopyCode(activeCoupon.code, e)}
-                      className="ml-2 px-2.5 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 active:scale-95 text-white text-[11px] font-bold transition-all shrink-0 flex items-center gap-1 shadow-md cursor-pointer"
+                      className="ml-2 px-2.5 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-700 active:scale-95 text-white text-[11px] font-bold transition-all shrink-0 flex items-center gap-1 shadow-xs cursor-pointer"
                     >
                       {copiedCode === activeCoupon.code ? (
-                        <span className="text-emerald-300 font-extrabold">Copied! ✓</span>
+                        <span className="text-emerald-200 font-extrabold">Copied! ✓</span>
                       ) : (
                         <span>📋 {activeCoupon.code}</span>
                       )}
@@ -269,9 +269,9 @@ export default function ProductCard({ product }) {
 
             {/* Price Comparison Chips (Read-Only Benchmarks) */}
             {product.priceComparison && product.priceComparison.length > 0 && (
-              <div className="mt-3.5 border-t border-slate-800/80 pt-3">
+              <div className="mt-3.5 border-t border-slate-200/80 pt-3">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Store Price Benchmarks:</span>
+                  <span className="text-[10px] font-bold uppercase text-slate-600 tracking-wider">Store Price Benchmarks:</span>
                   <span className="text-[10px] text-slate-500 font-medium italic">Verified Info</span>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -283,13 +283,13 @@ export default function ProductCard({ product }) {
                         key={idx}
                         className={`inline-flex flex-col items-start px-2.5 py-1.5 rounded-xl border text-left cursor-default select-none transition-all ${
                           isLowest
-                            ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-300 font-bold shadow-[0_0_12px_rgba(16,185,129,0.2)]"
-                            : "bg-slate-950/60 border-slate-800/80 text-slate-300"
+                            ? "bg-emerald-50 border-emerald-300 text-emerald-800 font-bold shadow-xs"
+                            : "bg-slate-50 border-slate-200 text-slate-700"
                         }`}
                       >
-                        <span className="text-[9px] uppercase tracking-wider text-slate-400 font-semibold flex items-center gap-1">
+                        <span className="text-[9px] uppercase tracking-wider text-slate-500 font-semibold flex items-center gap-1">
                           {offerStoreName}
-                          {isLowest && <span className="text-[8px] bg-emerald-500/20 text-emerald-300 px-1 py-0.2 rounded font-extrabold">LOWEST</span>}
+                          {isLowest && <span className="text-[8px] bg-emerald-100 text-emerald-800 px-1 py-0.2 rounded font-extrabold">LOWEST</span>}
                         </span>
                         <span className="text-xs font-black mt-0.5">{offer.price}</span>
                       </div>
@@ -301,12 +301,12 @@ export default function ProductCard({ product }) {
           </div>
 
           {/* AI Matching Insight Hub Badge */}
-          <div className="p-4 rounded-xl bg-gradient-to-br from-brand-indigo/15 via-slate-900/80 to-purple-950/20 border border-brand-indigo/30 mb-4 shadow-[inset_0_1px_12px_rgba(99,102,241,0.08)]">
+          <div className="p-4 rounded-xl bg-gradient-to-br from-indigo-50/90 via-purple-50/60 to-white border border-indigo-200 mb-4 shadow-xs">
             <div className="flex items-center gap-1.5 text-xs font-extrabold text-brand-indigo mb-2">
               <Sparkles className="w-4 h-4 text-brand-indigo animate-pulse" />
               <span className="tracking-wide uppercase text-[11px]">AI Matching Insight</span>
             </div>
-            <div className="text-xs md:text-sm text-slate-200 leading-relaxed font-medium whitespace-pre-line">
+            <div className="text-xs md:text-sm text-slate-800 leading-relaxed font-medium whitespace-pre-line">
               {product.aiReason}
             </div>
           </div>
@@ -315,7 +315,7 @@ export default function ProductCard({ product }) {
           <button
             type="button"
             onClick={() => setIsExpanded(!isExpanded)}
-            className="w-full md:hidden py-3 px-4 mb-3 text-xs font-bold text-slate-300 hover:text-white bg-slate-900/80 hover:bg-slate-800/80 border border-slate-800 rounded-xl flex items-center justify-between transition-all cursor-pointer"
+            className="w-full md:hidden py-3 px-4 mb-3 text-xs font-bold text-slate-700 hover:text-slate-900 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between transition-all cursor-pointer shadow-xs"
           >
             <span>Specs & Key Features</span>
             {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -347,7 +347,7 @@ export default function ProductCard({ product }) {
             target="_blank"
             rel="noopener noreferrer"
             onClick={handleBuyNow}
-            className="w-full mt-4 flex items-center justify-center gap-2 bg-gradient-to-r from-brand-indigo via-brand-violet to-purple-600 hover:from-brand-indigo/90 hover:to-purple-500 text-white font-bold py-3.5 rounded-xl transition-all duration-300 shadow-[0_4px_25px_rgba(99,102,241,0.3)] hover:shadow-[0_4px_35px_rgba(168,85,247,0.5)] active:scale-98 text-sm group cursor-pointer text-center"
+            className="w-full mt-4 flex items-center justify-center gap-2 bg-gradient-to-r from-brand-indigo via-brand-violet to-purple-600 hover:from-brand-indigo/90 hover:to-purple-500 text-white font-bold py-3.5 rounded-xl transition-all duration-300 shadow-[0_4px_20px_rgba(99,102,241,0.25)] hover:shadow-[0_4px_28px_rgba(168,85,247,0.35)] active:scale-98 text-sm group cursor-pointer text-center"
           >
             <span>Buy Now at {selectedStore.name}</span>
             <ArrowUpRight className="w-4.5 h-4.5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
@@ -362,19 +362,19 @@ export default function ProductCard({ product }) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md"
           >
             <motion.div
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9, y: 20 }}
-              className="w-full max-w-md glass-panel rounded-2xl p-6 md:p-8 text-center shadow-2xl relative overflow-hidden border-brand-indigo/40"
+              className="w-full max-w-md glass-panel rounded-2xl p-6 md:p-8 text-center shadow-2xl relative overflow-hidden border-brand-indigo/30 bg-white text-slate-900"
             >
-              <div className="absolute -top-24 -left-24 w-48 h-48 rounded-full bg-brand-indigo/25 blur-3xl" />
-              <div className="absolute -bottom-24 -right-24 w-48 h-48 rounded-full bg-brand-violet/25 blur-3xl" />
+              <div className="absolute -top-24 -left-24 w-48 h-48 rounded-full bg-brand-indigo/15 blur-3xl" />
+              <div className="absolute -bottom-24 -right-24 w-48 h-48 rounded-full bg-brand-violet/15 blur-3xl" />
 
               <div className="relative z-10 flex flex-col items-center">
-                <div className="w-16 h-16 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center mb-6 shadow-inner relative">
+                <div className="w-16 h-16 rounded-full bg-slate-50 border border-slate-200 flex items-center justify-center mb-6 shadow-inner relative">
                   <motion.div
                     animate={{ rotate: 360 }}
                     transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
@@ -387,22 +387,22 @@ export default function ProductCard({ product }) {
                   )}
                 </div>
 
-                <h3 className="text-xl font-bold text-white mb-2">Redirecting to {selectedStore.name}</h3>
-                <p className="text-sm text-slate-400 mb-6 max-w-xs leading-relaxed">
+                <h3 className="text-xl font-bold text-slate-900 mb-2">Redirecting to {selectedStore.name}</h3>
+                <p className="text-sm text-slate-600 mb-6 max-w-xs leading-relaxed">
                   Connecting your session to apply verified discount tags for maximum savings.
                 </p>
 
-                <div className="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden border border-slate-800/80">
+                <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
                   <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: "100%" }}
                     transition={{ duration: 1.6, ease: "easeInOut" }}
-                    className="h-full bg-gradient-to-r from-brand-indigo via-brand-violet to-emerald-400"
+                    className="h-full bg-gradient-to-r from-brand-indigo via-brand-violet to-purple-600"
                   />
                 </div>
 
-                <div className="flex items-center gap-1.5 mt-4 text-[10px] font-extrabold text-emerald-400 uppercase tracking-widest bg-emerald-500/10 px-3 py-1 rounded-md border border-emerald-500/20">
-                  <ShieldCheck className="w-3.5 h-3.5" />
+                <div className="flex items-center gap-1.5 mt-4 text-[10px] font-extrabold text-emerald-700 uppercase tracking-widest bg-emerald-50 px-3 py-1 rounded-md border border-emerald-200">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
                   <span>Affiliate Deal Verified</span>
                 </div>
               </div>

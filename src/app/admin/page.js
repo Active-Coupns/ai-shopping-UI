@@ -8,7 +8,7 @@ import {
   ArrowLeft, CheckCircle2, Globe, FileText, AlertCircle, BarChart3, 
   Users, Search, MousePointerClick, RefreshCw, Layers, Database, Link2, Lock 
 } from "lucide-react";
-import { useUser, SignIn, SignInButton, UserButton } from "@clerk/nextjs";
+import { useUser, SignInButton, UserButton } from "@clerk/nextjs";
 import { getAdminSettings, saveAdminSettings } from "@/services/admin";
 
 export default function AdminPage() {
@@ -197,7 +197,7 @@ export default function AdminPage() {
 
   if (!isLoaded || loading) {
     return (
-      <div className="min-h-screen bg-[#020617] flex items-center justify-center">
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <span className="w-8 h-8 border-4 border-brand-indigo/30 border-t-brand-indigo rounded-full animate-spin inline-block" />
       </div>
     );
@@ -205,24 +205,24 @@ export default function AdminPage() {
 
   if (!clerkUser) {
     return (
-      <div className="min-h-screen relative flex flex-col items-center justify-center bg-[#020617] text-slate-200 p-4">
+      <div className="min-h-screen relative flex flex-col items-center justify-center bg-slate-50 text-slate-900 p-4">
         {/* Glow Effects */}
         <div className="absolute top-0 inset-x-0 h-[500px] flex justify-between pointer-events-none z-0">
-          <div className="w-[35%] h-full bg-brand-violet/10 bg-glow-purple rounded-full mix-blend-screen -translate-x-[20%] -translate-y-[20%]"></div>
-          <div className="w-[35%] h-full bg-brand-indigo/10 bg-glow-blue rounded-full mix-blend-screen translate-x-[20%] -translate-y-[10%]"></div>
+          <div className="w-[35%] h-full bg-brand-violet/10 bg-glow-purple rounded-full mix-blend-multiply -translate-x-[20%] -translate-y-[20%]"></div>
+          <div className="w-[35%] h-full bg-brand-indigo/10 bg-glow-blue rounded-full mix-blend-multiply translate-x-[20%] -translate-y-[10%]"></div>
         </div>
 
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="relative z-10 w-full max-w-md p-6 sm:p-8 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-2xl text-center backdrop-blur-xl"
+          className="relative z-10 w-full max-w-md p-6 sm:p-8 rounded-2xl bg-white border border-slate-200 shadow-2xl text-center backdrop-blur-xl"
         >
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-brand-indigo to-brand-violet flex items-center justify-center text-white mx-auto mb-4 shadow-[0_0_20px_rgba(99,102,241,0.4)]">
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-brand-indigo to-brand-violet flex items-center justify-center text-white mx-auto mb-4 shadow-[0_0_20px_rgba(99,102,241,0.3)]">
             <Lock className="w-6 h-6" />
           </div>
 
-          <h2 className="text-xl font-bold text-white mb-2">Admin Portal Authentication 🔒</h2>
-          <p className="text-xs text-slate-400 mb-6 leading-relaxed">
+          <h2 className="text-xl font-bold text-slate-900 mb-2">Admin Portal Authentication 🔒</h2>
+          <p className="text-xs text-slate-600 mb-6 leading-relaxed">
             Please sign in with your authorized account to access the ShopSmart AI Admin Panel.
           </p>
 
@@ -240,7 +240,7 @@ export default function AdminPage() {
             <button
               type="button"
               onClick={() => router.push("/")}
-              className="py-2.5 rounded-xl bg-slate-800/60 hover:bg-slate-800 text-xs font-semibold text-slate-400 hover:text-white border border-slate-700/60 transition-all cursor-pointer"
+              className="py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-semibold text-slate-700 border border-slate-200 transition-all cursor-pointer"
             >
               &larr; Return to Homepage
             </button>
@@ -252,24 +252,24 @@ export default function AdminPage() {
 
   if (user && !user.user_metadata?.is_admin) {
     return (
-      <div className="min-h-screen relative flex flex-col items-center justify-center bg-[#020617] text-slate-200 p-4">
+      <div className="min-h-screen relative flex flex-col items-center justify-center bg-slate-50 text-slate-900 p-4">
         {/* Glow Effects */}
         <div className="absolute top-0 inset-x-0 h-[500px] flex justify-between pointer-events-none z-0">
-          <div className="w-[35%] h-full bg-brand-violet/10 bg-glow-purple rounded-full mix-blend-screen -translate-x-[20%] -translate-y-[20%]"></div>
-          <div className="w-[35%] h-full bg-brand-indigo/10 bg-glow-blue rounded-full mix-blend-screen translate-x-[20%] -translate-y-[10%]"></div>
+          <div className="w-[35%] h-full bg-brand-violet/10 bg-glow-purple rounded-full mix-blend-multiply -translate-x-[20%] -translate-y-[20%]"></div>
+          <div className="w-[35%] h-full bg-brand-indigo/10 bg-glow-blue rounded-full mix-blend-multiply translate-x-[20%] -translate-y-[10%]"></div>
         </div>
 
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="relative z-10 w-full max-w-md p-6 sm:p-8 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-2xl text-center backdrop-blur-xl"
+          className="relative z-10 w-full max-w-md p-6 sm:p-8 rounded-2xl bg-white border border-slate-200 shadow-2xl text-center backdrop-blur-xl"
         >
-          <div className="w-12 h-12 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center mx-auto mb-4">
+          <div className="w-12 h-12 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center mx-auto mb-4">
             <ShieldAlert className="w-6 h-6" />
           </div>
 
-          <h2 className="text-xl font-bold text-white mb-2">Access Denied 🚫</h2>
-          <p className="text-xs text-slate-400 mb-2 leading-relaxed">
+          <h2 className="text-xl font-bold text-slate-900 mb-2">Access Denied 🚫</h2>
+          <p className="text-xs text-slate-600 mb-2 leading-relaxed">
             Your account <code className="text-brand-indigo font-bold">{user.email}</code> does not have Administrator permissions.
           </p>
           <p className="text-[11px] text-slate-500 mb-6">
@@ -279,7 +279,7 @@ export default function AdminPage() {
           <button
             type="button"
             onClick={() => router.push("/")}
-            className="w-full py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-white border border-slate-700 transition-all cursor-pointer"
+            className="w-full py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-800 border border-slate-200 transition-all cursor-pointer"
           >
             &larr; Return to Main Application
           </button>
@@ -289,27 +289,27 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="min-h-screen relative flex flex-col justify-between overflow-hidden bg-[#020617] text-slate-200">
+    <div className="min-h-screen relative flex flex-col justify-between overflow-hidden bg-slate-50 text-slate-900">
       {/* Glow Effects */}
       <div className="absolute top-0 inset-x-0 h-[500px] flex justify-between pointer-events-none z-0">
-        <div className="w-[35%] h-full bg-brand-violet/10 bg-glow-purple rounded-full mix-blend-screen -translate-x-[20%] -translate-y-[20%]"></div>
-        <div className="w-[35%] h-full bg-brand-indigo/10 bg-glow-blue rounded-full mix-blend-screen translate-x-[20%] -translate-y-[10%]"></div>
+        <div className="w-[35%] h-full bg-brand-violet/10 bg-glow-purple rounded-full mix-blend-multiply -translate-x-[20%] -translate-y-[20%]"></div>
+        <div className="w-[35%] h-full bg-brand-indigo/10 bg-glow-blue rounded-full mix-blend-multiply translate-x-[20%] -translate-y-[10%]"></div>
       </div>
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:4rem_4rem] pointer-events-none z-0"></div>
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(0,0,0,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(0,0,0,0.03)_1px,transparent_1px)] bg-[size:4rem_4rem] pointer-events-none z-0"></div>
 
       {/* Header */}
-      <header className="relative z-10 w-full glass-panel border-x-0 border-t-0 shadow-lg">
+      <header className="relative z-10 w-full glass-panel border-x-0 border-t-0 shadow-sm bg-white/90">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 md:h-20 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button
               onClick={() => router.push("/")}
-              className="flex items-center justify-center p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:border-slate-700 transition-all cursor-pointer active:scale-95"
+              className="flex items-center justify-center p-2 rounded-xl bg-slate-100 border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-200 transition-all cursor-pointer active:scale-95"
             >
               <ArrowLeft className="w-4 h-4" />
             </button>
             <div className="flex items-center gap-2">
               <Settings className="w-5 h-5 text-brand-indigo" />
-              <span className="text-md md:text-lg font-bold text-white tracking-tight flex items-center gap-2">
+              <span className="text-md md:text-lg font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
                 ShopSmart Admin Controls
               </span>
             </div>
@@ -317,19 +317,19 @@ export default function AdminPage() {
 
           <div className="flex items-center gap-3">
             {saveStatus === "saving" && (
-              <span className="text-xs text-slate-400 flex items-center gap-1">
-                <span className="w-3 h-3 border-2 border-slate-400/30 border-t-slate-400 rounded-full animate-spin" />
+              <span className="text-xs text-slate-500 flex items-center gap-1 font-semibold">
+                <span className="w-3 h-3 border-2 border-slate-400/30 border-t-slate-500 rounded-full animate-spin" />
                 Saving...
               </span>
             )}
             {saveStatus === "success" && (
-              <span className="text-xs text-emerald-400 flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+              <span className="text-xs text-emerald-700 flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200 font-bold">
                 <CheckCircle2 className="w-3.5 h-3.5" />
                 Settings Saved!
               </span>
             )}
             {saveStatus === "error" && (
-              <span className="text-xs text-rose-400 flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-500/10 border border-rose-500/20">
+              <span className="text-xs text-rose-700 flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-50 border border-rose-200 font-bold">
                 <AlertCircle className="w-3.5 h-3.5" />
                 Save Failed
               </span>
@@ -337,7 +337,7 @@ export default function AdminPage() {
             <button
               onClick={handleSaveAll}
               disabled={saveStatus === "saving"}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-brand-indigo to-brand-violet hover:from-brand-indigo/90 hover:to-brand-violet/90 text-xs md:text-sm font-semibold text-white transition-all shadow-md active:scale-95 cursor-pointer disabled:opacity-50"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-brand-indigo to-brand-violet hover:from-brand-indigo/90 hover:to-brand-violet/90 text-xs md:text-sm font-bold text-white transition-all shadow-md active:scale-95 cursor-pointer disabled:opacity-50"
             >
               <Save className="w-4 h-4" />
               <span>Save Settings</span>
@@ -356,89 +356,89 @@ export default function AdminPage() {
             onClick={() => setActiveTab("analytics")}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left text-xs font-bold transition-all cursor-pointer ${
               activeTab === "analytics" 
-                ? "bg-slate-900 border border-slate-800 text-white shadow-inner" 
-                : "text-slate-400 hover:text-white hover:bg-slate-900/30"
+                ? "bg-white border border-brand-indigo/40 text-slate-900 shadow-md font-extrabold" 
+                : "text-slate-600 hover:text-slate-900 hover:bg-white/60 border border-transparent"
             }`}
           >
-            <BarChart3 className="w-4 h-4 text-brand-indigo" />
-            <span>📊 User Analytics Dashboard</span>
+            <BarChart3 className="w-4 h-4 text-brand-indigo shrink-0" />
+            <span>User Analytics Dashboard</span>
           </button>
           <button
             onClick={() => setActiveTab("keys")}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left text-xs font-bold transition-all cursor-pointer ${
               activeTab === "keys" 
-                ? "bg-slate-900 border border-slate-800 text-white shadow-inner" 
-                : "text-slate-400 hover:text-white hover:bg-slate-900/30"
+                ? "bg-white border border-brand-indigo/40 text-slate-900 shadow-md font-extrabold" 
+                : "text-slate-600 hover:text-slate-900 hover:bg-white/60 border border-transparent"
             }`}
           >
-            <Key className="w-4 h-4 text-brand-indigo" />
-            <span>🔗 Affiliate & Credentials Manager</span>
+            <Key className="w-4 h-4 text-brand-indigo shrink-0" />
+            <span>Affiliate & Credentials</span>
           </button>
           <button
             onClick={() => setActiveTab("coupons")}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left text-xs font-bold transition-all cursor-pointer ${
               activeTab === "coupons" 
-                ? "bg-slate-900 border border-slate-800 text-white shadow-inner" 
-                : "text-slate-400 hover:text-white hover:bg-slate-900/30"
+                ? "bg-white border border-brand-violet/40 text-slate-900 shadow-md font-extrabold" 
+                : "text-slate-600 hover:text-slate-900 hover:bg-white/60 border border-transparent"
             }`}
           >
-            <Tag className="w-4 h-4 text-brand-violet" />
-            <span>🎟️ Coupon Management Center</span>
+            <Tag className="w-4 h-4 text-brand-violet shrink-0" />
+            <span>Coupon Management</span>
           </button>
         </aside>
 
         {/* Content Panel */}
-        <div className="flex-grow glass-panel p-6 rounded-2xl border border-slate-800 min-h-[550px] overflow-hidden">
+        <div className="flex-grow glass-panel p-6 rounded-2xl border border-slate-200/90 bg-white/95 text-slate-900 min-h-[550px] overflow-hidden shadow-xl">
           
           {/* TAB 1: USER ANALYTICS DASHBOARD */}
           {activeTab === "analytics" && (
             <div className="space-y-8 animate-fade-in">
               <div>
-                <h3 className="text-lg font-bold text-white mb-1">User Analytics Dashboard</h3>
-                <p className="text-xs text-slate-400">
+                <h3 className="text-lg font-black text-slate-900 mb-1">User Analytics Dashboard</h3>
+                <p className="text-xs text-slate-500 font-medium">
                   Real-time activity logs, click-through rates, and query telemetry.
                 </p>
               </div>
 
               {/* Metric Cards Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="p-4 rounded-xl border flex items-center gap-4 text-blue-400 bg-blue-500/10 border-blue-500/20">
-                  <div className="p-3 rounded-lg bg-slate-950/40"><Users className="w-5 h-5" /></div>
+                <div className="p-4 rounded-xl border flex items-center gap-4 text-blue-700 bg-blue-50/90 border-blue-200 shadow-xs">
+                  <div className="p-3 rounded-lg bg-white shadow-xs text-blue-600"><Users className="w-5 h-5" /></div>
                   <div>
-                    <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Total Active Users</p>
-                    <p className="text-xl font-black text-white">1,284</p>
+                    <p className="text-[10px] uppercase font-bold text-slate-600 tracking-wider">Total Active Users</p>
+                    <p className="text-xl font-black text-slate-900">1,284</p>
                   </div>
                 </div>
-                <div className="p-4 rounded-xl border flex items-center gap-4 text-brand-indigo bg-brand-indigo/10 border-brand-indigo/20">
-                  <div className="p-3 rounded-lg bg-slate-950/40"><Search className="w-5 h-5" /></div>
+                <div className="p-4 rounded-xl border flex items-center gap-4 text-brand-indigo bg-indigo-50/90 border-indigo-200 shadow-xs">
+                  <div className="p-3 rounded-lg bg-white shadow-xs text-brand-indigo"><Search className="w-5 h-5" /></div>
                   <div>
-                    <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Searches Today</p>
-                    <p className="text-xl font-black text-white">452</p>
+                    <p className="text-[10px] uppercase font-bold text-slate-600 tracking-wider">Searches Today</p>
+                    <p className="text-xl font-black text-slate-900">452</p>
                   </div>
                 </div>
-                <div className="p-4 rounded-xl border flex items-center gap-4 text-brand-violet bg-brand-violet/10 border-brand-violet/20">
-                  <div className="p-3 rounded-lg bg-slate-950/40"><MousePointerClick className="w-5 h-5 animate-pulse" /></div>
+                <div className="p-4 rounded-xl border flex items-center gap-4 text-purple-700 bg-purple-50/90 border-purple-200 shadow-xs">
+                  <div className="p-3 rounded-lg bg-white shadow-xs text-brand-violet"><MousePointerClick className="w-5 h-5 animate-pulse" /></div>
                   <div>
-                    <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Affiliate Clicks (Live)</p>
-                    <p className="text-xl font-black text-white">{totalClicks}</p>
+                    <p className="text-[10px] uppercase font-bold text-slate-600 tracking-wider">Affiliate Clicks (Live)</p>
+                    <p className="text-xl font-black text-slate-900">{totalClicks}</p>
                   </div>
                 </div>
-                <div className="p-4 rounded-xl border flex items-center gap-4 text-amber-400 bg-amber-500/10 border-amber-500/20">
-                  <div className="p-3 rounded-lg bg-slate-950/40"><BarChart3 className="w-5 h-5" /></div>
+                <div className="p-4 rounded-xl border flex items-center gap-4 text-amber-800 bg-amber-50/90 border-amber-200 shadow-xs">
+                  <div className="p-3 rounded-lg bg-white shadow-xs text-amber-600"><BarChart3 className="w-5 h-5" /></div>
                   <div>
-                    <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Top Trending Keyword</p>
-                    <p className="text-xl font-black text-white">iPhone 16</p>
+                    <p className="text-[10px] uppercase font-bold text-slate-600 tracking-wider">Top Trending Keyword</p>
+                    <p className="text-xl font-black text-slate-900">iPhone 16</p>
                   </div>
                 </div>
               </div>
 
               {/* Logs Table */}
               <div className="space-y-3">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">Recent User Activity Logs</h4>
-                <div className="border border-slate-900 rounded-xl overflow-hidden bg-slate-950/20 overflow-x-auto">
+                <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-700">Recent User Activity Logs</h4>
+                <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-sm overflow-x-auto">
                   <table className="w-full text-left border-collapse text-xs min-w-[600px]">
                     <thead>
-                      <tr className="bg-slate-950/60 border-b border-slate-900 text-slate-500 font-bold uppercase text-[10px]">
+                      <tr className="bg-slate-100/90 border-b border-slate-200 text-slate-700 font-bold uppercase text-[10px]">
                         <th className="p-3">User Identity</th>
                         <th className="p-3">Search Query</th>
                         <th className="p-3 text-center">Region</th>
@@ -447,23 +447,23 @@ export default function AdminPage() {
                         <th className="p-3 text-right">Routing Status</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-900/60">
+                    <tbody className="divide-y divide-slate-100">
                       {recentLogs.map((log) => (
-                        <tr key={log.id} className="hover:bg-slate-900/10 transition-colors text-slate-300">
-                          <td className="p-3 font-medium text-slate-400 font-mono">{log.email}</td>
-                          <td className="p-3 font-semibold text-white">&ldquo;{log.query}&rdquo;</td>
+                        <tr key={log.id} className="hover:bg-slate-50 transition-colors text-slate-800">
+                          <td className="p-3 font-semibold text-slate-600 font-mono">{log.email}</td>
+                          <td className="p-3 font-bold text-slate-900">&ldquo;{log.query}&rdquo;</td>
                           <td className="p-3 text-center">
-                            <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-[10px] font-bold text-slate-400">
+                            <span className="px-2 py-0.5 rounded bg-slate-100 border border-slate-200 text-[10px] font-bold text-slate-700">
                               {log.region}
                             </span>
                           </td>
-                          <td className="p-3 text-slate-500">{log.time}</td>
+                          <td className="p-3 text-slate-500 font-medium">{log.time}</td>
                           <td className="p-3 text-center font-bold text-brand-indigo">{log.ctr}</td>
                           <td className="p-3 text-right">
-                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
+                            <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-extrabold ${
                               log.status.includes("Bypass") 
-                                ? "bg-brand-violet/10 border border-brand-violet/20 text-brand-violet"
-                                : "bg-emerald-500/10 border border-emerald-500/20 text-emerald-400"
+                                ? "bg-purple-100 border border-purple-200 text-purple-700"
+                                : "bg-emerald-100 border border-emerald-200 text-emerald-800"
                             }`}>
                               {log.status}
                             </span>
@@ -481,49 +481,49 @@ export default function AdminPage() {
           {activeTab === "keys" && (
             <div className="space-y-8 animate-fade-in">
               <div>
-                <h3 className="text-lg font-bold text-white mb-1">Affiliate & Credentials Manager</h3>
-                <p className="text-xs text-slate-400">
+                <h3 className="text-lg font-black text-slate-900 mb-1">Affiliate & Credentials Manager</h3>
+                <p className="text-xs text-slate-500 font-medium">
                   Manage personal direct-approval tracking accounts and affiliate aggregators.
                 </p>
               </div>
 
               {/* SECTION A: Personal Affiliate Accounts */}
-              <div className="space-y-4 p-5 rounded-2xl border border-slate-800 bg-slate-900/10">
-                <div className="flex items-center gap-2 border-b border-slate-800/60 pb-2">
+              <div className="space-y-4 p-5 rounded-2xl border border-slate-200 bg-slate-50/80 shadow-xs">
+                <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
                   <Link2 className="w-4 h-4 text-brand-indigo" />
-                  <h4 className="text-xs font-extrabold uppercase text-slate-300 tracking-wider">SECTION A: Personal Affiliate Accounts (Direct Approval)</h4>
+                  <h4 className="text-xs font-extrabold uppercase text-slate-800 tracking-wider">SECTION A: Personal Affiliate Accounts (Direct Approval)</h4>
                 </div>
                 {/* Form Tag */}
                 <form onSubmit={handleAddTag} className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-1">
-                    <label className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Platform Name</label>
+                    <label className="text-[10px] uppercase tracking-wider text-slate-700 font-bold">Platform Name</label>
                     <input
                       type="text"
                       required
                       placeholder="e.g. Amazon, Flipkart, Nike"
                       value={newTag.store}
                       onChange={e => setNewTag({ ...newTag, store: e.target.value })}
-                      className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs focus:outline-none focus:border-brand-indigo text-white placeholder-slate-600"
+                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-brand-indigo text-slate-900 placeholder-slate-400 font-medium"
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Tag ID / Associate ID</label>
+                    <label className="text-[10px] uppercase tracking-wider text-slate-700 font-bold">Tag ID / Associate ID</label>
                     <input
                       type="text"
                       required
                       placeholder="e.g. tagname-21"
                       value={newTag.tag}
                       onChange={e => setNewTag({ ...newTag, tag: e.target.value })}
-                      className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs focus:outline-none focus:border-brand-indigo text-white placeholder-slate-600 font-mono"
+                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-brand-indigo text-slate-900 placeholder-slate-400 font-mono font-bold"
                     />
                   </div>
                   <div className="space-y-1 flex items-end gap-2">
                     <div className="flex-grow">
-                      <label className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Target Region</label>
+                      <label className="text-[10px] uppercase tracking-wider text-slate-700 font-bold">Target Region</label>
                       <select
                         value={newTag.region}
                         onChange={e => setNewTag({ ...newTag, region: e.target.value })}
-                        className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs focus:outline-none focus:border-brand-indigo text-white cursor-pointer"
+                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-brand-indigo text-slate-900 font-semibold cursor-pointer"
                       >
                         <option value="IN">🇮🇳 India (IN)</option>
                         <option value="US">🇺🇸 USA (US)</option>
@@ -546,18 +546,18 @@ export default function AdminPage() {
                   ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {personalTags.map(t => (
-                        <div key={t.id} className="flex items-center justify-between p-3 rounded-xl border border-slate-900 bg-slate-950/20 text-xs">
+                        <div key={t.id} className="flex items-center justify-between p-3 rounded-xl border border-slate-200 bg-white text-xs shadow-xs">
                           <div>
-                            <span className="font-bold text-white block">{t.store}</span>
+                            <span className="font-bold text-slate-900 block">{t.store}</span>
                             <code className="text-[10px] text-slate-500 font-mono block mt-0.5">Tag: {t.tag}</code>
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-[10px] font-bold text-slate-300">
+                            <span className="px-2 py-0.5 rounded bg-slate-100 border border-slate-200 text-[10px] font-bold text-slate-700">
                               {t.region === "IN" ? "🇮🇳 India" : t.region === "US" ? "🇺🇸 USA" : "🌐 Global"}
                             </span>
                             <button
                               onClick={() => handleRemoveTag(t.id)}
-                              className="p-1 rounded text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 cursor-pointer"
+                              className="p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 cursor-pointer"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
@@ -570,52 +570,52 @@ export default function AdminPage() {
               </div>
 
               {/* SECTION B: Affiliate Aggregators */}
-              <div className="space-y-4 p-5 rounded-2xl border border-slate-800 bg-slate-900/10">
-                <div className="flex items-center gap-2 border-b border-slate-800/60 pb-2">
+              <div className="space-y-4 p-5 rounded-2xl border border-slate-200 bg-slate-50/80 shadow-xs">
+                <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
                   <Database className="w-4 h-4 text-brand-violet" />
-                  <h4 className="text-xs font-extrabold uppercase text-slate-300 tracking-wider">SECTION B: Affiliate Aggregators (Cuelinks / EarnKaro)</h4>
+                  <h4 className="text-xs font-extrabold uppercase text-slate-800 tracking-wider">SECTION B: Affiliate Aggregators (Cuelinks / EarnKaro)</h4>
                 </div>
 
                 <form onSubmit={handleAddAggregator} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div className="space-y-1">
-                    <label className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Aggregator Name</label>
+                    <label className="text-[10px] uppercase tracking-wider text-slate-700 font-bold">Aggregator Name</label>
                     <input
                       type="text"
                       required
                       placeholder="e.g. Cuelinks, EarnKaro, Custom"
                       value={newAggregator.name}
                       onChange={e => setNewAggregator({ ...newAggregator, name: e.target.value })}
-                      className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs focus:outline-none focus:border-brand-indigo text-white placeholder-slate-600"
+                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-brand-indigo text-slate-900 placeholder-slate-400 font-medium"
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">API Key / Token Value</label>
+                    <label className="text-[10px] uppercase tracking-wider text-slate-700 font-bold">API Key / Token Value</label>
                     <input
                       type="text"
                       required
                       placeholder="Paste API Secret Key"
                       value={newAggregator.token}
                       onChange={e => setNewAggregator({ ...newAggregator, token: e.target.value })}
-                      className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs focus:outline-none focus:border-brand-indigo text-white placeholder-slate-600"
+                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-brand-indigo text-slate-900 placeholder-slate-400 font-medium"
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Target Redirection URL Template (Optional)</label>
+                    <label className="text-[10px] uppercase tracking-wider text-slate-700 font-bold">Target Redirection URL Template (Optional)</label>
                     <input
                       type="text"
                       placeholder="e.g. https://custom.com/redirect?token={token}&url={url}"
                       value={newAggregator.redirectUrl || ""}
                       onChange={e => setNewAggregator({ ...newAggregator, redirectUrl: e.target.value })}
-                      className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs focus:outline-none focus:border-brand-indigo text-white placeholder-slate-600 font-mono text-[10px]"
+                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-brand-indigo text-slate-900 placeholder-slate-400 font-mono text-[10px]"
                     />
                   </div>
                   <div className="space-y-1 flex items-end gap-2">
                     <div className="flex-grow">
-                      <label className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Target Region</label>
+                      <label className="text-[10px] uppercase tracking-wider text-slate-700 font-bold">Target Region</label>
                       <select
                         value={newAggregator.region}
                         onChange={e => setNewAggregator({ ...newAggregator, region: e.target.value })}
-                        className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs focus:outline-none focus:border-brand-indigo text-white cursor-pointer"
+                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-brand-indigo text-slate-900 font-semibold cursor-pointer"
                       >
                         <option value="IN">🇮🇳 India (IN)</option>
                         <option value="US">🇺🇸 USA (US)</option>
@@ -638,21 +638,21 @@ export default function AdminPage() {
                   ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {aggregators.map(a => (
-                        <div key={a.id} className="flex items-center justify-between p-3 rounded-xl border border-slate-900 bg-slate-950/20 text-xs">
+                        <div key={a.id} className="flex items-center justify-between p-3 rounded-xl border border-slate-200 bg-white text-xs shadow-xs">
                           <div className="overflow-hidden mr-2">
-                            <span className="font-bold text-white block">{a.name}</span>
+                            <span className="font-bold text-slate-900 block">{a.name}</span>
                             <code className="text-[10px] text-slate-500 font-mono block mt-0.5 truncate">Token: {a.token ? "••••" + a.token.slice(-4) : "None"}</code>
                             {a.redirectUrl && (
                               <code className="text-[9px] text-brand-indigo font-mono block truncate mt-0.5">{a.redirectUrl}</code>
                             )}
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
-                            <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-[10px] font-bold text-slate-300">
+                            <span className="px-2 py-0.5 rounded bg-slate-100 border border-slate-200 text-[10px] font-bold text-slate-700">
                               {a.region === "IN" ? "🇮🇳 India" : a.region === "US" ? "🇺🇸 USA" : "🌐 Global"}
                             </span>
                             <button
                               onClick={() => handleRemoveAggregator(a.id)}
-                              className="p-1 rounded text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 cursor-pointer"
+                              className="p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 cursor-pointer"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
@@ -670,29 +670,29 @@ export default function AdminPage() {
           {activeTab === "coupons" && (
             <div className="space-y-8 animate-fade-in">
               <div>
-                <h3 className="text-lg font-bold text-white mb-1">Coupon Management Center</h3>
-                <p className="text-xs text-slate-400">
+                <h3 className="text-lg font-black text-slate-900 mb-1">Coupon Management Center</h3>
+                <p className="text-xs text-slate-500 font-medium">
                   Manage manual coupons and verify Cuelinks feed status integrations.
                 </p>
               </div>
 
               {/* Automatic Sync Dashboard */}
-              <div className="p-5 rounded-2xl border border-slate-800 bg-slate-900/30 relative overflow-hidden">
+              <div className="p-5 rounded-2xl border border-slate-200 bg-slate-50/90 relative overflow-hidden shadow-xs">
                 <div className="absolute top-0 right-0 w-24 h-24 bg-brand-violet/5 rounded-full blur-2xl pointer-events-none" />
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div className="flex items-start gap-3">
-                    <div className="p-2.5 rounded-xl bg-brand-violet/10 text-brand-violet mt-0.5 shrink-0">
+                    <div className="p-2.5 rounded-xl bg-purple-100 text-purple-700 mt-0.5 shrink-0">
                       <Database className="w-5 h-5" />
                     </div>
                     <div>
-                      <h4 className="text-xs font-bold text-white flex items-center gap-2">
+                      <h4 className="text-xs font-extrabold text-slate-900 flex items-center gap-2">
                         Automatic Voucher Feed Sync
                         <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping inline-block" />
                       </h4>
-                      <p className="text-[10px] text-slate-400 mt-1">
-                        Cuelinks Status: <span className="text-emerald-400 font-bold">{syncStatus.cuelinksStatus}</span> | EarnKaro Status: <span className="text-emerald-400 font-bold">{syncStatus.earnkaroStatus}</span>
+                      <p className="text-[10px] text-slate-600 mt-1 font-medium">
+                        Cuelinks Status: <span className="text-emerald-700 font-bold">{syncStatus.cuelinksStatus}</span> | EarnKaro Status: <span className="text-emerald-700 font-bold">{syncStatus.earnkaroStatus}</span>
                       </p>
-                      <div className="flex items-center gap-3 mt-2 text-[10px] text-slate-500">
+                      <div className="flex items-center gap-3 mt-2 text-[10px] text-slate-500 font-semibold">
                         <span>Last Sync: {syncStatus.lastSync}</span>
                         <span>•</span>
                         <span>Total Live Vouchers: {syncStatus.totalLive}</span>
@@ -703,7 +703,7 @@ export default function AdminPage() {
                   <button
                     onClick={triggerSync}
                     disabled={syncing}
-                    className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 text-xs font-bold text-slate-300 hover:text-white transition-all cursor-pointer disabled:opacity-50 shrink-0"
+                    className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-white border border-slate-200 hover:border-slate-300 text-xs font-bold text-slate-700 hover:text-slate-900 transition-all cursor-pointer shadow-xs disabled:opacity-50 shrink-0"
                   >
                     <RefreshCw className={`w-3.5 h-3.5 ${syncing ? "animate-spin" : ""}`} />
                     <span>{syncing ? "Syncing..." : "Sync & Purge Expired"}</span>
@@ -713,69 +713,69 @@ export default function AdminPage() {
 
               {/* Add form */}
               <div className="space-y-3">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">Add Manual Store Voucher</h4>
-                <form onSubmit={handleAddCoupon} className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 rounded-xl bg-slate-950/40 border border-slate-900">
+                <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-700">Add Manual Store Voucher</h4>
+                <form onSubmit={handleAddCoupon} className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 rounded-xl bg-slate-50 border border-slate-200">
                   <div className="space-y-1">
-                    <label className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Store Name</label>
+                    <label className="text-[10px] uppercase tracking-wider text-slate-700 font-bold">Store Name</label>
                     <input
                       type="text"
                       required
                       placeholder="e.g. Amazon, Zomato"
                       value={newCoupon.store}
                       onChange={e => setNewCoupon({ ...newCoupon, store: e.target.value })}
-                      className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs focus:outline-none focus:border-brand-indigo text-white placeholder-slate-600"
+                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-brand-indigo text-slate-900 placeholder-slate-400 font-medium"
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Coupon Code</label>
+                    <label className="text-[10px] uppercase tracking-wider text-slate-700 font-bold">Coupon Code</label>
                     <input
                       type="text"
                       required
                       placeholder="e.g. AMZ150"
                       value={newCoupon.code}
                       onChange={e => setNewCoupon({ ...newCoupon, code: e.target.value })}
-                      className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs focus:outline-none focus:border-brand-indigo text-white placeholder-slate-600 font-mono"
+                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-brand-indigo text-slate-900 placeholder-slate-400 font-mono font-bold"
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Discount / Offer Description</label>
+                    <label className="text-[10px] uppercase tracking-wider text-slate-700 font-bold">Discount / Offer Description</label>
                     <input
                       type="text"
                       required
                       placeholder="e.g. Flat Rs. 150 cashback"
                       value={newCoupon.description}
                       onChange={e => setNewCoupon({ ...newCoupon, description: e.target.value })}
-                      className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs focus:outline-none focus:border-brand-indigo text-white placeholder-slate-600"
+                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-brand-indigo text-slate-900 placeholder-slate-400 font-medium"
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Redirection Destination URL</label>
+                    <label className="text-[10px] uppercase tracking-wider text-slate-700 font-bold">Redirection Destination URL</label>
                     <input
                       type="url"
                       required
                       placeholder="https://amazon.in/redeem"
                       value={newCoupon.link}
                       onChange={e => setNewCoupon({ ...newCoupon, link: e.target.value })}
-                      className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs focus:outline-none focus:border-brand-indigo text-white placeholder-slate-600"
+                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-brand-indigo text-slate-900 placeholder-slate-400 font-medium"
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Expiry Date (YYYY-MM-DD)</label>
+                    <label className="text-[10px] uppercase tracking-wider text-slate-700 font-bold">Expiry Date (YYYY-MM-DD)</label>
                     <input
                       type="date"
                       placeholder="YYYY-MM-DD"
                       value={newCoupon.expiry}
                       onChange={e => setNewCoupon({ ...newCoupon, expiry: e.target.value })}
-                      className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs focus:outline-none focus:border-brand-indigo text-white placeholder-slate-600"
+                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-brand-indigo text-slate-900 font-medium"
                     />
                   </div>
                   <div className="space-y-1 flex items-end gap-2">
                     <div className="flex-grow">
-                      <label className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Target Region</label>
+                      <label className="text-[10px] uppercase tracking-wider text-slate-700 font-bold">Target Region</label>
                       <select
                         value={newCoupon.region}
                         onChange={e => setNewCoupon({ ...newCoupon, region: e.target.value })}
-                        className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs focus:outline-none focus:border-brand-indigo text-white cursor-pointer"
+                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-brand-indigo text-slate-900 font-semibold cursor-pointer"
                       >
                         <option value="IN">🇮🇳 India (IN)</option>
                         <option value="US">🇺🇸 USA (US)</option>
@@ -794,34 +794,34 @@ export default function AdminPage() {
 
               {/* Coupons List */}
               <div className="space-y-3">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">Active Coupons list</h4>
+                <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-700">Active Coupons List</h4>
                 
                 {coupons.length === 0 ? (
-                  <div className="text-center py-8 text-xs text-slate-500 border border-dashed border-slate-800 rounded-xl">
+                  <div className="text-center py-8 text-xs text-slate-500 border border-dashed border-slate-200 rounded-xl bg-slate-50/50">
                     No active coupons. Register a coupon above.
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 gap-3">
                     {coupons.map((couponItem) => (
-                      <div key={couponItem.id} className="flex flex-col md:flex-row md:items-center justify-between p-4 rounded-xl bg-slate-950/20 border border-slate-900 hover:border-slate-800 transition-all gap-4">
+                      <div key={couponItem.id} className="flex flex-col md:flex-row md:items-center justify-between p-4 rounded-xl bg-white border border-slate-200 hover:border-brand-indigo/30 shadow-xs transition-all gap-4">
                         <div className="flex items-start gap-3 overflow-hidden">
-                          <div className="p-2.5 rounded-lg bg-brand-violet/10 text-brand-violet shrink-0">
+                          <div className="p-2.5 rounded-lg bg-purple-100 text-purple-700 shrink-0">
                             <Tag className="w-4 h-4" />
                           </div>
                           <div className="overflow-hidden">
                             <div className="flex items-center gap-2">
-                              <span className="text-xs font-extrabold text-white uppercase font-mono px-2 py-0.5 rounded bg-slate-900 border border-slate-800">
+                              <span className="text-xs font-extrabold text-slate-900 uppercase font-mono px-2 py-0.5 rounded bg-slate-100 border border-slate-200">
                                 {couponItem.code}
                               </span>
-                              <span className="text-xs text-slate-400 font-bold">{couponItem.store}</span>
+                              <span className="text-xs text-slate-700 font-bold">{couponItem.store}</span>
                             </div>
-                            <p className="text-xs text-slate-300 mt-1 truncate">{couponItem.description}</p>
+                            <p className="text-xs text-slate-800 font-semibold mt-1 truncate">{couponItem.description}</p>
                             <div className="flex items-center gap-3 mt-1 text-[10px] text-slate-500">
                               <span className="truncate max-w-[200px]">{couponItem.link}</span>
                               {couponItem.expiry && (
                                 <>
                                   <span>•</span>
-                                  <span className="text-rose-400 font-bold">Expires: {couponItem.expiry}</span>
+                                  <span className="text-rose-600 font-bold">Expires: {couponItem.expiry}</span>
                                 </>
                               )}
                             </div>
@@ -829,12 +829,12 @@ export default function AdminPage() {
                         </div>
 
                         <div className="flex items-center justify-between md:justify-end gap-3 shrink-0">
-                          <span className="flex items-center gap-1 px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-[10px] font-bold text-slate-300">
+                          <span className="flex items-center gap-1 px-2 py-0.5 rounded bg-slate-100 border border-slate-200 text-[10px] font-bold text-slate-700">
                             {couponItem.region === "IN" ? "🇮🇳 India" : couponItem.region === "US" ? "🇺🇸 USA" : "🌐 Global"}
                           </span>
                           <button
                             onClick={() => handleRemoveCoupon(couponItem.id)}
-                            className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-all cursor-pointer"
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-all cursor-pointer"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -851,7 +851,7 @@ export default function AdminPage() {
       </main>
 
       {/* Footer */}
-      <footer className="relative z-10 w-full py-8 text-center text-xs text-slate-500 border-t border-slate-900 glass-panel border-x-0 border-b-0">
+      <footer className="relative z-10 w-full py-8 text-center text-xs text-slate-500 border-t border-slate-200 glass-panel border-x-0 border-b-0 bg-white/90">
         <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-1">
             <ShoppingBag className="w-3.5 h-3.5 text-brand-indigo" />

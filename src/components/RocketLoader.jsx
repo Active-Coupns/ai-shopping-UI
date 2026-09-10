@@ -112,11 +112,11 @@ export default function RocketLoader({ query, onComplete, apiLoading }) {
         animate={{ opacity: 1, y: 0 }}
         className="mb-8 text-center w-full relative z-10"
       >
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-indigo/15 border border-brand-indigo/35 text-[10px] font-extrabold uppercase tracking-widest text-brand-indigo mb-2 shadow-sm">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-indigo/15 border border-brand-indigo/35 text-[10px] font-extrabold uppercase tracking-widest text-brand-indigo mb-2 shadow-xs">
           <Sparkles className="w-3.5 h-3.5 text-brand-indigo animate-pulse" />
           <span>Radar Scan Target Query</span>
         </div>
-        <div className="inline-block px-5 py-2.5 rounded-2xl glass-panel-accent text-white font-semibold text-xs max-w-full truncate shadow-xl border border-slate-800">
+        <div className="inline-block px-5 py-2.5 rounded-2xl glass-panel-accent text-slate-900 font-bold text-xs max-w-full truncate shadow-md border border-slate-200 bg-white/90">
           &ldquo;<span className="text-brand-indigo font-bold">{query}</span>&rdquo;
         </div>
       </motion.div>
@@ -126,9 +126,9 @@ export default function RocketLoader({ query, onComplete, apiLoading }) {
         
         {/* Outer glowing halo */}
         <div className="absolute inset-0 rounded-full border border-brand-indigo/25 scale-100 animate-pulse" />
-        <div className="absolute inset-4 rounded-full border border-slate-800/80 scale-100" />
+        <div className="absolute inset-4 rounded-full border border-slate-200 scale-100" />
         <div className="absolute inset-10 rounded-full border border-brand-violet/20 scale-100" />
-        <div className="absolute inset-16 rounded-full border border-slate-900 scale-100" />
+        <div className="absolute inset-16 rounded-full border border-slate-300 scale-100" />
 
         {/* Floating Store Nodes */}
         {STORE_NODES.map((node, idx) => (
@@ -136,7 +136,7 @@ export default function RocketLoader({ query, onComplete, apiLoading }) {
             key={idx}
             animate={{ y: [0, -4, 0] }}
             transition={{ duration: 2.5, repeat: Infinity, delay: idx * 0.4 }}
-            className={`absolute z-30 px-2.5 py-1 rounded-full border text-[10px] font-extrabold tracking-wide uppercase shadow-lg backdrop-blur-md ${node.color} ${node.pos}`}
+            className={`absolute z-30 px-2.5 py-1 rounded-full border text-[10px] font-extrabold tracking-wide uppercase shadow-md backdrop-blur-md ${node.color} ${node.pos}`}
           >
             {node.name}
           </motion.div>
@@ -148,7 +148,7 @@ export default function RocketLoader({ query, onComplete, apiLoading }) {
           transition={{ duration: 3.5, repeat: Infinity, ease: "linear" }}
           className="absolute inset-0 rounded-full pointer-events-none origin-center z-10"
           style={{
-            background: "conic-gradient(from 0deg, transparent 50%, rgba(168, 85, 247, 0.25) 85%, rgba(99, 102, 241, 0.6) 100%)"
+            background: "conic-gradient(from 0deg, transparent 50%, rgba(168, 85, 247, 0.2) 85%, rgba(99, 102, 241, 0.5) 100%)"
           }}
         />
 
@@ -157,17 +157,17 @@ export default function RocketLoader({ query, onComplete, apiLoading }) {
           animate={{
             scale: [1, 1.06, 1],
             boxShadow: [
-              "0 0 20px rgba(99, 102, 241, 0.4)",
-              "0 0 45px rgba(168, 85, 247, 0.7)",
-              "0 0 20px rgba(99, 102, 241, 0.4)"
+              "0 0 20px rgba(99, 102, 241, 0.3)",
+              "0 0 35px rgba(168, 85, 247, 0.5)",
+              "0 0 20px rgba(99, 102, 241, 0.3)"
             ]
           }}
           transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-          className="w-24 h-24 rounded-full bg-gradient-to-tr from-brand-indigo via-brand-violet to-emerald-400 flex flex-col items-center justify-center p-1 relative z-20 shadow-2xl"
+          className="w-24 h-24 rounded-full bg-gradient-to-tr from-brand-indigo via-brand-violet to-purple-600 flex flex-col items-center justify-center p-1 relative z-20 shadow-xl"
         >
-          <div className="w-full h-full rounded-full bg-slate-950/95 flex flex-col items-center justify-center border border-brand-indigo/40 p-2 text-center">
+          <div className="w-full h-full rounded-full bg-white flex flex-col items-center justify-center border border-brand-indigo/30 p-2 text-center shadow-inner">
             <CurrentIcon className="w-7 h-7 text-brand-indigo animate-pulse mb-0.5" />
-            <span className="text-xs font-black text-white font-mono">{progress}%</span>
+            <span className="text-xs font-black text-slate-900 font-mono">{progress}%</span>
           </div>
         </motion.div>
       </div>
@@ -183,15 +183,15 @@ export default function RocketLoader({ query, onComplete, apiLoading }) {
               key={stage.id}
               initial={{ opacity: 0.2, x: -10 }}
               animate={{
-                opacity: isActive ? 1 : isCompleted ? 0.8 : 0.3,
+                opacity: isActive ? 1 : isCompleted ? 0.85 : 0.4,
                 scale: isActive ? 1.015 : 1
               }}
               className={`flex items-center gap-3.5 px-4.5 py-3 rounded-2xl border transition-all duration-300 ${
                 isActive
-                  ? "border-brand-indigo/40 bg-slate-900/90 shadow-[0_0_20px_rgba(99,102,241,0.15)]"
+                  ? "border-brand-indigo/40 bg-white shadow-md text-slate-900"
                   : isCompleted
-                  ? "border-emerald-500/25 bg-slate-950/60"
-                  : "border-slate-800/40 bg-slate-950/30"
+                  ? "border-emerald-300/40 bg-emerald-50/50 text-slate-800"
+                  : "border-slate-200 bg-slate-50/50 text-slate-500"
               }`}
             >
               {/* Left indicator check icon */}
@@ -203,7 +203,7 @@ export default function RocketLoader({ query, onComplete, apiLoading }) {
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
                       exit={{ scale: 0 }}
-                      className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center text-slate-950 font-bold shadow-[0_0_10px_rgba(16,185,129,0.4)]"
+                      className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center text-white font-bold shadow-xs"
                     >
                       <Check className="w-3.5 h-3.5 stroke-[3px]" />
                     </motion.div>
@@ -221,14 +221,14 @@ export default function RocketLoader({ query, onComplete, apiLoading }) {
                       key="pending"
                       initial={{ scale: 0.5 }}
                       animate={{ scale: 1 }}
-                      className="w-3.5 h-3.5 rounded-full border border-slate-800 bg-slate-950"
+                      className="w-3.5 h-3.5 rounded-full border border-slate-300 bg-white"
                     />
                   )}
                 </AnimatePresence>
               </div>
 
               {/* Stage Description Text */}
-              <span className={`text-xs md:text-sm font-semibold tracking-wide ${isActive ? "text-white font-bold" : isCompleted ? "text-slate-300" : "text-slate-600"}`}>
+              <span className={`text-xs md:text-sm font-semibold tracking-wide ${isActive ? "text-slate-900 font-bold" : isCompleted ? "text-slate-700" : "text-slate-400"}`}>
                 {stage.text}
               </span>
             </motion.div>
@@ -237,17 +237,17 @@ export default function RocketLoader({ query, onComplete, apiLoading }) {
       </div>
 
       {/* Glowing Progress Bar */}
-      <div className="w-full bg-slate-950 border border-slate-800 rounded-full h-3 overflow-hidden mb-6 p-0.5 shadow-inner relative z-10">
+      <div className="w-full bg-slate-100 border border-slate-200 rounded-full h-3 overflow-hidden mb-6 p-0.5 shadow-inner relative z-10">
         <motion.div
           animate={{ width: `${progress}%` }}
           transition={{ duration: 0.3, ease: "easeOut" }}
-          className="h-full rounded-full bg-gradient-to-r from-brand-indigo via-brand-violet to-emerald-400 shadow-[0_0_15px_rgba(99,102,241,0.6)]"
+          className="h-full rounded-full bg-gradient-to-r from-brand-indigo via-brand-violet to-purple-600 shadow-[0_0_10px_rgba(99,102,241,0.4)]"
           style={{ width: "0%" }}
         />
       </div>
 
       {/* Shopping Trivia Banner */}
-      <div className="w-full glass-panel-accent rounded-2xl p-4 min-h-[65px] flex items-center justify-center text-center relative z-10 border border-slate-800">
+      <div className="w-full glass-panel-accent rounded-2xl p-4 min-h-[65px] flex items-center justify-center text-center relative z-10 border border-slate-200 bg-white/90 shadow-md">
         <AnimatePresence mode="wait">
           <motion.p
             key={triviaIndex}
@@ -255,7 +255,7 @@ export default function RocketLoader({ query, onComplete, apiLoading }) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -5 }}
             transition={{ duration: 0.4 }}
-            className="text-[11px] md:text-xs font-semibold text-slate-300 leading-relaxed font-mono"
+            className="text-[11px] md:text-xs font-semibold text-slate-700 leading-relaxed font-mono"
           >
             {SHOPPING_TRIVIA[triviaIndex]}
           </motion.p>

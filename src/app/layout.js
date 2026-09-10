@@ -22,9 +22,9 @@ export default function RootLayout({ children }) {
     <ClerkProvider>
       <html
         lang="en"
-        className={`${outfit.variable} ${inter.variable} h-full antialiased dark`}
+        className={`${outfit.variable} ${inter.variable} h-full antialiased`}
       >
-        <body className="min-h-full flex flex-col bg-dark-bg text-slate-100 selection:bg-brand-indigo/30 selection:text-brand-indigo-300">
+        <body className="min-h-full flex flex-col bg-slate-50 text-slate-900 selection:bg-brand-indigo/20 selection:text-brand-indigo-600">
           {children}
         </body>
       </html>

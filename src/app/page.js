@@ -268,19 +268,19 @@ export default function Home() {
             <div className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-xl bg-gradient-to-tr from-brand-indigo to-brand-violet flex items-center justify-center text-white shadow-[0_0_15px_rgba(99,102,241,0.4)]">
               <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <span className="text-sm sm:text-lg md:text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-100 to-slate-300">
+            <span className="text-sm sm:text-lg md:text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700">
               ShopSmart <span className="text-brand-indigo">AI</span>
             </span>
           </div>
 
           <div className="flex items-center gap-1.5 sm:gap-3 text-xs md:text-sm shrink-0">
-            <span className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-semibold shadow-inner">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+            <span className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold shadow-sm">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
               <span>1,284 Active Shoppers</span>
             </span>
 
             {/* Direct Header Region Switcher Pill */}
-            <div className="flex items-center gap-0.5 sm:gap-1 p-0.5 sm:p-1 rounded-xl bg-slate-900/90 border border-slate-800 shadow-md">
+            <div className="flex items-center gap-0.5 sm:gap-1 p-0.5 sm:p-1 rounded-xl bg-white border border-slate-200 shadow-sm">
               <button
                 type="button"
                 suppressHydrationWarning
@@ -289,7 +289,7 @@ export default function Home() {
                 className={`flex items-center gap-1 px-1.5 sm:px-2.5 py-1 rounded-lg text-[11px] sm:text-xs font-bold transition-all cursor-pointer ${
                   selectedCountry === "IN"
                     ? "bg-gradient-to-r from-brand-indigo to-brand-violet text-white shadow-md"
-                    : "text-slate-400 hover:text-white hover:bg-slate-800/50"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
                 }`}
               >
                 <span>🇮🇳</span>
@@ -304,7 +304,7 @@ export default function Home() {
                 className={`flex items-center gap-1 px-1.5 sm:px-2.5 py-1 rounded-lg text-[11px] sm:text-xs font-bold transition-all cursor-pointer ${
                   selectedCountry === "US"
                     ? "bg-gradient-to-r from-brand-indigo to-brand-violet text-white shadow-md"
-                    : "text-slate-400 hover:text-white hover:bg-slate-800/50"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
                 }`}
               >
                 <span>🇺🇸</span>
@@ -316,7 +316,7 @@ export default function Home() {
             {isLoaded ? (
               isSignedIn ? (
                 <div className="flex items-center gap-2.5">
-                  <span className="hidden md:inline-flex text-xs font-semibold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">
+                  <span className="hidden md:inline-flex text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
                     {searchesLeft} / 10 Searches Left
                   </span>
                   <UserButton showName={false} />
@@ -332,7 +332,7 @@ export default function Home() {
                 </SignInButton>
               )
             ) : (
-              <div className="w-20 h-8 rounded-xl bg-slate-800/50 animate-pulse" />
+              <div className="w-20 h-8 rounded-xl bg-slate-200 animate-pulse" />
             )}
           </div>
         </div>
@@ -391,34 +391,34 @@ export default function Home() {
                 <div className="flex items-center gap-3">
                   <button
                     onClick={handleReset}
-                    className="flex items-center justify-center p-2.5 rounded-xl glass-panel glass-panel-hover text-slate-400 hover:text-white transition-all shadow-md cursor-pointer active:scale-95"
+                    className="flex items-center justify-center p-2.5 rounded-xl glass-panel glass-panel-hover text-slate-600 hover:text-slate-900 transition-all shadow-sm cursor-pointer active:scale-95 border border-slate-200"
                   >
                     <ArrowLeft className="w-4 h-4" />
                   </button>
                   <div>
-                    <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight">
+                    <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">
                       AI Recommendations
                     </h2>
-                    <p className="text-xs md:text-sm text-slate-400">
-                      Query matched best stores for &ldquo;<span className="text-brand-indigo font-semibold">{searchQuery}</span>&rdquo;
+                    <p className="text-xs md:text-sm text-slate-500 font-medium">
+                      Query matched best stores for &ldquo;<span className="text-brand-indigo font-bold">{searchQuery}</span>&rdquo;
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-3">
-                  {user && (
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-brand-indigo/15 border border-brand-indigo/35 text-xs font-semibold text-brand-indigo shadow-inner">
+                  {isSignedIn && (
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 border border-indigo-200 text-xs font-bold text-brand-indigo shadow-sm">
                       <Coins className="w-4 h-4 text-brand-indigo animate-pulse" />
                       <span>{searchesLeft} / 10 Searches Left Today</span>
                     </div>
                   )}
-                  <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs font-semibold text-slate-300">
+                  <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-700 shadow-sm">
                     <Layers className="w-4 h-4 text-brand-violet" />
                     <span>Analyzed 45+ deals</span>
                   </div>
                   <button
                     onClick={() => handleSearchSubmit(searchQuery)}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-xs md:text-sm font-semibold text-slate-200 hover:text-white transition-all cursor-pointer shadow-md active:scale-95"
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 text-xs md:text-sm font-bold text-slate-700 hover:text-slate-900 transition-all cursor-pointer shadow-sm active:scale-95"
                   >
                     <RefreshCw className="w-3.5 h-3.5" />
                     <span>Re-analyze</span>
@@ -432,18 +432,18 @@ export default function Home() {
                   <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="max-w-md mx-auto text-center py-16 px-6 glass-panel rounded-2xl border-brand-indigo/20 shadow-[0_0_20px_rgba(99,102,241,0.1)] mt-8"
+                    className="max-w-md mx-auto text-center py-16 px-6 glass-panel rounded-2xl border-brand-indigo/20 shadow-lg mt-8"
                   >
                     <div className="w-16 h-16 bg-brand-violet/10 border border-brand-violet/20 text-brand-violet rounded-full flex items-center justify-center mx-auto mb-6">
                       <AlertCircle className="w-8 h-8" />
                     </div>
-                    <h3 className="text-xl font-bold text-white mb-2">Service Not Available</h3>
-                    <p className="text-sm text-slate-400 mb-6 leading-relaxed">
+                    <h3 className="text-xl font-bold text-slate-900 mb-2">Service Not Available</h3>
+                    <p className="text-sm text-slate-500 mb-6 leading-relaxed">
                       This service or coupon is currently not available on our platform.
                     </p>
                     <button
                       onClick={handleReset}
-                      className="px-6 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-xs md:text-sm font-semibold text-slate-200 hover:text-white transition-all cursor-pointer shadow-md active:scale-95"
+                      className="px-6 py-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-xs md:text-sm font-bold text-slate-800 transition-all cursor-pointer shadow-sm active:scale-95"
                     >
                       Go Back to Search
                     </button>
@@ -460,18 +460,18 @@ export default function Home() {
                   <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="max-w-md mx-auto text-center py-16 px-6 glass-panel rounded-2xl border-brand-indigo/20 shadow-[0_0_20px_rgba(99,102,241,0.1)] mt-8"
+                    className="max-w-md mx-auto text-center py-16 px-6 glass-panel rounded-2xl border-brand-indigo/20 shadow-lg mt-8"
                   >
                     <div className="w-16 h-16 bg-brand-indigo/10 border border-brand-indigo/20 text-brand-indigo rounded-full flex items-center justify-center mx-auto mb-6">
                       <Sparkles className="w-8 h-8" />
                     </div>
-                    <h3 className="text-xl font-bold text-white mb-2">No Live Deals Found</h3>
-                    <p className="text-sm text-slate-400 mb-6 leading-relaxed">
+                    <h3 className="text-xl font-bold text-slate-900 mb-2">No Live Deals Found</h3>
+                    <p className="text-sm text-slate-500 mb-6 leading-relaxed">
                       {apiError ? apiError : "No live deals found for this query. Try adjusting your search terms."}
                     </p>
                     <button
                       onClick={handleReset}
-                      className="px-6 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-xs md:text-sm font-semibold text-slate-200 hover:text-white transition-all cursor-pointer shadow-md active:scale-95"
+                      className="px-6 py-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-xs md:text-sm font-bold text-slate-800 transition-all cursor-pointer shadow-sm active:scale-95"
                     >
                       Go Back to Search
                     </button>
@@ -482,21 +482,21 @@ export default function Home() {
                     <motion.div
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="p-5 rounded-2xl glass-panel border border-brand-indigo/30 bg-brand-indigo/5 shadow-[inset_0_1px_10px_rgba(99,102,241,0.05)] text-left relative overflow-hidden"
+                      className="p-5 rounded-2xl glass-panel border border-indigo-200/90 bg-gradient-to-r from-indigo-50/90 via-purple-50/80 to-slate-50/90 shadow-sm text-left relative overflow-hidden"
                     >
                       <div className="absolute top-0 right-0 w-48 h-48 bg-brand-indigo/10 rounded-full blur-3xl pointer-events-none" />
                       <div className="flex items-start gap-3.5 relative z-10">
-                        <div className="p-2.5 rounded-xl bg-brand-indigo/15 border border-brand-indigo/25 text-brand-indigo shrink-0">
+                        <div className="p-2.5 rounded-xl bg-indigo-100 border border-indigo-200 text-brand-indigo shrink-0 shadow-sm">
                           <Sparkles className="w-5 h-5 animate-pulse" />
                         </div>
                         <div className="flex-grow">
-                          <h3 className="text-sm font-bold text-slate-100 mb-2 flex items-center gap-2">
+                          <h3 className="text-sm font-black text-slate-900 mb-2 flex items-center gap-2">
                             <span>ShopSmart AI Shopping Suggestion</span>
-                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-extrabold uppercase tracking-wide">
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 border border-emerald-300 text-emerald-800 font-black uppercase tracking-wide">
                               Live Synthesis
                             </span>
                           </h3>
-                          <p className="text-xs md:text-sm text-slate-300 leading-relaxed font-medium whitespace-pre-line">
+                          <p className="text-xs md:text-sm text-slate-700 leading-relaxed font-semibold whitespace-pre-line">
                             {generateTopLevelAiSuggestion(searchQuery, products)}
                           </p>
                         </div>
@@ -512,8 +512,8 @@ export default function Home() {
                     </div>
 
                     {coupons.length > 0 && (
-                      <div className="pt-8 border-t border-slate-900">
-                        <h3 className="text-lg md:text-xl font-bold text-white mb-6 flex items-center gap-2">
+                      <div className="pt-8 border-t border-slate-200">
+                        <h3 className="text-lg md:text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
                           <Tag className="w-5 h-5 text-brand-violet animate-pulse" />
                           <span>Today's Verified Store Vouchers</span>
                         </h3>
@@ -533,7 +533,7 @@ export default function Home() {
       </main>
 
       {/* Footer */}
-      <footer className="relative z-10 w-full py-8 text-center text-xs text-slate-500 border-t border-slate-900 glass-panel border-x-0 border-b-0">
+      <footer className="relative z-10 w-full py-8 text-center text-xs text-slate-500 border-t border-slate-200 glass-panel border-x-0 border-b-0">
         <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-1">
             <Sparkles className="w-3.5 h-3.5 text-brand-indigo" />
