@@ -26,13 +26,13 @@ export default function AdminPage() {
   const [totalClicks, setTotalClicks] = useState(0);
 
   // Form states for adding Section A (Personal Tags)
-  const [newTag, setNewTag] = useState({ store: "", tag: "", region: "GLOBAL" });
+  const [newTag, setNewTag] = useState({ store: "", tag: "", region: "IN" });
   
   // Form states for adding Section B (Aggregators)
-  const [newAggregator, setNewAggregator] = useState({ name: "", token: "", redirectUrl: "", region: "GLOBAL" });
+  const [newAggregator, setNewAggregator] = useState({ name: "", token: "", redirectUrl: "", region: "IN" });
 
   // Form states for coupons
-  const [newCoupon, setNewCoupon] = useState({ code: "", store: "", description: "", link: "", region: "GLOBAL", expiry: "" });
+  const [newCoupon, setNewCoupon] = useState({ code: "", store: "", description: "", link: "", region: "IN", expiry: "" });
 
   // Sync state
   const [syncing, setSyncing] = useState(false);
@@ -112,7 +112,7 @@ export default function AdminPage() {
     e.preventDefault();
     if (!newTag.tag.trim() || !newTag.store.trim()) return;
     setPersonalTags([...personalTags, { ...newTag, id: "tag-" + Date.now() }]);
-    setNewTag({ store: "", tag: "", region: "GLOBAL" });
+    setNewTag({ store: "", tag: "", region: "IN" });
   };
 
   const handleRemoveTag = (id) => {
@@ -124,7 +124,7 @@ export default function AdminPage() {
     e.preventDefault();
     if (!newAggregator.token.trim() || !newAggregator.name.trim()) return;
     setAggregators([...aggregators, { ...newAggregator, id: "agg-" + Date.now() }]);
-    setNewAggregator({ name: "", token: "", redirectUrl: "", region: "GLOBAL" });
+    setNewAggregator({ name: "", token: "", redirectUrl: "", region: "IN" });
   };
 
   const handleRemoveAggregator = (id) => {
@@ -136,7 +136,7 @@ export default function AdminPage() {
     e.preventDefault();
     if (!newCoupon.code.trim() || !newCoupon.store.trim()) return;
     setCoupons([...coupons, { ...newCoupon, id: "coupon-" + Date.now() }]);
-    setNewCoupon({ code: "", store: "", description: "", link: "", region: "GLOBAL", expiry: "" });
+    setNewCoupon({ code: "", store: "", description: "", link: "", region: "IN", expiry: "" });
   };
 
   const handleRemoveCoupon = (id) => {
@@ -476,11 +476,11 @@ export default function AdminPage() {
                       <select
                         value={newTag.region}
                         onChange={e => setNewTag({ ...newTag, region: e.target.value })}
-                        className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs focus:outline-none focus:border-brand-indigo text-white appearance-none cursor-pointer"
+                        className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs focus:outline-none focus:border-brand-indigo text-white cursor-pointer"
                       >
-                        <option value="IN">IN (India)</option>
-                        <option value="US">US (United States)</option>
-                        <option value="GLOBAL">GLOBAL</option>
+                        <option value="IN">🇮🇳 India (IN)</option>
+                        <option value="US">🇺🇸 USA (US)</option>
+                        <option value="GLOBAL">🌐 Global (All Regions)</option>
                       </select>
                     </div>
                     <button
@@ -505,7 +505,9 @@ export default function AdminPage() {
                             <code className="text-[10px] text-slate-500 font-mono block mt-0.5">Tag: {t.tag}</code>
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className="px-1.5 py-0.5 rounded bg-slate-900 text-[9px] font-bold text-slate-400">{t.region}</span>
+                            <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-[10px] font-bold text-slate-300">
+                              {t.region === "IN" ? "🇮🇳 India" : t.region === "US" ? "🇺🇸 USA" : "🌐 Global"}
+                            </span>
                             <button
                               onClick={() => handleRemoveTag(t.id)}
                               className="p-1 rounded text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 cursor-pointer"
@@ -566,11 +568,11 @@ export default function AdminPage() {
                       <select
                         value={newAggregator.region}
                         onChange={e => setNewAggregator({ ...newAggregator, region: e.target.value })}
-                        className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs focus:outline-none focus:border-brand-indigo text-white appearance-none cursor-pointer"
+                        className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs focus:outline-none focus:border-brand-indigo text-white cursor-pointer"
                       >
-                        <option value="IN">IN (India)</option>
-                        <option value="US">US (United States)</option>
-                        <option value="GLOBAL">GLOBAL</option>
+                        <option value="IN">🇮🇳 India (IN)</option>
+                        <option value="US">🇺🇸 USA (US)</option>
+                        <option value="GLOBAL">🌐 Global (All Regions)</option>
                       </select>
                     </div>
                     <button
@@ -598,7 +600,9 @@ export default function AdminPage() {
                             )}
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
-                            <span className="px-1.5 py-0.5 rounded bg-slate-900 text-[9px] font-bold text-slate-400">{a.region}</span>
+                            <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-[10px] font-bold text-slate-300">
+                              {a.region === "IN" ? "🇮🇳 India" : a.region === "US" ? "🇺🇸 USA" : "🌐 Global"}
+                            </span>
                             <button
                               onClick={() => handleRemoveAggregator(a.id)}
                               className="p-1 rounded text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 cursor-pointer"
@@ -724,11 +728,11 @@ export default function AdminPage() {
                       <select
                         value={newCoupon.region}
                         onChange={e => setNewCoupon({ ...newCoupon, region: e.target.value })}
-                        className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs focus:outline-none focus:border-brand-indigo text-white appearance-none cursor-pointer"
+                        className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs focus:outline-none focus:border-brand-indigo text-white cursor-pointer"
                       >
-                        <option value="IN">IN (India)</option>
-                        <option value="US">US (United States)</option>
-                        <option value="GLOBAL">GLOBAL</option>
+                        <option value="IN">🇮🇳 India (IN)</option>
+                        <option value="US">🇺🇸 USA (US)</option>
+                        <option value="GLOBAL">🌐 Global (All Regions)</option>
                       </select>
                     </div>
                     <button
@@ -778,9 +782,8 @@ export default function AdminPage() {
                         </div>
 
                         <div className="flex items-center justify-between md:justify-end gap-3 shrink-0">
-                          <span className="flex items-center gap-1 px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-[10px] font-bold text-slate-400">
-                            <Globe className="w-3 h-3 text-slate-500" />
-                            {couponItem.region}
+                          <span className="flex items-center gap-1 px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-[10px] font-bold text-slate-300">
+                            {couponItem.region === "IN" ? "🇮🇳 India" : couponItem.region === "US" ? "🇺🇸 USA" : "🌐 Global"}
                           </span>
                           <button
                             onClick={() => handleRemoveCoupon(couponItem.id)}
