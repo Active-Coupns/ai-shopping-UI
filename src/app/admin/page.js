@@ -64,17 +64,18 @@ export default function AdminPage() {
         return;
       }
 
-      if (session?.user) {
-        setUser(session.user);
-      } else {
-        setUser({
-          email: "dev-admin@example.com",
-          user_metadata: { full_name: "Developer Admin Bypass", is_admin: true }
-        });
-      }
+      const activeUser = clerkUser ? {
+        email,
+        user_metadata: { full_name: clerkUser.fullName || email.split("@")[0], is_admin: true }
+      } : {
+        email: "dev-admin@example.com",
+        user_metadata: { full_name: "Developer Admin Bypass", is_admin: true }
+      };
+
+      setUser(activeUser);
 
       // Fetch settings
-      const settings = await getAdminSettings(session?.user || null);
+      const settings = await getAdminSettings(activeUser);
       setPersonalTags(settings.personalTags || []);
       setAggregators(settings.aggregators || []);
       setCoupons(settings.coupons || []);
@@ -96,7 +97,7 @@ export default function AdminPage() {
       setLoading(false);
     }
     initAdmin();
-  }, []);
+  }, [isLoaded, clerkUser, router]);
 
   const handleSaveAll = async () => {
     setSaveStatus("saving");
