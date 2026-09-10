@@ -4,13 +4,20 @@ const isPublicRoute = createRouteMatcher([
   "/",
   "/sign-in(.*)",
   "/sign-up(.*)",
+  "/reset-password(.*)",
   "/api/search",
   "/api/redirect",
   "/api/telemetry/(.*)"
 ]);
 
 export default clerkMiddleware(async (auth, req) => {
-  // Keep shopping search, homepage, sign-in/up and API routes public
+  if (!isPublicRoute(req)) {
+    try {
+      await auth.protect();
+    } catch (err) {
+      // Prevent Edge crashes if auth parameters are unconfigured
+    }
+  }
 });
 
 export const config = {
