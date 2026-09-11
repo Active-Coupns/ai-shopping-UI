@@ -20,45 +20,50 @@ function getCacheKey(country, query) {
 function normalizeMultiLingualQuery(rawQuery) {
   if (!rawQuery) return { normalizedQuery: "", originalQuery: "", isRegional: false, detectedLanguage: "en" };
 
-  const query = String(rawQuery).trim();
+  const raw = String(rawQuery).trim();
+  let query = raw.toLowerCase();
   const hasDevanagari = /[\u0900-\u097F]/.test(query);
 
-  const hindiTerms = [
-    { pattern: /सबसे\s+अच्छा|सबसे\s+बढ़िया|अच्छे|अच्छा/g, replacement: "best" },
-    { pattern: /सबसे\s+सस्ता|सबसे\s+सस्ते|सस्ता|सस्ते/g, replacement: "budget cheap" },
+  // 1. Strip currencies and punctuation
+  query = query.replace(/[₹$€£,]/g, " ");
+
+  // 2. Technical specification spacing & unit standardization
+  query = query
+    .replace(/\b(\d+)\s*(gb|g|tb)\b/gi, "$1gb")
+    .replace(/\b(\d+)\s*(g)\s*(ram)?\b/gi, "$1gb")
+    .replace(/\b(5)\s*g\b/gi, "5g")
+    .replace(/\b(4)\s*g\b/gi, "4g")
+    .replace(/\bs\s*(\d{2})\b/gi, "s$1");
+
+  // 3. Devanagari (Hindi & Marathi) translation & cleaning
+  const hindiTranslations = [
+    { pattern: /सबसे\s+अच्छा|सबसे\s+बढ़िया|अच्छे|अच्छा/g, replacement: "" },
+    { pattern: /सबसे\s+सस्ता|सबसे\s+सस्ते|सस्ता|सस्ते/g, replacement: "" },
+    { pattern: /ऑनलाइन|कीमत|दाम|रेट|में|का|की|के|पर|दिखाओ|बताओ|चाहिए/g, replacement: "" },
     { pattern: /गेमिंग/g, replacement: "gaming" },
     { pattern: /लैपटॉप/g, replacement: "laptop" },
-    { pattern: /मोबाइल|फोन/g, replacement: "mobile phone" },
+    { pattern: /मोबाइल|फोन/g, replacement: "mobile" },
     { pattern: /जूते|जूता/g, replacement: "shoes" },
-    { pattern: /कपड़े|कपड़ा/g, replacement: "clothing clothes" },
-    { pattern: /अगरबत्ती/g, replacement: "incense sticks agarbatti" },
+    { pattern: /कपड़े|कपड़ा/g, replacement: "clothes" },
+    { pattern: /अगरबत्ती/g, replacement: "incense sticks" },
     { pattern: /घड़ी|स्मार्टवॉच/g, replacement: "smartwatch" },
-    { pattern: /टीवी|टेलीविजन/g, replacement: "tv television" },
+    { pattern: /टीवी|टेलीविजन/g, replacement: "tv" },
     { pattern: /वाशिंग\s+मशीन/g, replacement: "washing machine" },
-    { pattern: /फ्रिज|रेफ्रिजरेटर/g, replacement: "refrigerator fridge" },
-    { pattern: /इयरफोन|हेडफोन/g, replacement: "headphones earphones" },
+    { pattern: /फ्रिज|रेफ्रिजरेटर/g, replacement: "refrigerator" },
+    { pattern: /इयरफोन|हेडफोन/g, replacement: "headphones" },
     { pattern: /किताबें|किताब/g, replacement: "books" },
     { pattern: /खिलौने|खिलौना/g, replacement: "toys" },
     { pattern: /चश्मा/g, replacement: "sunglasses" },
-    { pattern: /पर्स|वॉलेट/g, replacement: "wallet bag" },
+    { pattern: /पर्स|वॉलेट/g, replacement: "wallet" },
     { pattern: /साड़ी|साडी/g, replacement: "saree" },
     { pattern: /कुर्ती/g, replacement: "kurti" },
   ];
 
-  const marathiTerms = [
-    { pattern: /सर्वात\s+छान|उत्तम|काढून\s+द्या|पाहिजे/g, replacement: "best" },
-    { pattern: /कमी\s+किमतीचा|कमी\s+किमतीत|स्वस्त/g, replacement: "budget cheap" },
-    { pattern: /मोबाईल/g, replacement: "mobile phone" },
+  const marathiTranslations = [
+    { pattern: /सर्वात\s+छान|उत्तम|काढून\s+द्या|पाहिजे/g, replacement: "" },
+    { pattern: /कमी\s+किमतीचा|कमी\s+किमतीत|स्वस्त/g, replacement: "" },
+    { pattern: /मोबाईल/g, replacement: "mobile" },
     { pattern: /कपडे/g, replacement: "clothes" },
-  ];
-
-  const hinglishTerms = [
-    { pattern: /\bsabse\s+achha\b|\bsabse\s+badiya\b|\bachha\b/gi, replacement: "best" },
-    { pattern: /\bsabse\s+sasta\b|\bsasta\b|\bsaste\b/gi, replacement: "budget cheap" },
-    { pattern: /\bgaming\b/gi, replacement: "gaming" },
-    { pattern: /\blaptop\b/gi, replacement: "laptop" },
-    { pattern: /\bphone\b|\bmobile\b/gi, replacement: "phone" },
-    { pattern: /\bchahiye\b|\bdikhao\b|\bbatao\b/gi, replacement: "" },
   ];
 
   let cleaned = query;
@@ -68,36 +73,62 @@ function normalizeMultiLingualQuery(rawQuery) {
   if (hasDevanagari) {
     if (/पाहिजे|आहे|कोणता|कमी\s+किमतीचा|सर्वात/.test(query)) {
       detectedLang = "mr";
-      marathiTerms.forEach(({ pattern, replacement }) => {
+      marathiTranslations.forEach(({ pattern, replacement }) => {
         cleaned = cleaned.replace(pattern, replacement);
       });
     }
 
-    hindiTerms.forEach(({ pattern, replacement }) => {
+    hindiTranslations.forEach(({ pattern, replacement }) => {
       cleaned = cleaned.replace(pattern, replacement);
     });
 
     cleaned = cleaned.replace(/[\u0900-\u097F]+/g, " ").trim();
   } else {
-    const isHinglish = /\b(sabse|sasta|saste|achha|badiya|chahiye|dikhao|batao|wala|wali)\b/i.test(query);
+    // Hinglish & English Conversational Noise Removal
+    const isHinglish = /\b(sabse|sasta|saste|achha|badiya|chahiye|dikhao|batao|wala|wali|dokan|dukaan)\b/i.test(query);
     if (isHinglish) {
       isRegional = true;
       detectedLang = "hinglish";
-      hinglishTerms.forEach(({ pattern, replacement }) => {
-        cleaned = cleaned.replace(pattern, replacement);
-      });
     }
+
+    const noisePatterns = [
+      /\bsabse\s+achha\b|\bsabse\s+badiya\b|\bachha\b|\bbadiya\b/gi,
+      /\bsabse\s+sasta\b|\bsasta\b|\bsaste\b/gi,
+      /\bchahiye\b|\bdikhao\b|\bbatao\b|\bwala\b|\bwali\b|\bwaala\b|\bwaali\b/gi,
+      /\bbuy\s+online\b|\bonline\b|\bbuy\b|\bpurchase\b/gi,
+      /\bprice\s+in\s+india\b|\bprices\s+in\s+india\b|\bprice\s+list\b|\bprice\b|\bprices\b|\bcost\b|\brate\b/gi,
+      /\bbest\s+deal\b|\bbest\s+deals\b|\bdeal\b|\bdeals\b|\boffers\b|\boffer\b|\bdiscount\b|\bdiscounts\b/gi,
+      /\bin\s+india\b|\bindia\b/gi,
+      /\bshow\s+me\b|\bfind\s+me\b|\bgive\s+me\b|\blooking\s+for\b|\bwant\s+to\b/gi,
+      /\bcellphone\b|\bcell\s+phone\b|\bsmartphone\b/gi
+    ];
+
+    noisePatterns.forEach(pattern => {
+      cleaned = cleaned.replace(pattern, " ");
+    });
+
+    // Standardize synonyms
+    cleaned = cleaned
+      .replace(/\bphone\b/gi, "mobile")
+      .replace(/\bearphones\b|\bearbuds\b|\bairpods\b|\bheadphone\b/gi, "headphones");
   }
 
   cleaned = cleaned.replace(/\s+/g, " ").trim();
 
+  // Deduplicate redundant consecutive or repeated words
+  if (cleaned) {
+    const tokens = cleaned.split(/\s+/);
+    cleaned = Array.from(new Set(tokens)).join(" ");
+  }
+
+  // Safeguard: If normalization wiped everything out (e.g. user typed "buy online"), restore original query
   if (!cleaned) {
-    cleaned = query;
+    cleaned = raw.replace(/[^\w\u0900-\u097F\s]/g, "").replace(/\s+/g, " ").trim();
   }
 
   return {
     normalizedQuery: cleaned,
-    originalQuery: query,
+    originalQuery: raw,
     isRegional,
     detectedLanguage: detectedLang
   };
@@ -1268,7 +1299,7 @@ export async function POST(request) {
     const cleanQuery = normalizedQuery || query.replace(/[₹$€£,]/g, "").replace(/\s+/g, " ").trim();
 
     // Check Redis Cache First (Exempt from Quota limits!)
-    const cacheKey = getCacheKey(country, originalQuery || cleanQuery);
+    const cacheKey = getCacheKey(country, normalizedQuery || cleanQuery);
     try {
       const cachedDataStr = await redis.get(cacheKey);
       if (cachedDataStr) {
