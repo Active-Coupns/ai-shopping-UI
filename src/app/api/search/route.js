@@ -735,7 +735,8 @@ function generateComparisonOffers(platform, priceVal, category, country = "in", 
           const redirectParams = new URLSearchParams({
             fallback: directLink,
             store: cleanPlatform,
-            title: item.title || ""
+            title: item.title || "",
+            region: country || "IN"
           });
           if (item.serpapi_immersive_product_api) {
             const urlObj = new URL(item.serpapi_immersive_product_api);
@@ -761,7 +762,8 @@ function generateComparisonOffers(platform, priceVal, category, country = "in", 
         const redirectParams = new URLSearchParams({
           fallback: fallbackLink,
           store: o.store,
-          title: item.title || ""
+          title: item.title || "",
+          region: country || "IN"
         });
         if (item.serpapi_immersive_product_api) {
           const urlObj = new URL(item.serpapi_immersive_product_api);

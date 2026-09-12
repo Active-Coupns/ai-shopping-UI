@@ -27,6 +27,17 @@ export function monetizeUrl(url, store, region, settings) {
   try {
     if (!url) return "";
     
+    // Prevent double-wrapping if URL is already an affiliate aggregator redirect
+    if (
+      url.includes("earnkaro.com") ||
+      url.includes("cuelinks.com") ||
+      url.includes("linksredirect.com") ||
+      url.includes("fktr.in") ||
+      url.includes("topend.in")
+    ) {
+      return url;
+    }
+
     const storeClean = (store || "Online Store").toLowerCase().trim();
     const regionClean = (region || "IN").toUpperCase().trim();
 
@@ -45,7 +56,7 @@ export function monetizeUrl(url, store, region, settings) {
         const urlObj = new URL(url);
         if (storeClean.includes("amazon")) {
           urlObj.searchParams.set("tag", matchedTag.tag);
-        } else if (storeClean.includes("flipkart")) {
+        } else if (storeClean.includes("flipkart") || storeClean.includes("myntra")) {
           urlObj.searchParams.set("affid", matchedTag.tag);
         } else {
           urlObj.searchParams.set("afftag", matchedTag.tag);
@@ -53,12 +64,12 @@ export function monetizeUrl(url, store, region, settings) {
         return urlObj.toString();
       } catch (e) {
         const sep = url.includes("?") ? "&" : "?";
-        const paramName = storeClean.includes("amazon") ? "tag" : storeClean.includes("flipkart") ? "affid" : "afftag";
+        const paramName = storeClean.includes("amazon") ? "tag" : (storeClean.includes("flipkart") || storeClean.includes("myntra")) ? "affid" : "afftag";
         return `${url}${sep}${paramName}=${matchedTag.tag}`;
       }
     }
 
-    // STEP 2: Affiliate Aggregators Fallback
+    // STEP 2: Affiliate Aggregators Fallback (EarnKaro, Cuelinks, etc.)
     const aggregators = Array.isArray(settings?.aggregators) ? settings.aggregators : [];
     const matchedAggregator = aggregators.find(a => {
       if (!a) return false;

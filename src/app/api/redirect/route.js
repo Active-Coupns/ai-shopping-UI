@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { redis } from "@/services/redis";
+import { getAdminSettings } from "@/services/admin";
+import { monetizeUrl } from "@/services/affiliate";
 
 function isSearchUrl(url) {
   if (!url) return false;
@@ -156,18 +158,30 @@ export async function GET(request) {
   const fallback = searchParams.get("fallback") || searchParams.get("url") || searchParams.get("link") || searchParams.get("target");
   const storeName = searchParams.get("store") || "Online Store";
   const title = searchParams.get("title") || "";
-  
+  const region = searchParams.get("region") || "IN";
+
+  const settings = await getAdminSettings();
+
+  const safeRedirect = (targetUrl) => {
+    if (!targetUrl || targetUrl === "https://www.google.com") {
+      return NextResponse.redirect("https://www.google.com");
+    }
+    const monetized = monetizeUrl(targetUrl, storeName, region, settings);
+    console.log(`Dynamic Redirect: Redirecting to monetized target URL -> ${monetized}`);
+    return NextResponse.redirect(monetized);
+  };
+
   const handleFallback = async (fallbackUrl, store) => {
     if (fallbackUrl && isSearchUrl(fallbackUrl)) {
       const resolvedPdp = await resolveSearchToPdp(fallbackUrl, store);
       if (resolvedPdp) {
-        return NextResponse.redirect(resolvedPdp);
+        return safeRedirect(resolvedPdp);
       }
     }
     if (fallbackUrl && (fallbackUrl.startsWith("http://") || fallbackUrl.startsWith("https://"))) {
-      return NextResponse.redirect(fallbackUrl);
+      return safeRedirect(fallbackUrl);
     }
-    return NextResponse.redirect("https://www.google.com");
+    return safeRedirect("https://www.google.com");
   };
 
   if (!pageToken && !productId) {
@@ -187,7 +201,7 @@ export async function GET(request) {
     const cached = await redis.get(cacheKey);
     if (cached) {
       console.log(`Dynamic Redirect: Cache HIT for key: ${cacheKey} -> ${cached}`);
-      return NextResponse.redirect(cached);
+      return safeRedirect(cached);
     }
   } catch (e) {
     console.warn("Failed to read redirect cache:", e);
@@ -252,7 +266,7 @@ export async function GET(request) {
         } catch (e) {}
         
         console.log(`Dynamic Redirect: Resolved exact PDP -> ${finalUrl}`);
-        return NextResponse.redirect(finalUrl);
+        return safeRedirect(finalUrl);
       }
     }
   } catch (err) {
