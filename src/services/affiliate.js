@@ -24,72 +24,81 @@ const isDummyKey = (val) => {
  * @returns {string} - Affiliate-monetized destination link.
  */
 export function monetizeUrl(url, store, region, settings) {
-  const BYPASS_AFFILIATE = true;
-  if (BYPASS_AFFILIATE) {
-    return url;
-  }
+  try {
+    if (!url) return "";
+    
+    const storeClean = (store || "Online Store").toLowerCase().trim();
+    const regionClean = (region || "IN").toUpperCase().trim();
 
-  if (!url) return "";
-  
-  const storeClean = (store || "Online Store").toLowerCase().trim();
-  const regionClean = (region || "IN").toUpperCase().trim();
+    // STEP 1: Personal Affiliate Tag Match
+    const personalTags = Array.isArray(settings?.personalTags) ? settings.personalTags : [];
+    const matchedTag = personalTags.find(t => {
+      if (!t) return false;
+      const sName = (t.store || "").toLowerCase().trim();
+      const matchesStore = storeClean.includes(sName) || sName.includes(storeClean);
+      const matchesRegion = (t.region || "").toUpperCase() === regionClean || (t.region || "").toUpperCase() === "GLOBAL";
+      return matchesStore && matchesRegion;
+    });
 
-  // STEP 1: Personal Affiliate Tag Match
-  const personalTags = settings?.personalTags || [];
-  const matchedTag = personalTags.find(t => {
-    const sName = (t.store || "").toLowerCase().trim();
-    const matchesStore = storeClean.includes(sName) || sName.includes(storeClean);
-    const matchesRegion = (t.region || "").toUpperCase() === regionClean || (t.region || "").toUpperCase() === "GLOBAL";
-    return matchesStore && matchesRegion;
-  });
+    if (matchedTag && matchedTag.tag && !isDummyKey(matchedTag.tag)) {
+      try {
+        const urlObj = new URL(url);
+        if (storeClean.includes("amazon")) {
+          urlObj.searchParams.set("tag", matchedTag.tag);
+        } else if (storeClean.includes("flipkart")) {
+          urlObj.searchParams.set("affid", matchedTag.tag);
+        } else {
+          urlObj.searchParams.set("afftag", matchedTag.tag);
+        }
+        return urlObj.toString();
+      } catch (e) {
+        const sep = url.includes("?") ? "&" : "?";
+        const paramName = storeClean.includes("amazon") ? "tag" : storeClean.includes("flipkart") ? "affid" : "afftag";
+        return `${url}${sep}${paramName}=${matchedTag.tag}`;
+      }
+    }
 
-  if (matchedTag && matchedTag.tag && !isDummyKey(matchedTag.tag)) {
+    // STEP 2: Affiliate Aggregators Fallback
+    const aggregators = Array.isArray(settings?.aggregators) ? settings.aggregators : [];
+    const matchedAggregator = aggregators.find(a => {
+      if (!a) return false;
+      const matchesRegion = (a.region || "").toUpperCase() === regionClean || (a.region || "").toUpperCase() === "GLOBAL";
+      return matchesRegion && a.token;
+    });
+
+    if (matchedAggregator && matchedAggregator.token && !isDummyKey(matchedAggregator.token)) {
+      const nameClean = (matchedAggregator.name || "").toLowerCase().trim();
+      const nameNoSpace = nameClean.replace(/\s+/g, "");
+      const template = matchedAggregator.redirectUrl || "";
+      
+      if (template && (template.includes("{token}") || template.includes("{url}"))) {
+        return template
+          .replace("{token}", matchedAggregator.token)
+          .replace("{url}", encodeURIComponent(url));
+      }
+      
+      if (nameNoSpace.includes("cuelinks")) {
+        return `https://cuelinks.com/redirection?token=${matchedAggregator.token}&url=${encodeURIComponent(url)}`;
+      } else if (nameNoSpace.includes("earnkaro") || nameNoSpace.includes("earn")) {
+        return `https://earnkaro.com/redirect?key=${matchedAggregator.token}&url=${encodeURIComponent(url)}`;
+      }
+    }
+
+    // STEP 3: Fallback Demo Affiliate Monetization
     try {
       const urlObj = new URL(url);
       if (storeClean.includes("amazon")) {
-        urlObj.searchParams.set("tag", matchedTag.tag);
+        urlObj.searchParams.set("tag", "demo-shopsmart-21");
+        return urlObj.toString();
       } else if (storeClean.includes("flipkart")) {
-        urlObj.searchParams.set("affid", matchedTag.tag);
-      } else {
-        urlObj.searchParams.set("afftag", matchedTag.tag);
+        urlObj.searchParams.set("affid", "demo-shopsmartflip");
+        return urlObj.toString();
       }
-      console.log(`[Affiliate Engine] Applied Personal Tag: ${matchedTag.tag} for ${storeClean} (${regionClean})`);
-      return urlObj.toString();
-    } catch (e) {
-      const sep = url.includes("?") ? "&" : "?";
-      const paramName = storeClean.includes("amazon") ? "tag" : storeClean.includes("flipkart") ? "affid" : "afftag";
-      return `${url}${sep}${paramName}=${matchedTag.tag}`;
-    }
+    } catch (e) {}
+
+    return `https://linksredirect.com/?cid=123456PUB&subid=shopsmart_demo&url=${encodeURIComponent(url)}`;
+  } catch (err) {
+    console.error("monetizeUrl exception caught safely:", err);
+    return url || "";
   }
-
-  // STEP 2: Affiliate Aggregators Fallback
-  const aggregators = settings?.aggregators || [];
-  const matchedAggregator = aggregators.find(a => {
-    const matchesRegion = (a.region || "").toUpperCase() === regionClean || (a.region || "").toUpperCase() === "GLOBAL";
-    return matchesRegion && a.token;
-  });
-
-  if (matchedAggregator && matchedAggregator.token && !isDummyKey(matchedAggregator.token)) {
-    const nameClean = (matchedAggregator.name || "").toLowerCase().trim();
-    const nameNoSpace = nameClean.replace(/\s+/g, "");
-    const template = matchedAggregator.redirectUrl || "";
-    
-    if (template && (template.includes("{token}") || template.includes("{url}"))) {
-      console.log(`[Affiliate Engine] Wrapped URL using Custom Aggregator Template: ${nameClean}`);
-      return template
-        .replace("{token}", matchedAggregator.token)
-        .replace("{url}", encodeURIComponent(url));
-    }
-    
-    if (nameNoSpace.includes("cuelinks")) {
-      console.log(`[Affiliate Engine] Wrapped URL using Cuelinks for region ${regionClean}`);
-      return `https://cuelinks.com/redirection?token=${matchedAggregator.token}&url=${encodeURIComponent(url)}`;
-    } else if (nameNoSpace.includes("earnkaro")) {
-      console.log(`[Affiliate Engine] Wrapped URL using EarnKaro for region ${regionClean}`);
-      return `https://earnkaro.com/redirect?key=${matchedAggregator.token}&url=${encodeURIComponent(url)}`;
-    }
-  }
-
-  // STEP 3: Return clean merchant URL
-  return url;
 }

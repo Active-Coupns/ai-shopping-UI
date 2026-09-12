@@ -1362,14 +1362,16 @@ export async function POST(request) {
 
     let newToken = null;
     try {
-      const { data: updateData } = await auth.updateUserMetadata(user.id, updatedMetadata, token);
-      newToken = updateData?.access_token || null;
+      if (typeof auth !== "undefined" && auth?.updateUserMetadata) {
+        const { data: updateData } = await auth.updateUserMetadata(user.id, updatedMetadata);
+        newToken = updateData?.access_token || null;
+      }
     } catch (authErr) {
       console.warn("User metadata update failed gracefully:", authErr);
     }
 
     // Fetch active settings (API Keys & Manual Coupons)
-    const settings = await getAdminSettings(user, token);
+    const settings = await getAdminSettings();
     const userRegion = (country || "IN").toUpperCase();
 
     // 2. Gemini Intent Classification (with Fast-Path Keyword Fallback)
