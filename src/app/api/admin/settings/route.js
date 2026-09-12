@@ -1,3 +1,4 @@
+import { NextResponse } from "next/server";
 import { redis } from "@/services/redis";
 
 const SETTINGS_REDIS_KEY = "config:admin:settings";
@@ -12,6 +13,17 @@ const defaultSettings = {
     { id: "c4", code: "AMZ100", store: "Amazon", description: "Flat Rs. 100 cashback on electronics purchase", link: "https://amazon.in", region: "IN" }
   ]
 };
+
+// Auto-inject environment fallback keys if available in process.env
+const envEarnkaroKey = process.env.EARNKARO_KEY || process.env.EARNKARO_TOKEN || process.env.NEXT_PUBLIC_EARNKARO_KEY;
+if (envEarnkaroKey) {
+  defaultSettings.aggregators.push({
+    id: "agg-env-earnkaro",
+    name: "EarnKaro",
+    token: envEarnkaroKey,
+    region: "IN"
+  });
+}
 
 function normalizeSettings(raw) {
   if (!raw) return defaultSettings;
@@ -55,63 +67,31 @@ function normalizeSettings(raw) {
   return normalized;
 }
 
-export async function getAdminSettings() {
+export async function GET() {
   try {
-    // 1. On Server Side (Node.js/Vercel), fetch directly from Redis
-    if (typeof window === "undefined") {
-      const raw = await redis.get(SETTINGS_REDIS_KEY);
-      if (raw) {
-        const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
-        return normalizeSettings(parsed);
-      }
-      return defaultSettings;
+    const raw = await redis.get(SETTINGS_REDIS_KEY);
+    if (raw) {
+      const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+      return NextResponse.json(normalizeSettings(parsed));
     }
-
-    // 2. On Client Side (Browser), fetch from Admin Settings API
-    const res = await fetch("/api/admin/settings");
-    if (res.ok) {
-      const data = await res.json();
-      localStorage.setItem("shopsmart_admin_settings", JSON.stringify(data));
-      return normalizeSettings(data);
-    }
-  } catch (e) {
-    console.warn("Failed to load admin settings from API/Redis:", e);
+  } catch (err) {
+    console.warn("Failed reading admin settings from Redis:", err);
   }
 
-  // 3. Fallback to localStorage
-  try {
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("shopsmart_admin_settings");
-      if (stored) {
-        return normalizeSettings(JSON.parse(stored));
-      }
-    }
-  } catch (e) {}
-
-  return defaultSettings;
+  return NextResponse.json(defaultSettings);
 }
 
-export async function saveAdminSettings(user, settings) {
-  const normalized = normalizeSettings(settings);
+export async function POST(request) {
   try {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("shopsmart_admin_settings", JSON.stringify(normalized));
-      
-      const res = await fetch("/api/admin/settings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(normalized)
-      });
+    const body = await request.json();
+    const normalized = normalizeSettings(body);
 
-      if (res.ok) {
-        const data = await res.json();
-        return { data: data.data || normalized, error: null };
-      }
-    } else {
-      await redis.set(SETTINGS_REDIS_KEY, JSON.stringify(normalized));
-    }
-  } catch (e) {
-    console.warn("Failed to save admin settings to API/Redis:", e);
+    await redis.set(SETTINGS_REDIS_KEY, JSON.stringify(normalized));
+    console.log("Successfully persisted updated Admin Settings to Redis:", SETTINGS_REDIS_KEY);
+
+    return NextResponse.json({ data: normalized, error: null });
+  } catch (err) {
+    console.error("Failed saving admin settings to Redis:", err);
+    return NextResponse.json({ error: "Failed to save admin settings" }, { status: 500 });
   }
-  return { data: normalized, error: null };
 }
