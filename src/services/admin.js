@@ -50,6 +50,10 @@ function normalizeSettings(raw) {
     });
   }
 
+  if (normalized.aggregators.length === 0) {
+    normalized.aggregators = [...defaultSettings.aggregators];
+  }
+
   if (normalized.coupons.length === 0) {
     normalized.coupons = [...defaultSettings.coupons];
   }
