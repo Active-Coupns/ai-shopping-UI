@@ -27,6 +27,12 @@ function normalizeMultiLingualQuery(rawQuery) {
   // 1. Strip currencies and punctuation
   query = query.replace(/[₹$€£,]/g, " ");
 
+  // 1b. Common Typo Auto-Correction Engine
+  query = query
+    .replace(/\blaoptop\b|\blaptap\b|\blabtop\b|\blaptop\b/gi, "laptop")
+    .replace(/\bmobaile\b|\bmobail\b|\bphne\b/gi, "mobile")
+    .replace(/\bshose\b|\bshue\b/gi, "shoes");
+
   // 2. Technical specification spacing & unit standardization
   query = query
     .replace(/\b(\d+)\s*(gb|g|tb)\b/gi, "$1gb")
