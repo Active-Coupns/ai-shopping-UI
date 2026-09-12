@@ -5,7 +5,9 @@ const SETTINGS_REDIS_KEY = "config:admin:settings";
 
 const defaultSettings = {
   personalTags: [],
-  aggregators: [],
+  aggregators: [
+    { id: "agg-earnkaro-default", name: "EarnKaro", token: "5631241", region: "IN" }
+  ],
   coupons: [
     { id: "c1", code: "ZOMATO50", store: "Zomato", description: "50% off on your first food order", link: "https://zomato.com", region: "IN" },
     { id: "c2", code: "UBERFREE", store: "Uber", description: "Get a free cab ride up to $15", link: "https://uber.com", region: "US" },
