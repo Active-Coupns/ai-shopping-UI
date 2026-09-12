@@ -24,7 +24,7 @@ const isDummyKey = (val) => {
  * @returns {string} - Affiliate-monetized destination link.
  */
 export function monetizeUrl(url, store, region, settings) {
-  const BYPASS_AFFILIATE = true;
+  const BYPASS_AFFILIATE = false;
   if (BYPASS_AFFILIATE) {
     return url;
   }
@@ -89,6 +89,18 @@ export function monetizeUrl(url, store, region, settings) {
     }
   }
 
-  // STEP 3: Return clean merchant URL
-  return url;
+  // STEP 3: Fallback Demo Affiliate Monetization for Client Demo Presentation
+  try {
+    const urlObj = new URL(url);
+    if (storeClean.includes("amazon")) {
+      urlObj.searchParams.set("tag", "demo-shopsmart-21");
+      return urlObj.toString();
+    } else if (storeClean.includes("flipkart")) {
+      urlObj.searchParams.set("affid", "demo-shopsmartflip");
+      return urlObj.toString();
+    }
+  } catch (e) {}
+
+  // Standard CueLinks Demo Format Fallback
+  return `https://linksredirect.com/?cid=123456PUB&subid=shopsmart_demo&url=${encodeURIComponent(url)}`;
 }
