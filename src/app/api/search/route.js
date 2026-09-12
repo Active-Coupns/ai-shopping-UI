@@ -1267,7 +1267,13 @@ export async function POST(request) {
 
   try {
     // Verify Clerk Session Token / Auth State
-    const { userId } = getAuth(request);
+    let userId = null;
+    try {
+      const authObj = getAuth(request);
+      userId = authObj?.userId || null;
+    } catch (clerkErr) {
+      console.warn("Clerk getAuth failed gracefully:", clerkErr?.message);
+    }
 
     let user = null;
     if (userId) {
@@ -1826,6 +1832,6 @@ Do not include markdown code block formatting. Return ONLY raw JSON array.`;
 
   } catch (err) {
     console.error("Serverless Search API Route error:", err);
-    return NextResponse.json({ products: [], coupons: [], error: err?.message || "Unable to fetch live deals at this moment", stack: err?.stack }, { status: 200 });
+    return NextResponse.json({ products: [], coupons: [], error: "Unable to fetch live deals at this moment" }, { status: 200 });
   }
 }
