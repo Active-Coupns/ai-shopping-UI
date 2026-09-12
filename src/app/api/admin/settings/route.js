@@ -3,11 +3,13 @@ import { redis } from "@/services/redis";
 
 const SETTINGS_REDIS_KEY = "config:admin:settings";
 
+const envEarnkaroKey = process.env.EARNKARO_KEY || process.env.EARNKARO_TOKEN || "";
+
 const defaultSettings = {
   personalTags: [],
-  aggregators: [
-    { id: "agg-earnkaro-default", name: "EarnKaro", token: "5631241", region: "IN" }
-  ],
+  aggregators: envEarnkaroKey ? [
+    { id: "agg-earnkaro-env", name: "EarnKaro", token: envEarnkaroKey, region: "IN" }
+  ] : [],
   coupons: [
     { id: "c1", code: "ZOMATO50", store: "Zomato", description: "50% off on your first food order", link: "https://zomato.com", region: "IN" },
     { id: "c2", code: "UBERFREE", store: "Uber", description: "Get a free cab ride up to $15", link: "https://uber.com", region: "US" },
@@ -15,17 +17,6 @@ const defaultSettings = {
     { id: "c4", code: "AMZ100", store: "Amazon", description: "Flat Rs. 100 cashback on electronics purchase", link: "https://amazon.in", region: "IN" }
   ]
 };
-
-// Auto-inject environment fallback keys if available in process.env
-const envEarnkaroKey = process.env.EARNKARO_KEY || process.env.EARNKARO_TOKEN || process.env.NEXT_PUBLIC_EARNKARO_KEY;
-if (envEarnkaroKey) {
-  defaultSettings.aggregators.push({
-    id: "agg-env-earnkaro",
-    name: "EarnKaro",
-    token: envEarnkaroKey,
-    region: "IN"
-  });
-}
 
 function normalizeSettings(raw) {
   if (!raw) return defaultSettings;

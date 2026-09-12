@@ -2,11 +2,13 @@ import { redis } from "@/services/redis";
 
 const SETTINGS_REDIS_KEY = "config:admin:settings";
 
+const envEarnkaroKey = typeof process !== "undefined" && process.env ? (process.env.EARNKARO_KEY || process.env.EARNKARO_TOKEN || "") : "";
+
 const defaultSettings = {
   personalTags: [],
-  aggregators: [
-    { id: "agg-earnkaro-default", name: "EarnKaro", token: "5631241", region: "IN" }
-  ],
+  aggregators: envEarnkaroKey ? [
+    { id: "agg-earnkaro-env", name: "EarnKaro", token: envEarnkaroKey, region: "IN" }
+  ] : [],
   coupons: [
     { id: "c1", code: "ZOMATO50", store: "Zomato", description: "50% off on your first food order", link: "https://zomato.com", region: "IN" },
     { id: "c2", code: "UBERFREE", store: "Uber", description: "Get a free cab ride up to $15", link: "https://uber.com", region: "US" },
