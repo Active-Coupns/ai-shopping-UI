@@ -71,6 +71,7 @@ export function monetizeUrl(url, store, region, settings) {
 
   if (matchedAggregator && matchedAggregator.token && !isDummyKey(matchedAggregator.token)) {
     const nameClean = (matchedAggregator.name || "").toLowerCase().trim();
+    const nameNoSpace = nameClean.replace(/\s+/g, "");
     const template = matchedAggregator.redirectUrl || "";
     
     if (template && (template.includes("{token}") || template.includes("{url}"))) {
@@ -80,10 +81,10 @@ export function monetizeUrl(url, store, region, settings) {
         .replace("{url}", encodeURIComponent(url));
     }
     
-    if (nameClean.includes("cuelinks")) {
+    if (nameNoSpace.includes("cuelinks")) {
       console.log(`[Affiliate Engine] Wrapped URL using Cuelinks for region ${regionClean}`);
       return `https://cuelinks.com/redirection?token=${matchedAggregator.token}&url=${encodeURIComponent(url)}`;
-    } else if (nameClean.includes("earnkaro")) {
+    } else if (nameNoSpace.includes("earnkaro")) {
       console.log(`[Affiliate Engine] Wrapped URL using EarnKaro for region ${regionClean}`);
       return `https://earnkaro.com/redirect?key=${matchedAggregator.token}&url=${encodeURIComponent(url)}`;
     }
