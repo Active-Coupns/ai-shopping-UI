@@ -1826,6 +1826,6 @@ Do not include markdown code block formatting. Return ONLY raw JSON array.`;
 
   } catch (err) {
     console.error("Serverless Search API Route error:", err);
-    return NextResponse.json({ products: [], coupons: [], error: "Unable to fetch live deals at this moment" }, { status: 200 });
+    return NextResponse.json({ products: [], coupons: [], error: err?.message || "Unable to fetch live deals at this moment", stack: err?.stack }, { status: 200 });
   }
 }
