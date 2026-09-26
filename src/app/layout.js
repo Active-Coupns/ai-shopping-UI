@@ -15,9 +15,6 @@ const inter = Inter({
 export const metadata = {
   title: "ShopSmart AI - Intelligent Shopping Assistant",
   description: "Experience the future of smart shopping. AI-powered specifications matching, affiliate coupons, and real-time comparison across Amazon, Flipkart, & more.",
-  other: {
-    "impact-site-verification": "e8ffdb56-92c6-4ad7-9bc5-a493e4b8cf13",
-  },
 };
 
 const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || "pk_test_ZWxlY3RyaWMtY3ViLTQ5NDQuY2xlcmsuYWNjb3VudHMuZGV2JA";
@@ -30,9 +27,6 @@ export default function RootLayout({ children }) {
         className={`${outfit.variable} ${inter.variable} h-full antialiased`}
         suppressHydrationWarning
       >
-        <head>
-          <meta name="impact-site-verification" value="e8ffdb56-92c6-4ad7-9bc5-a493e4b8cf13" />
-        </head>
         <body 
           className="min-h-full flex flex-col bg-slate-50 text-slate-900 selection:bg-brand-indigo/20 selection:text-brand-indigo-600"
           suppressHydrationWarning
