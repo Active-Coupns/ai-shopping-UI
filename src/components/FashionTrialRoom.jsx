@@ -439,28 +439,28 @@ export default function FashionTrialRoom() {
     <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-4 space-y-8 animate-fade-in text-slate-900">
       
       {/* 1. STUDIO HEADER */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-50/90 via-purple-50/70 to-pink-50/80 border border-indigo-100 p-6 md:p-8 backdrop-blur-xl shadow-sm">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
-          <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-100 border border-indigo-200 text-brand-indigo text-xs font-bold tracking-wide uppercase">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+      <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-indigo-50/90 via-purple-50/70 to-pink-50/80 border border-indigo-100 p-4 sm:p-6 md:p-8 backdrop-blur-xl shadow-xs">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6 relative z-10">
+          <div className="space-y-1.5 sm:space-y-2">
+            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-indigo-100/90 border border-indigo-200/80 text-brand-indigo text-[10px] sm:text-xs font-bold tracking-wide uppercase">
+              <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-emerald-500 animate-pulse"></span>
               AI Virtual Trial Room & Stylist
             </div>
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-slate-900 tracking-tight">
+            <h1 className="text-xl sm:text-3xl md:text-4xl font-black text-slate-900 tracking-tight">
               Virtual Studio <span className="bg-gradient-to-r from-brand-indigo via-purple-600 to-pink-600 bg-clip-text text-transparent">Try-On</span>
             </h1>
-            <p className="text-slate-600 text-sm md:text-base max-w-2xl font-medium">
+            <p className="text-slate-600 text-xs sm:text-sm md:text-base max-w-2xl font-medium leading-relaxed">
               Zero-distortion fit engine with 100% identity locking. Try hundreds of curated outfits from Myntra, Snitch, Ajio & Amazon directly on your authentic frame.
             </p>
           </div>
 
           {/* Gender & Skin Tone Controls */}
-          <div className="flex flex-wrap items-center gap-3 bg-white/90 p-2 rounded-2xl border border-slate-200 shadow-sm">
-            <div className="flex rounded-xl bg-slate-100 p-1 border border-slate-200/80">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 bg-white/95 p-2 rounded-2xl border border-slate-200/90 shadow-xs">
+            <div className="flex rounded-xl bg-slate-100 p-1 border border-slate-200/80 justify-between">
               <button
                 type="button"
                 onClick={() => handleGenderChange("men")}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                className={`flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer text-center ${
                   gender === "men" ? "bg-white text-brand-indigo shadow-sm" : "text-slate-500 hover:text-slate-900"
                 }`}
               >
@@ -469,7 +469,7 @@ export default function FashionTrialRoom() {
               <button
                 type="button"
                 onClick={() => handleGenderChange("women")}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                className={`flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer text-center ${
                   gender === "women" ? "bg-white text-pink-600 shadow-sm" : "text-slate-500 hover:text-slate-900"
                 }`}
               >
@@ -478,7 +478,7 @@ export default function FashionTrialRoom() {
               <button
                 type="button"
                 onClick={() => handleGenderChange("kids")}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                className={`flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer text-center ${
                   gender === "kids" ? "bg-white text-emerald-600 shadow-sm" : "text-slate-500 hover:text-slate-900"
                 }`}
               >
@@ -486,12 +486,12 @@ export default function FashionTrialRoom() {
               </button>
             </div>
 
-            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 rounded-xl border border-slate-200 text-xs text-slate-700">
-              <span className="text-slate-400 font-medium">Tone:</span>
+            <div className="flex items-center justify-between sm:justify-start gap-1.5 px-3 py-1.5 bg-slate-100 rounded-xl border border-slate-200 text-xs text-slate-700">
+              <span className="text-slate-500 font-semibold text-[11px]">Tone:</span>
               <select
                 value={skinTone}
                 onChange={(e) => setSkinTone(e.target.value)}
-                className="bg-transparent text-indigo-950 font-bold focus:outline-none cursor-pointer"
+                className="bg-transparent text-indigo-950 font-bold focus:outline-none cursor-pointer text-xs"
               >
                 <option value="wheatish" className="bg-white text-slate-900">Wheatish / Medium</option>
                 <option value="fair" className="bg-white text-slate-900">Fair / Cool</option>

@@ -2,12 +2,12 @@
 
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, ShoppingBag, ArrowLeft, RefreshCw, Layers, ShieldAlert, Coins, Tag, AlertCircle, Shirt } from "lucide-react";
-import { SignedIn, SignedOut, SignInButton, UserButton, useUser, useClerk } from "@clerk/nextjs";
+import { Sparkles, ShoppingBag, ArrowLeft, RefreshCw, Layers, ShieldAlert, Coins, Tag, AlertCircle, Shirt, User, Globe, Search, Pill } from "lucide-react";
+import { SignedIn, SignedOut, SignInButton, useUser, useClerk } from "@clerk/nextjs";
 import SearchHero from "@/components/SearchHero";
 import RocketLoader from "@/components/RocketLoader";
 import ProductCard from "@/components/ProductCard";
-import ProfileMenu from "@/components/ProfileMenu";
+import UnifiedAccountModal from "@/components/UnifiedAccountModal";
 import QuotaModal from "@/components/QuotaModal";
 import CouponCard from "@/components/CouponCard";
 import AiShoppingGuide from "@/components/AiShoppingGuide";
@@ -84,6 +84,7 @@ export default function Home() {
   const [searchIntent, setSearchIntent] = useState("E-COMMERCE");
   const [coupons, setCoupons] = useState([]);
   const [couponNotAvailable, setCouponNotAvailable] = useState(false);
+  const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
 
   useEffect(() => {
     const handleUnhandledRejection = (event) => {
@@ -239,37 +240,41 @@ export default function Home() {
       <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(99,102,241,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(99,102,241,0.03)_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none z-0"></div>
 
       {/* Header / Navbar */}
-      <header className="relative z-50 w-full glass-panel border-x-0 border-t-0 shadow-sm">
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 md:h-20 flex items-center justify-between">
-          <div className="flex items-center gap-1.5 sm:gap-2 cursor-pointer shrink-0" onClick={handleReset}>
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-brand-indigo to-brand-violet flex items-center justify-center text-white shadow-md shadow-brand-indigo/20">
-              <ShoppingBag className="w-5 h-5" />
+      <header className="sticky top-0 z-50 w-full glass-panel border-x-0 border-t-0 bg-white/85 backdrop-blur-xl shadow-xs">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-15 sm:h-16 md:h-20 flex items-center justify-between gap-2">
+          {/* 1. Left: Brand Logo */}
+          <div className="flex items-center gap-2 cursor-pointer shrink-0" onClick={handleReset}>
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-brand-indigo to-brand-violet flex items-center justify-center text-white shadow-md shadow-brand-indigo/20">
+              <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <span className="text-base sm:text-xl md:text-2xl font-black tracking-tight text-slate-900">
-              ShopSmart <span className="bg-gradient-to-r from-brand-indigo to-brand-violet bg-clip-text text-transparent">AI</span>
-            </span>
+            <div className="flex flex-col">
+              <span className="text-base sm:text-xl md:text-2xl font-black tracking-tight text-slate-900 leading-none">
+                ShopSmart <span className="bg-gradient-to-r from-brand-indigo to-brand-violet bg-clip-text text-transparent">AI</span>
+              </span>
+              <span className="text-[9px] font-bold text-slate-600 hidden sm:block">Compare Deals • AI Trial Room</span>
+            </div>
           </div>
 
-          {/* Mode Switcher Pills (Search Deals vs Fashion Trial Room) */}
-          <div className="flex items-center gap-1 p-1 bg-slate-100/90 rounded-2xl border border-slate-200/80 shadow-inner">
+          {/* 2. Center: Desktop Mode Tabs (Hidden on mobile to keep top bar uncluttered) */}
+          <div className="hidden md:flex items-center gap-1.5 p-1 bg-slate-100/90 rounded-2xl border border-slate-200/80 shadow-inner">
             <button
               type="button"
               suppressHydrationWarning
               onClick={() => setAppState("idle")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 appState !== "trial_room"
                   ? "bg-white text-slate-900 shadow-sm border border-slate-200/60"
                   : "text-slate-600 hover:text-slate-900"
               }`}
             >
               <span>🔍</span>
-              <span className="hidden sm:inline">Search Deals</span>
+              <span>Search Deals</span>
             </button>
             <button
               type="button"
               suppressHydrationWarning
               onClick={() => setAppState("trial_room")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer relative ${
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer relative ${
                 appState === "trial_room"
                   ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md shadow-purple-500/20"
                   : "text-purple-700 hover:text-purple-900 hover:bg-white/60"
@@ -277,64 +282,111 @@ export default function Home() {
             >
               <Shirt className="w-3.5 h-3.5 text-pink-500 animate-pulse" />
               <span>Trial Room</span>
-              <span className="hidden md:inline px-1.5 py-0.2 rounded-full bg-pink-100 text-[9px] text-pink-700 font-black border border-pink-200">AI STUDIO</span>
+              <span className="px-1.5 py-0.2 rounded-full bg-pink-100 text-[9px] text-pink-700 font-black border border-pink-200">AI STUDIO</span>
             </button>
           </div>
 
-          {/* Right Header: Region & Auth */}
+          {/* 3. Right: Desktop (Country Pill + Quota + Account) & Mobile (Compact Switcher + Account Trigger) */}
           <div className="flex items-center gap-2 sm:gap-3 text-xs md:text-sm shrink-0">
-            {/* Region Switcher */}
-            <div className="flex items-center gap-0.5 sm:gap-1 p-0.5 sm:p-1 rounded-xl bg-slate-100 border border-slate-200 shadow-inner">
+            {/* Desktop Country Pill Selector */}
+            <div className="hidden lg:flex items-center gap-1 p-1 rounded-xl bg-slate-100 border border-slate-200 shadow-inner">
               <button
                 type="button"
                 suppressHydrationWarning
                 onClick={() => handleCountryChange("IN")}
-                className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                   selectedCountry === "IN"
                     ? "bg-white text-brand-indigo shadow-sm"
                     : "text-slate-500 hover:text-slate-900"
                 }`}
               >
                 <span>🇮🇳</span>
-                <span className="hidden sm:inline">IN (₹)</span>
+                <span>IN (₹)</span>
               </button>
               <button
                 type="button"
                 suppressHydrationWarning
                 onClick={() => handleCountryChange("US")}
-                className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                   selectedCountry === "US"
                     ? "bg-white text-brand-indigo shadow-sm"
                     : "text-slate-500 hover:text-slate-900"
                 }`}
               >
                 <span>🇺🇸</span>
-                <span className="hidden sm:inline">US ($)</span>
+                <span>US ($)</span>
               </button>
             </div>
 
-            {isLoaded ? (
-              isSignedIn ? (
-                <div className="flex items-center gap-2.5">
-                  <span className="hidden md:inline-flex text-xs font-semibold text-brand-emerald bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
-                    {searchesLeft} / 10 Searches
+            {/* Desktop Quota badge */}
+            {isSignedIn && (
+              <span className="hidden md:inline-flex text-xs font-semibold text-brand-emerald bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+                {searchesLeft} / 10 Left
+              </span>
+            )}
+
+            {/* Mobile Top Mode Toggle Button */}
+            <div className="md:hidden flex items-center">
+              {appState === "trial_room" ? (
+                <button
+                  type="button"
+                  onClick={() => setAppState("idle")}
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold border border-slate-200 shadow-xs cursor-pointer"
+                >
+                  <Search className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>Search</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setAppState("trial_room")}
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-xs font-bold shadow-sm shadow-purple-500/20 cursor-pointer"
+                >
+                  <Shirt className="w-3.5 h-3.5 text-pink-300 animate-pulse" />
+                  <span>Trial Room</span>
+                </button>
+              )}
+            </div>
+
+            {/* Unified Account & Region Trigger (Desktop & Mobile) */}
+            <button
+              type="button"
+              suppressHydrationWarning
+              onClick={() => setIsAccountModalOpen(true)}
+              className="flex items-center gap-1.5 p-1 sm:px-2.5 sm:py-1.5 rounded-xl sm:rounded-2xl bg-slate-100/90 hover:bg-slate-200/80 border border-slate-200 transition-all cursor-pointer active:scale-95 shadow-xs"
+            >
+              {isLoaded && isSignedIn ? (
+                <div className="relative">
+                  {clerkUser?.imageUrl ? (
+                    <img
+                      src={clerkUser.imageUrl}
+                      alt={clerkUser.fullName || "User"}
+                      className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl object-cover"
+                    />
+                  ) : (
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-gradient-to-tr from-brand-indigo to-brand-violet text-white text-xs font-bold flex items-center justify-center">
+                      {(clerkUser?.fullName || clerkUser?.firstName || "U").slice(0, 2).toUpperCase()}
+                    </div>
+                  )}
+                  {/* Flag badge on avatar */}
+                  <span className="absolute -bottom-1 -right-1 text-[10px] leading-none bg-white rounded-full p-0.5 shadow-xs border border-slate-200">
+                    {selectedCountry === "IN" ? "🇮🇳" : "🇺🇸"}
                   </span>
-                  <UserButton showName={false} />
                 </div>
               ) : (
-                <SignInButton mode="modal">
-                  <button
-                    type="button"
-                    suppressHydrationWarning
-                    className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl bg-gradient-to-r from-brand-indigo to-brand-violet hover:from-indigo-600 hover:to-purple-700 text-xs sm:text-sm font-semibold text-white transition-all shadow-md shadow-brand-indigo/20 active:scale-95 cursor-pointer"
-                  >
-                    Sign In
-                  </button>
-                </SignInButton>
-              )
-            ) : (
-              <div className="w-16 h-8 rounded-xl bg-slate-200 animate-pulse" />
-            )}
+                <div className="flex items-center gap-1.5 text-slate-700 font-bold text-xs px-1">
+                  <div className="w-7 h-7 rounded-lg bg-indigo-100 text-brand-indigo flex items-center justify-center">
+                    <User className="w-4 h-4" />
+                  </div>
+                  <span className="hidden sm:inline">Account</span>
+                  <span className="text-xs">{selectedCountry === "IN" ? "🇮🇳" : "🇺🇸"}</span>
+                </div>
+              )}
+
+              <span className="hidden sm:inline text-xs font-bold text-slate-800 max-w-[90px] truncate">
+                {clerkUser?.firstName || "Preferences"}
+              </span>
+            </button>
           </div>
         </div>
       </header>
@@ -543,7 +595,7 @@ export default function Home() {
       </main>
 
       {/* Footer */}
-      <footer className="relative z-10 w-full py-8 text-center text-xs text-slate-500 border-t border-slate-200 glass-panel border-x-0 border-b-0">
+      <footer className="relative z-10 w-full py-8 pb-24 md:pb-8 text-center text-xs text-slate-500 border-t border-slate-200 glass-panel border-x-0 border-b-0">
         <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-1">
             <Sparkles className="w-3.5 h-3.5 text-brand-indigo" />
@@ -554,6 +606,65 @@ export default function Home() {
           </div>
         </div>
       </footer>
+
+      {/* Mobile-Only Bottom Navigation Bar (Modern App Experience) */}
+      <nav className="fixed bottom-0 inset-x-0 z-50 md:hidden bg-white/95 backdrop-blur-2xl border-t border-slate-200 shadow-[0_-4px_25px_rgba(0,0,0,0.08)] px-3 py-2 flex items-center justify-around">
+        {/* Tab 1: Deals Search */}
+        <button
+          type="button"
+          onClick={() => setAppState("idle")}
+          className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl transition-all cursor-pointer ${
+            appState !== "trial_room"
+              ? "text-brand-indigo font-bold"
+              : "text-slate-500 hover:text-slate-900"
+          }`}
+        >
+          <Search className={`w-5 h-5 ${appState !== "trial_room" ? "stroke-[2.5]" : "stroke-[1.75]"}`} />
+          <span className="text-[10px] tracking-tight">Deals</span>
+        </button>
+
+        {/* Tab 2: AI Virtual Trial Room */}
+        <button
+          type="button"
+          onClick={() => setAppState("trial_room")}
+          className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl transition-all cursor-pointer relative ${
+            appState === "trial_room"
+              ? "text-purple-700 font-bold"
+              : "text-slate-500 hover:text-slate-900"
+          }`}
+        >
+          <div className={`p-1 rounded-xl ${appState === "trial_room" ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-sm" : ""}`}>
+            <Shirt className={`w-4 h-4 ${appState === "trial_room" ? "text-white" : "text-pink-500 animate-pulse"}`} />
+          </div>
+          <span className="text-[10px] tracking-tight">Trial Room</span>
+        </button>
+
+        {/* Tab 3: Unified Account & Preferences */}
+        <button
+          type="button"
+          onClick={() => setIsAccountModalOpen(true)}
+          className="flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl text-slate-500 hover:text-slate-900 transition-all cursor-pointer"
+        >
+          <div className="relative">
+            <User className="w-5 h-5 stroke-[1.75]" />
+            <span className="absolute -top-1 -right-2 text-[10px] leading-none">
+              {selectedCountry === "IN" ? "🇮🇳" : "🇺🇸"}
+            </span>
+          </div>
+          <span className="text-[10px] tracking-tight">Account ({selectedCountry})</span>
+        </button>
+      </nav>
+
+      {/* Unified Account, Country & Quota Modal */}
+      <UnifiedAccountModal
+        isOpen={isAccountModalOpen}
+        onClose={() => setIsAccountModalOpen(false)}
+        selectedCountry={selectedCountry}
+        onCountryChange={handleCountryChange}
+        searchesLeft={searchesLeft}
+        appState={appState}
+        onNavigate={(newState) => setAppState(newState)}
+      />
 
       <QuotaModal
         isOpen={isQuotaOpen}
