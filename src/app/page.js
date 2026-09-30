@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, ShoppingBag, ArrowLeft, RefreshCw, Layers, ShieldAlert, Coins, Tag, AlertCircle } from "lucide-react";
+import { Sparkles, ShoppingBag, ArrowLeft, RefreshCw, Layers, ShieldAlert, Coins, Tag, AlertCircle, Shirt } from "lucide-react";
 import { SignedIn, SignedOut, SignInButton, UserButton, useUser, useClerk } from "@clerk/nextjs";
 import SearchHero from "@/components/SearchHero";
 import RocketLoader from "@/components/RocketLoader";
@@ -10,6 +10,8 @@ import ProductCard from "@/components/ProductCard";
 import ProfileMenu from "@/components/ProfileMenu";
 import QuotaModal from "@/components/QuotaModal";
 import CouponCard from "@/components/CouponCard";
+import AiShoppingGuide from "@/components/AiShoppingGuide";
+import FashionTrialRoom from "@/components/FashionTrialRoom";
 import { searchProducts } from "@/services/api";
 
 function detectCategory(query, title) {
@@ -26,98 +28,50 @@ function detectCategory(query, title) {
   return "general";
 }
 
-function generateTopLevelAiSuggestion(query, products) {
-  if (!query || !Array.isArray(products) || products.length === 0) {
-    return "Analyzing search intent and scanning live store pricing...";
-  }
+export function shouldBypassAiGuide(query = "") {
+  const q = String(query).toLowerCase().trim();
+  if (!q) return false;
 
-  const category = detectCategory(query, products[0]?.title || "");
-  const topProducts = products.slice(0, 3);
-  const queryLower = query.toLowerCase();
+  // 1. ALL MEDICINES & PHARMACEUTICAL PRODUCTS
+  const medicineKeywords = [
+    "dolo", "telma", "shelcal", "augmentin", "pantocid", "crocin", "paracetamol", 
+    "azithromycin", "metformin", "glycomet", "atorvastatin", "amlodipine", "pantoprazole", 
+    "amoxicillin", "combiflam", "allegra", "montair", "vicks", "benadryl", "strepsils", 
+    "betadine", "limcee", "zincovit", "becosules", "supradyn", "liv 52", "digene", 
+    "gelusil", "omez", "pan 40", "pan d", "rantac", "zinetac", "ciplox", "norflox", 
+    "cifran", "taxim", "calpol", "sumo", "meftal", "disprin", "saridon", "cetrizine", 
+    "levocetrizine", "okacet", "avil", "dexorange", "neurobion", "revital", "evion", 
+    "folvite", "volini", "moov", "iodex", "aspirin", "ibuprofen"
+  ];
+  const hasMedicineName = medicineKeywords.some(m => q.includes(m));
+  const hasMedicineForm = /\b(tablets?|capsules?|syrups?|injections?|drops?|ointment|gel|cream|suspension|inhaler|sachet|\d+\s*mg|\d+\s*ml|strip\s*of)\b/i.test(q);
+  if (hasMedicineName || hasMedicineForm) return true;
 
-  let lowestPriceItem = topProducts[0];
-  let highestRatedItem = topProducts[0];
+  // 2. SPECIFIC SUPPLEMENT BRANDS / MODELS / PACK SIZES
+  const supplementBrands = [
+    "optimum nutrition", "gold standard", "muscleblaze", "biozyme", "nutrabay", 
+    "myprotein", "as-it-is", "asitis", "nakpro", "gnc", "isopure", "cellucor", 
+    "dymatize", "nitro-tech", "nitrotech", "rule 1", "avatar", "avvatar", 
+    "fast & up", "fastandup", "the whole truth", "atom", "boniso", "muscletech", 
+    "prostar", "ultimate nutrition", "labrada", "scitron"
+  ];
+  const hasSpecificBrand = supplementBrands.some(b => q.includes(b));
+  const hasSpecificSize = /\b(\d+(\.\d+)?\s*(kg|lbs?|gm|g|capsules?|tabs?))\b/i.test(q);
+  const isSpecificSupplement = hasSpecificBrand || (hasSpecificSize && /\b(whey|protein|creatine|bcaa|glutamine|multivitamin|mass gainer|fish oil)\b/i.test(q));
+  if (isSpecificSupplement) return true;
 
-  topProducts.forEach(p => {
-    const pVal = parseFloat(String(p.price || "0").replace(/[^0-9.]/g, "")) || 0;
-    const lowestVal = parseFloat(String(lowestPriceItem?.price || "0").replace(/[^0-9.]/g, "")) || 0;
-    
-    if (pVal < lowestVal) {
-      lowestPriceItem = p;
-    }
+  // 3. EXACT TECH / GADGET MODELS
+  const isExactTech = /\b(iphone\s*\d+|galaxy\s*s\d+|macbook\s*(air|pro)\s*m\d+|wh-?1000xm\d+|rockerz\s*\d+|airwave\s*max\s*\d+|airpods\s*(pro|\d+)|oneplus\s*\d+[rt]?|tuf\s*[a-z]\d+|ideapad\s*slim\s*\d+|vivobook\s*\d+|nitro\s*\d+|predator\s*helios|rog\s*strix|legion\s*\d+|thinkpad|pavilion|inspiron|victus|bravia|qled|oled\s*\d+)\b/i.test(q);
+  if (isExactTech) return true;
 
-    const pRating = parseFloat(p.rating || "0") || 0;
-    const highestRating = parseFloat(highestRatedItem?.rating || "0") || 0;
-    
-    if (pRating > highestRating) {
-      highestRatedItem = p;
-    }
-  });
-
-  let suggestion = "";
-  let takeaway = "";
-
-  if (category === "laptop") {
-    const isGaming = queryLower.includes("gaming") || queryLower.includes("rtx");
-    const isBudget = queryLower.includes("under") || queryLower.includes("cheap");
-
-    if (isGaming) {
-      suggestion = `Scan of AAA gaming deals matching "${query}" highlights high refresh-rate screens and Nvidia RTX processing. The ${highestRatedItem?.title} stands out for top-tier thermal cooling and framerate stability.`;
-      takeaway = `Top pick for pure gaming performance: ${highestRatedItem?.title} on ${highestRatedItem?.store}.`;
-    } else if (isBudget) {
-      suggestion = `Evaluating budget laptops matching "${query}" identifies entry-level office chips and high-capacity RAM configurations. The ${lowestPriceItem?.title} offers the best balance of speed and reliability under your budget.`;
-      takeaway = `Best budget workstation: ${lowestPriceItem?.title} on ${lowestPriceItem?.store}.`;
-    } else {
-      suggestion = `Analyzing productivity laptops matching "${query}" prioritizes battery runtime and SSD responsiveness. The ${highestRatedItem?.title} offers a premium build with excellent multi-threaded CPU speeds.`;
-      takeaway = `Top pick for daily office/code productivity: ${highestRatedItem?.title} on ${highestRatedItem?.store}.`;
-    }
-  } else if (category === "audio") {
-    const hasANC = queryLower.includes("anc") || queryLower.includes("noise");
-    const isSport = queryLower.includes("sport") || queryLower.includes("run") || queryLower.includes("gym");
-
-    if (hasANC) {
-      suggestion = `Evaluating noise-cancelling audio matching "${query}" highlights high-capacity active noise cancellation (ANC) and spatial drivers. The ${highestRatedItem?.title} delivers superior isolation from environmental noise.`;
-      takeaway = `Top pick for isolation: ${highestRatedItem?.title} on ${highestRatedItem?.store}.`;
-    } else if (isSport) {
-      suggestion = `Sport audio scans matching "${query}" focus on secure fits, IP-rated sweat protection, and deep bass responses. The ${lowestPriceItem?.title} provides excellent secure-fit hooks for high-intensity activity.`;
-      takeaway = `Best sport alternative: ${lowestPriceItem?.title} on ${lowestPriceItem?.store}.`;
-    } else {
-      suggestion = `Analyzing wireless audio deals matching "${query}" prioritizes Bluetooth v5.3 auto-pairing speed and total playtime capacity. The ${lowestPriceItem?.title} offers impressive bass drivers at an affordable cost.`;
-      takeaway = `Best value choice: ${lowestPriceItem?.title} on ${lowestPriceItem?.store}.`;
-    }
-  } else if (category === "fashion") {
-    const isHiking = queryLower.includes("hike") || queryLower.includes("boot") || queryLower.includes("outdoor");
-    const isSneaker = queryLower.includes("sneaker") || queryLower.includes("run") || queryLower.includes("sport");
-
-    if (isHiking) {
-      suggestion = `Analyzing outdoor footwear matching "${query}" prioritizes waterproof Gore-Tex/canvas builds and deep-traction sole treads. The ${highestRatedItem?.title} offers maximum ankle protection for rough terrains.`;
-      takeaway = `Top pick for hiking trail durability: ${highestRatedItem?.title} on ${highestRatedItem?.store}.`;
-    } else if (isSneaker) {
-      suggestion = `Evaluating athletic sneakers matching "${query}" emphasizes dual-density foam shock absorption and breathable mesh weaves. The ${lowestPriceItem?.title} offers lightweight comfort at a highly competitive price.`;
-      takeaway = `Best budget athletic alternative: ${lowestPriceItem?.title} on ${lowestPriceItem?.store}.`;
-    } else {
-      suggestion = `Scanning fashion listings matching "${query}" highlights premium soft cotton stitches and casual modern fits. The ${lowestPriceItem?.title} provides daily utility comfort with easy washing care.`;
-      takeaway = `Best value wardrobe pick: ${lowestPriceItem?.title} on ${lowestPriceItem?.store}.`;
-    }
-  } else {
-    const hasBudget = queryLower.includes("under") || queryLower.includes("cheap") || queryLower.includes("budget");
-    if (hasBudget) {
-      suggestion = `Scanning competitive budget deals matching "${query}" focuses on cost-to-quality performance. The ${lowestPriceItem?.title} delivers verified retail quality at the most affordable price point.`;
-      takeaway = `Best budget choice: ${lowestPriceItem?.title} on ${lowestPriceItem?.store}.`;
-    } else {
-      suggestion = `Comparing live store listings matching "${query}" identifies top-rated merchant listings with high buyer ratings. The ${highestRatedItem?.title} stands out for positive customer feedback and overall reliability.`;
-      takeaway = `Top pick for overall satisfaction: ${highestRatedItem?.title} on ${highestRatedItem?.store}.`;
-    }
-  }
-
-  return `📢 Suggestion: ${suggestion}\n\n🎯 Buying Takeaway: ${takeaway}`;
+  return false;
 }
 
 export default function Home() {
   const { isSignedIn, user: clerkUser, isLoaded } = useUser();
   const { openSignIn } = useClerk();
 
-  const [appState, setAppState] = useState("idle"); // idle | searching | results
+  const [appState, setAppState] = useState("idle"); // idle | searching | results | guide | trial_room
   const [searchQuery, setSearchQuery] = useState("");
   const [products, setProducts] = useState([]);
   const [creditsRemaining, setCreditsRemaining] = useState(null);
@@ -131,6 +85,18 @@ export default function Home() {
   const [coupons, setCoupons] = useState([]);
   const [couponNotAvailable, setCouponNotAvailable] = useState(false);
 
+  useEffect(() => {
+    const handleUnhandledRejection = (event) => {
+      const msg = String(event?.reason?.message || event?.reason || "");
+      if (msg.includes("clerk") || msg.includes("Failed to fetch")) {
+        event.preventDefault?.();
+        console.warn("[ShopSmart Auth] Handled Clerk background sync hiccup:", msg);
+      }
+    };
+    window.addEventListener("unhandledrejection", handleUnhandledRejection);
+    return () => window.removeEventListener("unhandledrejection", handleUnhandledRejection);
+  }, []);
+
   const handleCountryChange = async (newCountry) => {
     const code = newCountry.toUpperCase();
     if (code === selectedCountry) return;
@@ -140,7 +106,6 @@ export default function Home() {
       localStorage.setItem("user_selected_country", code);
     } catch (e) {}
 
-    // Automatically re-run search for the new target region if search results are currently active
     if (appState === "results" && searchQuery) {
       handleSearchSubmitForCountry(searchQuery, code);
     }
@@ -175,6 +140,21 @@ export default function Home() {
       return;
     }
 
+    if (shouldBypassAiGuide(query)) {
+      handleDirectSearch(query);
+      return;
+    }
+
+    setSearchQuery(query);
+    setAppState("guide");
+  };
+
+  const handleDirectSearch = async (query) => {
+    if (!isSignedIn) {
+      openSignIn();
+      return;
+    }
+
     setSearchQuery(query);
     setAppState("searching");
     setApiError(null);
@@ -182,11 +162,9 @@ export default function Home() {
     setProducts([]);
 
     try {
-      // Execute the local Next.js search API request with target active country preference
       const response = await searchProducts(query, selectedCountry);
       const fetchedProducts = response.results || [];
 
-      // Preload product images before releasing the search loader
       if (fetchedProducts.length > 0) {
         try {
           const preloadPromises = fetchedProducts.map((p) => {
@@ -202,7 +180,6 @@ export default function Home() {
             });
           });
 
-          // Wait for all images or a maximum timeout of 800ms for instant feel
           await Promise.race([
             Promise.all(preloadPromises),
             new Promise((resolve) => setTimeout(resolve, 800))
@@ -254,70 +231,93 @@ export default function Home() {
     <div className="min-h-screen relative flex flex-col justify-between overflow-hidden">
       {/* Background Interactive Glow Effects */}
       <div className="absolute top-0 inset-x-0 h-[500px] flex justify-between pointer-events-none z-0">
-        <div className="w-[35%] h-full bg-brand-violet/10 bg-glow-purple rounded-full mix-blend-screen -translate-x-[20%] -translate-y-[20%]"></div>
-        <div className="w-[35%] h-full bg-brand-indigo/10 bg-glow-blue rounded-full mix-blend-screen translate-x-[20%] -translate-y-[10%]"></div>
+        <div className="w-[35%] h-full bg-brand-indigo/10 rounded-full blur-3xl mix-blend-multiply -translate-x-[20%] -translate-y-[20%]"></div>
+        <div className="w-[35%] h-full bg-brand-violet/10 rounded-full blur-3xl mix-blend-multiply translate-x-[20%] -translate-y-[10%]"></div>
       </div>
       
       {/* Grid Pattern Overlay */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none z-0"></div>
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(99,102,241,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(99,102,241,0.03)_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none z-0"></div>
 
       {/* Header / Navbar */}
-      <header className="relative z-50 w-full glass-panel border-x-0 border-t-0 shadow-lg">
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-14 sm:h-16 md:h-20 flex items-center justify-between">
+      <header className="relative z-50 w-full glass-panel border-x-0 border-t-0 shadow-sm">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 md:h-20 flex items-center justify-between">
           <div className="flex items-center gap-1.5 sm:gap-2 cursor-pointer shrink-0" onClick={handleReset}>
-            <div className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-xl bg-gradient-to-tr from-brand-indigo to-brand-violet flex items-center justify-center text-white shadow-[0_0_15px_rgba(99,102,241,0.4)]">
-              <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5" />
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-brand-indigo to-brand-violet flex items-center justify-center text-white shadow-md shadow-brand-indigo/20">
+              <ShoppingBag className="w-5 h-5" />
             </div>
-            <span className="text-sm sm:text-lg md:text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700">
-              ShopSmart <span className="text-brand-indigo">AI</span>
+            <span className="text-base sm:text-xl md:text-2xl font-black tracking-tight text-slate-900">
+              ShopSmart <span className="bg-gradient-to-r from-brand-indigo to-brand-violet bg-clip-text text-transparent">AI</span>
             </span>
           </div>
 
-          <div className="flex items-center gap-1.5 sm:gap-3 text-xs md:text-sm shrink-0">
-            <span className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold shadow-sm">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
-              <span>1,284 Active Shoppers</span>
-            </span>
+          {/* Mode Switcher Pills (Search Deals vs Fashion Trial Room) */}
+          <div className="flex items-center gap-1 p-1 bg-slate-100/90 rounded-2xl border border-slate-200/80 shadow-inner">
+            <button
+              type="button"
+              suppressHydrationWarning
+              onClick={() => setAppState("idle")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                appState !== "trial_room"
+                  ? "bg-white text-slate-900 shadow-sm border border-slate-200/60"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              <span>🔍</span>
+              <span className="hidden sm:inline">Search Deals</span>
+            </button>
+            <button
+              type="button"
+              suppressHydrationWarning
+              onClick={() => setAppState("trial_room")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer relative ${
+                appState === "trial_room"
+                  ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md shadow-purple-500/20"
+                  : "text-purple-700 hover:text-purple-900 hover:bg-white/60"
+              }`}
+            >
+              <Shirt className="w-3.5 h-3.5 text-pink-500 animate-pulse" />
+              <span>Trial Room</span>
+              <span className="hidden md:inline px-1.5 py-0.2 rounded-full bg-pink-100 text-[9px] text-pink-700 font-black border border-pink-200">AI STUDIO</span>
+            </button>
+          </div>
 
-            {/* Direct Header Region Switcher Pill */}
-            <div className="flex items-center gap-0.5 sm:gap-1 p-0.5 sm:p-1 rounded-xl bg-white border border-slate-200 shadow-sm">
+          {/* Right Header: Region & Auth */}
+          <div className="flex items-center gap-2 sm:gap-3 text-xs md:text-sm shrink-0">
+            {/* Region Switcher */}
+            <div className="flex items-center gap-0.5 sm:gap-1 p-0.5 sm:p-1 rounded-xl bg-slate-100 border border-slate-200 shadow-inner">
               <button
                 type="button"
                 suppressHydrationWarning
                 onClick={() => handleCountryChange("IN")}
-                title="Switch search region to India (INR ₹)"
-                className={`flex items-center gap-1 px-1.5 sm:px-2.5 py-1 rounded-lg text-[11px] sm:text-xs font-bold transition-all cursor-pointer ${
+                className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                   selectedCountry === "IN"
-                    ? "bg-gradient-to-r from-brand-indigo to-brand-violet text-white shadow-md"
-                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                    ? "bg-white text-brand-indigo shadow-sm"
+                    : "text-slate-500 hover:text-slate-900"
                 }`}
               >
                 <span>🇮🇳</span>
                 <span className="hidden sm:inline">IN (₹)</span>
-                <span className="sm:hidden">IN</span>
               </button>
               <button
                 type="button"
                 suppressHydrationWarning
                 onClick={() => handleCountryChange("US")}
-                title="Switch search region to United States (USD $)"
-                className={`flex items-center gap-1 px-1.5 sm:px-2.5 py-1 rounded-lg text-[11px] sm:text-xs font-bold transition-all cursor-pointer ${
+                className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                   selectedCountry === "US"
-                    ? "bg-gradient-to-r from-brand-indigo to-brand-violet text-white shadow-md"
-                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                    ? "bg-white text-brand-indigo shadow-sm"
+                    : "text-slate-500 hover:text-slate-900"
                 }`}
               >
                 <span>🇺🇸</span>
                 <span className="hidden sm:inline">US ($)</span>
-                <span className="sm:hidden">US</span>
               </button>
             </div>
 
             {isLoaded ? (
               isSignedIn ? (
                 <div className="flex items-center gap-2.5">
-                  <span className="hidden md:inline-flex text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
-                    {searchesLeft} / 10 Searches Left
+                  <span className="hidden md:inline-flex text-xs font-semibold text-brand-emerald bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+                    {searchesLeft} / 10 Searches
                   </span>
                   <UserButton showName={false} />
                 </div>
@@ -325,22 +325,39 @@ export default function Home() {
                 <SignInButton mode="modal">
                   <button
                     type="button"
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-brand-indigo to-brand-violet hover:from-brand-indigo/90 hover:to-brand-violet/90 text-xs md:text-sm font-semibold text-white transition-all shadow-md active:scale-95 cursor-pointer"
+                    suppressHydrationWarning
+                    className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl bg-gradient-to-r from-brand-indigo to-brand-violet hover:from-indigo-600 hover:to-purple-700 text-xs sm:text-sm font-semibold text-white transition-all shadow-md shadow-brand-indigo/20 active:scale-95 cursor-pointer"
                   >
                     Sign In
                   </button>
                 </SignInButton>
               )
             ) : (
-              <div className="w-20 h-8 rounded-xl bg-slate-200 animate-pulse" />
+              <div className="w-16 h-8 rounded-xl bg-slate-200 animate-pulse" />
             )}
           </div>
         </div>
       </header>
 
       {/* Main Content Area */}
-      <main className="relative z-10 flex-grow flex items-center justify-center py-8">
+      <main className="relative z-10 flex-grow flex items-center justify-center py-6 md:py-8">
         <AnimatePresence mode="wait">
+          
+          {/* FASHION VIRTUAL TRIAL ROOM STUDIO */}
+          {appState === "trial_room" && (
+            <motion.div
+              key="trial-room-state"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.3 }}
+              className="w-full"
+            >
+              <FashionTrialRoom />
+            </motion.div>
+          )}
+
+          {/* IDLE SEARCH HERO */}
           {appState === "idle" && (
             <motion.div
               key="idle-state"
@@ -350,10 +367,32 @@ export default function Home() {
               transition={{ duration: 0.3 }}
               className="w-full"
             >
-              <SearchHero country={selectedCountry} onSubmit={handleSearchSubmit} />
+              <SearchHero
+                country={selectedCountry}
+                onSubmit={handleSearchSubmit}
+              />
             </motion.div>
           )}
 
+          {/* AI SHOPPING GUIDE */}
+          {appState === "guide" && (
+            <motion.div
+              key="guide-state"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.3 }}
+              className="w-full px-4"
+            >
+              <AiShoppingGuide
+                initialQuery={searchQuery}
+                onExecuteSearch={handleDirectSearch}
+                onBackToSearch={() => setAppState("idle")}
+              />
+            </motion.div>
+          )}
+
+          {/* SEARCHING LOADER */}
           {appState === "searching" && (
             <motion.div
               key="searching-state"
@@ -367,6 +406,7 @@ export default function Home() {
             </motion.div>
           )}
 
+          {/* SEARCH RESULTS VIEW */}
           {appState === "results" && (
             <motion.div
               key="results-state"
@@ -376,7 +416,6 @@ export default function Home() {
               transition={{ duration: 0.5, ease: "easeOut" }}
               className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-8"
             >
-              {/* API Connection Warning Banner */}
               {apiError && (
                 <div className="mb-6">
                   <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs md:text-sm font-semibold shadow-[0_0_15px_rgba(245,158,11,0.05)]">
@@ -391,7 +430,7 @@ export default function Home() {
                 <div className="flex items-center gap-3">
                   <button
                     onClick={handleReset}
-                    className="flex items-center justify-center p-2.5 rounded-xl glass-panel glass-panel-hover text-slate-600 hover:text-slate-900 transition-all shadow-sm cursor-pointer active:scale-95 border border-slate-200"
+                    className="flex items-center justify-center p-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-600 hover:text-slate-900 transition-all shadow-sm cursor-pointer active:scale-95"
                   >
                     <ArrowLeft className="w-4 h-4" />
                   </button>
@@ -412,10 +451,6 @@ export default function Home() {
                       <span>{searchesLeft} / 10 Searches Left Today</span>
                     </div>
                   )}
-                  <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-700 shadow-sm">
-                    <Layers className="w-4 h-4 text-brand-violet" />
-                    <span>Analyzed 45+ deals</span>
-                  </div>
                   <button
                     onClick={() => handleSearchSubmit(searchQuery)}
                     className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 text-xs md:text-sm font-bold text-slate-700 hover:text-slate-900 transition-all cursor-pointer shadow-sm active:scale-95"
@@ -478,35 +513,10 @@ export default function Home() {
                   </motion.div>
                 ) : (
                   <div className="space-y-8">
-                    {/* Top-Level AI Suggestion Banner */}
-                    <motion.div
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="p-5 rounded-2xl glass-panel border border-indigo-200/90 bg-gradient-to-r from-indigo-50/90 via-purple-50/80 to-slate-50/90 shadow-sm text-left relative overflow-hidden"
-                    >
-                      <div className="absolute top-0 right-0 w-48 h-48 bg-brand-indigo/10 rounded-full blur-3xl pointer-events-none" />
-                      <div className="flex items-start gap-3.5 relative z-10">
-                        <div className="p-2.5 rounded-xl bg-indigo-100 border border-indigo-200 text-brand-indigo shrink-0 shadow-sm">
-                          <Sparkles className="w-5 h-5 animate-pulse" />
-                        </div>
-                        <div className="flex-grow">
-                          <h3 className="text-sm font-black text-slate-900 mb-2 flex items-center gap-2">
-                            <span>ShopSmart AI Shopping Suggestion</span>
-                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 border border-emerald-300 text-emerald-800 font-black uppercase tracking-wide">
-                              Live Synthesis
-                            </span>
-                          </h3>
-                          <p className="text-xs md:text-sm text-slate-700 leading-relaxed font-semibold whitespace-pre-line">
-                            {generateTopLevelAiSuggestion(searchQuery, products)}
-                          </p>
-                        </div>
-                      </div>
-                    </motion.div>
-
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
                       <AnimatePresence mode="popLayout">
-                        {products.map((product) => (
-                          <ProductCard key={product.id} product={product} />
+                        {products.map((product, idx) => (
+                          <ProductCard key={product.id || `product-${idx}-${product.title}`} product={product} searchQuery={searchQuery} />
                         ))}
                       </AnimatePresence>
                     </div>
@@ -537,7 +547,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-1">
             <Sparkles className="w-3.5 h-3.5 text-brand-indigo" />
-            <span>AI powered shopping engine</span>
+            <span>AI powered shopping & virtual trial engine</span>
           </div>
           <div>
             <span>Powered by Next.js & Framer Motion. &copy; 2026 ShopSmart AI.</span>

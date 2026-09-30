@@ -1,22 +1,8 @@
 import { NextResponse } from "next/server";
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
-// Polyfill process.env for Clerk in Edge environment if missing
-if (typeof process !== "undefined" && process.env) {
-  process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY =
-    process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ||
-    "pk_test_ZWxlY3RyaWMtY3ViLTQ5NDQuY2xlcmsuYWNjb3VudHMuZGV2JA";
-  process.env.CLERK_SECRET_KEY =
-    process.env.CLERK_SECRET_KEY ||
-    "sk_test_wMH1KcNxkOWdhyo2ndsO64JXQKoBoEmKceKyp5eyFn";
-}
-
-const publishableKey =
-  process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ||
-  "pk_test_ZWxlY3RyaWMtY3ViLTQ5NDQuY2xlcmsuYWNjb3VudHMuZGV2JA";
-const secretKey =
-  process.env.CLERK_SECRET_KEY ||
-  "sk_test_wMH1KcNxkOWdhyo2ndsO64JXQKoBoEmKceKyp5eyFn";
+const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || "";
+const secretKey = process.env.CLERK_SECRET_KEY || "";
 
 const isPublicRoute = createRouteMatcher([
   "/",
@@ -25,6 +11,7 @@ const isPublicRoute = createRouteMatcher([
   "/reset-password(.*)",
   "/api/search(.*)",
   "/api/redirect(.*)",
+  "/api/ai(.*)",
   "/api/telemetry/(.*)"
 ]);
 

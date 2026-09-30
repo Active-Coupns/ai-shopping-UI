@@ -55,12 +55,23 @@ function hasExactPDPPath(url) {
       path.includes("/buy/") ||
       path.includes("/deal/") ||
       path.includes("/goods/") ||
+      path.includes("/drugs/") ||
+      path.includes("/otc/") ||
+      path.includes("/medicine/") ||
+      path.includes("/sv/") ||
+      path.includes("/itm/") ||
+      path.includes("/catalog/") ||
       path.endsWith("/buy")
     ) {
       return true;
     }
   } catch (e) {}
   return false;
+}
+
+function isCompletePDPUrl(url) {
+  if (!url || typeof url !== "string") return false;
+  return (url.startsWith("http://") || url.startsWith("https://")) && hasExactPDPPath(url);
 }
 
 function cleanUrlParams(url) {
@@ -125,30 +136,140 @@ function extractFirstPdpFromHtml(html, storeName, fallbackUrl) {
   return null;
 }
 
-async function resolveSearchToPdp(searchUrl, storeName) {
-  if (!searchUrl) return null;
+async function resolveSearchToPdp(searchUrl, storeName, productTitle = "") {
+  if (!searchUrl && !productTitle) return null;
+
+  const targetDomainMap = {
+    "flipkart": "flipkart.com",
+    "reliance digital": "reliancedigital.in",
+    "croma": "croma.com",
+    "vijay sales": "vijaysales.com",
+    "myntra": "myntra.com",
+    "amazon": "amazon.in",
+    "amazon.in": "amazon.in",
+    "healthkart": "healthkart.com",
+    "nutrabay": "nutrabay.com",
+    "muscleblaze": "muscleblaze.com",
+    "tata 1mg": "1mg.com",
+    "1mg": "1mg.com",
+    "apollo 24|7": "apollopharmacy.in",
+    "apollo": "apollopharmacy.in",
+    "pharmeasy": "pharmeasy.in",
+    "netmeds": "netmeds.com",
+    "myprotein": "myprotein.co.in",
+    "optimum nutrition": "optimumnutrition.co.in"
+  };
+
+  const domain = targetDomainMap[storeName.toLowerCase()] || `${storeName.toLowerCase().replace(/[^a-z0-9]/g, "")}.com`;
+  const cleanTitle = cleanModelForStoreSearch(productTitle || searchUrl);
+  if (!cleanTitle) return null;
+
+  const cacheKey = `cache:pdp:${domain}:${cleanTitle.toLowerCase().replace(/\s+/g, "-")}`;
+
   try {
-    const response = await fetch(searchUrl, {
+    const cachedPdp = await redis.get(cacheKey);
+    if (cachedPdp && isCompletePDPUrl(cachedPdp)) {
+      console.log(`Dynamic Edge Resolver (Redis HIT): Exact PDP -> ${cachedPdp}`);
+      return cachedPdp;
+    }
+  } catch (e) {}
+
+  // 1. Zero-Cost Microservice PDP Resolution (gotScraping Engine)
+  try {
+    const scraperServiceUrl = process.env.SCRAPER_SERVICE_URL || "http://localhost:4000";
+    const apiKey = process.env.SCRAPER_SERVICE_API_KEY || "";
+    
+    console.log(`Dynamic Edge Resolver: Requesting zero-cost microservice PDP resolution for ${storeName} ("${cleanTitle}")...`);
+    const res = await fetch(`${scraperServiceUrl}/api/v1/resolve-pdp`, {
+      method: "POST",
       headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.5"
+        "Content-Type": "application/json",
+        ...(apiKey ? { "x-api-key": apiKey } : {})
       },
+      body: JSON.stringify({ storeName, query: cleanTitle }),
       signal: AbortSignal.timeout(1500)
     });
-    
-    if (response.ok) {
-      const html = await response.text();
-      const pdpUrl = extractFirstPdpFromHtml(html, storeName, searchUrl);
-      if (pdpUrl) {
-        console.log(`Dynamic Edge Resolver: Resolved search to direct PDP -> ${pdpUrl}`);
-        return pdpUrl;
+
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success && data.pdpUrl && isCompletePDPUrl(data.pdpUrl)) {
+        console.log(`Dynamic Edge Resolver: Microservice resolved 100% EXACT PDP -> ${data.pdpUrl}`);
+        try { await redis.set(cacheKey, data.pdpUrl, { ex: 2592000 }); } catch (e) {}
+        return data.pdpUrl;
       }
     }
   } catch (err) {
-    console.warn(`Dynamic Edge Resolver failed to fetch/parse search page: ${err.message}`);
+    console.warn(`Dynamic Edge Resolver microservice lookup warning: ${err.message}`);
+  }
+
+  // 2. Direct search page HTML parsing fallback
+  if (searchUrl) {
+    try {
+      const response = await fetch(searchUrl, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+          "Accept-Language": "en-US,en;q=0.5"
+        },
+        signal: AbortSignal.timeout(1200)
+      });
+      
+      if (response.ok) {
+        const html = await response.text();
+        const pdpUrl = extractFirstPdpFromHtml(html, storeName, searchUrl);
+        if (pdpUrl && isCompletePDPUrl(pdpUrl)) {
+          console.log(`Dynamic Edge Resolver: Resolved search to direct PDP -> ${pdpUrl}`);
+          try { await redis.set(cacheKey, pdpUrl, { ex: 2592000 }); } catch (e) {}
+          return pdpUrl;
+        }
+      }
+    } catch (err) {
+      console.warn(`Dynamic Edge Resolver failed to fetch/parse search page: ${err.message}`);
+    }
   }
   return null;
+}
+
+function cleanModelForStoreSearch(title) {
+  if (!title) return "";
+
+  const isMedicine = /\b(dolo|telma|shelcal|augmentin|pantocid|crocin|paracetamol|azithromycin|metformin|glycomet|tablets?|capsules?|syrup|\d+\s*mg|strip)\b/i.test(title);
+  const isSupp = /\b(whey|protein|creatine|bcaa|glutamine|gainer|isolate|nutrition|muscleblaze|nutrabay)\b/i.test(title);
+
+  if (isMedicine || isSupp) {
+    return title
+      .replace(/\[[^\]]*\]/g, " ")
+      .replace(/\([^)]*\)/g, " ")
+      .replace(/Sponsored Ad - /gi, " ")
+      .replace(/[^a-zA-Z0-9\s-]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .split(" ")
+      .slice(0, 6)
+      .join(" ");
+  }
+
+  let clean = title
+    .replace(/\[[^\]]*\]/g, " ")
+    .replace(/\([^)]*\)/g, " ")
+    .replace(/Sponsored Ad - /gi, " ");
+
+  const segments = clean.split(/[,;|:\/]/);
+  if (segments.length > 0 && segments[0].trim().length >= 3) {
+    clean = segments[0];
+  }
+
+  clean = clean
+    .replace(/\b\d+\s*(gb|tb|mb|ram|rom|mp|mah|hz|inch|inches|cm)\b/gi, " ")
+    .replace(/\b\d+(\.\d+)?\s*(inch|inches|cm|mp|g)\b/gi, " ")
+    .replace(/\b(smartphone|mobile|phone|laptop|notebook|thin & light|camera|display|screen|battery|dual ai|triple|quad|rear|front|fast charging|windows|win|mso|office|wireless|headphones|earbuds)\b/gi, " ")
+    .replace(/[^a-zA-Z0-9\s-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  const words = clean.split(" ").filter(Boolean);
+  if (words.length === 0) return title.split(" ").slice(0, 3).join(" ");
+  return words.slice(0, 4).join(" ");
 }
 
 export async function GET(request) {
@@ -172,14 +293,28 @@ export async function GET(request) {
   };
 
   const handleFallback = async (fallbackUrl, store) => {
+    let cleanFallback = fallbackUrl;
+
     if (fallbackUrl && isSearchUrl(fallbackUrl)) {
-      const resolvedPdp = await resolveSearchToPdp(fallbackUrl, store);
+      try {
+        const u = new URL(fallbackUrl);
+        const rawQ = u.searchParams.get("q") || u.searchParams.get("k") || u.searchParams.get("text") || title;
+        if (rawQ) {
+          const sanitizedQ = cleanModelForStoreSearch(rawQ);
+          if (u.searchParams.has("q")) u.searchParams.set("q", sanitizedQ);
+          if (u.searchParams.has("k")) u.searchParams.set("k", sanitizedQ);
+          if (u.searchParams.has("text")) u.searchParams.set("text", sanitizedQ);
+          cleanFallback = u.toString();
+        }
+      } catch (e) {}
+
+      const resolvedPdp = await resolveSearchToPdp(cleanFallback, store, title);
       if (resolvedPdp) {
         return safeRedirect(resolvedPdp);
       }
     }
-    if (fallbackUrl && (fallbackUrl.startsWith("http://") || fallbackUrl.startsWith("https://"))) {
-      return safeRedirect(fallbackUrl);
+    if (cleanFallback && (cleanFallback.startsWith("http://") || cleanFallback.startsWith("https://"))) {
+      return safeRedirect(cleanFallback);
     }
     return safeRedirect("https://www.google.com");
   };

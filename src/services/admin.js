@@ -2,13 +2,18 @@ import { redis } from "@/services/redis";
 
 const SETTINGS_REDIS_KEY = "config:admin:settings";
 
+const envCuelinksKey = typeof process !== "undefined" && process.env ? (process.env.CUELINKS_CID || process.env.CUELINKS_KEY || process.env.CUELINKS_TOKEN || "") : "";
 const envEarnkaroKey = typeof process !== "undefined" && process.env ? (process.env.EARNKARO_KEY || process.env.EARNKARO_TOKEN || "") : "";
 
 const defaultSettings = {
   personalTags: [],
-  aggregators: envEarnkaroKey ? [
+  aggregators: envCuelinksKey ? [
+    { id: "agg-cuelinks-env", name: "CueLinks", token: envCuelinksKey, region: "IN" }
+  ] : (envEarnkaroKey ? [
     { id: "agg-earnkaro-env", name: "EarnKaro", token: envEarnkaroKey, region: "IN" }
-  ] : [],
+  ] : [
+    { id: "agg-cuelinks-default", name: "CueLinks", token: "236284", region: "IN" }
+  ]),
   coupons: [
     { id: "c1", code: "ZOMATO50", store: "Zomato", description: "50% off on your first food order", link: "https://zomato.com", region: "IN" },
     { id: "c2", code: "UBERFREE", store: "Uber", description: "Get a free cab ride up to $15", link: "https://uber.com", region: "US" },
