@@ -392,7 +392,7 @@ export default function Home() {
       </header>
 
       {/* Main Content Area */}
-      <main className="relative z-10 flex-grow flex items-center justify-center py-6 md:py-8">
+      <main className="relative z-10 flex-grow flex items-center justify-center py-2 sm:py-6 md:py-8">
         <AnimatePresence mode="wait">
           
           {/* FASHION VIRTUAL TRIAL ROOM STUDIO */}
@@ -595,20 +595,20 @@ export default function Home() {
       </main>
 
       {/* Footer */}
-      <footer className="relative z-10 w-full py-8 pb-24 md:pb-8 text-center text-xs text-slate-500 border-t border-slate-200 glass-panel border-x-0 border-b-0">
-        <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4">
+      <footer className="relative z-10 w-full py-3 pb-20 md:pb-6 text-center text-[10px] sm:text-xs text-slate-500 border-t border-slate-200/80 glass-panel border-x-0 border-b-0">
+        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-1.5 sm:gap-4">
           <div className="flex items-center gap-1">
-            <Sparkles className="w-3.5 h-3.5 text-brand-indigo" />
+            <Sparkles className="w-3 h-3 text-brand-indigo" />
             <span>AI powered shopping & virtual trial engine</span>
           </div>
           <div>
-            <span>Powered by Next.js & Framer Motion. &copy; 2026 ShopSmart AI.</span>
+            <span>&copy; 2026 ShopSmart AI. Live Deals & Studio.</span>
           </div>
         </div>
       </footer>
 
       {/* Mobile-Only Bottom Navigation Bar (Modern App Experience) */}
-      <nav className="fixed bottom-0 inset-x-0 z-50 md:hidden bg-white/95 backdrop-blur-2xl border-t border-slate-200 shadow-[0_-4px_25px_rgba(0,0,0,0.08)] px-3 py-2 flex items-center justify-around">
+      <nav className="fixed bottom-0 inset-x-0 z-50 md:hidden bg-white/95 backdrop-blur-2xl border-t border-slate-200 shadow-[0_-4px_25px_rgba(0,0,0,0.08)] px-4 py-1.5 flex items-center justify-around">
         {/* Tab 1: Deals Search */}
         <button
           type="button"
@@ -619,7 +619,7 @@ export default function Home() {
               : "text-slate-500 hover:text-slate-900"
           }`}
         >
-          <Search className={`w-5 h-5 ${appState !== "trial_room" ? "stroke-[2.5]" : "stroke-[1.75]"}`} />
+          <Search className={`w-4.5 h-4.5 ${appState !== "trial_room" ? "stroke-[2.5]" : "stroke-[1.75]"}`} />
           <span className="text-[10px] tracking-tight">Deals</span>
         </button>
 
@@ -633,8 +633,8 @@ export default function Home() {
               : "text-slate-500 hover:text-slate-900"
           }`}
         >
-          <div className={`p-1 rounded-xl ${appState === "trial_room" ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-sm" : ""}`}>
-            <Shirt className={`w-4 h-4 ${appState === "trial_room" ? "text-white" : "text-pink-500 animate-pulse"}`} />
+          <div className={`p-1 rounded-xl ${appState === "trial_room" ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-xs" : ""}`}>
+            <Shirt className={`w-3.5 h-3.5 ${appState === "trial_room" ? "text-white" : "text-pink-500 animate-pulse"}`} />
           </div>
           <span className="text-[10px] tracking-tight">Trial Room</span>
         </button>
@@ -646,7 +646,7 @@ export default function Home() {
           className="flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl text-slate-500 hover:text-slate-900 transition-all cursor-pointer"
         >
           <div className="relative">
-            <User className="w-5 h-5 stroke-[1.75]" />
+            <User className="w-4.5 h-4.5 stroke-[1.75]" />
             <span className="absolute -top-1 -right-2 text-[10px] leading-none">
               {selectedCountry === "IN" ? "🇮🇳" : "🇺🇸"}
             </span>

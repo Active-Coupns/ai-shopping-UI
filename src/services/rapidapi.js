@@ -47,11 +47,31 @@ function cleanTitleForQuery(title) {
     .trim();
 }
 
-export function formatStoreName(name) {
+export function formatStoreName(name, country = "IN") {
   if (!name) return "Online Store";
   const s = String(name).trim();
   const lower = s.toLowerCase();
-  if (lower.includes("amazon")) return "Amazon.in";
+  const isUS = String(country).toUpperCase() === "US";
+
+  // US Platforms
+  if (isUS) {
+    if (lower.includes("amazon")) return "Amazon.com";
+    if (lower.includes("walmart")) return "Walmart";
+    if (lower.includes("target")) return "Target";
+    if (lower.includes("best buy") || lower.includes("bestbuy")) return "Best Buy";
+    if (lower.includes("cvs")) return "CVS Pharmacy";
+    if (lower.includes("walgreens")) return "Walgreens";
+    if (lower.includes("gnc")) return "GNC";
+    if (lower.includes("iherb")) return "iHerb";
+    if (lower.includes("bodybuilding")) return "Bodybuilding.com";
+    if (lower.includes("ebay")) return "eBay";
+    if (lower.includes("rite aid") || lower.includes("riteaid")) return "Rite Aid";
+    if (lower.includes("costco")) return "Costco";
+    if (lower.includes("kroger")) return "Kroger";
+  }
+
+  // India & Global Platforms
+  if (lower.includes("amazon")) return isUS ? "Amazon.com" : "Amazon.in";
   if (lower.includes("flipkart")) return "Flipkart";
   if (lower.includes("1mg") || lower.includes("tata 1mg")) return "Tata 1mg";
   if (lower.includes("apollo") || lower.includes("apollo247")) return "Apollo 24|7";
@@ -78,9 +98,9 @@ export function formatStoreName(name) {
   if (lower.includes("tatacliq") || lower.includes("tata cliq") || lower.includes("cliq")) return "Tata CLiQ";
   if (lower.includes("nykaa")) return "Nykaa";
   if (lower.includes("meesho")) return "Meesho";
-  if (lower.includes("puma")) return "Puma India";
-  if (lower.includes("nike")) return "Nike India";
-  if (lower.includes("adidas")) return "Adidas India";
+  if (lower.includes("puma")) return isUS ? "Puma" : "Puma India";
+  if (lower.includes("nike")) return isUS ? "Nike" : "Nike India";
+  if (lower.includes("adidas")) return isUS ? "Adidas" : "Adidas India";
   if (lower.includes("boat")) return "boAt";
   if (lower.includes("noise")) return "Noise";
   if (lower.includes("samsung")) return "Samsung";
@@ -91,15 +111,17 @@ export function formatStoreName(name) {
  * Sanitizes and canonicalizes direct merchant PDP URLs (Amazon, Flipkart, Reliance, Croma, Brand stores, Pharmacies)
  * Instantly unwraps Google Shopping redirects and preserves merchant path slugs & product IDs.
  */
-export function sanitizeOfferUrl(rawUrl, storeName, productTitle = "") {
+export function sanitizeOfferUrl(rawUrl, storeName, productTitle = "", country = "IN") {
   if (!rawUrl || typeof rawUrl !== 'string') {
-    return getStoreDirectSearchFallback(storeName, productTitle);
+    return getStoreDirectSearchFallback(storeName, productTitle, country);
   }
+
+  const isUS = String(country).toUpperCase() === "US";
 
   // 1. Amazon ASIN Canonicalization (100% Direct Product Page)
   const asinMatch = rawUrl.match(/\/dp\/([A-Z0-9]{10})/i) || rawUrl.match(/\/gp\/product\/([A-Z0-9]{10})/i);
   if (asinMatch) {
-    return `https://www.amazon.in/dp/${asinMatch[1]}`;
+    return isUS ? `https://www.amazon.com/dp/${asinMatch[1]}` : `https://www.amazon.in/dp/${asinMatch[1]}`;
   }
 
   // 2. Unroll embedded URL if present inside Google redirect
@@ -116,7 +138,7 @@ export function sanitizeOfferUrl(rawUrl, storeName, productTitle = "") {
     }
   } catch (e) {}
 
-  // 3. Direct clean merchant URL for Flipkart, Croma, Reliance, Noise, 1mg, Apollo, HealthKart, etc.
+  // 3. Direct clean merchant URL
   if (rawUrl.startsWith('http') && !rawUrl.includes('google.com/search') && !rawUrl.includes('google.co.in/search') && !rawUrl.includes('ibp=')) {
     try {
       const u = new URL(rawUrl);
@@ -128,16 +150,32 @@ export function sanitizeOfferUrl(rawUrl, storeName, productTitle = "") {
     }
   }
 
-  return getStoreDirectSearchFallback(storeName, productTitle);
+  return getStoreDirectSearchFallback(storeName, productTitle, country);
 }
 
-function getStoreDirectSearchFallback(storeName, productTitle) {
+export function getStoreDirectSearchFallback(storeName, productTitle, country = "IN") {
   const cleanTitle = cleanTitleForQuery(productTitle);
   const qEncoded = encodeURIComponent(cleanTitle);
   const hyphenTitle = encodeURIComponent(cleanTitle.replace(/\s+/g, "-").toLowerCase());
   const lowerStore = (storeName || "").toLowerCase().trim();
+  const isUS = String(country).toUpperCase() === "US";
 
-  // Pharmacy & Health Stores
+  // US Stores
+  if (isUS) {
+    if (lowerStore.includes("cvs")) return `https://www.cvs.com/search?q=${qEncoded}`;
+    if (lowerStore.includes("walgreens")) return `https://www.walgreens.com/search/results.jsp?Ntt=${qEncoded}`;
+    if (lowerStore.includes("gnc")) return `https://www.gnc.com/search?q=${qEncoded}`;
+    if (lowerStore.includes("iherb")) return `https://www.iherb.com/search?kw=${qEncoded}`;
+    if (lowerStore.includes("bodybuilding")) return `https://shop.bodybuilding.com/search?q=${qEncoded}`;
+    if (lowerStore.includes("walmart")) return `https://www.walmart.com/search?q=${qEncoded}`;
+    if (lowerStore.includes("target")) return `https://www.target.com/s?searchTerm=${qEncoded}`;
+    if (lowerStore.includes("best buy") || lowerStore.includes("bestbuy")) return `https://www.bestbuy.com/site/searchpage.jsp?st=${qEncoded}`;
+    if (lowerStore.includes("ebay")) return `https://www.ebay.com/sch/i.html?_nkw=${qEncoded}`;
+    if (lowerStore.includes("amazon")) return `https://www.amazon.com/s?k=${qEncoded}`;
+    return `https://www.amazon.com/s?k=${qEncoded}`;
+  }
+
+  // Indian Pharmacy & Health Stores
   if (lowerStore.includes("1mg")) return `https://www.1mg.com/search/all?name=${qEncoded}`;
   if (lowerStore.includes("apollo")) return `https://www.apollopharmacy.in/search-medicines/${qEncoded}`;
   if (lowerStore.includes("pharmeasy")) return `https://pharmeasy.in/search/all?name=${qEncoded}`;
@@ -148,7 +186,7 @@ function getStoreDirectSearchFallback(storeName, productTitle) {
   if (lowerStore.includes("muscleblaze")) return `https://www.muscleblaze.com/search?q=${qEncoded}`;
   if (lowerStore.includes("myprotein")) return `https://www.myprotein.co.in/elysium.search?search=${qEncoded}`;
 
-  // E-Commerce & Tech Stores
+  // Indian E-Commerce & Tech Stores
   if (lowerStore.includes("amazon")) return `https://www.amazon.in/s?k=${qEncoded}`;
   if (lowerStore.includes("flipkart")) return `https://www.flipkart.com/search?q=${qEncoded}`;
   if (lowerStore.includes("myntra")) return `https://www.myntra.com/${hyphenTitle}`;
@@ -167,42 +205,53 @@ function getStoreDirectSearchFallback(storeName, productTitle) {
 }
 
 /**
- * Enriches multi-store price comparison across top Indian pharmacies, fitness stores, or tech marketplaces
+ * Enriches multi-store price comparison across top Indian or US pharmacies, fitness stores, or marketplaces
  */
-export function enrichPriceComparison(priceComp = [], primaryStore = "Amazon.in", basePrice = 100, title = "") {
+export function enrichPriceComparison(priceComp = [], primaryStore = "Amazon.in", basePrice = 100, title = "", country = "IN") {
   const textLower = title.toLowerCase();
-  const isMedicine = /\b(dolo|telma|shelcal|augmentin|pantocid|crocin|paracetamol|azithromycin|metformin|glycomet|atorvastatin|amlodipine|pantoprazole|amoxicillin|combiflam|allegra|montair|vicks|benadryl|strepsils|betadine|limcee|zincovit|becosules|supradyn|liv\s*52|digene|gelusil|omez|pan\s*40|pan\s*d|rantac|zinetac|ciplox|norflox|cifran|taxim|calpol|sumo|meftal|disprin|saridon|cetrizine|levocetrizine|okacet|avil|tadalafil|sildenafil|tablets?|capsules?|syrups?|injections?|drops?|ointment|gel|cream|suspension|inhaler|sachet|\d+\s*mg|\d+\s*ml|strip\s*of)\b/i.test(textLower);
-  const isSupplement = /\b(whey|protein|creatine|bcaa|glutamine|multivitamin|mass gainer|fish oil|isolate|optimum nutrition|muscleblaze|nutrabay|as-it-is|myprotein)\b/i.test(textLower);
+  const isUS = String(country).toUpperCase() === "US";
+  const isMedicine = /\b(dolo|telma|shelcal|augmentin|pantocid|crocin|paracetamol|azithromycin|metformin|glycomet|atorvastatin|amlodipine|pantoprazole|amoxicillin|combiflam|allegra|montair|vicks|benadryl|strepsils|betadine|limcee|zincovit|becosules|supradyn|liv\s*52|digene|gelusil|omez|pan\s*40|pan\s*d|rantac|zinetac|ciplox|norflox|cifran|taxim|calpol|sumo|meftal|disprin|saridon|cetrizine|levocetrizine|okacet|avil|tadalafil|sildenafil|tylenol|advil|ibuprofen|aspirin|pepto|mucinex|claritin|zyrtec|tablets?|capsules?|syrups?|injections?|drops?|ointment|gel|cream|suspension|inhaler|sachet|\d+\s*mg|\d+\s*ml|strip\s*of|count)\b/i.test(textLower);
+  const isSupplement = /\b(whey|protein|creatine|bcaa|glutamine|multivitamin|mass gainer|fish oil|isolate|optimum nutrition|muscleblaze|nutrabay|as-it-is|myprotein|gnc|cellucor|dymatize|nitro-?tech)\b/i.test(textLower);
 
   let targetStores = [];
-  if (isMedicine) {
-    targetStores = ["Tata 1mg", "Apollo 24|7", "PharmEasy", "Netmeds"];
-  } else if (isSupplement) {
-    targetStores = ["HealthKart", "Nutrabay", "MuscleBlaze", "Amazon.in", "Flipkart"];
+  if (isUS) {
+    if (isMedicine) {
+      targetStores = ["CVS Pharmacy", "Walgreens", "Walmart Pharmacy", "Rite Aid"];
+    } else if (isSupplement) {
+      targetStores = ["GNC", "Bodybuilding.com", "iHerb", "Amazon.com", "Walmart"];
+    } else {
+      targetStores = ["Amazon.com", "Walmart", "Best Buy", "Target"];
+    }
   } else {
-    targetStores = ["Amazon.in", "Flipkart", "Croma", "Reliance Digital"];
+    if (isMedicine) {
+      targetStores = ["Tata 1mg", "Apollo 24|7", "PharmEasy", "Netmeds"];
+    } else if (isSupplement) {
+      targetStores = ["HealthKart", "Nutrabay", "MuscleBlaze", "Amazon.in", "Flipkart"];
+    } else {
+      targetStores = ["Amazon.in", "Flipkart", "Croma", "Reliance Digital"];
+    }
   }
 
   const storeMap = new Map();
   // Add existing verified offers from RapidAPI
   (priceComp || []).forEach(item => {
-    const formatted = formatStoreName(item.store_name);
+    const formatted = formatStoreName(item.store_name, country);
     const itemPrice = parsePriceNum(item.price) || basePrice;
     storeMap.set(formatted.toLowerCase(), {
       store_name: formatted,
       price: itemPrice,
-      deal_link: item.deal_link || sanitizeOfferUrl(item.deal_link, formatted, title),
+      deal_link: item.deal_link || sanitizeOfferUrl(item.deal_link, formatted, title, country),
       is_lowest: false
     });
   });
 
   // Always ensure primary store is in
-  const primaryFormatted = formatStoreName(primaryStore);
+  const primaryFormatted = formatStoreName(primaryStore, country);
   if (!storeMap.has(primaryFormatted.toLowerCase())) {
     storeMap.set(primaryFormatted.toLowerCase(), {
       store_name: primaryFormatted,
       price: basePrice,
-      deal_link: getStoreDirectSearchFallback(primaryFormatted, title),
+      deal_link: getStoreDirectSearchFallback(primaryFormatted, title, country),
       is_lowest: false
     });
   }
@@ -219,7 +268,7 @@ export function enrichPriceComparison(priceComp = [], primaryStore = "Amazon.in"
       storeMap.set(stKey, {
         store_name: st,
         price: simPrice,
-        deal_link: getStoreDirectSearchFallback(st, title),
+        deal_link: getStoreDirectSearchFallback(st, title, country),
         is_lowest: false
       });
       multIdx++;
@@ -434,9 +483,10 @@ function generateCoupons(storeName, priceVal) {
   return coupons;
 }
 
-export async function fetchExactProductDetails(productId) {
+export async function fetchExactProductDetails(productId, country = "IN") {
   if (!productId) return { offers: [], attributes: {}, description: "", title: "" };
-  const url = `https://real-time-product-search.p.rapidapi.com/product-offers?product_id=${encodeURIComponent(productId)}&country=in&language=en`;
+  const countryCode = (country || "in").toLowerCase();
+  const url = `https://real-time-product-search.p.rapidapi.com/product-offers?product_id=${encodeURIComponent(productId)}&country=${countryCode}&language=en`;
 
   try {
     const res = await fetch(url, {
@@ -746,11 +796,13 @@ export function generateFallbackProducts(query = "", limit = 3) {
   });
 }
 
-export async function searchRapidApiProducts(query, limit = 3) {
+export async function searchRapidApiProducts(query, limit = 3, country = "IN") {
   if (!query) return [];
 
+  const countryCode = (country || "in").toLowerCase();
+  const isUS = countryCode === "us";
   const isExact = isExactProductQuery(query);
-  const url = `https://real-time-product-search.p.rapidapi.com/search?q=${encodeURIComponent(query)}&country=in&language=en`;
+  const url = `https://real-time-product-search.p.rapidapi.com/search?q=${encodeURIComponent(query)}&country=${countryCode}&language=en`;
 
   try {
     const res = await fetch(url, {
@@ -763,7 +815,7 @@ export async function searchRapidApiProducts(query, limit = 3) {
 
     if (!res.ok) {
       console.warn(`[RapidAPI] Search returned status ${res.status}. Seamlessly falling back to Verified Catalog Engine.`);
-      return generateFallbackProducts(query, limit);
+      return generateFallbackProducts(query, limit, country);
     }
 
     const json = await res.json();
@@ -771,7 +823,7 @@ export async function searchRapidApiProducts(query, limit = 3) {
 
     if (!Array.isArray(rawProducts) || rawProducts.length === 0) {
       console.log("[RapidAPI] 0 products found. Activating Verified Catalog Engine.");
-      return generateFallbackProducts(query, limit);
+      return generateFallbackProducts(query, limit, country);
     }
 
     // -------------------------------------------------------------
@@ -783,7 +835,7 @@ export async function searchRapidApiProducts(query, limit = 3) {
       const seenStores = new Set();
 
       for (const p of rawProducts) {
-        const storeKey = formatStoreName(p.store_name).toLowerCase();
+        const storeKey = formatStoreName(p.store_name, country).toLowerCase();
         if (!seenStores.has(storeKey) && p.product_id) {
           seenStores.add(storeKey);
           chosenStoreProducts.push(p);
@@ -798,7 +850,7 @@ export async function searchRapidApiProducts(query, limit = 3) {
 
       // Concurrently fetch verified exact multi-store offers
       const detailsList = await Promise.all(
-        chosenStoreProducts.map(p => p.product_id ? fetchExactProductDetails(p.product_id) : Promise.resolve({ offers: [], attributes: {}, description: "", title: "" }))
+        chosenStoreProducts.map(p => p.product_id ? fetchExactProductDetails(p.product_id, country) : Promise.resolve({ offers: [], attributes: {}, description: "", title: "" }))
       );
 
       const storeMap = new Map();
@@ -830,9 +882,9 @@ export async function searchRapidApiProducts(query, limit = 3) {
 
         if (offers.length > 0) {
           offers.forEach(o => {
-            const formattedStore = formatStoreName(o.store_name || p.store_name);
+            const formattedStore = formatStoreName(o.store_name || p.store_name, country);
             const offerPrice = parsePriceNum(o.price || o.product_price) || parsePriceNum(p.product_price || p.price);
-            const directUrl = sanitizeOfferUrl(o.offer_page_url, formattedStore, bestTitle || p.product_title);
+            const directUrl = sanitizeOfferUrl(o.offer_page_url, formattedStore, bestTitle || p.product_title, country);
             const sKey = formattedStore.toLowerCase();
 
             if (!storeMap.has(sKey) || storeMap.get(sKey).price > offerPrice) {
@@ -845,9 +897,9 @@ export async function searchRapidApiProducts(query, limit = 3) {
             }
           });
         } else {
-          const formattedStore = formatStoreName(p.store_name);
+          const formattedStore = formatStoreName(p.store_name, country);
           const offerPrice = parsePriceNum(p.product_price || p.price);
-          const directUrl = sanitizeOfferUrl(p.product_page_url, formattedStore, bestTitle || p.product_title);
+          const directUrl = sanitizeOfferUrl(p.product_page_url, formattedStore, bestTitle || p.product_title, country);
           const sKey = formattedStore.toLowerCase();
 
           if (!storeMap.has(sKey) || storeMap.get(sKey).price > offerPrice) {
@@ -870,30 +922,34 @@ export async function searchRapidApiProducts(query, limit = 3) {
       // Enrich with standard pharmacy/fitness comparison stores if less than 3
       if (priceComp.length < 3) {
         const topPrice = priceComp.length > 0 ? priceComp[0].price : parsePriceNum(rawProducts[0].product_price || rawProducts[0].price);
-        const topStore = priceComp.length > 0 ? priceComp[0].store_name : formatStoreName(rawProducts[0].store_name);
-        priceComp = enrichPriceComparison(priceComp, topStore, topPrice, bestTitle);
+        const topStore = priceComp.length > 0 ? priceComp[0].store_name : formatStoreName(rawProducts[0].store_name, country);
+        priceComp = enrichPriceComparison(priceComp, topStore, topPrice, bestTitle, country);
       }
 
       if (priceComp.length > 0) {
         priceComp[0].is_lowest = true;
       }
 
-      const primaryStoreObj = priceComp[0] || { store_name: "Tata 1mg", price: 30, deal_link: "https://1mg.com" };
+      const defaultStore = isUS ? "CVS Pharmacy" : "Tata 1mg";
+      const primaryStoreObj = priceComp[0] || { store_name: defaultStore, price: isUS ? 15 : 30, deal_link: isUS ? "https://cvs.com" : "https://1mg.com" };
       const priceVal = primaryStoreObj.price;
       const originalPriceVal = Math.round(priceVal * 1.22);
       const discountPercentage = Math.round(((originalPriceVal - priceVal) / originalPriceVal) * 100);
 
       const specs = buildProductSpecs(primaryAttributes, bestTitle, primaryDescription, allOffersCombined);
 
+      const priceFormatted = isUS ? `$${priceVal.toLocaleString("en-US")}` : `₹${priceVal.toLocaleString("en-IN")}`;
+      const origPriceFormatted = isUS ? `$${originalPriceVal.toLocaleString("en-US")}` : `₹${originalPriceVal.toLocaleString("en-IN")}`;
+
       const masterProduct = {
         id: `rapid-exact-${Date.now()}`,
         product_id: rawProducts[0].product_id || "",
         title: bestTitle,
-        price: `₹${priceVal.toLocaleString("en-IN")}`,
+        price: priceFormatted,
         rawPrice: priceVal,
-        originalPrice: `₹${originalPriceVal.toLocaleString("en-IN")}`,
+        originalPrice: origPriceFormatted,
         discountPercent: isNaN(discountPercentage) || discountPercentage <= 0 ? 18 : discountPercentage,
-        currency: "INR",
+        currency: isUS ? "USD" : "INR",
         source: primaryStoreObj.store_name,
         merchant: primaryStoreObj.store_name,
         store_name: primaryStoreObj.store_name,
@@ -909,7 +965,7 @@ export async function searchRapidApiProducts(query, limit = 3) {
         direct_link: primaryStoreObj.deal_link,
         product_link: primaryStoreObj.deal_link,
         url: primaryStoreObj.deal_link,
-        description: `${bestTitle} available at ${primaryStoreObj.store_name} for ₹${priceVal.toLocaleString("en-IN")}.`,
+        description: `${bestTitle} available at ${primaryStoreObj.store_name} for ${priceFormatted}.`,
         specs,
         coupons: generateCoupons(primaryStoreObj.store_name, priceVal),
         price_comparison: priceComp
@@ -920,7 +976,7 @@ export async function searchRapidApiProducts(query, limit = 3) {
     }
 
     // -------------------------------------------------------------
-    // 2. BROAD / INTENT E-COMMERCE PIPELINE (Gaming Laptops, Clothes, Mobiles under 30k)
+    // 2. BROAD / INTENT E-COMMERCE PIPELINE (Gaming Laptops, Clothes, Mobiles)
     // -------------------------------------------------------------
     const maxBudget = extractBudgetFromQuery(query);
     let selectedRawProducts = rawProducts;
@@ -939,7 +995,7 @@ export async function searchRapidApiProducts(query, limit = 3) {
 
     // Concurrently fetch verified exact multi-store offers and real attributes for Top items
     const detailsPromises = selectedRawProducts.map(p => 
-      p.product_id ? fetchExactProductDetails(p.product_id) : Promise.resolve({ offers: [], attributes: {}, description: "", title: "" })
+      p.product_id ? fetchExactProductDetails(p.product_id, country) : Promise.resolve({ offers: [], attributes: {}, description: "", title: "" })
     );
     const resolvedDetailsList = await Promise.all(detailsPromises);
 
@@ -950,7 +1006,7 @@ export async function searchRapidApiProducts(query, limit = 3) {
 
       let priceVal = parsePriceNum(p.product_price || p.price);
       if (!priceVal || priceVal <= 0) {
-        priceVal = 45000;
+        priceVal = isUS ? 499 : 45000;
       }
       let originalPriceVal = p.product_original_price ? parsePriceNum(p.product_original_price) : Math.round(priceVal * 1.25);
       if (isNaN(originalPriceVal) || originalPriceVal <= priceVal) {
@@ -959,7 +1015,7 @@ export async function searchRapidApiProducts(query, limit = 3) {
 
       const imgUrl = (details.photos && details.photos[0]) || (p.product_photos && p.product_photos[0]) || p.product_photo || "";
 
-      let storeName = formatStoreName(p.store_name || "Amazon.in");
+      let storeName = formatStoreName(p.store_name || (isUS ? "Amazon.com" : "Amazon.in"), country);
       let primaryDealLink = "";
       let priceComp = [];
 
@@ -968,9 +1024,9 @@ export async function searchRapidApiProducts(query, limit = 3) {
 
         liveOffers.forEach(o => {
           const rawStore = o.store_name || "Online Store";
-          const formattedStore = formatStoreName(rawStore);
+          const formattedStore = formatStoreName(rawStore, country);
           const offerPrice = parsePriceNum(o.price || o.product_price) || priceVal;
-          const offerUrl = sanitizeOfferUrl(o.offer_page_url, formattedStore, displayTitle);
+          const offerUrl = sanitizeOfferUrl(o.offer_page_url, formattedStore, displayTitle, country);
 
           const storeKey = formattedStore.toLowerCase();
           if (!storeMap.has(storeKey) || storeMap.get(storeKey).price > offerPrice) {
@@ -996,11 +1052,11 @@ export async function searchRapidApiProducts(query, limit = 3) {
       }
 
       if (!primaryDealLink || priceComp.length === 0) {
-        primaryDealLink = sanitizeOfferUrl(p.product_page_url, storeName, displayTitle);
+        primaryDealLink = sanitizeOfferUrl(p.product_page_url, storeName, displayTitle, country);
       }
 
       // Enrich price comparison across verified stores
-      priceComp = enrichPriceComparison(priceComp, storeName, priceVal, displayTitle);
+      priceComp = enrichPriceComparison(priceComp, storeName, priceVal, displayTitle, country);
       if (priceComp.length > 0) {
         primaryDealLink = priceComp[0].deal_link;
         storeName = priceComp[0].store_name;
@@ -1016,15 +1072,18 @@ export async function searchRapidApiProducts(query, limit = 3) {
 
       const discountPercentage = Math.round(((originalPriceVal - priceVal) / originalPriceVal) * 100);
 
+      const priceFormatted = isUS ? `$${priceVal.toLocaleString("en-US")}` : `₹${priceVal.toLocaleString("en-IN")}`;
+      const origPriceFormatted = isUS ? `$${originalPriceVal.toLocaleString("en-US")}` : `₹${originalPriceVal.toLocaleString("en-IN")}`;
+
       return {
         id: `rapid-${idx}-${Date.now()}`,
         product_id: p.product_id || "",
         title: displayTitle,
-        price: `₹${priceVal.toLocaleString("en-IN")}`,
+        price: priceFormatted,
         rawPrice: priceVal,
-        originalPrice: `₹${originalPriceVal.toLocaleString("en-IN")}`,
+        originalPrice: origPriceFormatted,
         discountPercent: isNaN(discountPercentage) || discountPercentage <= 0 ? 18 : discountPercentage,
-        currency: "INR",
+        currency: isUS ? "USD" : "INR",
         source: storeName,
         merchant: storeName,
         store_name: storeName,
@@ -1040,7 +1099,7 @@ export async function searchRapidApiProducts(query, limit = 3) {
         direct_link: primaryDealLink,
         product_link: primaryDealLink,
         url: primaryDealLink,
-        description: `${displayTitle} available at ${storeName} for ₹${priceVal.toLocaleString("en-IN")}.`,
+        description: `${displayTitle} available at ${storeName} for ${priceFormatted}.`,
         specs,
         coupons: generateCoupons(storeName, priceVal),
         price_comparison: priceComp
@@ -1051,6 +1110,6 @@ export async function searchRapidApiProducts(query, limit = 3) {
     return products;
   } catch (err) {
     console.warn(`[RapidAPI] Search error (${err.message}). Seamlessly engaging Verified Catalog Engine.`);
-    return generateFallbackProducts(query, limit);
+    return generateFallbackProducts(query, limit, country);
   }
 }

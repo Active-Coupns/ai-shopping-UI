@@ -1,43 +1,74 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Search, Sparkles, Laptop, Shirt, Headphones, Tag, Flame, Shield, Globe, Camera, Zap, Compass, ArrowRight, X, Pill, Dumbbell, Activity, HeartPulse } from "lucide-react";
+import { Search, Sparkles, X, Pill, ShoppingBag } from "lucide-react";
 import { motion } from "framer-motion";
 
 const ECOM_QUERIES_IN = [
-  "Best laptop under ₹50,000 for coding & gaming",
-  "Top 4K Vlogging Camera with AI Tracking",
-  "Noise-cancelling headphones for travel & focus",
-  "Party cotton shirt under ₹3,000",
-  "Sabse sasta 5G mobile phone"
+  "Best laptop under ₹50,000",
+  "Sabse sasta 5G phone",
+  "Noise cancelling headphones",
+  "Pure cotton party shirt",
+  "Top 4K vlog camera"
 ];
 
 const HEALTH_QUERIES_IN = [
-  "ON Gold Standard 100% Whey 2kg Double Rich Chocolate",
-  "Dolo 650 Strip of 15 Tablets",
-  "MuscleBlaze Biozyme Performance Whey 2kg",
-  "Telma 40mg Strip of 15 Tablets",
-  "Creapure Micronized Creatine 250g",
-  "Best whey protein for muscle building"
+  "ON Gold Standard Whey 2kg",
+  "Dolo 650 strip of 15 tabs",
+  "MuscleBlaze Biozyme Whey",
+  "Telma 40mg strip",
+  "Creatine monohydrate 250g"
 ];
 
-const ECOM_PROMPTS_IN = [
-  { label: "⚡ Laptop under ₹50K", query: "Best laptop under ₹50,000 for coding & gaming", icon: Laptop, color: "border-indigo-200 text-indigo-700 bg-indigo-50/90 shadow-xs hover:bg-indigo-100" },
-  { label: "🔥 Sabse sasta 5G", query: "Sabse sasta 5G mobile phone", icon: Zap, color: "border-cyan-200 text-cyan-700 bg-cyan-50/90 shadow-xs hover:bg-cyan-100" },
-  { label: "🎧 ANC Headphones", query: "Noise-cancelling headphones for travel & focus", icon: Headphones, color: "border-emerald-200 text-emerald-700 bg-emerald-50/90 shadow-xs hover:bg-emerald-100" },
-  { label: "👔 Shirt under ₹3K", query: "Party cotton shirt under ₹3,000", icon: Shirt, color: "border-amber-200 text-amber-700 bg-amber-50/90 shadow-xs hover:bg-amber-100" },
-  { label: "📷 4K Vlog Camera", query: "Top 4K Vlogging Camera with AI Tracking", icon: Camera, color: "border-purple-200 text-purple-700 bg-purple-50/90 shadow-xs hover:bg-purple-100" }
+const QUICK_TRENDING_ECOM_IN = [
+  { label: "⚡ Laptops under ₹50K", query: "Best laptop under ₹50,000 for coding & gaming" },
+  { label: "🔥 Top 5G Phones", query: "Sabse sasta 5G mobile phone" },
+  { label: "🎧 ANC Earbuds", query: "Noise-cancelling headphones for travel" },
+  { label: "👔 Party Shirts", query: "Party cotton shirt under ₹3,000" },
+  { label: "👟 Sneakers Deals", query: "Best white sneakers for men" }
 ];
 
-const HEALTH_PROMPTS_IN = [
-  { label: "💊 Dolo 650 (1mg vs Apollo)", query: "Dolo 650 Strip of 15 Tablets", icon: Pill, color: "border-rose-200 text-rose-700 bg-rose-50/90 shadow-xs hover:bg-rose-100" },
-  { label: "💪 ON Gold Whey 2kg", query: "ON Gold Standard 100% Whey 2kg", icon: Dumbbell, color: "border-blue-200 text-blue-700 bg-blue-50/90 shadow-xs hover:bg-blue-100" },
-  { label: "⚡ MB Creatine 250g", query: "MuscleBlaze Micronized Creatine 250g", icon: Zap, color: "border-amber-200 text-amber-700 bg-amber-50/90 shadow-xs hover:bg-amber-100" },
-  { label: "🩺 Telma 40 BP Care", query: "Telma 40mg Strip of 15 Tablets", icon: HeartPulse, color: "border-emerald-200 text-emerald-700 bg-emerald-50/90 shadow-xs hover:bg-emerald-100" },
-  { label: "🌿 Shelcal 500 Calcium", query: "Shelcal 500 Strip of 15 Tablets", icon: Pill, color: "border-purple-200 text-purple-700 bg-purple-50/90 shadow-xs hover:bg-purple-100" }
+const QUICK_TRENDING_HEALTH_IN = [
+  { label: "💪 ON Whey 2kg", query: "ON Gold Standard 100% Whey 2kg" },
+  { label: "💊 Dolo 650 (1mg vs Apollo)", query: "Dolo 650 Strip of 15 Tablets" },
+  { label: "⚡ MB Creatine 250g", query: "MuscleBlaze Micronized Creatine 250g" },
+  { label: "🩺 Telma 40 BP Care", query: "Telma 40mg Strip of 15 Tablets" },
+  { label: "🌿 Shelcal 500", query: "Shelcal 500 Strip of 15 Tablets" }
 ];
 
-export default function SearchHero({ country = "IN", onSubmit, onOpenAiGuide }) {
+const ECOM_QUERIES_US = [
+  "Best laptop under $600 for work & gaming",
+  "Top 5G unlocked smartphone deals",
+  "Sony noise cancelling headphones",
+  "Men's slim fit oxford dress shirt",
+  "4K streaming camera with AI autofocus"
+];
+
+const HEALTH_QUERIES_US = [
+  "Optimum Nutrition Gold Standard 100% Whey 5lb",
+  "Tylenol Extra Strength 500mg caplets 100 count",
+  "Optimum Nutrition Micronized Creatine Powder 300g",
+  "Advil Dual Action with Acetaminophen 144 caplets",
+  "Centrum Men's Daily Multivitamin 200 tablets"
+];
+
+const QUICK_TRENDING_ECOM_US = [
+  { label: "⚡ Laptops under $600", query: "Best laptop under $600 for work & gaming" },
+  { label: "🔥 Unlocked 5G Phones", query: "Top 5G unlocked smartphone deals" },
+  { label: "🎧 Noise Cancelling Earbuds", query: "Sony noise cancelling headphones" },
+  { label: "👔 Oxford Shirts", query: "Men's slim fit oxford dress shirt" },
+  { label: "👟 Nike & Adidas Deals", query: "Men's running sneakers on sale" }
+];
+
+const QUICK_TRENDING_HEALTH_US = [
+  { label: "💪 ON Gold Whey 5lb", query: "Optimum Nutrition Gold Standard 100% Whey 5lb" },
+  { label: "💊 Tylenol Extra Strength", query: "Tylenol Extra Strength 500mg caplets 100 count" },
+  { label: "⚡ ON Creatine 300g", query: "Optimum Nutrition Micronized Creatine Powder 300g" },
+  { label: "🩺 Advil Dual Action", query: "Advil Dual Action with Acetaminophen 144 caplets" },
+  { label: "🌿 Centrum Multivitamin", query: "Centrum Men's Daily Multivitamin 200 tablets" }
+];
+
+export default function SearchHero({ country = "IN", onSubmit }) {
   const [activeTab, setActiveTab] = useState("ecommerce"); // "ecommerce" | "health"
   const [query, setQuery] = useState("");
   const [placeholder, setPlaceholder] = useState("");
@@ -45,18 +76,25 @@ export default function SearchHero({ country = "IN", onSubmit, onOpenAiGuide }) 
   const [charIndex, setCharIndex] = useState(0);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const exampleQueries = activeTab === "health" ? HEALTH_QUERIES_IN : ECOM_QUERIES_IN;
-  const promptList = activeTab === "health" ? HEALTH_PROMPTS_IN : ECOM_PROMPTS_IN;
+  const isUS = String(country).toUpperCase() === "US";
 
-  // Reset typewriter when tab changes
+  const exampleQueries = activeTab === "health"
+    ? (isUS ? HEALTH_QUERIES_US : HEALTH_QUERIES_IN)
+    : (isUS ? ECOM_QUERIES_US : ECOM_QUERIES_IN);
+
+  const trendingList = activeTab === "health"
+    ? (isUS ? QUICK_TRENDING_HEALTH_US : QUICK_TRENDING_HEALTH_IN)
+    : (isUS ? QUICK_TRENDING_ECOM_US : QUICK_TRENDING_ECOM_IN);
+
+  // Reset typewriter when tab or country changes
   useEffect(() => {
     setQueryIndex(0);
     setCharIndex(0);
     setIsDeleting(false);
     setPlaceholder("");
-  }, [activeTab]);
+  }, [activeTab, country]);
 
-  // Typewriter effect
+  // Smooth Typewriter effect
   useEffect(() => {
     const currentFullText = exampleQueries[queryIndex] || exampleQueries[0] || "";
     let timer;
@@ -76,14 +114,14 @@ export default function SearchHero({ country = "IN", onSubmit, onOpenAiGuide }) 
         timer = setTimeout(() => {
           setPlaceholder(currentFullText.slice(0, charIndex + 1));
           setCharIndex((prev) => prev + 1);
-        }, 55);
+        }, 50);
       } else {
-        timer = setTimeout(() => setIsDeleting(true), 2400);
+        timer = setTimeout(() => setIsDeleting(true), 2600);
       }
     }
 
     return () => clearTimeout(timer);
-  }, [placeholder, charIndex, isDeleting, queryIndex, activeTab]);
+  }, [placeholder, charIndex, isDeleting, queryIndex, activeTab, country]);
 
   const [lastSubmitTime, setLastSubmitTime] = useState(0);
 
@@ -107,181 +145,142 @@ export default function SearchHero({ country = "IN", onSubmit, onOpenAiGuide }) 
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto px-4 pt-10 sm:pt-16 md:pt-20 pb-16 text-center relative flex flex-col justify-center min-h-[60vh] sm:min-h-[68vh]">
+    <div className="w-full max-w-3xl mx-auto px-4 py-4 sm:py-8 text-center flex flex-col justify-center items-center">
       
-      {/* Top AI Badge & Headline */}
+      {/* 1. Catchy Brand Tag & Headline */}
       <motion.div
-        initial={{ opacity: 0, y: -10 }}
+        initial={{ opacity: 0, y: -6 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="mb-6 sm:mb-8 flex flex-col items-center mt-2"
+        transition={{ duration: 0.3 }}
+        className="mb-4 sm:mb-6 max-w-xl mx-auto"
       >
-        <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-brand-indigo/15 via-purple-500/15 to-emerald-500/15 border border-brand-indigo/30 text-[10px] sm:text-xs font-bold text-slate-700 mb-3 shadow-sm backdrop-blur-md">
-          <Sparkles className="w-3.5 h-3.5 text-brand-indigo animate-pulse shrink-0" />
-          <span>ShopSmart AI 4.0 Studio • Autonomous Deal & Health Intelligence</span>
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-[11px] font-bold text-brand-indigo mb-2.5 shadow-2xs">
+          <Sparkles className="w-3.5 h-3.5 text-brand-indigo animate-pulse" />
+          <span>{isUS ? "US AI Deal & Health Finder" : "AI Deal & Health Finder"}</span>
         </div>
 
-        <h1 className="text-2xl sm:text-4xl md:text-5xl font-black tracking-tight text-slate-900 mb-2.5 leading-snug max-w-3xl mx-auto">
-          {activeTab === "health" ? (
-            <>
-              Compare <span className="bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600">Pharmacy & Health Stacks</span>
-            </>
-          ) : (
-            <>
-              Search & Compare <span className="bg-clip-text text-transparent bg-gradient-to-r from-brand-indigo via-brand-violet to-purple-600">Live E-Commerce Deals</span>
-            </>
-          )}
+        <h1 className="text-2xl sm:text-4xl md:text-5xl font-black tracking-tight text-slate-900 leading-tight">
+          Find the Best Price, <span className="bg-clip-text text-transparent bg-gradient-to-r from-brand-indigo via-purple-600 to-pink-600">Instantly.</span>
         </h1>
         
-        <p className="text-xs sm:text-sm text-slate-600 max-w-lg mx-auto font-medium leading-relaxed px-3">
+        <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1.5 leading-relaxed">
           {activeTab === "health"
-            ? "Live prices & coupons across Tata 1mg, Apollo 24|7, HealthKart, Nutrabay & PharmEasy."
-            : "Live prices & coupons across Amazon.in, Flipkart, Myntra, Croma & Reliance Digital."}
+            ? (isUS 
+                ? "Real-time prices across CVS, Walgreens, GNC, iHerb & Walmart Pharmacy." 
+                : "Real-time prices across 1mg, Apollo 24|7, HealthKart & PharmEasy.")
+            : (isUS 
+                ? "Real-time comparison across Amazon.com, Walmart, Best Buy & Target." 
+                : "Real-time comparison across Amazon, Flipkart, Myntra & Croma.")}
         </p>
       </motion.div>
 
-      {/* ✨ Elevated 2-Category Selection Tabs */}
-      <div className="flex items-center justify-center gap-2 mb-4 max-w-md mx-auto">
+      {/* 2. Clean Minimal Segmented Tab */}
+      <div className="flex items-center p-1 bg-slate-100/90 rounded-2xl border border-slate-200/80 mb-4 sm:mb-6 w-full max-w-xs shadow-inner">
         <button
           type="button"
-          suppressHydrationWarning
           onClick={() => setActiveTab("ecommerce")}
-          className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-2xl text-xs sm:text-sm font-extrabold transition-all cursor-pointer shadow-sm ${
+          className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
             activeTab === "ecommerce"
-              ? "bg-slate-900 text-white shadow-md scale-102 ring-2 ring-indigo-500/30"
-              : "bg-white/80 hover:bg-white text-slate-600 border border-slate-200 hover:text-slate-900"
+              ? "bg-white text-slate-900 shadow-sm"
+              : "text-slate-500 hover:text-slate-900"
           }`}
         >
-          <span>🛍️ Tech & Lifestyle</span>
+          <ShoppingBag className="w-3.5 h-3.5" />
+          <span>{isUS ? "US Shopping" : "Shopping"}</span>
         </button>
 
         <button
           type="button"
-          suppressHydrationWarning
           onClick={() => setActiveTab("health")}
-          className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-2xl text-xs sm:text-sm font-extrabold transition-all cursor-pointer shadow-sm ${
+          className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
             activeTab === "health"
-              ? "bg-gradient-to-r from-emerald-700 to-teal-700 text-white shadow-md scale-102 ring-2 ring-emerald-500/30"
-              : "bg-white/80 hover:bg-white text-slate-600 border border-slate-200 hover:text-emerald-700"
+              ? "bg-white text-emerald-700 shadow-sm"
+              : "text-slate-500 hover:text-emerald-700"
           }`}
         >
-          <span>💊 Pharmacy & Supplements</span>
+          <Pill className="w-3.5 h-3.5" />
+          <span>{isUS ? "US Pharmacy" : "Pharmacy"}</span>
         </button>
       </div>
 
-      {/* Cyber AI Command Search Console */}
+      {/* 3. Sleek Modern Search Bar */}
       <motion.div
-        initial={{ opacity: 0, scale: 0.97 }}
+        initial={{ opacity: 0, scale: 0.98 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.4, delay: 0.1 }}
-        className="relative mb-6 sm:mb-8 max-w-2xl mx-auto w-full"
+        transition={{ duration: 0.3, delay: 0.05 }}
+        className="w-full max-w-xl mb-4 sm:mb-6"
       >
-        {/* Glow backdrop boundary */}
-        <div className={`absolute -inset-1.5 rounded-2xl sm:rounded-3xl opacity-50 blur-lg transition duration-500 ${
-          activeTab === "health"
-            ? "bg-gradient-to-r from-emerald-500/40 via-teal-400/30 to-cyan-400/40"
-            : "bg-gradient-to-r from-brand-indigo/40 via-brand-violet/30 to-purple-400/40"
-        }`}></div>
-
-        <div className="relative glass-panel rounded-2xl sm:rounded-3xl p-2 sm:p-3 shadow-xl border border-brand-indigo/30 bg-white/90 backdrop-blur-2xl">
-          {/* Search Form */}
-          <form onSubmit={handleSubmit} suppressHydrationWarning className="flex items-center gap-1.5 bg-white border border-slate-200/90 rounded-xl sm:rounded-2xl p-1.5 sm:p-2 shadow-sm">
-            <div className="pl-2.5 text-brand-indigo flex items-center justify-center shrink-0">
-              {activeTab === "health" ? (
-                <Pill className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600" />
-              ) : (
-                <Search className="w-4 h-4 sm:w-5 sm:h-5 text-brand-indigo" />
-              )}
-            </div>
-            
-            <input
-              type="text"
-              suppressHydrationWarning
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder={placeholder ? placeholder + " |" : (activeTab === "health" ? "Search Dolo, Whey Protein, Creatine, Vitamins..." : "Search laptops, phones, shoes, shirts...")}
-              className="w-full min-w-0 bg-transparent border-0 px-2 py-2 sm:py-2.5 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-0 text-xs sm:text-sm font-semibold tracking-wide"
-            />
-
-            {query && (
-              <button
-                type="button"
-                suppressHydrationWarning
-                onClick={() => setQuery("")}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-700 bg-slate-100 transition-colors shrink-0"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
+        <form 
+          onSubmit={handleSubmit}
+          className="flex items-center gap-1.5 bg-white border border-slate-200 hover:border-slate-300 focus-within:border-brand-indigo focus-within:ring-4 focus-within:ring-indigo-500/10 rounded-2xl p-1.5 sm:p-2 shadow-lg shadow-slate-100/80 transition-all"
+        >
+          <div className="pl-2.5 text-slate-400 shrink-0">
+            {activeTab === "health" ? (
+              <Pill className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600" />
+            ) : (
+              <Search className="w-4 h-4 sm:w-5 sm:h-5 text-brand-indigo" />
             )}
+          </div>
+          
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={
+              placeholder 
+                ? placeholder + " |" 
+                : (activeTab === "health" 
+                    ? (isUS ? "Search Tylenol, Whey Protein, Creatine..." : "Search Dolo, Whey Protein, Creatine...") 
+                    : (isUS ? "Search laptops, iPhones, Nike sneakers..." : "Search laptops, phones, shoes, shirts..."))
+            }
+            className="w-full min-w-0 bg-transparent border-0 px-2 py-2 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-0 text-xs sm:text-sm font-semibold tracking-wide"
+          />
 
+          {query && (
             <button
-              type="submit"
-              suppressHydrationWarning
-              className={`flex items-center gap-1.5 text-white font-extrabold px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg sm:rounded-xl transition-all duration-300 shadow-md active:scale-95 text-xs sm:text-sm shrink-0 cursor-pointer ${
-                activeTab === "health"
-                  ? "bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-700 hover:to-teal-800 hover:shadow-emerald-500/30"
-                  : "bg-gradient-to-r from-brand-indigo via-brand-violet to-purple-600 hover:from-brand-indigo/90 hover:to-purple-500 hover:shadow-brand-indigo/30"
-              }`}
+              type="button"
+              onClick={() => setQuery("")}
+              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 bg-slate-100 transition-colors shrink-0 cursor-pointer"
             >
-              <span>{activeTab === "health" ? "Find Best Deals" : "Ask AI"}</span>
-              <Sparkles className="w-3.5 h-3.5" />
+              <X className="w-3.5 h-3.5" />
             </button>
-          </form>
-        </div>
+          )}
+
+          <button
+            type="submit"
+            className={`flex items-center gap-1 text-white font-bold px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl transition-all shadow-md active:scale-95 text-xs sm:text-sm shrink-0 cursor-pointer ${
+              activeTab === "health"
+                ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/20"
+                : "bg-gradient-to-r from-brand-indigo to-brand-violet hover:from-indigo-600 hover:to-purple-700 shadow-indigo-500/20"
+            }`}
+          >
+            <span>Search</span>
+            <Sparkles className="w-3.5 h-3.5" />
+          </button>
+        </form>
       </motion.div>
 
-      {/* Quick Horizontal Swipeable AI Prompts */}
+      {/* 4. Catchy Trending Suggestions (Clean 1-line Chips) */}
       <motion.div
-        initial={{ opacity: 0, y: 10 }}
+        initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.2 }}
-        className="max-w-2xl mx-auto mb-6 sm:mb-8 w-full"
+        transition={{ duration: 0.3, delay: 0.1 }}
+        className="w-full max-w-xl"
       >
-        <div className="flex items-center justify-between mb-2 px-1 text-left">
-          <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-            <Compass className="w-3.5 h-3.5 text-brand-indigo" />
-            <span>{activeTab === "health" ? "Popular Health & Fitness Searches" : "Popular AI Prompts"}</span>
-          </span>
-          <span className="text-[9px] text-slate-500 font-medium">1-Tap Auto Search</span>
-        </div>
-
-        {/* Horizontal Scroll Chips */}
-        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1 px-0.5">
-          {promptList.map((prompt, idx) => {
-            const IconComp = prompt.icon;
-            return (
-              <button
-                key={idx}
-                type="button"
-                suppressHydrationWarning
-                onClick={() => handlePromptClick(prompt.query)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold whitespace-nowrap shrink-0 transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-xs ${prompt.color}`}
-              >
-                <IconComp className="w-3.5 h-3.5 shrink-0" />
-                <span>{prompt.label}</span>
-              </button>
-            );
-          })}
+        <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar py-1 justify-start sm:justify-center">
+          {trendingList.map((item, idx) => (
+            <button
+              key={idx}
+              type="button"
+              onClick={() => handlePromptClick(item.query)}
+              className="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-semibold whitespace-nowrap shrink-0 transition-all cursor-pointer shadow-2xs active:scale-95 hover:border-slate-300"
+            >
+              {item.label}
+            </button>
+          ))}
         </div>
       </motion.div>
 
-      {/* Ticker Marquee */}
-      <div className="w-full overflow-hidden bg-white/80 border border-slate-200/90 rounded-xl py-1.5 mb-2 z-20 relative backdrop-blur-md shadow-xs">
-        <div className="flex whitespace-nowrap animate-marquee gap-8 font-mono text-[9px] sm:text-xs font-bold uppercase tracking-wider text-slate-600">
-          <div className="flex items-center gap-1.5 shrink-0">
-            <Flame className="w-3 h-3 text-brand-violet animate-pulse" /> 
-            <span>LIVE DEALS: 100% AUTHENTIC WHEY & CERTIFIED MEDICINES</span>
-          </div>
-          <div className="flex items-center gap-1.5 shrink-0">
-            <Tag className="w-3 h-3 text-emerald-600" /> 
-            <span>TATA 1MG, APOLLO, HEALTHKART & NUTRABAY: EXTRA 15% OFF</span>
-          </div>
-          <div className="flex items-center gap-1.5 shrink-0">
-            <Shield className="w-3 h-3 text-brand-indigo" /> 
-            <span>VERIFIED AUTHORIZED IMPORTERS: ZERO FAKE SUPPLEMENTS</span>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }

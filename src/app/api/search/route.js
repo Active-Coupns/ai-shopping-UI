@@ -263,7 +263,7 @@ export async function POST(request) {
     const fetchLimit = isExactProduct ? 1 : 3;
 
     try {
-      const rapidResults = await searchRapidApiProducts(cleanQuery, fetchLimit);
+      const rapidResults = await searchRapidApiProducts(cleanQuery, fetchLimit, userRegion);
       if (Array.isArray(rapidResults) && rapidResults.length > 0) {
         cleanProducts = rapidResults.slice(0, fetchLimit);
       }
