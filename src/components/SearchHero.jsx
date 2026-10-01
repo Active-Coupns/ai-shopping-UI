@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Search, Sparkles, X, Pill, ShoppingBag } from "lucide-react";
-import { motion } from "framer-motion";
+import { Search, Sparkles, X, Pill, ShoppingBag, ShieldCheck, HeartPulse } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 const ECOM_QUERIES_IN = [
   "Best laptop under ₹50,000",
@@ -77,12 +77,13 @@ export default function SearchHero({ country = "IN", onSubmit }) {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const isUS = String(country).toUpperCase() === "US";
+  const isHealth = activeTab === "health";
 
-  const exampleQueries = activeTab === "health"
+  const exampleQueries = isHealth
     ? (isUS ? HEALTH_QUERIES_US : HEALTH_QUERIES_IN)
     : (isUS ? ECOM_QUERIES_US : ECOM_QUERIES_IN);
 
-  const trendingList = activeTab === "health"
+  const trendingList = isHealth
     ? (isUS ? QUICK_TRENDING_HEALTH_US : QUICK_TRENDING_HEALTH_IN)
     : (isUS ? QUICK_TRENDING_ECOM_US : QUICK_TRENDING_ECOM_IN);
 
@@ -147,45 +148,67 @@ export default function SearchHero({ country = "IN", onSubmit }) {
   return (
     <div className="w-full max-w-3xl mx-auto px-4 py-4 sm:py-8 text-center flex flex-col justify-center items-center">
       
-      {/* 1. Catchy Brand Tag & Headline */}
-      <motion.div
-        initial={{ opacity: 0, y: -6 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-        className="mb-4 sm:mb-6 max-w-xl mx-auto"
-      >
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-[11px] font-bold text-brand-indigo mb-2.5 shadow-2xs">
-          <Sparkles className="w-3.5 h-3.5 text-brand-indigo animate-pulse" />
-          <span>{isUS ? "US AI Deal & Health Finder" : "AI Deal & Health Finder"}</span>
-        </div>
+      {/* 1. Dynamic Catchy Brand Tag & Headline */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={activeTab}
+          initial={{ opacity: 0, y: -6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 6 }}
+          transition={{ duration: 0.25 }}
+          className="mb-4 sm:mb-6 max-w-xl mx-auto"
+        >
+          {/* Top Badge with Dynamic Theme Coloring */}
+          {isHealth ? (
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-[11px] font-bold text-emerald-800 mb-2.5 shadow-2xs">
+              <HeartPulse className="w-3.5 h-3.5 text-emerald-600 animate-pulse" />
+              <span>{isUS ? "US Pharmacy & Verified Health Finder" : "100% Genuine Pharmacy & Supplements"}</span>
+            </div>
+          ) : (
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-[11px] font-bold text-brand-indigo mb-2.5 shadow-2xs">
+              <Sparkles className="w-3.5 h-3.5 text-brand-indigo animate-pulse" />
+              <span>{isUS ? "US Smart Shopping Assistant" : "AI Deal & E-Commerce Finder"}</span>
+            </div>
+          )}
 
-        <h1 className="text-2xl sm:text-4xl md:text-5xl font-black tracking-tight text-slate-900 leading-tight">
-          Find the Best Price, <span className="bg-clip-text text-transparent bg-gradient-to-r from-brand-indigo via-purple-600 to-pink-600">Instantly.</span>
-        </h1>
-        
-        <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1.5 leading-relaxed">
-          {activeTab === "health"
-            ? (isUS 
-                ? "Real-time prices across CVS, Walgreens, GNC, iHerb & Walmart Pharmacy." 
-                : "Real-time prices across 1mg, Apollo 24|7, HealthKart & PharmEasy.")
-            : (isUS 
-                ? "Real-time comparison across Amazon.com, Walmart, Best Buy & Target." 
-                : "Real-time comparison across Amazon, Flipkart, Myntra & Croma.")}
-        </p>
-      </motion.div>
+          {/* Dynamic Catchy Title with Mode-Specific Gradients */}
+          <h1 className="text-2xl sm:text-4xl md:text-5xl font-black tracking-tight text-slate-900 leading-tight">
+            {isHealth ? (
+              <>
+                Compare Medicine & <span className="bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600">Health Stacks.</span>
+              </>
+            ) : (
+              <>
+                Find the Best Price, <span className="bg-clip-text text-transparent bg-gradient-to-r from-brand-indigo via-purple-600 to-pink-600">Instantly.</span>
+              </>
+            )}
+          </h1>
+          
+          {/* Dynamic Subtitle */}
+          <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1.5 leading-relaxed">
+            {isHealth
+              ? (isUS 
+                  ? "Real-time prices across CVS, Walgreens, GNC, iHerb & Walmart Pharmacy." 
+                  : "Real-time prices across Tata 1mg, Apollo 24|7, HealthKart & PharmEasy.")
+              : (isUS 
+                  ? "Real-time comparison across Amazon.com, Walmart, Best Buy & Target." 
+                  : "Real-time comparison across Amazon, Flipkart, Myntra & Croma.")}
+          </p>
+        </motion.div>
+      </AnimatePresence>
 
-      {/* 2. Clean Minimal Segmented Tab */}
+      {/* 2. Interactive 2-Vertical Segmented Toggle */}
       <div className="flex items-center p-1 bg-slate-100/90 rounded-2xl border border-slate-200/80 mb-4 sm:mb-6 w-full max-w-xs shadow-inner">
         <button
           type="button"
           onClick={() => setActiveTab("ecommerce")}
           className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-            activeTab === "ecommerce"
-              ? "bg-white text-slate-900 shadow-sm"
+            !isHealth
+              ? "bg-white text-slate-900 shadow-sm border border-slate-200/60"
               : "text-slate-500 hover:text-slate-900"
           }`}
         >
-          <ShoppingBag className="w-3.5 h-3.5" />
+          <ShoppingBag className={`w-3.5 h-3.5 ${!isHealth ? "text-brand-indigo" : ""}`} />
           <span>{isUS ? "US Shopping" : "Shopping"}</span>
         </button>
 
@@ -193,8 +216,8 @@ export default function SearchHero({ country = "IN", onSubmit }) {
           type="button"
           onClick={() => setActiveTab("health")}
           className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-            activeTab === "health"
-              ? "bg-white text-emerald-700 shadow-sm"
+            isHealth
+              ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-sm shadow-emerald-500/20"
               : "text-slate-500 hover:text-emerald-700"
           }`}
         >
@@ -203,7 +226,7 @@ export default function SearchHero({ country = "IN", onSubmit }) {
         </button>
       </div>
 
-      {/* 3. Sleek Modern Search Bar */}
+      {/* 3. Sleek Modern Search Console with Dynamic Theme Glow */}
       <motion.div
         initial={{ opacity: 0, scale: 0.98 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -212,11 +235,15 @@ export default function SearchHero({ country = "IN", onSubmit }) {
       >
         <form 
           onSubmit={handleSubmit}
-          className="flex items-center gap-1.5 bg-white border border-slate-200 hover:border-slate-300 focus-within:border-brand-indigo focus-within:ring-4 focus-within:ring-indigo-500/10 rounded-2xl p-1.5 sm:p-2 shadow-lg shadow-slate-100/80 transition-all"
+          className={`flex items-center gap-1.5 bg-white border rounded-2xl p-1.5 sm:p-2 shadow-lg shadow-slate-100/80 transition-all ${
+            isHealth
+              ? "border-emerald-200/90 hover:border-emerald-300 focus-within:border-emerald-500 focus-within:ring-4 focus-within:ring-emerald-500/15"
+              : "border-slate-200 hover:border-slate-300 focus-within:border-brand-indigo focus-within:ring-4 focus-within:ring-indigo-500/10"
+          }`}
         >
-          <div className="pl-2.5 text-slate-400 shrink-0">
-            {activeTab === "health" ? (
-              <Pill className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600" />
+          <div className="pl-2.5 shrink-0">
+            {isHealth ? (
+              <Pill className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600 animate-pulse" />
             ) : (
               <Search className="w-4 h-4 sm:w-5 sm:h-5 text-brand-indigo" />
             )}
@@ -229,7 +256,7 @@ export default function SearchHero({ country = "IN", onSubmit }) {
             placeholder={
               placeholder 
                 ? placeholder + " |" 
-                : (activeTab === "health" 
+                : (isHealth 
                     ? (isUS ? "Search Tylenol, Whey Protein, Creatine..." : "Search Dolo, Whey Protein, Creatine...") 
                     : (isUS ? "Search laptops, iPhones, Nike sneakers..." : "Search laptops, phones, shoes, shirts..."))
             }
@@ -248,19 +275,19 @@ export default function SearchHero({ country = "IN", onSubmit }) {
 
           <button
             type="submit"
-            className={`flex items-center gap-1 text-white font-bold px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl transition-all shadow-md active:scale-95 text-xs sm:text-sm shrink-0 cursor-pointer ${
-              activeTab === "health"
-                ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/20"
-                : "bg-gradient-to-r from-brand-indigo to-brand-violet hover:from-indigo-600 hover:to-purple-700 shadow-indigo-500/20"
+            className={`flex items-center gap-1.5 text-white font-bold px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl transition-all shadow-md active:scale-95 text-xs sm:text-sm shrink-0 cursor-pointer ${
+              isHealth
+                ? "bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-700 hover:to-teal-800 shadow-emerald-500/25"
+                : "bg-gradient-to-r from-brand-indigo via-brand-violet to-purple-600 hover:from-indigo-600 hover:to-purple-700 shadow-indigo-500/20"
             }`}
           >
-            <span>Search</span>
+            <span>{isHealth ? "Find Deals" : "Ask AI"}</span>
             <Sparkles className="w-3.5 h-3.5" />
           </button>
         </form>
       </motion.div>
 
-      {/* 4. Catchy Trending Suggestions (Clean 1-line Chips) */}
+      {/* 4. Dynamic Theme-Aware Trending Suggestions */}
       <motion.div
         initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
@@ -273,7 +300,11 @@ export default function SearchHero({ country = "IN", onSubmit }) {
               key={idx}
               type="button"
               onClick={() => handlePromptClick(item.query)}
-              className="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-semibold whitespace-nowrap shrink-0 transition-all cursor-pointer shadow-2xs active:scale-95 hover:border-slate-300"
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap shrink-0 transition-all cursor-pointer shadow-2xs active:scale-95 border ${
+                isHealth
+                  ? "bg-emerald-50/70 hover:bg-emerald-100/80 text-emerald-900 border-emerald-200/80 hover:border-emerald-300"
+                  : "bg-white hover:bg-slate-50 text-slate-700 border-slate-200 hover:border-slate-300"
+              }`}
             >
               {item.label}
             </button>

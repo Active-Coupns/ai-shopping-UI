@@ -1,57 +1,150 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, Loader2, Compass, Shield, Database, Search, Zap, Sparkles } from "lucide-react";
+import { 
+  Check, 
+  Loader2, 
+  Search, 
+  Database, 
+  ShieldCheck, 
+  Tag, 
+  Sparkles, 
+  Activity, 
+  Zap, 
+  Cpu, 
+  Radio, 
+  Pill, 
+  ShoppingBag,
+  TrendingDown,
+  Gift
+} from "lucide-react";
 
-const STAGES = [
-  { id: 1, text: "🧠 Analyzing search intent & specs...", duration: 1600, icon: Compass },
-  { id: 2, text: "🌐 Scanning merchant networks (Amazon, Flipkart, Croma)...", duration: 2000, icon: Search },
-  { id: 3, text: "📊 Benchmarking live store prices & discount offers...", duration: 1600, icon: Database },
-  { id: 4, text: "🎟️ Verifying active coupon vouchers...", duration: 1600, icon: Shield }
+// Keywords to detect Pharmacy / Health / Medicine vertical
+const PHARMA_KEYWORDS = [
+  "vitamin", "protein", "medicine", "supplement", "capsule", "tablet", "syrup", 
+  "paracetamol", "creatine", "whey", "omega", "multivitamin", "pharma", "skin", 
+  "serum", "ointment", "collagen", "biotin", "d3", "b12", "ayurvedic", "ashwagandha", 
+  "shilajit", "sunscreen", "shampoo", "hair", "soap", "moisturizer", "bandage", 
+  "thermometer", "sanitizer", "cough", "fever", "cold", "pain", "digest", "probiotic",
+  "calcium", "zinc", "magnesium", "electrolyte", "ors", "pedialyte", "pharmacy"
 ];
 
-const SHOPPING_TRIVIA = [
-  "Checking verified coupon codes saves our users an average of 18% per checkout! 🎟️",
-  "In-memory database caching speeds up identical search requests to under 150ms! ⚡",
-  "Our multi-store search connectors scan live product listings from over 15 major online stores! 🌐",
-  "ShopSmart's proprietary intent classification AI bypasses scraping entirely for coupon-related searches! 🧠",
-  "Did you know? The most searched shopping term on ShopSmart is 'Laptop under 50k'! 💻",
-  "Outbound PDP direct link guards filter out 100% of malicious Google aggregator redirects! 🛡️"
-];
+const STORE_CONFIGS = {
+  IN: {
+    ecommerce: [
+      { name: "Amazon.in", tag: "Prime Deals", color: "from-amber-500 to-orange-600", border: "border-amber-400/50", glow: "rgba(245,158,11,0.25)", pos: "top-1 left-1/2 -translate-x-1/2" },
+      { name: "Flipkart", tag: "SuperCoin", color: "from-blue-600 to-indigo-600", border: "border-blue-400/50", glow: "rgba(37,99,235,0.25)", pos: "bottom-1 left-1/2 -translate-x-1/2" },
+      { name: "Croma", tag: "Instant Bank", color: "from-emerald-500 to-teal-600", border: "border-emerald-400/50", glow: "rgba(16,185,129,0.25)", pos: "top-1/2 right-1 -translate-y-1/2" },
+      { name: "Reliance Digital", tag: "Lowest Price", color: "from-rose-500 to-red-600", border: "border-rose-400/50", glow: "rgba(244,63,94,0.25)", pos: "top-1/2 left-1 -translate-y-1/2" }
+    ],
+    pharma: [
+      { name: "Tata 1mg", tag: "Care Plan", color: "from-orange-500 to-amber-600", border: "border-orange-400/50", glow: "rgba(249,115,22,0.25)", pos: "top-1 left-1/2 -translate-x-1/2" },
+      { name: "Apollo 24|7", tag: "Circle Offer", color: "from-teal-500 to-cyan-600", border: "border-teal-400/50", glow: "rgba(20,184,166,0.25)", pos: "bottom-1 left-1/2 -translate-x-1/2" },
+      { name: "PharmEasy", tag: "Flat 20% Off", color: "from-emerald-500 to-green-600", border: "border-emerald-400/50", glow: "rgba(16,185,129,0.25)", pos: "top-1/2 right-1 -translate-y-1/2" },
+      { name: "HealthKart", tag: "Authentic Code", color: "from-indigo-500 to-purple-600", border: "border-indigo-400/50", glow: "rgba(99,102,241,0.25)", pos: "top-1/2 left-1 -translate-y-1/2" }
+    ]
+  },
+  US: {
+    ecommerce: [
+      { name: "Amazon.com", tag: "Prime Saver", color: "from-amber-500 to-orange-600", border: "border-amber-400/50", glow: "rgba(245,158,11,0.25)", pos: "top-1 left-1/2 -translate-x-1/2" },
+      { name: "Walmart", tag: "Rollback Deals", color: "from-blue-600 to-sky-600", border: "border-blue-400/50", glow: "rgba(37,99,235,0.25)", pos: "bottom-1 left-1/2 -translate-x-1/2" },
+      { name: "Best Buy", tag: "Price Match", color: "from-yellow-500 to-amber-600", border: "border-yellow-400/50", glow: "rgba(234,179,8,0.25)", pos: "top-1/2 right-1 -translate-y-1/2" },
+      { name: "Target", tag: "RedCard Extra", color: "from-red-600 to-rose-600", border: "border-red-400/50", glow: "rgba(220,38,38,0.25)", pos: "top-1/2 left-1 -translate-y-1/2" }
+    ],
+    pharma: [
+      { name: "CVS Pharmacy", tag: "ExtraCare", color: "from-red-600 to-rose-600", border: "border-red-400/50", glow: "rgba(220,38,38,0.25)", pos: "top-1 left-1/2 -translate-x-1/2" },
+      { name: "Walgreens", tag: "myWalgreens", color: "from-rose-500 to-red-600", border: "border-rose-400/50", glow: "rgba(244,63,94,0.25)", pos: "bottom-1 left-1/2 -translate-x-1/2" },
+      { name: "iHerb", tag: "Promo Verified", color: "from-emerald-500 to-green-600", border: "border-emerald-400/50", glow: "rgba(16,185,129,0.25)", pos: "top-1/2 right-1 -translate-y-1/2" },
+      { name: "GNC Health", tag: "Member Gold", color: "from-amber-500 to-yellow-600", border: "border-amber-400/50", glow: "rgba(245,158,11,0.25)", pos: "top-1/2 left-1 -translate-y-1/2" }
+    ]
+  }
+};
 
-const STORE_NODES = [
-  { name: "Amazon.in", color: "bg-[#ff9900]/20 text-amber-300 border-[#ff9900]/40", pos: "top-0 left-1/2 -translate-x-1/2 -translate-y-4" },
-  { name: "Flipkart", color: "bg-[#2874f0]/20 text-blue-300 border-[#2874f0]/40", pos: "bottom-0 left-1/2 -translate-x-1/2 translate-y-4" },
-  { name: "Croma", color: "bg-[#00e6c3]/20 text-[#00e6c3] border-[#00e6c3]/40", pos: "top-1/2 right-0 translate-x-6 -translate-y-1/2" },
-  { name: "Reliance", color: "bg-red-500/20 text-red-300 border-red-500/40", pos: "top-1/2 left-0 -translate-x-6 -translate-y-1/2" }
-];
-
-export default function RocketLoader({ query, onComplete, apiLoading }) {
+export default function RocketLoader({ query = "", country = "IN", onComplete, apiLoading }) {
   const [currentStage, setCurrentStage] = useState(1);
   const [completedStages, setCompletedStages] = useState([]);
-  const [triviaIndex, setTriviaIndex] = useState(0);
   const [progress, setProgress] = useState(0);
+  const [activeStoreIdx, setActiveStoreIdx] = useState(0);
+  const [telemetryIndex, setTelemetryIndex] = useState(0);
   
   const apiLoadingRef = React.useRef(apiLoading);
-  
   useEffect(() => {
     apiLoadingRef.current = apiLoading;
   }, [apiLoading]);
 
-  // Trivia rotation interval
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setTriviaIndex((prev) => (prev + 1) % SHOPPING_TRIVIA.length);
-    }, 2400);
-    return () => clearInterval(interval);
-  }, []);
+  // Determine if search query is Pharmacy / Supplement or General E-commerce
+  const isPharma = useMemo(() => {
+    const q = (query || "").toLowerCase();
+    return PHARMA_KEYWORDS.some(k => q.includes(k));
+  }, [query]);
 
-  // Stage transition and progress loader simulation
+  const countryKey = country === "US" ? "US" : "IN";
+  const activeStores = useMemo(() => {
+    return isPharma ? STORE_CONFIGS[countryKey].pharma : STORE_CONFIGS[countryKey].ecommerce;
+  }, [isPharma, countryKey]);
+
+  // Stages adapted dynamically for Pharma vs E-commerce
+  const stages = useMemo(() => {
+    if (isPharma) {
+      return [
+        { id: 1, text: "🔬 Dissecting formulation specs, dosage & brand variants...", duration: 1500, icon: Cpu, badge: "AI Intent" },
+        { id: 2, text: `🌐 Parallel radar scan across ${activeStores.map(s => s.name).join(", ")}...`, duration: 1800, icon: Radio, badge: "Live Radar" },
+        { id: 3, text: "🏷️ Benchmarking batch prices, per-unit costs & expiry guarantees...", duration: 1500, icon: Database, badge: "Best Offer" },
+        { id: 4, text: "🎟️ Unlocking active pharmacy promo codes & subscription vouchers...", duration: 1500, icon: ShieldCheck, badge: "Verified Coupons" }
+      ];
+    }
+    return [
+      { id: 1, text: "🧠 Dissecting product intent, model specs & variants...", duration: 1500, icon: Cpu, badge: "AI Engine" },
+      { id: 2, text: `🌐 Parallel radar sweep across ${activeStores.map(s => s.name).join(", ")}...`, duration: 1800, icon: Radio, badge: "Live Radar" },
+      { id: 3, text: "📊 Benchmarking live store prices & finding lowest price drops...", duration: 1500, icon: Database, badge: "Price Match" },
+      { id: 4, text: "🎟️ Scanning & unlocking active coupon vouchers & bank offers...", duration: 1500, icon: ShieldCheck, badge: "Coupon Hunter" }
+    ];
+  }, [isPharma, activeStores]);
+
+  // Dynamic Live Telemetry Logs
+  const telemetryLogs = useMemo(() => {
+    if (isPharma) {
+      return [
+        `📡 [RADAR] Handshake verified with ${activeStores[0]?.name || "Tata 1mg"} in 42ms...`,
+        `🧪 [FORMULA] Parsing active ingredient concentrations & certified seller stock...`,
+        `💊 [CROSS-CHECK] Found 18% lower bulk price on ${activeStores[1]?.name || "Apollo 24|7"}...`,
+        `🎟️ [PROMO ENGINE] Unlocked verified instant coupon voucher!`,
+        `🛡️ [GENUINE GUARANTEE] 100% manufacturer verified batch certification check passed...`,
+        `✨ [FINALIZING] Compiling optimal best-deal comparison matrix...`
+      ];
+    }
+    return [
+      `📡 [RADAR] Connected to ${activeStores[0]?.name || "Amazon"} live catalog connector (38ms)...`,
+      `🔍 [SPEC ENGINE] Matched exact product SKU & variant configuration...`,
+      `🏷️ [PRICE BENCHMARK] Price gap detected: ₹2,400 savings potential spotted...`,
+      `🎟️ [COUPON HUNTER] Validating active bank codes & merchant checkout promos...`,
+      `⚡ [CACHE BOOST] In-memory neural cache synchronized successfully...`,
+      `✨ [FINALIZING] Ranking best-value deals with instant purchase links...`
+    ];
+  }, [isPharma, activeStores]);
+
+  // Orbit store active node cycler
+  useEffect(() => {
+    const storeInterval = setInterval(() => {
+      setActiveStoreIdx((prev) => (prev + 1) % activeStores.length);
+    }, 1400);
+    return () => clearInterval(storeInterval);
+  }, [activeStores]);
+
+  // Telemetry stream cycler
+  useEffect(() => {
+    const telInterval = setInterval(() => {
+      setTelemetryIndex((prev) => (prev + 1) % telemetryLogs.length);
+    }, 2000);
+    return () => clearInterval(telInterval);
+  }, [telemetryLogs]);
+
+  // Stage transition & progress logic
   useEffect(() => {
     let timers = [];
     let accumulatedTime = 0;
-    const totalDuration = STAGES.reduce((acc, s) => acc + s.duration, 0);
+    const totalDuration = stages.reduce((acc, s) => acc + s.duration, 0);
 
     const progressInterval = setInterval(() => {
       setProgress((prev) => {
@@ -64,9 +157,9 @@ export default function RocketLoader({ query, onComplete, apiLoading }) {
         }
         return prev + 1;
       });
-    }, totalDuration / 98);
+    }, Math.max(20, totalDuration / 98));
 
-    STAGES.forEach((stage, index) => {
+    stages.forEach((stage, index) => {
       const activeTimer = setTimeout(() => {
         setCurrentStage(stage.id);
       }, accumulatedTime);
@@ -75,14 +168,14 @@ export default function RocketLoader({ query, onComplete, apiLoading }) {
       accumulatedTime += stage.duration;
 
       const completeTimer = setTimeout(() => {
-        setCompletedStages((prev) => [...prev, stage.id]);
-        if (index === STAGES.length - 1) {
+        setCompletedStages((prev) => [...new Set([...prev, stage.id])]);
+        if (index === stages.length - 1) {
           const checkCompletion = () => {
             if (apiLoadingRef.current) {
               setTimeout(checkCompletion, 100);
             } else {
               setProgress(100);
-              setTimeout(onComplete, 400);
+              setTimeout(onComplete, 350);
             }
           };
           checkCompletion();
@@ -95,171 +188,287 @@ export default function RocketLoader({ query, onComplete, apiLoading }) {
       timers.forEach((t) => clearTimeout(t));
       clearInterval(progressInterval);
     };
-  }, [onComplete]);
+  }, [stages, onComplete]);
 
-  const activeIconIndex = STAGES.findIndex(s => s.id === currentStage);
-  const CurrentIcon = STAGES[activeIconIndex >= 0 ? activeIconIndex : 0].icon;
+  const activeStageObj = stages.find(s => s.id === currentStage) || stages[0];
+  const CurrentIcon = activeStageObj.icon || Activity;
+
+  // Theme accents
+  const themeGlow = isPharma ? "bg-emerald-500/15" : "bg-indigo-500/15";
+  const themeGrad = isPharma 
+    ? "from-emerald-500 via-teal-500 to-green-600" 
+    : "from-brand-indigo via-brand-violet to-purple-600";
+  const radarBorder = isPharma ? "border-emerald-500/30" : "border-indigo-500/30";
+  const radarConic = isPharma 
+    ? "conic-gradient(from 0deg, transparent 50%, rgba(16, 185, 129, 0.15) 80%, rgba(20, 184, 166, 0.6) 100%)"
+    : "conic-gradient(from 0deg, transparent 50%, rgba(168, 85, 247, 0.18) 80%, rgba(99, 102, 241, 0.6) 100%)";
 
   return (
-    <div className="w-full max-w-xl mx-auto px-6 py-8 flex flex-col items-center justify-center min-h-[540px] relative">
+    <div className="w-full max-w-2xl mx-auto px-4 sm:px-6 py-6 sm:py-10 flex flex-col items-center justify-center relative select-none">
       
-      {/* Background ambient lighting */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-brand-indigo/15 rounded-full blur-3xl pointer-events-none" />
+      {/* Background ambient multi-color lighting */}
+      <div className={`absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 sm:w-[420px] h-80 sm:h-[420px] ${themeGlow} rounded-full blur-3xl pointer-events-none transition-all duration-700`} />
 
-      {/* Query Banner Header */}
+      {/* Query Banner with Futuristic Scanning Badge */}
       <motion.div
-        initial={{ opacity: 0, y: -10 }}
+        initial={{ opacity: 0, y: -12 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mb-8 text-center w-full relative z-10"
+        className="mb-6 sm:mb-8 text-center w-full relative z-10"
       >
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-indigo/15 border border-brand-indigo/35 text-[10px] font-extrabold uppercase tracking-widest text-brand-indigo mb-2 shadow-xs">
-          <Sparkles className="w-3.5 h-3.5 text-brand-indigo animate-pulse" />
-          <span>Radar Scan Target Query</span>
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/90 backdrop-blur-md border border-slate-200 shadow-sm text-[11px] font-black uppercase tracking-wider mb-2.5">
+          <span className="relative flex h-2 w-2">
+            <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${isPharma ? "bg-emerald-400" : "bg-indigo-400"} opacity-75`}></span>
+            <span className={`relative inline-flex rounded-full h-2 w-2 ${isPharma ? "bg-emerald-500" : "bg-brand-indigo"}`}></span>
+          </span>
+          <span className={`font-mono ${isPharma ? "text-emerald-700" : "text-brand-indigo"}`}>
+            {isPharma ? "HEALTH & PHARMA RADAR ACTIVE" : "MULTI-STORE AI RADAR ACTIVE"}
+          </span>
+          <span className="text-slate-400">|</span>
+          <span className="text-slate-600 font-bold">{country === "US" ? "🇺🇸 United States" : "🇮🇳 India"}</span>
         </div>
-        <div className="inline-block px-5 py-2.5 rounded-2xl glass-panel-accent text-slate-900 font-bold text-xs max-w-full truncate shadow-md border border-slate-200 bg-white/90">
-          &ldquo;<span className="text-brand-indigo font-bold">{query}</span>&rdquo;
+
+        <div className="max-w-md mx-auto px-4 py-2 rounded-2xl bg-white/80 backdrop-blur-md border border-slate-200/80 shadow-md flex items-center justify-center gap-2">
+          {isPharma ? (
+            <Pill className="w-4 h-4 text-emerald-600 shrink-0" />
+          ) : (
+            <ShoppingBag className="w-4 h-4 text-brand-indigo shrink-0" />
+          )}
+          <span className="text-xs sm:text-sm font-extrabold text-slate-800 truncate">
+            &ldquo;{query}&rdquo;
+          </span>
         </div>
       </motion.div>
 
-      {/* Holographic AI Radar Visualizer with Floating Store Nodes */}
-      <div className="relative w-56 h-56 mb-10 flex items-center justify-center relative z-10">
+      {/* Futuristic Holographic Multi-Store Radar Hub */}
+      <div className="relative w-64 h-64 sm:w-72 sm:h-72 mb-8 sm:mb-10 flex items-center justify-center relative z-10">
         
-        {/* Outer glowing halo */}
-        <div className="absolute inset-0 rounded-full border border-brand-indigo/25 scale-100 animate-pulse" />
-        <div className="absolute inset-4 rounded-full border border-slate-200 scale-100" />
-        <div className="absolute inset-10 rounded-full border border-brand-violet/20 scale-100" />
-        <div className="absolute inset-16 rounded-full border border-slate-300 scale-100" />
-
-        {/* Floating Store Nodes */}
-        {STORE_NODES.map((node, idx) => (
-          <motion.div
-            key={idx}
-            animate={{ y: [0, -4, 0] }}
-            transition={{ duration: 2.5, repeat: Infinity, delay: idx * 0.4 }}
-            className={`absolute z-30 px-2.5 py-1 rounded-full border text-[10px] font-extrabold tracking-wide uppercase shadow-md backdrop-blur-md ${node.color} ${node.pos}`}
-          >
-            {node.name}
-          </motion.div>
-        ))}
-
-        {/* 360 Sweep scanner radar line */}
+        {/* Pulsing Sonar Ripple Waves */}
         <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 3.5, repeat: Infinity, ease: "linear" }}
-          className="absolute inset-0 rounded-full pointer-events-none origin-center z-10"
-          style={{
-            background: "conic-gradient(from 0deg, transparent 50%, rgba(168, 85, 247, 0.2) 85%, rgba(99, 102, 241, 0.5) 100%)"
-          }}
+          animate={{ scale: [1, 1.45], opacity: [0.6, 0] }}
+          transition={{ duration: 2.4, repeat: Infinity, ease: "easeOut" }}
+          className={`absolute inset-0 rounded-full border-2 ${radarBorder} pointer-events-none`}
+        />
+        <motion.div
+          animate={{ scale: [1, 1.3], opacity: [0.5, 0] }}
+          transition={{ duration: 2.4, repeat: Infinity, delay: 0.8, ease: "easeOut" }}
+          className={`absolute inset-0 rounded-full border ${radarBorder} pointer-events-none`}
         />
 
-        {/* Central glowing orb with active indicator icon & percentage */}
+        {/* Concentric Tech Calibration Rings */}
+        <div className="absolute inset-0 rounded-full border border-slate-200/90 shadow-inner" />
+        <div className="absolute inset-4 rounded-full border border-dashed border-slate-300/70" />
+        <div className={`absolute inset-10 rounded-full border ${radarBorder} opacity-60`} />
+        <div className="absolute inset-16 rounded-full border border-slate-200/80" />
+
+        {/* Radar Crosshairs */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="w-full h-px bg-slate-200/60" />
+          <div className="h-full w-px bg-slate-200/60 absolute" />
+        </div>
+
+        {/* 360 Degree Continuous Sonar Sweep Beam */}
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 3.2, repeat: Infinity, ease: "linear" }}
+          className="absolute inset-0 rounded-full pointer-events-none origin-center z-10"
+          style={{ background: radarConic }}
+        >
+          {/* Active Laser Lead Line */}
+          <div className={`absolute top-0 left-1/2 -translate-x-1/2 w-0.5 h-1/2 ${isPharma ? "bg-gradient-to-t from-emerald-400 to-teal-300 shadow-[0_0_8px_#10b981]" : "bg-gradient-to-t from-brand-indigo to-cyan-300 shadow-[0_0_8px_#6366f1]"}`} />
+        </motion.div>
+
+        {/* Floating Dynamic Store Nodes */}
+        {activeStores.map((node, idx) => {
+          const isActive = activeStoreIdx === idx;
+          return (
+            <motion.div
+              key={node.name}
+              animate={{
+                scale: isActive ? 1.08 : 1,
+                y: isActive ? [0, -4, 0] : [0, -2, 0]
+              }}
+              transition={{ duration: 2, repeat: Infinity }}
+              className={`absolute z-30 px-3 py-1.5 rounded-xl border backdrop-blur-md shadow-lg transition-all duration-300 ${node.pos} ${
+                isActive
+                  ? `bg-white ${node.border} ring-2 ring-offset-1 ${isPharma ? "ring-emerald-400" : "ring-brand-indigo"}`
+                  : "bg-white/90 border-slate-200/90 opacity-90"
+              }`}
+              style={{
+                boxShadow: isActive ? `0 4px 18px ${node.glow}` : "0 2px 8px rgba(0,0,0,0.06)"
+              }}
+            >
+              <div className="flex items-center gap-1.5">
+                <span className={`w-2 h-2 rounded-full bg-gradient-to-r ${node.color} ${isActive ? "animate-pulse" : ""}`} />
+                <span className="text-[11px] font-black tracking-tight text-slate-800 whitespace-nowrap">
+                  {node.name}
+                </span>
+              </div>
+              
+              {/* Micro tag indicating active intelligence */}
+              <div className="text-[9px] font-bold text-slate-500 text-center -mt-0.5 flex items-center justify-center gap-0.5">
+                {isActive ? (
+                  <span className={`font-extrabold ${isPharma ? "text-emerald-600" : "text-brand-indigo"} animate-pulse flex items-center gap-0.5`}>
+                    <Zap className="w-2.5 h-2.5 fill-current" /> {node.tag}
+                  </span>
+                ) : (
+                  <span>Verified Node</span>
+                )}
+              </div>
+            </motion.div>
+          );
+        })}
+
+        {/* Central Futuristic AI Core Sensor */}
         <motion.div
           animate={{
-            scale: [1, 1.06, 1],
+            scale: [1, 1.05, 1],
             boxShadow: [
-              "0 0 20px rgba(99, 102, 241, 0.3)",
-              "0 0 35px rgba(168, 85, 247, 0.5)",
-              "0 0 20px rgba(99, 102, 241, 0.3)"
+              `0 0 20px ${isPharma ? "rgba(16,185,129,0.3)" : "rgba(99,102,241,0.3)"}`,
+              `0 0 38px ${isPharma ? "rgba(20,184,166,0.55)" : "rgba(168,85,247,0.55)"}`,
+              `0 0 20px ${isPharma ? "rgba(16,185,129,0.3)" : "rgba(99,102,241,0.3)"}`
             ]
           }}
           transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-          className="w-24 h-24 rounded-full bg-gradient-to-tr from-brand-indigo via-brand-violet to-purple-600 flex flex-col items-center justify-center p-1 relative z-20 shadow-xl"
+          className={`w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-gradient-to-tr ${themeGrad} flex flex-col items-center justify-center p-1 relative z-20 shadow-2xl`}
         >
-          <div className="w-full h-full rounded-full bg-white flex flex-col items-center justify-center border border-brand-indigo/30 p-2 text-center shadow-inner">
-            <CurrentIcon className="w-7 h-7 text-brand-indigo animate-pulse mb-0.5" />
-            <span className="text-xs font-black text-slate-900 font-mono">{progress}%</span>
+          <div className="w-full h-full rounded-full bg-white flex flex-col items-center justify-center p-2 text-center shadow-inner relative overflow-hidden">
+            {/* Ambient core glow */}
+            <div className={`absolute inset-0 ${isPharma ? "bg-emerald-50/70" : "bg-indigo-50/70"} pointer-events-none`} />
+            
+            <CurrentIcon className={`w-7 h-7 sm:w-8 sm:h-8 ${isPharma ? "text-emerald-600" : "text-brand-indigo"} animate-pulse relative z-10`} />
+            <div className="text-xs sm:text-sm font-black text-slate-900 font-mono relative z-10 leading-tight">
+              {progress}%
+            </div>
+            <div className="text-[8px] font-extrabold uppercase tracking-widest text-slate-500 relative z-10">
+              SCANNING
+            </div>
           </div>
         </motion.div>
       </div>
 
-      {/* Checklist stage cards */}
-      <div className="w-full space-y-3 mb-8 relative z-10">
-        {STAGES.map((stage) => {
+      {/* Stage Progression Cards with Micro-Badges */}
+      <div className="w-full space-y-2.5 mb-6 relative z-10">
+        {stages.map((stage) => {
           const isActive = currentStage === stage.id;
           const isCompleted = completedStages.includes(stage.id);
 
           return (
             <motion.div
               key={stage.id}
-              initial={{ opacity: 0.2, x: -10 }}
+              initial={{ opacity: 0.3, x: -8 }}
               animate={{
-                opacity: isActive ? 1 : isCompleted ? 0.85 : 0.4,
-                scale: isActive ? 1.015 : 1
+                opacity: isActive ? 1 : isCompleted ? 0.9 : 0.45,
+                scale: isActive ? 1.012 : 1
               }}
-              className={`flex items-center gap-3.5 px-4.5 py-3 rounded-2xl border transition-all duration-300 ${
+              transition={{ duration: 0.25 }}
+              className={`flex items-center justify-between gap-3 px-3.5 sm:px-4 py-2.5 sm:py-3 rounded-2xl border transition-all duration-300 ${
                 isActive
-                  ? "border-brand-indigo/40 bg-white shadow-md text-slate-900"
+                  ? isPharma
+                    ? "border-emerald-400/60 bg-white shadow-md text-slate-900 ring-1 ring-emerald-200"
+                    : "border-brand-indigo/60 bg-white shadow-md text-slate-900 ring-1 ring-indigo-200"
                   : isCompleted
-                  ? "border-emerald-300/40 bg-emerald-50/50 text-slate-800"
-                  : "border-slate-200 bg-slate-50/50 text-slate-500"
+                  ? "border-emerald-300/50 bg-emerald-50/40 text-slate-800"
+                  : "border-slate-200/80 bg-slate-50/40 text-slate-500"
               }`}
             >
-              {/* Left indicator check icon */}
-              <div className="relative flex items-center justify-center w-5 h-5 shrink-0">
-                <AnimatePresence mode="wait">
-                  {isCompleted ? (
-                    <motion.div
-                      key="completed"
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      exit={{ scale: 0 }}
-                      className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center text-white font-bold shadow-xs"
-                    >
-                      <Check className="w-3.5 h-3.5 stroke-[3px]" />
-                    </motion.div>
-                  ) : isActive ? (
-                    <motion.div
-                      key="loading"
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      exit={{ scale: 0 }}
-                    >
-                      <Loader2 className="w-4 h-4 text-brand-indigo animate-spin" />
-                    </motion.div>
-                  ) : (
-                    <motion.div
-                      key="pending"
-                      initial={{ scale: 0.5 }}
-                      animate={{ scale: 1 }}
-                      className="w-3.5 h-3.5 rounded-full border border-slate-300 bg-white"
-                    />
-                  )}
-                </AnimatePresence>
+              <div className="flex items-center gap-3 min-w-0">
+                {/* State Icon Indicator */}
+                <div className="relative flex items-center justify-center w-5 h-5 shrink-0">
+                  <AnimatePresence mode="wait">
+                    {isCompleted ? (
+                      <motion.div
+                        key="completed"
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        exit={{ scale: 0 }}
+                        className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center text-white font-bold shadow-xs"
+                      >
+                        <Check className="w-3.5 h-3.5 stroke-[3.5px]" />
+                      </motion.div>
+                    ) : isActive ? (
+                      <motion.div
+                        key="loading"
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        exit={{ scale: 0 }}
+                      >
+                        <Loader2 className={`w-4 h-4 ${isPharma ? "text-emerald-600" : "text-brand-indigo"} animate-spin`} />
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        key="pending"
+                        initial={{ scale: 0.6 }}
+                        animate={{ scale: 1 }}
+                        className="w-3.5 h-3.5 rounded-full border border-slate-300 bg-white"
+                      />
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                {/* Stage Text */}
+                <span className={`text-xs sm:text-[13px] font-semibold tracking-tight truncate ${
+                  isActive ? "text-slate-900 font-bold" : isCompleted ? "text-slate-700" : "text-slate-400"
+                }`}>
+                  {stage.text}
+                </span>
               </div>
 
-              {/* Stage Description Text */}
-              <span className={`text-xs md:text-sm font-semibold tracking-wide ${isActive ? "text-slate-900 font-bold" : isCompleted ? "text-slate-700" : "text-slate-400"}`}>
-                {stage.text}
-              </span>
+              {/* Stage Step Category Badge */}
+              <div className="shrink-0 hidden sm:block">
+                <span className={`px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider ${
+                  isActive
+                    ? isPharma ? "bg-emerald-100 text-emerald-800 border border-emerald-300" : "bg-indigo-100 text-brand-indigo border border-indigo-300"
+                    : isCompleted
+                    ? "bg-emerald-100/60 text-emerald-700"
+                    : "bg-slate-100 text-slate-400"
+                }`}>
+                  {stage.badge}
+                </span>
+              </div>
             </motion.div>
           );
         })}
       </div>
 
-      {/* Glowing Progress Bar */}
-      <div className="w-full bg-slate-100 border border-slate-200 rounded-full h-3 overflow-hidden mb-6 p-0.5 shadow-inner relative z-10">
+      {/* Smooth High-Precision Glowing Progress Track */}
+      <div className="w-full bg-slate-200/80 rounded-full h-2.5 overflow-hidden mb-5 p-0.5 shadow-inner relative z-10">
         <motion.div
           animate={{ width: `${progress}%` }}
-          transition={{ duration: 0.3, ease: "easeOut" }}
-          className="h-full rounded-full bg-gradient-to-r from-brand-indigo via-brand-violet to-purple-600 shadow-[0_0_10px_rgba(99,102,241,0.4)]"
+          transition={{ duration: 0.25, ease: "easeOut" }}
+          className={`h-full rounded-full bg-gradient-to-r ${themeGrad} shadow-[0_0_12px_rgba(99,102,241,0.5)]`}
           style={{ width: "0%" }}
         />
       </div>
 
-      {/* Shopping Trivia Banner */}
-      <div className="w-full glass-panel-accent rounded-2xl p-4 min-h-[65px] flex items-center justify-center text-center relative z-10 border border-slate-200 bg-white/90 shadow-md">
-        <AnimatePresence mode="wait">
-          <motion.p
-            key={triviaIndex}
-            initial={{ opacity: 0, y: 5 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -5 }}
-            transition={{ duration: 0.4 }}
-            className="text-[11px] md:text-xs font-semibold text-slate-700 leading-relaxed font-mono"
-          >
-            {SHOPPING_TRIVIA[triviaIndex]}
-          </motion.p>
-        </AnimatePresence>
+      {/* Live AI Telemetry Feed Terminal Box */}
+      <div className="w-full bg-slate-900 text-slate-100 rounded-2xl p-3 sm:p-3.5 relative z-10 border border-slate-800 shadow-xl overflow-hidden">
+        <div className="flex items-center justify-between pb-1.5 mb-1.5 border-b border-slate-800">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+            <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-slate-400">
+              LIVE TELEMETRY STREAM
+            </span>
+          </div>
+          <span className="text-[10px] font-mono text-emerald-400 font-bold">
+            LATENCY: 42ms
+          </span>
+        </div>
+
+        <div className="h-6 sm:h-7 flex items-center">
+          <AnimatePresence mode="wait">
+            <motion.p
+              key={telemetryIndex}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.3 }}
+              className="text-[11px] sm:text-xs font-mono text-cyan-300 truncate w-full flex items-center gap-1.5"
+            >
+              <Zap className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <span className="truncate">{telemetryLogs[telemetryIndex]}</span>
+            </motion.p>
+          </AnimatePresence>
+        </div>
       </div>
 
     </div>

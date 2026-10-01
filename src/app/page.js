@@ -454,7 +454,12 @@ export default function Home() {
               transition={{ duration: 0.3 }}
               className="w-full"
             >
-              <RocketLoader query={searchQuery} onComplete={handleLoaderComplete} apiLoading={isApiLoading} />
+              <RocketLoader
+                query={searchQuery}
+                country={selectedCountry}
+                onComplete={handleLoaderComplete}
+                apiLoading={isApiLoading}
+              />
             </motion.div>
           )}
 

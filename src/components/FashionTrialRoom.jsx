@@ -181,31 +181,65 @@ export default function FashionTrialRoom() {
     }
   };
 
-  // Handle Photo Upload with Pre-Validation Filter & Auto-Optimization for Fast Sub-20s Drape
-  const handlePhotoUpload = (e) => {
+  // Handle Photo Upload with High-Speed Mobile HEIC / High-Res Optimization
+  const handlePhotoUpload = async (e) => {
     const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 20 * 1024 * 1024) {
-        setPhotoQualityMsg("⚠️ Image size exceeds 20MB. Please select a smaller photo.");
-        return;
+    if (!file) return;
+
+    // Reset input so re-selecting same photo triggers change event
+    if (fileInputRef.current) fileInputRef.current.value = "";
+
+    if (file.size > 30 * 1024 * 1024) {
+      setPhotoQualityMsg("⚠️ Image size exceeds 30MB. Please select a smaller photo.");
+      return;
+    }
+
+    setPhotoQualityMsg("⚡ Optimizing photo for instant AI drape...");
+    setIsScanningBody(true);
+
+    try {
+      let processableBlob = file;
+
+      // Handle Apple / Modern Android HEIC/HEIF photo formats
+      const isHeic = file.name.toLowerCase().endsWith('.heic') || 
+                     file.name.toLowerCase().endsWith('.heif') || 
+                     file.type.includes('heic') || 
+                     file.type.includes('heif');
+
+      if (isHeic) {
+        try {
+          const heic2any = (await import('heic2any')).default;
+          const converted = await heic2any({
+            blob: file,
+            toType: 'image/jpeg',
+            quality: 0.88
+          });
+          processableBlob = Array.isArray(converted) ? converted[0] : converted;
+        } catch (heicErr) {
+          console.warn("HEIC direct conversion note:", heicErr);
+        }
       }
 
+      // Fast async reader
       const reader = new FileReader();
+      reader.onerror = () => {
+        setIsScanningBody(false);
+        setPhotoQualityMsg("⚠️ Could not read photo. Please try uploading again.");
+      };
+
       reader.onload = (uploadEvent) => {
         const rawData = uploadEvent.target.result;
-        
         const img = new window.Image();
+        
+        img.onerror = () => {
+          setIsScanningBody(false);
+          setPhotoQualityMsg("⚠️ Unsupported photo format. Please upload JPG, PNG, or WebP.");
+        };
+
         img.onload = () => {
           const aspect = img.height / img.width;
-          if (img.width < 250 || img.height < 250) {
-            setPhotoQualityMsg("⚠️ Low resolution image. A clearer portrait provides better AI drape.");
-          } else if (aspect < 0.6) {
-            setPhotoQualityMsg("⚠️ Wide horizontal crop detected. Vertical portrait/half-body works best.");
-          } else {
-            setPhotoQualityMsg("✅ Photo uploaded & optimized! Select any outfit below to try on.");
-          }
 
-          // Client-side canvas resize for sub-75 paise cost optimization & fast sub-15s AI render
+          // Client-side canvas resize for fast sub-second upload and low memory footprint
           const maxDim = 1024;
           let targetW = img.width;
           let targetH = img.height;
@@ -227,8 +261,7 @@ export default function FashionTrialRoom() {
           ctx.drawImage(img, 0, 0, targetW, targetH);
           const optimizedPhotoData = canvas.toDataURL("image/jpeg", 0.85);
 
-          // Trigger AI Body Scan & Calibration animation
-          setIsScanningBody(true);
+          // Apply optimized image state
           setUserImage(optimizedPhotoData);
           setIsCustomPhoto(true);
           setTryonResultImage(null);
@@ -241,7 +274,6 @@ export default function FashionTrialRoom() {
               status: "100% Calibrated & Locked"
             });
             setPhotoQualityMsg("✅ Persona Calibrated: Body contours, skin tone & posture locked for AI drape.");
-            const toneDisplay = skinTone === 'wheatish' ? 'Wheatish Tone' : skinTone === 'fair' ? 'Fair Tone' : 'Dusky Tone';
             setChatHistory(prev => [
               ...prev,
               {
@@ -256,18 +288,48 @@ export default function FashionTrialRoom() {
                 ]
               }
             ]);
-          }, 1400);
+          }, 800);
         };
+
         img.src = rawData;
       };
-      reader.readAsDataURL(file);
+
+      reader.readAsDataURL(processableBlob);
+    } catch (err) {
+      console.error("Photo upload error:", err);
+      setIsScanningBody(false);
+      setPhotoQualityMsg("⚠️ Failed to process photo. Please try another image.");
     }
   };
 
   // Handle Custom Garment Screenshot / Photo Upload
-  const handleGarmentUpload = (e) => {
+  const handleGarmentUpload = async (e) => {
     const file = e.target.files?.[0];
-    if (file) {
+    if (!file) return;
+
+    if (garmentFileInputRef.current) garmentFileInputRef.current.value = "";
+
+    try {
+      let processableBlob = file;
+      const isHeic = file.name.toLowerCase().endsWith('.heic') || 
+                     file.name.toLowerCase().endsWith('.heif') || 
+                     file.type.includes('heic') || 
+                     file.type.includes('heif');
+
+      if (isHeic) {
+        try {
+          const heic2any = (await import('heic2any')).default;
+          const converted = await heic2any({
+            blob: file,
+            toType: 'image/jpeg',
+            quality: 0.88
+          });
+          processableBlob = Array.isArray(converted) ? converted[0] : converted;
+        } catch (heicErr) {
+          console.warn("HEIC garment conversion note:", heicErr);
+        }
+      }
+
       const reader = new FileReader();
       reader.onload = (uploadEvent) => {
         const rawGarmentData = uploadEvent.target.result;
@@ -296,7 +358,10 @@ export default function FashionTrialRoom() {
           }
         ]);
       };
-      reader.readAsDataURL(file);
+      reader.readAsDataURL(processableBlob);
+    } catch (err) {
+      console.error("Garment upload error:", err);
+      setTryonErrorMsg("Failed to process garment photo. Please try a standard JPG/PNG image.");
     }
   };
 
@@ -672,7 +737,7 @@ export default function FashionTrialRoom() {
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept="image/*"
+                  accept="image/*,.heic,.heif,.jpg,.jpeg,.png,.webp"
                   onChange={handlePhotoUpload}
                   className="hidden"
                 />
@@ -718,7 +783,7 @@ export default function FashionTrialRoom() {
               <input
                 ref={garmentFileInputRef}
                 type="file"
-                accept="image/*"
+                accept="image/*,.heic,.heif,.jpg,.jpeg,.png,.webp"
                 onChange={handleGarmentUpload}
                 className="hidden"
               />

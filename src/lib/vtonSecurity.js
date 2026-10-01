@@ -79,9 +79,15 @@ export async function safeFetchImage(rawUrl, timeoutMs = 10000) {
     throw new Error('SSRF_INVALID_URL: URL must be a non-empty string.');
   }
 
+  let sanitizedUrl = rawUrl.trim();
+  // Securely promote unencrypted http links to encrypted https links
+  if (sanitizedUrl.startsWith('http://')) {
+    sanitizedUrl = sanitizedUrl.replace(/^http:\/\//i, 'https://');
+  }
+
   let parsedUrl;
   try {
-    parsedUrl = new URL(rawUrl);
+    parsedUrl = new URL(sanitizedUrl);
   } catch {
     throw new Error('SSRF_MALFORMED_URL: Invalid URL format.');
   }
@@ -128,7 +134,7 @@ export async function safeFetchImage(rawUrl, timeoutMs = 10000) {
   const timer = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    const res = await fetch(rawUrl, {
+    const res = await fetch(sanitizedUrl, {
       method: 'GET',
       headers: {
         'User-Agent': 'ShopSmart-Secure-VTON-Validator/1.0',
