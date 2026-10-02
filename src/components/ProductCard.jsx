@@ -39,8 +39,11 @@ export default function ProductCard({ product, searchQuery, userPersona = "" }) 
   const [alertEmail, setAlertEmail] = useState("");
   const [alertSubmitted, setAlertSubmitted] = useState(false);
 
-  const isMedicineCard = /\b(dolo|telma|shelcal|augmentin|pantocid|crocin|paracetamol|azithromycin|metformin|glycomet|atorvastatin|amlodipine|pantoprazole|amoxicillin|combiflam|allegra|montair|vicks|benadryl|strepsils|betadine|limcee|zincovit|becosules|supradyn|liv\s*52|digene|gelusil|omez|pan\s*40|pan\s*d|rantac|zinetac|ciplox|norflox|cifran|taxim|calpol|sumo|meftal|disprin|saridon|cetrizine|levocetrizine|okacet|avil|tablets?|capsules?|syrups?|injections?|drops?|ointment|gel|cream|suspension|inhaler|sachet|\d+\s*mg|\d+\s*ml|strip\s*of)\b/i.test((product.title || "") + " " + (searchQuery || ""));
-  const isSupplementCard = !isMedicineCard && /\b(whey|protein|creatine|bcaa|glutamine|multivitamin|mass gainer|fish oil|isolate|optimum nutrition|muscleblaze|nutrabay|as-it-is|myprotein|gnc|isopure|cellucor|dymatize|nitro-tech|rule 1|avatar|avvatar|fast & up|creapure)\b/i.test((product.title || "") + " " + (searchQuery || ""));
+  const combinedCardText = ((product.title || "") + " " + (searchQuery || "")).toLowerCase();
+  const isCosmeticOrFragrance = /\b(perfume|cologne|fragrance|deodorant|deo|eau de parfum|eau de cologne|eau de toilette|edp|edt|edc|attar|scent|mist|spray|shampoo|conditioner|face\s*wash|body\s*wash|lotion|serum|skincare|hair\s*oil|sunscreen|moisturizer|lip\s*balm|makeup|lipstick|eyeliner|kajal|mascara)\b/i.test(combinedCardText);
+
+  const isMedicineCard = !isCosmeticOrFragrance && /\b(dolo|telma|shelcal|augmentin|pantocid|crocin|paracetamol|azithromycin|metformin|glycomet|atorvastatin|amlodipine|pantoprazole|amoxicillin|combiflam|allegra|montair|vicks|benadryl|strepsils|betadine|limcee|zincovit|becosules|supradyn|liv\s*52|digene|gelusil|omez|pan\s*40|pan\s*d|rantac|zinetac|ciplox|norflox|cifran|taxim|calpol|sumo|meftal|disprin|saridon|cetrizine|levocetrizine|okacet|avil|tablets?|capsules?|syrup\s*ip|cough\s*syrup|injections?|strip\s*of|\d+\s*mg\s*(?:tablets?|capsules?|tabs?))\b/i.test(combinedCardText);
+  const isSupplementCard = !isMedicineCard && !isCosmeticOrFragrance && /\b(whey|protein|creatine|bcaa|glutamine|multivitamin|mass gainer|fish oil|isolate|optimum nutrition|muscleblaze|nutrabay|as-it-is|myprotein|gnc|isopure|cellucor|dymatize|nitro-tech|rule 1|avatar|avvatar|fast & up|creapure)\b/i.test(combinedCardText);
 
   const getInitialStore = () => {
     const comp = product.price_comparison || product.priceComparison;

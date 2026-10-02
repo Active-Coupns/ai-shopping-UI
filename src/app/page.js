@@ -44,8 +44,9 @@ export function shouldBypassAiGuide(query = "") {
     "folvite", "volini", "moov", "iodex", "aspirin", "ibuprofen"
   ];
   const hasMedicineName = medicineKeywords.some(m => q.includes(m));
-  const hasMedicineForm = /\b(tablets?|capsules?|syrups?|injections?|drops?|ointment|gel|cream|suspension|inhaler|sachet|\d+\s*mg|\d+\s*ml|strip\s*of)\b/i.test(q);
-  if (hasMedicineName || hasMedicineForm) return true;
+  const hasMedicineForm = /\b(tablets?|capsules?|syrup\s*ip|cough\s*syrup|injections?|strip\s*of|\d+\s*mg\s*(?:tablets?|capsules?))\b/i.test(q);
+  const isCosmeticOrFragrance = /\b(perfume|cologne|fragrance|deodorant|deo|eau de parfum|eau de cologne|eau de toilette|edp|edt|edc|attar|scent|mist|spray|shampoo|conditioner|face\s*wash|body\s*wash|lotion|serum|skincare|hair\s*oil|sunscreen|moisturizer)\b/i.test(q);
+  if (!isCosmeticOrFragrance && (hasMedicineName || hasMedicineForm)) return true;
 
   // 2. SPECIFIC SUPPLEMENT BRANDS / MODELS / PACK SIZES
   const supplementBrands = [
