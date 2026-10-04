@@ -71,6 +71,10 @@ export default function ProductCard({ product, searchQuery, userPersona = "" }) 
 
   const getSafeDirectPdpLink = (rawUrl, storeName, productTitle) => {
     if (!rawUrl || rawUrl === "#") return "#";
+    // If it's already a valid HTTP/HTTPS direct store URL, open it directly!
+    if (rawUrl.startsWith("http://") || rawUrl.startsWith("https://")) {
+      return rawUrl;
+    }
     return `/api/redirect?url=${encodeURIComponent(rawUrl)}&store=${encodeURIComponent(storeName || "Online Store")}&title=${encodeURIComponent(productTitle || "")}`;
   };
 

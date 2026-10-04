@@ -12,7 +12,7 @@ function getCacheKey(country, query) {
     .replace(/\s+/g, " ")
     .trim()
     .replace(/\s/g, "-");
-  return `cache:search:${(country || "in").toLowerCase()}:${clean || "default"}`;
+  return `cache:search:v8:${(country || "in").toLowerCase()}:${clean || "default"}`;
 }
 
 /**
@@ -36,8 +36,8 @@ function normalizeMultiLingualQuery(rawQuery) {
 
   // 2. Technical specification spacing & unit standardization
   query = query
-    .replace(/\b(\d+)\s*(gb|g|tb)\b/gi, "$1gb")
-    .replace(/\b(\d+)\s*(g)\s*(ram)?\b/gi, "$1gb")
+    .replace(/\b(\d+)\s*(?:gb|tb)\b/gi, "$1gb")
+    .replace(/\b(\d+)\s*g\s*(?:ram|rom|storage|ddr\d?)\b/gi, "$1gb")
     .replace(/\b(5)\s*g\b/gi, "5g")
     .replace(/\b(4)\s*g\b/gi, "4g")
     .replace(/\bs\s*(\d{2})\b/gi, "s$1");
@@ -143,28 +143,84 @@ function normalizeMultiLingualQuery(rawQuery) {
 
 export async function POST(request) {
   try {
-    // 1. Verify Clerk Session Token / Auth State
+    // 1. Mandatory Clerk Session Token / Auth State Verification
     let userId = null;
     try {
       const authObj = getAuth(request);
       userId = authObj?.userId || null;
     } catch (clerkErr) {
-      // Graceful fallback for local or non-authenticated sessions
+      userId = null;
     }
 
-    const todayStr = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
-    const user = {
-      id: userId || "default-active-session",
-      email: "user@shopsmart.ai",
-      user_metadata: {
-        full_name: "Valued Shopper",
-        country: "IN",
-        search_count_today: 0,
-        last_search_date: todayStr
-      }
-    };
+    if (!userId && process.env.NODE_ENV === "production") {
+      return NextResponse.json({
+        products: [],
+        coupons: [],
+        error: "UNAUTHORIZED",
+        message: "Sign-in required to search live deals. Please sign in to continue."
+      }, { status: 401 });
+    }
 
-    const { query, country } = await request.json();
+    // 1b. Bot & Automated Scraper Defense Shield
+    const userAgent = (request.headers.get("user-agent") || "").toLowerCase();
+    const isBot = /\b(bot|crawler|spider|scraper|headless|python-requests|postman|insomnia|curl|wget)\b/i.test(userAgent);
+    if (isBot) {
+      return NextResponse.json({
+        products: [],
+        coupons: [],
+        error: "FORBIDDEN",
+        message: "Automated queries are blocked."
+      }, { status: 403 });
+    }
+
+    // 1c. IP-Level & User-Level Strict Quota (Max 3/User, Max 6/IP)
+    const clientIp = request.headers.get("cf-connecting-ip") || 
+                     request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || 
+                     request.headers.get("x-real-ip") || 
+                     "127.0.0.1";
+
+    const todayStr = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+    const effectiveUserId = userId || "local-dev-user";
+    const userQuotaKey = `quota:user:${effectiveUserId}:${todayStr}`;
+    const ipQuotaKey = `quota:ip:${clientIp}:${todayStr}`;
+
+    const isProd = process.env.NODE_ENV === "production";
+    const MAX_USER_SEARCHES = isProd ? 3 : 100;
+    const MAX_IP_SEARCHES = isProd ? 6 : 200;
+
+    let userCount = 0;
+    let ipCount = 0;
+
+    try {
+      const [uStr, iStr] = await Promise.all([
+        redis.get(userQuotaKey),
+        redis.get(ipQuotaKey)
+      ]);
+      userCount = parseInt(uStr || "0", 10);
+      ipCount = parseInt(iStr || "0", 10);
+    } catch (e) {}
+
+    if (isProd && userCount >= MAX_USER_SEARCHES) {
+      return NextResponse.json({
+        products: [],
+        coupons: [],
+        error: "QUOTA_EXHAUSTED",
+        message: "You have used all 3 free AI searches for today. Your quota resets tomorrow!",
+        searchesLeft: 0
+      }, { status: 429 });
+    }
+
+    if (isProd && ipCount >= MAX_IP_SEARCHES) {
+      return NextResponse.json({
+        products: [],
+        coupons: [],
+        error: "IP_QUOTA_EXHAUSTED",
+        message: "Daily search limit reached for this network/device. Please try again tomorrow.",
+        searchesLeft: 0
+      }, { status: 429 });
+    }
+
+    const { query, country, isUrlLookup, sourceStore, sourceUrl } = await request.json();
 
     if (!query) {
       return NextResponse.json({ products: [], error: "Query is required" }, { status: 200 });
@@ -173,9 +229,10 @@ export async function POST(request) {
     // 2. Zero-Latency Multi-Lingual Query Normalization (Hindi, Marathi, Hinglish, English)
     const { normalizedQuery } = normalizeMultiLingualQuery(query);
     const cleanQuery = normalizedQuery || query.replace(/[₹$€£,]/g, "").replace(/\s+/g, " ").trim();
+    const isExactProduct = !!isUrlLookup || !!sourceUrl || isExactProductQuery(cleanQuery);
 
     // 3. Check Redis Cache First
-    const cacheKey = getCacheKey(country, normalizedQuery || cleanQuery);
+    const cacheKey = getCacheKey(country, isExactProduct ? `exact:${cleanQuery}` : (normalizedQuery || cleanQuery));
     try {
       const cachedDataStr = await redis.get(cacheKey);
       if (cachedDataStr) {
@@ -184,12 +241,39 @@ export async function POST(request) {
         const isServiceCoupon = cachedPayload.intent === "SERVICE_COUPON";
 
         if (hasProducts || isServiceCoupon) {
+          // Increment quota on successful cache hit
+          try {
+            await Promise.all([
+              redis.set(userQuotaKey, String(userCount + 1), { ex: 86400 }),
+              redis.set(ipQuotaKey, String(ipCount + 1), { ex: 86400 })
+            ]);
+          } catch (e) {}
+
+          const remainingSearches = Math.max(0, MAX_USER_SEARCHES - (userCount + 1));
+          let finalCachedProducts = (isExactProduct && cachedPayload.products) 
+            ? cachedPayload.products.slice(0, 1) 
+            : (cachedPayload.products || []);
+
+          if (sourceStore && sourceUrl && finalCachedProducts.length > 0) {
+            finalCachedProducts = finalCachedProducts.map(p => {
+              const updatedComp = (p.price_comparison || []).map(o => 
+                o.store_name?.toLowerCase() === sourceStore.toLowerCase() ? { ...o, deal_link: sourceUrl } : o
+              );
+              return {
+                ...p,
+                link: p.store_name?.toLowerCase() === sourceStore.toLowerCase() ? sourceUrl : p.link,
+                deal_link: p.store_name?.toLowerCase() === sourceStore.toLowerCase() ? sourceUrl : p.deal_link,
+                price_comparison: updatedComp
+              };
+            });
+          }
+
           return NextResponse.json({
-            products: cachedPayload.products || [],
+            products: finalCachedProducts,
             coupons: cachedPayload.coupons || [],
             intent: cachedPayload.intent || "E-COMMERCE",
             error: cachedPayload.error || null,
-            searchesLeft: 10,
+            searchesLeft: remainingSearches,
             fromCache: true
           }, { status: 200 });
         }
@@ -259,11 +343,10 @@ export async function POST(request) {
 
     // 6. Live Product Search via RapidAPI (Top 3 for broad queries, 1 Master Card for exact models)
     let cleanProducts = [];
-    const isExactProduct = isExactProductQuery(cleanQuery);
     const fetchLimit = isExactProduct ? 1 : 3;
 
     try {
-      const rapidResults = await searchRapidApiProducts(cleanQuery, fetchLimit, userRegion);
+      const rapidResults = await searchRapidApiProducts(cleanQuery, fetchLimit, userRegion, isExactProduct, sourceStore, sourceUrl);
       if (Array.isArray(rapidResults) && rapidResults.length > 0) {
         cleanProducts = rapidResults.slice(0, fetchLimit);
       }
@@ -310,11 +393,21 @@ export async function POST(request) {
       }
     }
 
+    // Increment user & IP quota counters
+    try {
+      await Promise.all([
+        redis.set(userQuotaKey, String(userCount + 1), { ex: 86400 }),
+        redis.set(ipQuotaKey, String(ipCount + 1), { ex: 86400 })
+      ]);
+    } catch (e) {}
+
+    const remainingSearches = Math.max(0, MAX_USER_SEARCHES - (userCount + 1));
+
     return NextResponse.json({
       products: cleanProducts,
       coupons: matchedStoreCoupons,
       intent: "E-COMMERCE",
-      searchesLeft: 10
+      searchesLeft: remainingSearches
     }, { status: 200 });
 
   } catch (err) {

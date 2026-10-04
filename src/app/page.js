@@ -12,6 +12,8 @@ import QuotaModal from "@/components/QuotaModal";
 import CouponCard from "@/components/CouponCard";
 import AiShoppingGuide from "@/components/AiShoppingGuide";
 import FashionTrialRoom from "@/components/FashionTrialRoom";
+import CouponResultView from "@/components/CouponResultView";
+import { isProductUrl, extractProductTitleFromUrl, extractProductInfoFromUrl } from "@/lib/urlProductParser";
 import { searchProducts } from "@/services/api";
 
 function detectCategory(query, title) {
@@ -31,6 +33,9 @@ function detectCategory(query, title) {
 export function shouldBypassAiGuide(query = "") {
   const q = String(query).toLowerCase().trim();
   if (!q) return false;
+
+  // 0. PASTED E-COMMERCE OR PHARMACY PRODUCT URLS
+  if (isProductUrl(q)) return true;
 
   // 1. ALL MEDICINES & PHARMACEUTICAL PRODUCTS
   const medicineKeywords = [
@@ -62,7 +67,7 @@ export function shouldBypassAiGuide(query = "") {
   if (isSpecificSupplement) return true;
 
   // 3. EXACT TECH / GADGET MODELS
-  const isExactTech = /\b(iphone\s*\d+|galaxy\s*s\d+|macbook\s*(air|pro)\s*m\d+|wh-?1000xm\d+|rockerz\s*\d+|airwave\s*max\s*\d+|airpods\s*(pro|\d+)|oneplus\s*\d+[rt]?|tuf\s*[a-z]\d+|ideapad\s*slim\s*\d+|vivobook\s*\d+|nitro\s*\d+|predator\s*helios|rog\s*strix|legion\s*\d+|thinkpad|pavilion|inspiron|victus|bravia|qled|oled\s*\d+)\b/i.test(q);
+  const isExactTech = /\b(iphone\s*\d+|galaxy\s*[a-z]?\d+|samsung\s*[a-z]\d+|oneplus\s*\d+[rt]?|redmi\s*(?:note\s*)?\d+|realme\s*\d+|poco\s*[a-z]\d+|iqoo\s*[a-z]?\d+|pixel\s*\d+|macbook\s*(?:air|pro)?\s*m\d+|wh-?1000xm\d+|rockerz\s*\d+|airwave\s*max\s*\d+|airpods\s*(?:pro|\d+)?|tuf\s*[a-z]\d+|ideapad\s*slim\s*\d+|vivobook\s*\d+|nitro\s*\d+|predator\s*helios|rog\s*strix|legion\s*\d+|thinkpad|pavilion|inspiron|victus|bravia|qled|oled\s*\d+|r[3579]-?\d{4}[a-z]?|i[3579]-?\d{4,5}[a-z]?|ryzen\s*[3579]|core\s*i[3579]|intel\s*core|dell\s*(?:dc|15|inspiron|vostro|latitude|r[3579])|hp\s*15|lenovo\s*15)\b/i.test(q);
   if (isExactTech) return true;
 
   return false;
@@ -80,11 +85,13 @@ export default function Home() {
   const [isApiLoading, setIsApiLoading] = useState(false);
 
   const [selectedCountry, setSelectedCountry] = useState("IN");
-  const [searchesLeft, setSearchesLeft] = useState(10);
+  const [searchesLeft, setSearchesLeft] = useState(3);
   const [isQuotaOpen, setIsQuotaOpen] = useState(false);
   const [searchIntent, setSearchIntent] = useState("E-COMMERCE");
   const [coupons, setCoupons] = useState([]);
   const [couponNotAvailable, setCouponNotAvailable] = useState(false);
+  const [couponResultData, setCouponResultData] = useState(null);
+  const [isCartAnalysis, setIsCartAnalysis] = useState(false);
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
 
   useEffect(() => {
@@ -114,20 +121,28 @@ export default function Home() {
   };
 
   const handleSearchSubmitForCountry = async (query, targetCountry) => {
-    setSearchQuery(query);
+    if (searchesLeft <= 0) {
+      setIsQuotaOpen(true);
+      return;
+    }
+
+    const isUrl = isProductUrl(query);
+    const cleanQuery = isUrl ? extractProductTitleFromUrl(query) : query;
+
+    setSearchQuery(cleanQuery);
     setAppState("searching");
     setApiError(null);
     setIsApiLoading(true);
     setProducts([]);
 
     try {
-      const response = await searchProducts(query, targetCountry);
+      const response = await searchProducts(cleanQuery, targetCountry, isUrl);
       const fetchedProducts = response.results || [];
       setProducts(fetchedProducts);
       setSearchIntent(response.intent || "E-COMMERCE");
       setCoupons(response.coupons || []);
       setCouponNotAvailable(response.error === "NotAvailable");
-      setSearchesLeft(response.searchesLeft !== undefined ? response.searchesLeft : 10);
+      setSearchesLeft(response.searchesLeft !== undefined ? response.searchesLeft : 3);
       setApiError(null);
     } catch (err) {
       console.error("Local search API request failed:", err);
@@ -142,8 +157,19 @@ export default function Home() {
       return;
     }
 
+    if (searchesLeft <= 0) {
+      setIsQuotaOpen(true);
+      return;
+    }
+
+    if (isProductUrl(query)) {
+      const info = extractProductInfoFromUrl(query);
+      handleDirectSearch(info.title, true, info.store, info.canonicalUrl);
+      return;
+    }
+
     if (shouldBypassAiGuide(query)) {
-      handleDirectSearch(query);
+      handleDirectSearch(query, false);
       return;
     }
 
@@ -151,20 +177,38 @@ export default function Home() {
     setAppState("guide");
   };
 
-  const handleDirectSearch = async (query) => {
+  const handleDirectSearch = async (query, isUrlLookup = false, sourceStore = null, sourceUrl = null) => {
     if (!isSignedIn) {
       openSignIn();
       return;
     }
 
-    setSearchQuery(query);
+    if (searchesLeft <= 0) {
+      setIsQuotaOpen(true);
+      return;
+    }
+
+    let isUrl = isUrlLookup || isProductUrl(query);
+    let resolvedTitle = query;
+    let resolvedStore = sourceStore;
+    let resolvedUrl = sourceUrl;
+
+    if (isProductUrl(query)) {
+      const info = extractProductInfoFromUrl(query);
+      isUrl = true;
+      resolvedTitle = info.title;
+      resolvedStore = info.store;
+      resolvedUrl = info.canonicalUrl;
+    }
+
+    setSearchQuery(resolvedTitle);
     setAppState("searching");
     setApiError(null);
     setIsApiLoading(true);
     setProducts([]);
 
     try {
-      const response = await searchProducts(query, selectedCountry);
+      const response = await searchProducts(resolvedTitle, selectedCountry, isUrl, resolvedStore, resolvedUrl);
       const fetchedProducts = response.results || [];
 
       if (fetchedProducts.length > 0) {
@@ -220,6 +264,43 @@ export default function Home() {
     setAppState("results");
   };
 
+  const handleCouponSearch = async (storeQuery) => {
+    if (!storeQuery) return;
+    setSearchQuery(storeQuery);
+    setIsApiLoading(true);
+    setAppState("coupon_results");
+    setIsCartAnalysis(false);
+    try {
+      const res = await fetch(`/api/coupons?store=${encodeURIComponent(storeQuery)}&country=${selectedCountry}`);
+      const data = await res.json();
+      setCouponResultData(data);
+    } catch (err) {
+      console.error("Coupon fetch error:", err);
+    } finally {
+      setIsApiLoading(false);
+    }
+  };
+
+  const handleAnalyzeCartScreenshot = async (imageBase64) => {
+    if (!imageBase64) return;
+    setIsApiLoading(true);
+    setAppState("coupon_results");
+    setIsCartAnalysis(true);
+    try {
+      const res = await fetch("/api/coupons/analyze-cart", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageBase64 })
+      });
+      const data = await res.json();
+      setCouponResultData(data);
+    } catch (err) {
+      console.error("Cart analysis error:", err);
+    } finally {
+      setIsApiLoading(false);
+    }
+  };
+
   const handleReset = () => {
     setAppState("idle");
     setSearchQuery("");
@@ -227,6 +308,8 @@ export default function Home() {
     setSearchIntent("E-COMMERCE");
     setCoupons([]);
     setCouponNotAvailable(false);
+    setCouponResultData(null);
+    setIsCartAnalysis(false);
   };
 
   return (
@@ -322,7 +405,7 @@ export default function Home() {
             {/* Desktop Quota badge */}
             {isSignedIn && (
               <span className="hidden md:inline-flex text-xs font-semibold text-brand-emerald bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
-                {searchesLeft} / 10 Left
+                {searchesLeft} / 3 Left
               </span>
             )}
 
@@ -423,6 +506,26 @@ export default function Home() {
               <SearchHero
                 country={selectedCountry}
                 onSubmit={handleSearchSubmit}
+                onCouponSearch={handleCouponSearch}
+                onAnalyzeCartScreenshot={handleAnalyzeCartScreenshot}
+              />
+            </motion.div>
+          )}
+
+          {/* COUPON & CART ANALYSIS RESULTS VIEW */}
+          {appState === "coupon_results" && (
+            <motion.div
+              key="coupon-results-state"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.3 }}
+              className="w-full"
+            >
+              <CouponResultView
+                resultData={couponResultData}
+                isCartAnalysis={isCartAnalysis}
+                onReset={handleReset}
               />
             </motion.div>
           )}
@@ -506,7 +609,7 @@ export default function Home() {
                   {isSignedIn && (
                     <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 border border-indigo-200 text-xs font-bold text-brand-indigo shadow-sm">
                       <Coins className="w-4 h-4 text-brand-indigo animate-pulse" />
-                      <span>{searchesLeft} / 10 Searches Left Today</span>
+                      <span>{searchesLeft} / 3 Searches Left Today</span>
                     </div>
                   )}
                   <button

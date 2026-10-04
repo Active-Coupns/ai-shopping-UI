@@ -153,14 +153,14 @@ function generateBenchmarkOffers(primaryPrice, primaryStore, title, isUSD = fals
   return offers;
 }
 
-export async function searchProducts(query, country = "IN") {
+export async function searchProducts(query, country = "IN", isUrlLookup = false, sourceStore = null, sourceUrl = null) {
   try {
     const response = await fetch("/api/search", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ query, country }),
+      body: JSON.stringify({ query, country, isUrlLookup, sourceStore, sourceUrl }),
     });
 
     if (!response.ok) {
@@ -176,24 +176,34 @@ export async function searchProducts(query, country = "IN") {
       const currencyCode = isUSD ? "USD" : "INR";
       const locale = isUSD ? "en-US" : "en-IN";
 
-      const basePrice = p.price || (isUSD 
+      const numericPrice = typeof p.rawPrice === 'number' 
+        ? p.rawPrice 
+        : (typeof p.price === 'number' 
+            ? p.price 
+            : (parseFloat(String(p.price || '').replace(/[^0-9.]/g, '')) || 0));
+
+      const basePrice = numericPrice || (isUSD 
         ? 29 + (idx * 20) + Math.floor(Math.random() * 10) 
         : 1999 + (idx * 1500) + Math.floor(Math.random() * 200));
       
-      const discount = Math.floor(15 + (idx * 5) + Math.random() * 5);
-      const calculatedOriginal = p.original_price || Math.round(basePrice * 1.15);
+      const discount = typeof p.discountPercent === 'number' ? p.discountPercent : Math.floor(15 + (idx * 5) + Math.random() * 5);
+      const calculatedOriginal = typeof p.originalPrice === 'number' ? p.originalPrice : (parseFloat(String(p.originalPrice || '').replace(/[^0-9.]/g, '')) || Math.round(basePrice * 1.18));
 
-      const formattedPrice = new Intl.NumberFormat(locale, {
-        style: "currency",
-        currency: currencyCode,
-        maximumFractionDigits: 0,
-      }).format(basePrice);
+      const formattedPrice = (typeof p.price === 'string' && p.price.includes(isUSD ? '$' : '₹'))
+        ? p.price
+        : new Intl.NumberFormat(locale, {
+            style: "currency",
+            currency: currencyCode,
+            maximumFractionDigits: 0,
+          }).format(basePrice);
 
-      const formattedOriginal = new Intl.NumberFormat(locale, {
-        style: "currency",
-        currency: currencyCode,
-        maximumFractionDigits: 0,
-      }).format(calculatedOriginal);
+      const formattedOriginal = (typeof p.originalPrice === 'string' && p.originalPrice.includes(isUSD ? '$' : '₹'))
+        ? p.originalPrice
+        : new Intl.NumberFormat(locale, {
+            style: "currency",
+            currency: currencyCode,
+            maximumFractionDigits: 0,
+          }).format(calculatedOriginal);
 
       // 1. Preserve Verified Live Price Comparisons & Exact PDPs
       let rawOffers = [];
@@ -267,8 +277,10 @@ export async function searchProducts(query, country = "IN") {
       };
     });
 
+    const finalResults = isUrlLookup ? mappedResults.slice(0, 1) : mappedResults;
+
     return {
-      results: mappedResults,
+      results: finalResults,
       coupons: data.coupons || [],
       intent: data.intent || "E-COMMERCE",
       error: data.error || null,

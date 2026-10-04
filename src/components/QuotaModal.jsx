@@ -43,7 +43,7 @@ export default function QuotaModal({ isOpen, onClose }) {
         {/* Content */}
         <h3 className="text-lg font-bold text-white mb-2">Daily Search Limit Reached 🎯</h3>
         <p className="text-xs text-slate-300 leading-relaxed mb-6">
-          You have used all 10 free searches for today. Your daily quota will automatically reset in 24 hours. See you tomorrow!
+          You have used all 3 free AI searches for today. Your daily quota will automatically reset in 24 hours. See you tomorrow!
         </p>
 
         {/* CTA */}
