@@ -153,14 +153,14 @@ function generateBenchmarkOffers(primaryPrice, primaryStore, title, isUSD = fals
   return offers;
 }
 
-export async function searchProducts(query, country = "IN", isUrlLookup = false, sourceStore = null, sourceUrl = null) {
+export async function searchProducts(query, country = "IN", isUrlLookup = false, sourceStore = null, sourceUrl = null, isExactLookup = false) {
   try {
     const response = await fetch("/api/search", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ query, country, isUrlLookup, sourceStore, sourceUrl }),
+      body: JSON.stringify({ query, country, isUrlLookup, sourceStore, sourceUrl, isExactLookup }),
     });
 
     if (!response.ok) {

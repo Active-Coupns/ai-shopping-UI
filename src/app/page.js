@@ -151,7 +151,7 @@ export default function Home() {
     }
   };
 
-  const handleSearchSubmit = async (query) => {
+  const handleSearchSubmit = async (query, bypassGuide = false, isExactMatch = false) => {
     if (!isSignedIn) {
       openSignIn();
       return;
@@ -164,12 +164,12 @@ export default function Home() {
 
     if (isProductUrl(query)) {
       const info = extractProductInfoFromUrl(query);
-      handleDirectSearch(info.title, true, info.store, info.canonicalUrl);
+      handleDirectSearch(info.title, true, info.store, info.canonicalUrl, true);
       return;
     }
 
-    if (shouldBypassAiGuide(query)) {
-      handleDirectSearch(query, false);
+    if (bypassGuide || isExactMatch || shouldBypassAiGuide(query)) {
+      handleDirectSearch(query, false, null, null, isExactMatch);
       return;
     }
 
@@ -177,7 +177,7 @@ export default function Home() {
     setAppState("guide");
   };
 
-  const handleDirectSearch = async (query, isUrlLookup = false, sourceStore = null, sourceUrl = null) => {
+  const handleDirectSearch = async (query, isUrlLookup = false, sourceStore = null, sourceUrl = null, isExactMatch = false) => {
     if (!isSignedIn) {
       openSignIn();
       return;
@@ -208,7 +208,7 @@ export default function Home() {
     setProducts([]);
 
     try {
-      const response = await searchProducts(resolvedTitle, selectedCountry, isUrl, resolvedStore, resolvedUrl);
+      const response = await searchProducts(resolvedTitle, selectedCountry, isUrl, resolvedStore, resolvedUrl, isExactMatch || isUrl);
       const fetchedProducts = response.results || [];
 
       if (fetchedProducts.length > 0) {

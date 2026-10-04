@@ -220,7 +220,7 @@ export async function POST(request) {
       }, { status: 429 });
     }
 
-    const { query, country, isUrlLookup, sourceStore, sourceUrl } = await request.json();
+    const { query, country, isUrlLookup, sourceStore, sourceUrl, isExactLookup } = await request.json();
 
     if (!query) {
       return NextResponse.json({ products: [], error: "Query is required" }, { status: 200 });
@@ -229,7 +229,7 @@ export async function POST(request) {
     // 2. Zero-Latency Multi-Lingual Query Normalization (Hindi, Marathi, Hinglish, English)
     const { normalizedQuery } = normalizeMultiLingualQuery(query);
     const cleanQuery = normalizedQuery || query.replace(/[₹$€£,]/g, "").replace(/\s+/g, " ").trim();
-    const isExactProduct = !!isUrlLookup || !!sourceUrl || isExactProductQuery(cleanQuery);
+    const isExactProduct = !!isUrlLookup || !!isExactLookup || !!sourceUrl || isExactProductQuery(cleanQuery);
 
     // 3. Check Redis Cache First
     const cacheKey = getCacheKey(country, isExactProduct ? `exact:${cleanQuery}` : (normalizedQuery || cleanQuery));
@@ -239,8 +239,10 @@ export async function POST(request) {
         let cachedPayload = typeof cachedDataStr === "string" ? JSON.parse(cachedDataStr) : cachedDataStr;
         const hasProducts = Array.isArray(cachedPayload.products) && cachedPayload.products.length > 0;
         const isServiceCoupon = cachedPayload.intent === "SERVICE_COUPON";
+        const hasFallbackProducts = hasProducts && cachedPayload.products.some(p => p.id?.startsWith("fallback-") || p.is_catalog_fallback);
 
-        if (hasProducts || isServiceCoupon) {
+        // Only serve cache if it contains verified live deals, never serve fallback mock data
+        if ((hasProducts && !hasFallbackProducts) || isServiceCoupon) {
           // Increment quota on successful cache hit
           try {
             await Promise.all([
@@ -380,8 +382,9 @@ export async function POST(request) {
       console.error("Failed matching store coupons:", couponMatchErr);
     }
 
-    // 8. Save Fresh Search Results to Redis Cache (6-Hour TTL)
-    if (cleanProducts.length >= 1) {
+    // 8. Save Fresh Search Results to Redis Cache (6-Hour TTL) - Live deals only
+    const hasAnyFallback = cleanProducts.some(p => p.id?.startsWith("fallback-") || p.is_catalog_fallback);
+    if (cleanProducts.length >= 1 && !hasAnyFallback) {
       try {
         await redis.set(cacheKey, JSON.stringify({ 
           products: cleanProducts,

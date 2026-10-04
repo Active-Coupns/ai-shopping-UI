@@ -536,7 +536,7 @@ export async function fetchExactProductDetails(productId, country = "IN") {
         'X-RapidAPI-Key': key,
         'X-RapidAPI-Host': 'real-time-product-search.p.rapidapi.com'
       },
-      signal: AbortSignal.timeout(4500)
+      signal: AbortSignal.timeout(8000)
     });
 
     if (!res.ok) return { offers: [], attributes: {}, description: "", title: "" };
@@ -550,10 +550,9 @@ export async function fetchExactProductDetails(productId, country = "IN") {
         rating: data.product_rating || null,
         reviewsCount: data.product_num_reviews || null,
         photos: data.product_photos || []
-      };
-    } catch (err) {
-      console.warn(`[RapidAPI] Details lookup warning: ${err.message}`);
-    }
+    };
+  } catch (err) {
+    console.warn(`[RapidAPI] Details lookup warning: ${err.message}`);
   }
 
   return { offers: [], attributes: {}, description: "", title: "" };
@@ -577,6 +576,10 @@ export function isExactProductQuery(query = "") {
   const isExactTech = /\b(iphone\s*\d+|galaxy\s*[a-z]?\d+|samsung\s*[a-z]\d+|macbook\s*(?:air|pro)?\s*m\d+|wh-?1000xm\d+|rockerz\s*\d+|airwave\s*max\s*\d+|airpods\s*(?:pro|\d+)?|oneplus\s*\d+[rt]?|tuf\s*[a-z]\d+|ideapad\s*slim\s*\d+|vivobook\s*\d+|nitro\s*\d+|predator\s*helios|rog\s*strix|legion\s*\d+|thinkpad|pavilion|inspiron|victus|bravia|qled|oled\s*\d+|r[3579]-?\d{4}[a-z]?|i[3579]-?\d{4,5}[a-z]?|ryzen\s*[3579]|core\s*i[3579]|intel\s*core|dell\s*(?:dc|15|inspiron|vostro|latitude|r[3579])|hp\s*15|lenovo\s*15|pixel\s*\d+)\b/i.test(q);
   if (isExactTech) return true;
 
+  // 4. SPECIFIC FOOTWEAR & FASHION BRANDS
+  const isExactFashion = /\b(asian|nike|adidas|puma|jordan|bata|campus|woodland|red\s*tape|reebok|asics|skechers|sparx)\b/i.test(q) && /\b(sneakers?|shoes?|boots?|air\s*force|jordan|dunk|boston|thunder|running|casual|loafers?)\b/i.test(q);
+  if (isExactFashion) return true;
+
   return false;
 }
 
@@ -589,6 +592,8 @@ export function generateFallbackProducts(query = "", limit = 3, country = "IN", 
   const isMedicine = /\b(dolo|telma|shelcal|augmentin|pantocid|crocin|paracetamol|azithromycin|metformin|glycomet|atorvastatin|amlodipine|pantoprazole|amoxicillin|combiflam|allegra|montair|vicks|benadryl|strepsils|betadine|limcee|zincovit|becosules|supradyn|liv\s*52|digene|gelusil|omez|pan\s*40|pan\s*d|rantac|zinetac|ciplox|norflox|cifran|taxim|calpol|sumo|meftal|disprin|saridon|cetrizine|levocetrizine|okacet|avil|tadalafil|sildenafil|tablets?|capsules?|syrups?|injections?|drops?|ointment|gel|cream|suspension|inhaler|sachet|\d+\s*mg|\d+\s*ml|strip\s*of)\b/i.test(q);
   const isSupplement = !isMedicine && /\b(whey|protein|creatine|bcaa|glutamine|multivitamin|mass gainer|fish oil|isolate|optimum nutrition|muscleblaze|nutrabay|as-?it-?is|nakpro|gnc|isopure|cellucor|dymatize|nitro-?tech|rule\s*1|avatar|avvatar|fast\s*&\s*up|the\s*whole\s*truth|atom|boniso|muscletech|prostar|ultimate\s*nutrition|labrada|scitron|creapure)\b/i.test(q);
   const isAudio = !isMedicine && !isSupplement && /\b(earbuds?|earphones?|headphones?|buds|airpods|rockerz|nord\s*buds|tws|neckband)\b/i.test(q);
+  const isFootwear = !isMedicine && !isSupplement && /\b(shoe|shoes|sneaker|sneakers|boot|boots|loafers|crocs|sandal|sandals|footwear|asian|bata|sparks|sparx|campus|woodland|red\s*tape|nike|adidas|puma|jordan|reebok|asics|skechers)\b/i.test(q);
+  const isApparel = !isMedicine && !isSupplement && !isFootwear && /\b(shirt|tshirt|t-shirt|jeans|hoodie|jacket|kurti|saree|dress|trouser|pants|cloth|clothes|wear|top)\b/i.test(q);
 
   const fallbackList = [];
 
@@ -893,7 +898,69 @@ export function generateFallbackProducts(query = "", limit = 3, country = "IN", 
     return fallbackList.slice(0, effectiveLimit);
   }
 
-  // 5. TECH, LAPTOPS & ELECTRONICS RESILIENT CATALOG
+  // 5. FOOTWEAR & FASHION RESILIENT CATALOG
+  if (isFootwear || isApparel) {
+    const cleanTitle = query.replace(/[^a-zA-Z0-9\s-]/g, " ").replace(/\s+/g, " ").trim();
+    const capTitle = cleanTitle.split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+    const title = capTitle.length > 5 ? capTitle : (isFootwear ? "Asian White Casual Sneakers for Men" : "Men's Classic Cotton Casual Shirt");
+    const basePrice = maxBudget ? Math.min(maxBudget, 1999) : (isFootwear ? 799 : 649);
+    const img = isFootwear ? "https://m.media-amazon.com/images/I/61b7fI5K8SL._AC_UY1000_.jpg" : "https://m.media-amazon.com/images/I/71cflgAomHL._SX679_.jpg";
+
+    const primaryStore = sourceStore || "Amazon.in";
+    const primaryLink = sourceUrl || getStoreDirectSearchFallback(primaryStore, title, country);
+    let priceComp = enrichPriceComparison([], primaryStore, basePrice, title, country);
+    if (sourceStore && sourceUrl) {
+      priceComp = priceComp.map(o => o.store_name.toLowerCase() === sourceStore.toLowerCase() ? { ...o, deal_link: sourceUrl } : o);
+    }
+    const lowest = priceComp[0] || { store_name: primaryStore, price: basePrice, deal_link: primaryLink };
+
+    const specs = isFootwear ? [
+      "Sole & Grip: Anti-Skid Rubber & EVA Shock-Absorbent Sole",
+      "Upper Material: Breathable Synthetic Leather & Athletic Mesh",
+      "Closure: Lace-Up Secure Fit",
+      "Cushioning: Memory Foam Padded Insole for All-Day Comfort",
+      "Warranty: 30-Day Manufacturer Guarantee"
+    ] : [
+      "Fabric: 100% Breathable Combed Cotton",
+      "Fit & Collar: Regular Fit with Spread Collar",
+      "Occasion: Casual, Daily Wear & Office Casuals",
+      "Care: Machine Wash Friendly, Non-Shrinking",
+      "Warranty: Brand Authenticity Guaranteed"
+    ];
+
+    fallbackList.push({
+      id: `fallback-fashion-${Date.now()}`,
+      product_id: `catalog-fashion-${Date.now()}`,
+      title,
+      price: `₹${lowest.price.toLocaleString("en-IN")}`,
+      rawPrice: lowest.price,
+      originalPrice: `₹${Math.round(lowest.price * 1.35).toLocaleString("en-IN")}`,
+      discountPercent: 25,
+      currency: "INR",
+      source: lowest.store_name,
+      merchant: lowest.store_name,
+      store_name: lowest.store_name,
+      store: lowest.store_name,
+      thumbnail: img,
+      image: img,
+      image_url: img,
+      rating: 4.3,
+      reviewsCount: 1420,
+      link: lowest.deal_link,
+      affiliateUrl: lowest.deal_link,
+      deal_link: lowest.deal_link,
+      direct_link: lowest.deal_link,
+      product_link: lowest.deal_link,
+      url: lowest.deal_link,
+      description: `${title} available across Amazon, Flipkart, Myntra, and Ajio with easy returns and genuine quality.`,
+      specs,
+      coupons: generateCoupons(lowest.store_name, lowest.price),
+      price_comparison: priceComp
+    });
+    return fallbackList.slice(0, effectiveLimit);
+  }
+
+  // 6. TECH, LAPTOPS & ELECTRONICS RESILIENT CATALOG
   const targetBudget = maxBudget || 55000;
   const techCatalog = [
     {
@@ -1000,7 +1067,7 @@ export async function searchRapidApiProducts(query, limit = 3, country = "IN", f
           'X-RapidAPI-Key': key,
           'X-RapidAPI-Host': 'real-time-product-search.p.rapidapi.com'
         },
-        signal: AbortSignal.timeout(10000)
+        signal: AbortSignal.timeout(18000)
       });
 
       if (res.ok) {
@@ -1063,6 +1130,33 @@ export async function searchRapidApiProducts(query, limit = 3, country = "IN", f
     // Aggregates distinct store offers from search results into 1 Master Card with 100% Direct PDPs
     // -------------------------------------------------------------
     if (isExact) {
+      // Relevance sort rawProducts so that the EXACT product model matching the query is Rank 0
+      const queryClean = query.toLowerCase().replace(/[^a-z0-9]/g, " ").trim();
+      const queryWords = queryClean.split(/\s+/).filter(w => w.length > 0);
+      const queryModelTokens = queryWords.filter(w => /\d/.test(w) || ["xr", "pro", "max", "plus", "ultra", "mini", "lite", "anc", "se"].includes(w));
+
+      rawProducts.sort((a, b) => {
+        const titleA = (a.product_title || "").toLowerCase();
+        const titleB = (b.product_title || "").toLowerCase();
+
+        let scoreA = 0;
+        let scoreB = 0;
+
+        queryWords.forEach(w => {
+          if (titleA.includes(w)) scoreA += 10;
+          if (titleB.includes(w)) scoreB += 10;
+        });
+
+        // Heavy weight on model numbers / versions (e.g. "6", "4", "xr")
+        queryModelTokens.forEach(m => {
+          const regex = new RegExp(`\\b${m}\\b`, 'i');
+          if (regex.test(titleA)) scoreA += 50;
+          if (regex.test(titleB)) scoreB += 50;
+        });
+
+        return scoreB - scoreA;
+      });
+
       const chosenStoreProducts = [];
       const seenStores = new Set();
 
@@ -1097,7 +1191,7 @@ export async function searchRapidApiProducts(query, limit = 3, country = "IN", f
       let allOffersCombined = [];
 
       detailsList.forEach((d, idx) => {
-        const p = chosenStoreProducts[idx];
+        const p = chosenStoreProducts[idx] || topTarget;
         if (d.title && (!bestTitle || d.title.length > bestTitle.length)) bestTitle = d.title;
         if (!bestImg && d.photos && d.photos[0]) bestImg = d.photos[0];
         if (!bestImg && p.product_photos && p.product_photos[0]) bestImg = p.product_photos[0];
@@ -1118,7 +1212,9 @@ export async function searchRapidApiProducts(query, limit = 3, country = "IN", f
           offers.forEach(o => {
             const formattedStore = formatStoreName(o.store_name || p.store_name, country);
             const offerPrice = parsePriceNum(o.price || o.product_price) || parsePriceNum(p.product_price || p.price);
-            const directUrl = sanitizeOfferUrl(o.offer_page_url, formattedStore, bestTitle || p.product_title, country);
+            // CRITICAL: RapidAPI offers contain product_page_url for direct PDP links!
+            const rawOfferUrl = o.product_page_url || o.offer_page_url || o.link;
+            const directUrl = sanitizeOfferUrl(rawOfferUrl, formattedStore, bestTitle || p.product_title, country);
             const sKey = formattedStore.toLowerCase();
 
             if (!storeMap.has(sKey) || storeMap.get(sKey).price > offerPrice) {
@@ -1126,14 +1222,16 @@ export async function searchRapidApiProducts(query, limit = 3, country = "IN", f
                 store_name: formattedStore,
                 price: offerPrice,
                 deal_link: directUrl,
-                is_lowest: false
+                is_lowest: false,
+                is_verified: true
               });
             }
           });
         } else {
           const formattedStore = formatStoreName(p.store_name, country);
           const offerPrice = parsePriceNum(p.product_price || p.price);
-          const directUrl = sanitizeOfferUrl(p.product_page_url, formattedStore, bestTitle || p.product_title, country);
+          const rawUrl = p.offer?.product_page_url || p.product_page_url;
+          const directUrl = sanitizeOfferUrl(rawUrl, formattedStore, bestTitle || p.product_title, country);
           const sKey = formattedStore.toLowerCase();
 
           if (!storeMap.has(sKey) || storeMap.get(sKey).price > offerPrice) {
@@ -1141,14 +1239,15 @@ export async function searchRapidApiProducts(query, limit = 3, country = "IN", f
               store_name: formattedStore,
               price: offerPrice,
               deal_link: directUrl,
-              is_lowest: false
+              is_lowest: false,
+              is_verified: false
             });
           }
         }
       });
 
-      if (!bestTitle) bestTitle = rawProducts[0].product_title || query;
-      if (!bestImg) bestImg = rawProducts[0].product_photo || (rawProducts[0].product_photos && rawProducts[0].product_photos[0]) || "";
+      if (!bestTitle) bestTitle = topTarget.product_title || rawProducts[0].product_title || query;
+      if (!bestImg) bestImg = topTarget.product_photo || (topTarget.product_photos && topTarget.product_photos[0]) || "";
 
       let priceComp = Array.from(storeMap.values());
 
@@ -1169,15 +1268,16 @@ export async function searchRapidApiProducts(query, limit = 3, country = "IN", f
             store_name: sourceStore,
             price: topP,
             deal_link: sourceUrl,
-            is_lowest: false
+            is_lowest: false,
+            is_verified: true
           });
         }
       }
 
       priceComp.sort((a, b) => a.price - b.price);
 
-      // Enrich with standard pharmacy/fitness comparison stores if less than 3
-      if (priceComp.length < 3) {
+      // Only enrich if fewer than 2 real stores to avoid polluting with search fallbacks
+      if (priceComp.length < 2) {
         const topPrice = priceComp.length > 0 ? priceComp[0].price : parsePriceNum(rawProducts[0].product_price || rawProducts[0].price);
         const topStore = priceComp.length > 0 ? priceComp[0].store_name : formatStoreName(rawProducts[0].store_name, country);
         priceComp = enrichPriceComparison(priceComp, topStore, topPrice, bestTitle, country);
