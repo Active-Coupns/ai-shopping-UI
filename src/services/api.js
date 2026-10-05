@@ -238,6 +238,7 @@ export async function searchProducts(query, country = "IN", isUrlLookup = false,
           store: offer.store,
           price: formattedOfferPrice,
           link: offer.link,
+          deal_link: offer.link,
           is_lowest: offer.is_lowest
         };
       });

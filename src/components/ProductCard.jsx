@@ -46,8 +46,12 @@ export default function ProductCard({ product, searchQuery, userPersona = "" }) 
   const isSupplementCard = !isMedicineCard && !isCosmeticOrFragrance && /\b(whey|protein|creatine|bcaa|glutamine|multivitamin|mass gainer|fish oil|isolate|optimum nutrition|muscleblaze|nutrabay|as-it-is|myprotein|gnc|isopure|cellucor|dymatize|nitro-tech|rule 1|avatar|avvatar|fast & up|creapure)\b/i.test(combinedCardText);
 
   const getInitialStore = () => {
-    const comp = product.price_comparison || product.priceComparison;
-    if (Array.isArray(comp) && comp.length > 0) {
+    const rawComp = product.price_comparison || product.priceComparison;
+    const comp = Array.isArray(rawComp) ? rawComp.filter(o => {
+      const u = o.deal_link || o.link || o.url;
+      return u && !u.includes('/search?q=') && !u.includes('/s?k=');
+    }) : [];
+    if (comp.length > 0) {
       const minOffer = comp.reduce((min, curr) => {
         const pCurr = typeof curr.price === 'number' ? curr.price : parseInt(String(curr.price).replace(/\D/g, ''), 10) || Infinity;
         const pMin = typeof min.price === 'number' ? min.price : parseInt(String(min.price).replace(/\D/g, ''), 10) || Infinity;
@@ -331,41 +335,56 @@ export default function ProductCard({ product, searchQuery, userPersona = "" }) 
             })()}
 
             {/* Multi-Store Price Comparison Matrix */}
-            {(product.priceComparison || product.price_comparison) && (product.priceComparison || product.price_comparison).length > 0 && (
-              <div className="mt-3.5 border-t border-slate-200/80 pt-3">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-[10px] font-bold uppercase text-slate-600 tracking-wider">Compare Stores:</span>
-                  <span className="text-[10px] text-slate-500 font-medium italic">Live Pricing</span>
+            {(() => {
+              const rawOffers = product.priceComparison || product.price_comparison || [];
+              const validOffers = rawOffers.filter(offer => {
+                const url = offer.deal_link || offer.link || offer.url;
+                return url && 
+                  !url.includes('/search?q=') && 
+                  !url.includes('/searchB?q=') && 
+                  !url.includes('/s?k=') && 
+                  !url.includes('catalogsearch') &&
+                  !url.includes('/search/all?') &&
+                  !url.includes('search-medicines');
+              });
+              if (validOffers.length === 0) return null;
+
+              return (
+                <div className="mt-3.5 border-t border-slate-200/80 pt-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[10px] font-bold uppercase text-slate-600 tracking-wider">Compare Stores:</span>
+                    <span className="text-[10px] text-slate-500 font-medium italic">Live Pricing</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {validOffers.map((offer, idx) => {
+                      const offerStoreName = offer.store || offer.store_name || "Online Store";
+                      const isLowest = offer.is_lowest;
+                      const isSelected = selectedStore.name.toLowerCase() === offerStoreName.toLowerCase();
+                      return (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => setSelectedStore({ name: offerStoreName, url: offer.deal_link || offer.link || offer.url || "#", price: offer.price })}
+                          className={`inline-flex flex-col items-start px-2.5 py-1.5 rounded-xl border text-left cursor-pointer transition-all hover:scale-105 ${
+                            isSelected
+                              ? "bg-emerald-50 border-emerald-400 text-emerald-900 font-bold ring-2 ring-emerald-400/40 shadow-xs"
+                              : isLowest
+                                ? "bg-emerald-50/50 border-emerald-200 text-emerald-800 font-semibold"
+                                : "bg-slate-50 border-slate-200 text-slate-700 hover:border-slate-300"
+                          }`}
+                        >
+                          <span className="text-[9px] uppercase tracking-wider text-slate-500 font-semibold flex items-center gap-1">
+                            {offerStoreName}
+                            {isLowest && <span className="text-[8px] bg-emerald-100 text-emerald-800 px-1 py-0.2 rounded font-extrabold">LOWEST</span>}
+                          </span>
+                          <span className="text-xs font-black mt-0.5">{formatPrice(offer.price, product.currency)}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  {(product.priceComparison || product.price_comparison).map((offer, idx) => {
-                    const offerStoreName = offer.store || offer.store_name || "Online Store";
-                    const isLowest = offer.is_lowest;
-                    const isSelected = selectedStore.name.toLowerCase() === offerStoreName.toLowerCase();
-                    return (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => setSelectedStore({ name: offerStoreName, url: offer.deal_link || offer.link || offer.url || "#", price: offer.price })}
-                        className={`inline-flex flex-col items-start px-2.5 py-1.5 rounded-xl border text-left cursor-pointer transition-all hover:scale-105 ${
-                          isSelected
-                            ? "bg-emerald-50 border-emerald-400 text-emerald-900 font-bold ring-2 ring-emerald-400/40 shadow-xs"
-                            : isLowest
-                              ? "bg-emerald-50/50 border-emerald-200 text-emerald-800 font-semibold"
-                              : "bg-slate-50 border-slate-200 text-slate-700 hover:border-slate-300"
-                        }`}
-                      >
-                        <span className="text-[9px] uppercase tracking-wider text-slate-500 font-semibold flex items-center gap-1">
-                          {offerStoreName}
-                          {isLowest && <span className="text-[8px] bg-emerald-100 text-emerald-800 px-1 py-0.2 rounded font-extrabold">LOWEST</span>}
-                        </span>
-                        <span className="text-xs font-black mt-0.5">{formatPrice(offer.price, product.currency)}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
+              );
+            })()}
           </div>
 
           {/* Technical Specs Box */}

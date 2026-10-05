@@ -79,45 +79,21 @@ export default function AiShoppingGuide({ initialQuery = "", onExecuteSearch, on
     startGuide();
   }, [initialQuery]);
 
-  const handleSelectOption = async (questionId, option) => {
-    const updatedAnswers = { ...selectedAnswers, [questionId]: option };
-    setSelectedAnswers(updatedAnswers);
+  const handleSelectOption = (questionId, option) => {
+    setSelectedAnswers(prev => ({ ...prev, [questionId]: option }));
     setCustomInputActive(null);
     setCustomAnswerText("");
+  };
 
-    setIsLoading(true);
-    try {
-      const res = await fetch("/api/ai/guide", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message: initialQuery,
-          answers: updatedAnswers,
-          queryContext: initialQuery,
-          conversationHistory: messages
-        })
-      });
-      const data = await res.json();
+  const totalQuestions = currentQuestions.length;
+  const answeredCount = currentQuestions.filter(q => !!selectedAnswers[q.id]).length;
+  const allAnswered = totalQuestions > 0 && answeredCount === totalQuestions;
 
-      if (data.blueprint) {
-        setCurrentBlueprint(data.blueprint);
-        setMessages(prev => [
-          ...prev,
-          { role: "assistant", text: data.content, blueprint: data.blueprint, action: data.action }
-        ]);
-        setCurrentQuestions([]);
-        setQuickSuggestions([]);
-      } else if (data.content && !data.questions) {
-        setMessages(prev => [
-          ...prev,
-          { role: "assistant", text: data.content }
-        ]);
-      }
-    } catch (err) {
-      console.error("Failed sending answer to AI:", err);
-    } finally {
-      setIsLoading(false);
-    }
+  const handleConfirmAndSearch = () => {
+    if (!allAnswered) return;
+    const refinedTerms = Object.values(selectedAnswers).filter(Boolean).join(" ");
+    const refinedStr = `${initialQuery} ${refinedTerms}`.replace(/[^\w\s₹]/g, " ").trim();
+    onExecuteSearch && onExecuteSearch(refinedStr);
   };
 
   const handleCustomSubmit = (questionId) => {
@@ -358,23 +334,34 @@ export default function AiShoppingGuide({ initialQuery = "", onExecuteSearch, on
                 );
               })}
 
-              {/* ⚡ Instant Final Search CTA Bar when 1 or more options are picked */}
-              {Object.keys(selectedAnswers).length > 0 && !currentBlueprint && (
+              {/* Final Search CTA Bar - only active when user finishes all question selections */}
+              {currentQuestions.length > 0 && !currentBlueprint && (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="pt-2"
+                  className="pt-3"
                 >
                   <button
                     type="button"
-                    onClick={() => {
-                      const refinedStr = `${initialQuery} ${Object.values(selectedAnswers).join(" ")}`.replace(/[^\w\s₹]/g, " ").trim();
-                      onExecuteSearch && onExecuteSearch(refinedStr);
-                    }}
-                    className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold text-xs md:text-sm flex items-center justify-center gap-2 shadow-lg hover:shadow-emerald-500/20 transition-all cursor-pointer active:scale-98"
+                    disabled={!allAnswered || isLoading}
+                    onClick={handleConfirmAndSearch}
+                    className={`w-full py-3.5 px-4 rounded-2xl font-extrabold text-xs md:text-sm flex items-center justify-center gap-2 shadow-lg transition-all ${
+                      allAnswered
+                        ? "bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 hover:from-emerald-700 hover:to-teal-700 text-white cursor-pointer active:scale-98 shadow-emerald-500/20"
+                        : "bg-slate-200/90 text-slate-500 border border-slate-300/60 cursor-not-allowed opacity-75"
+                    }`}
                   >
-                    <Zap className="w-4 h-4 fill-white text-white animate-pulse" />
-                    <span>Search Best Deals for Selected Preferences ({Object.keys(selectedAnswers).length} Selected) →</span>
+                    {allAnswered ? (
+                      <>
+                        <CheckCircle className="w-4 h-4 text-white" />
+                        <span>Confirm Preferences & Search Best Deals ({answeredCount}/{totalQuestions}) →</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="w-2 h-2 rounded-full bg-slate-400" />
+                        <span>Please answer all questions to search ({answeredCount}/{totalQuestions} Selected)</span>
+                      </>
+                    )}
                   </button>
                 </motion.div>
               )}

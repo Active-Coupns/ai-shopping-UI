@@ -120,12 +120,25 @@ export const TRUSTED_MERCHANTS = [
   "healthkart", "nutrabay", "muscleblaze", "optimum nutrition", "myprotein", "as-it-is", "asitis", "gnc",
   // Official Tech, Audio & Appliance Brands
   "samsung", "apple", "boat", "boat-lifestyle", "noise", "gonoise", "asus", "oneplus", "hp", "lenovo", "dell", "xiaomi", "realme", "sony", "lg", "fire-boltt", "puma", "nike", "adidas",
+  // Retail Tech, Mobile & Electronics Stores
+  "gadgets now", "gadgetsnow", "cashify", "myg", "poorvika", "sangeetha", "lotus", "acer",
   // US Retailers
   "walmart", "target", "best buy", "bestbuy", "cvs", "walgreens", "iherb", "bodybuilding", "costco", "ebay", "rite aid", "kroger"
 ];
 
-export function isTrustedMerchant(storeName = "", url = "") {
+export const BLACKLISTED_DOMAINS = [
+  "snapmint", "bajajfinserv", "indiamart", "tradeindia", "yourchoiz", "exportersindia", 
+  "quikr", "olx", "justdial", "barbietales", "glitz party", "refurbished", "pre-owned", "second hand", "unboxed", "renewed"
+];
+
+export function isBlacklistedOffer(storeName = "", url = "", title = "") {
+  const combined = `${storeName || ""} ${url || ""} ${title || ""}`.toLowerCase();
+  return BLACKLISTED_DOMAINS.some(b => combined.includes(b));
+}
+
+export function isTrustedMerchant(storeName = "", url = "", title = "") {
   if (!storeName && !url) return false;
+  if (isBlacklistedOffer(storeName, url, title)) return false;
   const s = String(storeName).toLowerCase().replace(/[^a-z0-9]/g, "");
   const u = String(url).toLowerCase();
   
@@ -135,13 +148,28 @@ export function isTrustedMerchant(storeName = "", url = "") {
   });
 }
 
+export function isSearchPageUrl(url = "") {
+  if (!url || typeof url !== "string") return false;
+  const lower = url.toLowerCase();
+  return (
+    lower.includes("/search?q=") ||
+    lower.includes("/searchb?q=") ||
+    lower.includes("/s?k=") ||
+    lower.includes("catalogsearch/result") ||
+    lower.includes("/search/all?") ||
+    lower.includes("search-medicines") ||
+    lower.includes("/search/?text=") ||
+    lower.includes("searchterm=")
+  );
+}
+
 /**
  * Sanitizes and canonicalizes direct merchant PDP URLs (Amazon, Flipkart, Reliance, Croma, Brand stores, Pharmacies)
  * Instantly unwraps Google Shopping redirects and preserves merchant path slugs & product IDs.
  */
 export function sanitizeOfferUrl(rawUrl, storeName, productTitle = "", country = "IN") {
   if (!rawUrl || typeof rawUrl !== 'string') {
-    return getStoreDirectSearchFallback(storeName, productTitle, country);
+    return "";
   }
 
   const isUS = String(country).toUpperCase() === "US";
@@ -178,7 +206,12 @@ export function sanitizeOfferUrl(rawUrl, storeName, productTitle = "", country =
     }
   }
 
-  return getStoreDirectSearchFallback(storeName, productTitle, country);
+  // If it's an HTTP link, preserve directly rather than a store search page
+  if (rawUrl.startsWith('http')) {
+    return rawUrl;
+  }
+
+  return "";
 }
 
 export function getStoreDirectSearchFallback(storeName, productTitle, country = "IN") {
@@ -233,18 +266,20 @@ export function getStoreDirectSearchFallback(storeName, productTitle, country = 
 }
 
 /**
- * Enriches multi-store price comparison with only verified real merchant offers
+ * Enriches multi-store price comparison with strictly verified real merchant offers
+ * NEVER fabricates synthetic store entries with generic search page URLs.
  */
 export function enrichPriceComparison(priceComp = [], primaryStore = "Amazon.in", basePrice = 100, title = "", country = "IN") {
   const storeMap = new Map();
-  const hasVerifiedLiveOffers = Array.isArray(priceComp) && priceComp.length > 0;
 
-  // 1. Add existing verified real offers from RapidAPI first (Highest Priority)
+  // ONLY add verified real offers that have direct product links (NOT search pages)
   (priceComp || []).forEach(item => {
     const formatted = formatStoreName(item.store_name || item.store, country);
     const itemPrice = parsePriceNum(item.price) || basePrice;
-    if (formatted && itemPrice > 0) {
-      const cleanLink = item.deal_link || sanitizeOfferUrl(item.deal_link || item.product_page_url, formatted, title, country);
+    const rawLink = item.deal_link || item.product_page_url || item.offer_page_url;
+    const cleanLink = sanitizeOfferUrl(rawLink, formatted, title, country) || rawLink;
+    
+    if (formatted && itemPrice > 0 && cleanLink && !isSearchPageUrl(cleanLink)) {
       storeMap.set(formatted.toLowerCase(), {
         store_name: formatted,
         price: itemPrice,
@@ -255,66 +290,9 @@ export function enrichPriceComparison(priceComp = [], primaryStore = "Amazon.in"
     }
   });
 
-  // 2. If primary store is not in verified offers, add it
-  const primaryFormatted = formatStoreName(primaryStore, country);
-  if (!storeMap.has(primaryFormatted.toLowerCase()) && basePrice > 0) {
-    storeMap.set(primaryFormatted.toLowerCase(), {
-      store_name: primaryFormatted,
-      price: basePrice,
-      deal_link: getStoreDirectSearchFallback(primaryFormatted, title, country),
-      is_lowest: false,
-      is_verified: false
-    });
-  }
-
-  // 3. If fewer than 4 stores, populate competitor stores with prices strictly higher than verified lowest
-  const isUS = String(country).toUpperCase() === "US";
-  const isMedicine = /\b(dolo|tablet|capsule|syrup|mg|strip|pharmacy|medicine|pan\s*40|telma|shelcal)\b/i.test(title);
-  const isSupplement = /\b(whey|protein|creatine|bcaa|glutamine|multivitamin|mass gainer)\b/i.test(title);
-
-  let competitorStores = [];
-  if (isUS) {
-    competitorStores = ["Amazon.com", "Walmart", "Target", "Best Buy"];
-  } else if (isMedicine) {
-    competitorStores = ["Tata 1mg", "Apollo 24|7", "PharmEasy", "Netmeds"];
-  } else if (isSupplement) {
-    competitorStores = ["HealthKart", "Nutrabay", "Amazon.in", "Flipkart"];
-  } else {
-    // E-Commerce / Tech / Audio / Gadgets
-    competitorStores = ["Amazon.in", "Flipkart", "Croma", "Reliance Digital"];
-  }
-
-  // Find lowest price among verified offers
-  let minVerifiedPrice = basePrice;
-  for (const item of storeMap.values()) {
-    if (item.price > 0 && (minVerifiedPrice === 0 || item.price < minVerifiedPrice)) {
-      minVerifiedPrice = item.price;
-    }
-  }
-
-  competitorStores.forEach((store, idx) => {
-    const sKey = store.toLowerCase();
-    if (!storeMap.has(sKey) && storeMap.size < 4) {
-      // Synthetic competitor prices are always +2% to +8% higher so real verified direct PDPs stay on top
-      const markupPercent = [0.03, 0.06, 0.09, 0.04][idx % 4];
-      const compPrice = Math.round(minVerifiedPrice * (1 + markupPercent));
-      storeMap.set(sKey, {
-        store_name: store,
-        price: compPrice,
-        deal_link: getStoreDirectSearchFallback(store, title, country),
-        is_lowest: false,
-        is_verified: false
-      });
-    }
-  });
-
   const finalComp = Array.from(storeMap.values());
   // Sort: verified lowest price first
-  finalComp.sort((a, b) => {
-    if (a.is_verified && !b.is_verified) return -1;
-    if (!a.is_verified && b.is_verified) return 1;
-    return a.price - b.price;
-  });
+  finalComp.sort((a, b) => a.price - b.price);
 
   if (finalComp.length > 0) {
     finalComp[0].is_lowest = true;
@@ -528,7 +506,7 @@ export async function fetchExactProductDetails(productId, country = "IN") {
   if (!key) return { offers: [], attributes: {}, description: "", title: "" };
 
   const countryCode = (country || "in").toLowerCase();
-  const url = `https://real-time-product-search.p.rapidapi.com/product-offers?product_id=${encodeURIComponent(productId)}&country=${countryCode}&language=en`;
+  const url = `https://real-time-product-search.p.rapidapi.com/product-details?product_id=${encodeURIComponent(productId)}&country=${countryCode}&language=en`;
 
   try {
     const res = await fetch(url, {
@@ -536,7 +514,7 @@ export async function fetchExactProductDetails(productId, country = "IN") {
         'X-RapidAPI-Key': key,
         'X-RapidAPI-Host': 'real-time-product-search.p.rapidapi.com'
       },
-      signal: AbortSignal.timeout(8000)
+      signal: AbortSignal.timeout(15000)
     });
 
     if (!res.ok) return { offers: [], attributes: {}, description: "", title: "" };
@@ -1205,11 +1183,12 @@ export async function searchRapidApiProducts(query, limit = 3, country = "IN", f
           primaryDescription = d.description;
         }
 
-        const offers = d.offers || [];
+        const offers = (d.offers || []).filter(o => !isBlacklistedOffer(o.store_name, o.product_page_url || o.offer_page_url || o.link, o.offer_title || ""));
         allOffersCombined.push(...offers);
 
         if (offers.length > 0) {
           offers.forEach(o => {
+            if (isBlacklistedOffer(o.store_name, o.product_page_url || o.offer_page_url || o.link, o.offer_title || "")) return;
             const formattedStore = formatStoreName(o.store_name || p.store_name, country);
             const offerPrice = parsePriceNum(o.price || o.product_price) || parsePriceNum(p.product_price || p.price);
             // CRITICAL: RapidAPI offers contain product_page_url for direct PDP links!
@@ -1362,16 +1341,16 @@ export async function searchRapidApiProducts(query, limit = 3, country = "IN", f
 
     selectedRawProducts = selectedRawProducts.slice(0, limit);
 
-    // FIXED 2-CALL ARCHITECTURE: Fetch verified exact multi-store offers for top item only (Call 2)
-    const topItem = selectedRawProducts[0];
-    const topDetails = topItem && topItem.product_id 
-      ? await fetchExactProductDetails(topItem.product_id, country) 
-      : { offers: [], attributes: {}, description: "", title: "" };
+    // Concurrently fetch verified exact multi-store offers and real attributes for the 3 selected products
+    const detailsPromises = selectedRawProducts.map(p => 
+      p.product_id ? fetchExactProductDetails(p.product_id, country) : Promise.resolve({ offers: [], attributes: {}, description: "", title: "" })
+    );
+    const resolvedDetailsList = await Promise.all(detailsPromises);
 
     const products = selectedRawProducts.map((p, idx) => {
-      const details = idx === 0 ? topDetails : { offers: [], attributes: p.product_attributes || {}, description: p.product_description || "", title: p.product_title || "" };
-      const rawLiveOffers = details.offers || [];
-      const trustedOffers = rawLiveOffers.filter(o => isTrustedMerchant(o.store_name, o.product_page_url || o.offer_page_url || o.link));
+      const details = resolvedDetailsList[idx] || { offers: [], attributes: p.product_attributes || {}, description: p.product_description || "", title: p.product_title || "" };
+      const rawLiveOffers = (details.offers || []).filter(o => !isBlacklistedOffer(o.store_name, o.product_page_url || o.offer_page_url || o.link, o.offer_title || ""));
+      const trustedOffers = rawLiveOffers.filter(o => isTrustedMerchant(o.store_name, o.product_page_url || o.offer_page_url || o.link, o.offer_title || ""));
       const liveOffers = trustedOffers.length > 0 ? trustedOffers : rawLiveOffers;
       const displayTitle = details.title || p.product_title || query;
 
@@ -1390,10 +1369,11 @@ export async function searchRapidApiProducts(query, limit = 3, country = "IN", f
       let primaryDealLink = "";
       let priceComp = [];
 
-      if (liveOffers.length > 0) {
-        const storeMap = new Map();
+      const storeMap = new Map();
 
+      if (liveOffers.length > 0) {
         liveOffers.forEach(o => {
+          if (isBlacklistedOffer(o.store_name, o.product_page_url || o.offer_page_url || o.link, o.offer_title || "")) return;
           const rawStore = o.store_name || "Online Store";
           const formattedStore = formatStoreName(rawStore, country);
           const offerPrice = parsePriceNum(o.price || o.product_price) || priceVal;
@@ -1401,32 +1381,57 @@ export async function searchRapidApiProducts(query, limit = 3, country = "IN", f
           const offerUrl = sanitizeOfferUrl(rawOfferUrl, formattedStore, displayTitle, country);
 
           const storeKey = formattedStore.toLowerCase();
-          if (offerPrice > 0 && offerUrl) {
+          if (offerPrice > 0 && offerUrl && !isSearchPageUrl(offerUrl) && !isBlacklistedOffer(formattedStore, offerUrl)) {
             if (!storeMap.has(storeKey) || storeMap.get(storeKey).price > offerPrice) {
               storeMap.set(storeKey, {
                 store_name: formattedStore,
                 price: offerPrice,
                 deal_link: offerUrl,
-                is_lowest: false
+                is_lowest: false,
+                is_verified: true
               });
             }
           }
         });
+      }
 
-        priceComp = Array.from(storeMap.values());
-        priceComp.sort((a, b) => a.price - b.price);
-
-        if (priceComp.length > 0) {
-          priceComp[0].is_lowest = true;
-          primaryDealLink = priceComp[0].deal_link;
-          storeName = priceComp[0].store_name;
-          priceVal = priceComp[0].price;
-          originalPriceVal = Math.round(priceVal * 1.22);
+      // Also incorporate search result's own store link if direct & not already present
+      if (p.product_page_url) {
+        const rawPUrl = sanitizeOfferUrl(p.product_page_url, storeName, displayTitle, country) || p.product_page_url;
+        const pKey = storeName.toLowerCase();
+        if (rawPUrl && !isSearchPageUrl(rawPUrl) && !storeMap.has(pKey)) {
+          storeMap.set(pKey, {
+            store_name: storeName,
+            price: priceVal,
+            deal_link: rawPUrl,
+            is_lowest: false,
+            is_verified: true
+          });
         }
       }
 
+      priceComp = Array.from(storeMap.values());
+      priceComp.sort((a, b) => a.price - b.price);
+
+      if (priceComp.length > 0) {
+        priceComp[0].is_lowest = true;
+        primaryDealLink = priceComp[0].deal_link;
+        storeName = priceComp[0].store_name;
+        priceVal = priceComp[0].price;
+        originalPriceVal = Math.round(priceVal * 1.22);
+      }
+
       if (!primaryDealLink || priceComp.length === 0) {
-        primaryDealLink = sanitizeOfferUrl(p.product_page_url, storeName, displayTitle, country);
+        primaryDealLink = sanitizeOfferUrl(p.product_page_url, storeName, displayTitle, country) || p.product_page_url || "";
+        if (primaryDealLink && !isSearchPageUrl(primaryDealLink) && priceComp.length === 0) {
+          priceComp.push({
+            store_name: storeName,
+            price: priceVal,
+            deal_link: primaryDealLink,
+            is_lowest: true,
+            is_verified: true
+          });
+        }
       }
 
       // Enrich price comparison across verified stores
