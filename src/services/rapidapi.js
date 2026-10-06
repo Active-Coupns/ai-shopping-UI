@@ -756,6 +756,7 @@ export function isExactProductQuery(query = "") {
 }
 
 export function generateFallbackProducts(query = "", limit = 3, country = "IN", sourceStore = null, sourceUrl = null) {
+  return [];
   const q = String(query).toLowerCase().trim();
   const isExact = !!sourceUrl || isExactProductQuery(query);
   const effectiveLimit = isExact ? 1 : limit;
