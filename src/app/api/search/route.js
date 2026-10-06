@@ -3,7 +3,7 @@ import { getAuth } from "@clerk/nextjs/server";
 import { redis } from "@/services/redis";
 import { getAdminSettings } from "@/services/admin";
 import { monetizeUrl } from "@/services/affiliate";
-import { searchRapidApiProducts, isExactProductQuery } from "@/services/rapidapi";
+import { searchRapidApiProducts, isExactProductQuery, getStoreDirectSearchFallback } from "@/services/rapidapi";
 
 function getCacheKey(country, query) {
   const clean = query
@@ -12,7 +12,7 @@ function getCacheKey(country, query) {
     .replace(/\s+/g, " ")
     .trim()
     .replace(/\s/g, "-");
-  return `cache:search:v8:${(country || "in").toLowerCase()}:${clean || "default"}`;
+  return `cache:search:v14:${(country || "in").toLowerCase()}:${clean || "default"}`;
 }
 
 /**
@@ -256,6 +256,21 @@ export async function POST(request) {
             ? cachedPayload.products.slice(0, 1) 
             : (cachedPayload.products || []);
 
+          finalCachedProducts = finalCachedProducts.map(p => {
+            const rawL = p.deal_link || p.link || p.affiliateUrl || "";
+            if (rawL.includes("google.com") || rawL.includes("ibp=")) {
+              const cleanL = getStoreDirectSearchFallback(p.store_name, p.title, country);
+              return {
+                ...p,
+                link: cleanL,
+                deal_link: cleanL,
+                affiliateUrl: cleanL,
+                direct_link: cleanL
+              };
+            }
+            return p;
+          });
+
           if (sourceStore && sourceUrl && finalCachedProducts.length > 0) {
             finalCachedProducts = finalCachedProducts.map(p => {
               const updatedComp = (p.price_comparison || []).map(o => 
@@ -343,9 +358,9 @@ export async function POST(request) {
       }, { status: 200 });
     }
 
-    // 6. Live Product Search via RapidAPI (Top 3 for broad queries, 1 Master Card for exact models)
+    // 6. Live Product Search via RapidAPI (Pool of up to 20 for broad queries, 1 Master Card for exact models)
     let cleanProducts = [];
-    const fetchLimit = isExactProduct ? 1 : 3;
+    const fetchLimit = isExactProduct ? 1 : 20;
 
     try {
       const rapidResults = await searchRapidApiProducts(cleanQuery, fetchLimit, userRegion, isExactProduct, sourceStore, sourceUrl);

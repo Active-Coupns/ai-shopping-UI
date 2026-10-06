@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { redis } from "@/services/redis";
 import { getAdminSettings } from "@/services/admin";
 import { monetizeUrl } from "@/services/affiliate";
+import { getStoreDirectSearchFallback, executeProductDetailsRequest } from "@/services/rapidapi";
 
 function isSearchUrl(url) {
   if (!url) return false;
@@ -39,28 +40,50 @@ function hasExactPDPPath(url) {
   try {
     const parsed = new URL(url);
     const path = parsed.pathname.toLowerCase();
+
+    // 1. STRICT BLACKLIST: Never match account, orders, help, cart, css, search, reviews
+    if (
+      path.includes("/css/") ||
+      path.includes("/order") ||
+      path.includes("/cart") ||
+      path.includes("/sign") ||
+      path.includes("/account") ||
+      path.includes("/help") ||
+      path.includes("/gp/css") ||
+      path.includes("/yourstore") ||
+      path.includes("/wishlist") ||
+      path.includes("/customer-reviews") ||
+      path.includes("/b/") ||
+      path.includes("/s/") ||
+      path.includes("/search") ||
+      path.includes("/viewdeal") ||
+      path.includes("/redirect")
+    ) {
+      return false;
+    }
+
+    // 2. AMAZON SPECIFIC: Strictly require /dp/ or /gp/product/
+    if (parsed.hostname.includes("amazon")) {
+      return path.includes("/dp/") || path.includes("/gp/product/") || path.includes("/gp/aw/d/");
+    }
+
+    // 3. FLIPKART SPECIFIC: Require /p/ or /p/itm
+    if (parsed.hostname.includes("flipkart")) {
+      return path.includes("/p/itm") || (path.includes("/p/") && !path.includes("/search"));
+    }
+
+    // 4. GENERAL PDP PATHS
     if (
       path.includes("/dp/") ||
-      path.includes("/gp/") ||
-      path.includes("/p/") ||
-      path.includes("/ip/") ||
       path.includes("/product/") ||
       path.includes("/products/") ||
       path.includes("/product-page/") ||
       path.includes("/product_page/") ||
       path.includes("/item/") ||
       path.includes("/pd/") ||
-      path.includes("/site/") ||
-      path.includes("/pre-order/") ||
       path.includes("/buy/") ||
       path.includes("/deal/") ||
-      path.includes("/goods/") ||
-      path.includes("/drugs/") ||
-      path.includes("/otc/") ||
-      path.includes("/medicine/") ||
-      path.includes("/sv/") ||
       path.includes("/itm/") ||
-      path.includes("/catalog/") ||
       path.endsWith("/buy")
     ) {
       return true;
@@ -77,7 +100,8 @@ function isCompletePDPUrl(url) {
 function cleanUrlParams(url) {
   if (!url) return "";
   try {
-    const parsed = new URL(url);
+    const unescaped = url.replace(/&amp;/g, "&");
+    const parsed = new URL(unescaped);
     const searchParams = parsed.searchParams;
     const trackingParams = [
       "gclid", "utm_source", "utm_medium", "utm_campaign", "srsltid", "cmpid", "adurl",
@@ -95,6 +119,7 @@ function cleanUrlParams(url) {
 function extractFirstPdpFromHtml(html, storeName, fallbackUrl) {
   if (!html) return null;
   
+  const decodedHtml = html.replace(/&amp;/g, "&");
   const urlRegex = /href=["']([^"']+)["']/g;
   const urls = [];
   let match;
@@ -103,7 +128,7 @@ function extractFirstPdpFromHtml(html, storeName, fallbackUrl) {
     const fallbackObj = new URL(fallbackUrl);
     const origin = fallbackObj.origin;
     
-    while ((match = urlRegex.exec(html)) !== null) {
+    while ((match = urlRegex.exec(decodedHtml)) !== null) {
       let link = match[1];
       if (link.startsWith("/")) {
         link = origin + link;
@@ -114,7 +139,7 @@ function extractFirstPdpFromHtml(html, storeName, fallbackUrl) {
     }
   } catch (e) {
     const generalUrlRegex = /(https?:\/\/[^\s"'<>]+)/gi;
-    while ((match = generalUrlRegex.exec(html)) !== null) {
+    while ((match = generalUrlRegex.exec(decodedHtml)) !== null) {
       urls.push(match[1]);
     }
   }
@@ -164,7 +189,7 @@ async function resolveSearchToPdp(searchUrl, storeName, productTitle = "") {
   const cleanTitle = cleanModelForStoreSearch(productTitle || searchUrl);
   if (!cleanTitle) return null;
 
-  const cacheKey = `cache:pdp:${domain}:${cleanTitle.toLowerCase().replace(/\s+/g, "-")}`;
+  const cacheKey = `cache:pdp:v4:${domain}:${cleanTitle.toLowerCase().replace(/\s+/g, "-")}`;
 
   try {
     const cachedPdp = await redis.get(cacheKey);
@@ -287,13 +312,23 @@ export async function GET(request) {
     if (!targetUrl || targetUrl === "https://www.google.com") {
       return NextResponse.redirect("https://www.google.com");
     }
-    const monetized = monetizeUrl(targetUrl, storeName, region, settings);
+    let cleanUrl = targetUrl;
+    if (cleanUrl.includes("gonoise.com") || cleanUrl.includes("/products/")) {
+      try {
+        const u = new URL(cleanUrl);
+        u.searchParams.delete("country");
+        u.searchParams.delete("currency");
+        cleanUrl = u.toString();
+      } catch (e) {}
+    }
+    const monetized = monetizeUrl(cleanUrl, storeName, region, settings);
     console.log(`Dynamic Redirect: Redirecting to monetized target URL -> ${monetized}`);
     return NextResponse.redirect(monetized);
   };
 
   const handleFallback = async (fallbackUrl, store) => {
     let cleanFallback = fallbackUrl;
+    const storeLower = (store || "").toLowerCase().trim();
 
     if (fallbackUrl && isSearchUrl(fallbackUrl)) {
       try {
@@ -314,100 +349,96 @@ export async function GET(request) {
       }
     }
     if (cleanFallback && (cleanFallback.startsWith("http://") || cleanFallback.startsWith("https://"))) {
+      if (cleanFallback.includes("google.com") || cleanFallback.includes("google.co.in") || cleanFallback.includes("ibp=")) {
+        const storeSearch = getStoreDirectSearchFallback(store, title, region);
+        return safeRedirect(storeSearch);
+      }
+      // If store is a specific brand/retailer (e.g. Puma, Nike, Tata CLiQ, Croma) but fallback points to an unrelated store:
+      const cleanStore = storeLower.replace(/[^a-z0-9]/g, "");
+      if (cleanStore && !cleanFallback.toLowerCase().includes(cleanStore) && !cleanStore.includes("online") && !cleanStore.includes("store")) {
+        const storeSearch = getStoreDirectSearchFallback(store, title, region);
+        if (storeSearch && !storeSearch.includes("amazon.in")) {
+          return safeRedirect(storeSearch);
+        }
+      }
       return safeRedirect(cleanFallback);
     }
-    return safeRedirect("https://www.google.com");
+    const storeSearch = getStoreDirectSearchFallback(store, title, region);
+    return safeRedirect(storeSearch || "https://www.google.com");
   };
 
-  if (!pageToken && !productId) {
-    console.log("Redirect API: Missing token and product_id parameters, executing fallback resolution:", fallback);
-    return await handleFallback(fallback, storeName);
-  }
-  
-  const serpapiApiKey = process.env.SERPAPI_API_KEY || 
-                        process.env.SERP_API_KEY || 
-                        process.env.SERPAPI_KEY;
-  
-  const tokenVal = pageToken || productId || "generic";
-  const uniqueId = tokenVal.slice(-40);
-  const cacheKey = `cache:immersive:redirect:${uniqueId}`;
-  
-  try {
-    const cached = await redis.get(cacheKey);
-    if (cached) {
-      console.log(`Dynamic Redirect: Cache HIT for key: ${cacheKey} -> ${cached}`);
-      return safeRedirect(cached);
+  if (productId) {
+    const cleanStoreKey = storeName.toLowerCase().replace(/[^a-z0-9]/g, "");
+    const cacheKey = `cache:pdp:direct:v4:${productId.slice(-50)}:${cleanStoreKey}`;
+    try {
+      const cached = await redis.get(cacheKey);
+      if (cached && (cached.startsWith("http://") || cached.startsWith("https://"))) {
+        console.log(`Dynamic Redirect: Cache HIT for key: ${cacheKey} -> ${cached}`);
+        return safeRedirect(cached);
+      }
+    } catch (e) {
+      console.warn("Failed to read redirect cache:", e);
     }
-  } catch (e) {
-    console.warn("Failed to read redirect cache:", e);
-  }
-  
-  let immersiveApi = "";
-  if (pageToken) {
-    immersiveApi = `https://serpapi.com/search.json?engine=google_immersive_product&page_token=${encodeURIComponent(pageToken)}`;
-  } else if (productId) {
-    immersiveApi = `https://serpapi.com/search.json?engine=google_immersive_product&product_id=${encodeURIComponent(productId)}`;
-  }
-  
-  try {
-    const detailUrl = `${immersiveApi}&api_key=${serpapiApiKey}`;
-    const res = await fetch(detailUrl, { signal: AbortSignal.timeout(6000) });
-    
-    if (res.ok) {
-      const data = await res.json();
-      const stores = data.product_results?.stores || [];
-      
-      let selectedLink = "";
-      
-      if (Array.isArray(stores) && stores.length > 0) {
-        const match = stores.find(s => {
-          const sName = (s.name || s.store || "").toLowerCase();
-          return sName.includes(storeName.toLowerCase()) || storeName.toLowerCase().includes(sName);
-        });
-        
-        if (match && (match.link || match.direct_link)) {
-          selectedLink = match.link || match.direct_link;
-        } else {
-          const anyValid = stores.find(s => s.link || s.direct_link);
-          if (anyValid) {
-            selectedLink = anyValid.link || anyValid.direct_link;
-          }
+
+    try {
+      const details = await executeProductDetailsRequest(productId, (region || "in").toLowerCase());
+      const offers = details?.offers || [];
+
+      const isStoreMatch = (s1, s2) => {
+        if (!s1 || !s2) return false;
+        const a = String(s1).toLowerCase().replace(/[^a-z0-9]/g, "");
+        const b = String(s2).toLowerCase().replace(/[^a-z0-9]/g, "");
+        if (a.includes(b) || b.includes(a)) return true;
+        if (a.includes("amazon") && b.includes("amazon")) return true;
+        if (a.includes("flipkart") && b.includes("flipkart")) return true;
+        if (a.includes("myntra") && b.includes("myntra")) return true;
+        if (a.includes("ajio") && b.includes("ajio")) return true;
+        if (a.includes("nykaa") && b.includes("nykaa")) return true;
+        if (a.includes("croma") && b.includes("croma")) return true;
+        if (a.includes("reliance") && b.includes("reliance")) return true;
+        if (a.includes("snitch") && b.includes("snitch")) return true;
+        if (a.includes("puma") && b.includes("puma")) return true;
+        if (a.includes("nike") && b.includes("nike")) return true;
+        if (a.includes("adidas") && b.includes("adidas")) return true;
+        if (a.includes("tatacliq") && b.includes("tatacliq")) return true;
+        return false;
+      };
+
+      let match = offers.find(o => isStoreMatch(o.store_name, storeName) || isStoreMatch(o.offer_page_url, storeName));
+      if (!match && storeName.toLowerCase().includes("amazon")) {
+        match = offers.find(o => (o.store_name || "").toLowerCase().includes("amazon") || (o.offer_page_url || "").includes("amazon"));
+      }
+      if (!match && storeName.toLowerCase().includes("flipkart")) {
+        match = offers.find(o => (o.store_name || "").toLowerCase().includes("flipkart") || (o.offer_page_url || "").includes("flipkart"));
+      }
+      if (!match && storeName.toLowerCase().includes("myntra")) {
+        match = offers.find(o => (o.store_name || "").toLowerCase().includes("myntra") || (o.offer_page_url || "").includes("myntra"));
+      }
+      if (!match && storeName.toLowerCase().includes("puma")) {
+        match = offers.find(o => (o.store_name || "").toLowerCase().includes("puma") || (o.offer_page_url || "").includes("puma"));
+      }
+      if (!match && storeName.toLowerCase().includes("nike")) {
+        match = offers.find(o => (o.store_name || "").toLowerCase().includes("nike") || (o.offer_page_url || "").includes("nike"));
+      }
+      if (!match && storeName.toLowerCase().includes("adidas")) {
+        match = offers.find(o => (o.store_name || "").toLowerCase().includes("adidas") || (o.offer_page_url || "").includes("adidas"));
+      }
+
+      if (match) {
+        const exactPdp = match.offer_page_url || match.product_page_url;
+        if (exactPdp && (exactPdp.startsWith("http://") || exactPdp.startsWith("https://")) && !exactPdp.includes("google.com") && !exactPdp.includes("ibp=")) {
+          try {
+            await redis.set(cacheKey, exactPdp, { ex: 604800 });
+          } catch (e) {}
+          console.log(`Dynamic Redirect: Resolved 100% EXACT PDP for ${storeName} -> ${exactPdp}`);
+          return safeRedirect(exactPdp);
         }
       }
-      
-      if (selectedLink) {
-        const urlObj = new URL(selectedLink);
-        const redirectParams = ["adurl", "destination", "merchant_url", "url", "target_url", "q", "u", "r"];
-        let finalUrl = selectedLink;
-        
-        for (const param of redirectParams) {
-          let val = urlObj.searchParams.get(param);
-          if (val) {
-            val = decodeURIComponent(val);
-            if (val.startsWith("/")) {
-              val = urlObj.origin + val;
-            }
-            if (val.startsWith("http://") || val.startsWith("https://")) {
-              finalUrl = val;
-              break;
-            }
-          }
-        }
-        
-        finalUrl = cleanUrlParams(finalUrl);
-        
-        try {
-          await redis.set(cacheKey, finalUrl, { ex: 86400 });
-        } catch (e) {}
-        
-        console.log(`Dynamic Redirect: Resolved exact PDP -> ${finalUrl}`);
-        return safeRedirect(finalUrl);
-      }
+    } catch (err) {
+      console.error("Dynamic Redirect error resolving exact PDP via details:", err);
     }
-  } catch (err) {
-    console.error("Dynamic Redirect error resolving PDP:", err);
   }
-  
+
   console.log(`Dynamic Redirect: Executing fallback resolution for -> ${fallback}`);
   return await handleFallback(fallback, storeName);
 }

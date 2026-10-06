@@ -83,7 +83,7 @@ Sample 2 (When preferences are provided or questionnaire is answered):
  * Call Gemini Flash API with automatic model fallback
  */
 async function callGemini(userPrompt) {
-  const models = ["gemini-3.1-flash-lite", "gemini-3.6-flash", "gemini-3.8-flash"];
+  const models = ["gemini-flash-latest", "gemini-2.5-flash-lite", "gemini-3.1-flash-lite", "gemini-3.6-flash", "gemini-3.8-flash"];
 
   for (const model of models) {
     try {

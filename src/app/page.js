@@ -13,6 +13,8 @@ import CouponCard from "@/components/CouponCard";
 import AiShoppingGuide from "@/components/AiShoppingGuide";
 import FashionTrialRoom from "@/components/FashionTrialRoom";
 import CouponResultView from "@/components/CouponResultView";
+import InChatShoppingAgent from "@/components/InChatShoppingAgent";
+import SmartFilterChips, { generateSmartChips } from "@/components/SmartFilterChips";
 import { isProductUrl, extractProductTitleFromUrl, extractProductInfoFromUrl } from "@/lib/urlProductParser";
 import { searchProducts } from "@/services/api";
 
@@ -93,6 +95,21 @@ export default function Home() {
   const [couponResultData, setCouponResultData] = useState(null);
   const [isCartAnalysis, setIsCartAnalysis] = useState(false);
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
+  const [activeFilterChipId, setActiveFilterChipId] = useState("all");
+
+  const displayedProducts = React.useMemo(() => {
+    if (!products || products.length === 0) return [];
+    if (activeFilterChipId === "all") {
+      return products.slice(0, 3);
+    }
+    const chips = generateSmartChips(products, searchQuery);
+    const selected = chips.find(c => c.id === activeFilterChipId);
+    if (!selected || !selected.filter) {
+      return products.slice(0, 3);
+    }
+    const filtered = products.filter(selected.filter);
+    return filtered.length > 0 ? filtered.slice(0, 3) : products.slice(0, 3);
+  }, [products, activeFilterChipId, searchQuery]);
 
   useEffect(() => {
     const handleUnhandledRejection = (event) => {
@@ -152,7 +169,7 @@ export default function Home() {
   };
 
   const handleSearchSubmit = async (query, bypassGuide = false, isExactMatch = false) => {
-    if (!isSignedIn) {
+    if (!isSignedIn && process.env.NODE_ENV === "production") {
       openSignIn();
       return;
     }
@@ -168,17 +185,12 @@ export default function Home() {
       return;
     }
 
-    if (bypassGuide || isExactMatch || shouldBypassAiGuide(query)) {
-      handleDirectSearch(query, false, null, null, isExactMatch);
-      return;
-    }
-
-    setSearchQuery(query);
-    setAppState("guide");
+    // Direct Instant Search: No more questionnaire delays, instant deals!
+    handleDirectSearch(query, false, null, null, isExactMatch);
   };
 
   const handleDirectSearch = async (query, isUrlLookup = false, sourceStore = null, sourceUrl = null, isExactMatch = false) => {
-    if (!isSignedIn) {
+    if (!isSignedIn && process.env.NODE_ENV === "production") {
       openSignIn();
       return;
     }
@@ -201,6 +213,7 @@ export default function Home() {
       resolvedUrl = info.canonicalUrl;
     }
 
+    setActiveFilterChipId("all");
     setSearchQuery(resolvedTitle);
     setAppState("searching");
     setApiError(null);
@@ -530,23 +543,7 @@ export default function Home() {
             </motion.div>
           )}
 
-          {/* AI SHOPPING GUIDE */}
-          {appState === "guide" && (
-            <motion.div
-              key="guide-state"
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }}
-              transition={{ duration: 0.3 }}
-              className="w-full px-4"
-            >
-              <AiShoppingGuide
-                initialQuery={searchQuery}
-                onExecuteSearch={handleDirectSearch}
-                onBackToSearch={() => setAppState("idle")}
-              />
-            </motion.div>
-          )}
+
 
           {/* SEARCHING LOADER */}
           {appState === "searching" && (
@@ -673,14 +670,29 @@ export default function Home() {
                     </button>
                   </motion.div>
                 ) : (
-                  <div className="space-y-8">
+                  <div className="space-y-6">
+                    {/* AI Smart Filter Chips (In-Memory 0ms Instant Client Filter) */}
+                    <SmartFilterChips
+                      products={products}
+                      searchQuery={searchQuery}
+                      activeChipId={activeFilterChipId}
+                      onSelectChip={(chipId) => setActiveFilterChipId(chipId)}
+                    />
+
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
                       <AnimatePresence mode="popLayout">
-                        {products.map((product, idx) => (
+                        {displayedProducts.map((product, idx) => (
                           <ProductCard key={product.id || `product-${idx}-${product.title}`} product={product} searchQuery={searchQuery} />
                         ))}
                       </AnimatePresence>
                     </div>
+
+                    {/* Interactive In-Chat Shopping Agent */}
+                    <InChatShoppingAgent 
+                      products={products}
+                      searchQuery={searchQuery}
+                      onExecuteSearch={handleDirectSearch}
+                    />
 
                     {coupons.length > 0 && (
                       <div className="pt-8 border-t border-slate-200">

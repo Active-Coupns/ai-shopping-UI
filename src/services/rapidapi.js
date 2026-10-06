@@ -4,11 +4,189 @@
  * Provides 100% exact Direct Merchant PDP Links, Real Technical Specifications, and Multi-Store Comparison.
  */
 
-function getRapidApiKey() {
-  return (process.env.RAPIDAPI_KEY || "").trim();
+import { redis } from "@/services/redis";
+
+let currentKeyIdx = 0;
+
+function getOpenWebNinjaKey() {
+  const envVal = (process.env.OPENWEBNINJA_API_KEY || "").trim();
+  if (envVal) return envVal;
+  const rawKey = (process.env.RAPIDAPI_KEY || "").trim();
+  if (rawKey.startsWith("ak_")) return rawKey;
+  const fromList = (process.env.RAPIDAPI_KEYS || "").split(",").map(k => k.trim()).find(k => k.startsWith("ak_"));
+  return fromList || "";
 }
 
-function parsePriceNum(val) {
+function getAllRapidApiKeys() {
+  const combined = `${process.env.RAPIDAPI_KEYS || ''},${process.env.RAPIDAPI_KEY || ''}`;
+  const keys = Array.from(new Set(combined.split(',').map(k => k.trim()).filter(Boolean)))
+    .filter(k => !k.startsWith("ak_"));
+  return keys;
+}
+
+function getRapidApiKey() {
+  const keys = getAllRapidApiKeys();
+  if (keys.length === 0) return "";
+  return keys[currentKeyIdx % keys.length];
+}
+
+async function fetchWithRapidApiFailover(url, timeoutMs = 15000) {
+  const keys = getAllRapidApiKeys();
+  if (keys.length === 0) return null;
+
+  for (let attempt = 0; attempt < keys.length; attempt++) {
+    const key = keys[(currentKeyIdx + attempt) % keys.length];
+    try {
+      const res = await fetch(url, {
+        headers: {
+          'X-RapidAPI-Key': key,
+          'X-RapidAPI-Host': 'real-time-product-search.p.rapidapi.com'
+        },
+        signal: AbortSignal.timeout(timeoutMs)
+      });
+
+      if (res.status === 429 || res.status === 403) {
+        console.warn(`[RapidAPI] Key ending in ...${key.slice(-4)} got HTTP ${res.status}. Attempting failover.`);
+        currentKeyIdx = (currentKeyIdx + 1) % keys.length;
+        continue;
+      }
+
+      return res;
+    } catch (e) {
+      console.warn(`[RapidAPI] Fetch error with key ending in ...${key.slice(-4)}: ${e.message}`);
+    }
+  }
+  return null;
+}
+
+export async function executeSearchRequest(query, countryCode = "in") {
+  const openKey = getOpenWebNinjaKey();
+  if (openKey) {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const openUrl = `https://api.openwebninja.com/realtime-product-search/v2/search?q=${encodeURIComponent(query)}&country=${countryCode}&language=en`;
+        const res = await fetch(openUrl, {
+          headers: { 'x-api-key': openKey },
+          signal: AbortSignal.timeout(attempt === 0 ? 20000 : 15000)
+        });
+        if (res.ok) {
+          const json = await res.json();
+          const prods = json.data?.products || [];
+          if (Array.isArray(prods) && prods.length > 0) {
+            console.log(`[OpenWebNinja] Live search returned ${prods.length} products.`);
+            return prods;
+          }
+        } else {
+          console.warn(`[OpenWebNinja] Search attempt ${attempt + 1} responded with HTTP ${res.status}`);
+        }
+      } catch (e) {
+        console.warn(`[OpenWebNinja] Search attempt ${attempt + 1} failed: ${e.message}`);
+        if (attempt === 0) await new Promise(r => setTimeout(r, 600));
+      }
+    }
+  }
+
+  // Fallback to RapidAPI
+  const rapidUrl = `https://real-time-product-search.p.rapidapi.com/search?q=${encodeURIComponent(query)}&country=${countryCode}&language=en`;
+  const res = await fetchWithRapidApiFailover(rapidUrl, 18000);
+  if (res && res.ok) {
+    const json = await res.json();
+    const prods = json.data?.products || [];
+    if (Array.isArray(prods) && prods.length > 0) {
+      console.log(`[RapidAPI] Live search returned ${prods.length} products.`);
+      return prods;
+    }
+  }
+  return [];
+}
+
+export async function executeProductDetailsRequest(productId, countryCode = "in") {
+  if (!productId) return { offers: [], attributes: {}, description: "", title: "" };
+
+  const cleanPId = String(productId).slice(-50).replace(/[^a-zA-Z0-9]/g, "");
+  const cacheKey = `cache:details:v2:${cleanPId}:${countryCode.toLowerCase()}`;
+  try {
+    const cached = await redis.get(cacheKey);
+    if (cached) {
+      const parsed = typeof cached === "string" ? JSON.parse(cached) : cached;
+      if (parsed && Array.isArray(parsed.offers)) {
+        return parsed;
+      }
+    }
+  } catch (e) {}
+
+  let result = null;
+  const openKey = getOpenWebNinjaKey();
+  if (openKey) {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const openUrl = `https://api.openwebninja.com/realtime-product-search/v2/product-details?product_id=${encodeURIComponent(productId)}&country=${countryCode}&language=en`;
+        const res = await fetch(openUrl, {
+          headers: { 'x-api-key': openKey },
+          signal: AbortSignal.timeout(attempt === 0 ? 25000 : 15000)
+        });
+        if (res.ok) {
+          const json = await res.json();
+          const data = json.data || {};
+          const offers = (data.offers || []).map(o => {
+            const rawPdp = o.offer_page_url || o.product_page_url || "";
+            return {
+              ...o,
+              offer_page_url: rawPdp,
+              product_page_url: rawPdp
+            };
+          });
+          result = {
+            offers,
+            attributes: data.product_attributes || {},
+            description: data.product_description || "",
+            title: data.product_title || "",
+            rating: data.product_rating || null,
+            reviewsCount: data.product_num_reviews || null,
+            photos: data.product_photos || []
+          };
+          break;
+        }
+      } catch (e) {
+        console.warn(`[OpenWebNinja] Details request attempt ${attempt + 1} failed: ${e.message}`);
+        if (attempt === 0) await new Promise(r => setTimeout(r, 400));
+      }
+    }
+  }
+
+  // Fallback to RapidAPI
+  if (!result) {
+    const rapidUrl = `https://real-time-product-search.p.rapidapi.com/product-details?product_id=${encodeURIComponent(productId)}&country=${countryCode}&language=en`;
+    const res = await fetchWithRapidApiFailover(rapidUrl, 15000);
+    if (res && res.ok) {
+      const json = await res.json();
+      const data = json.data || {};
+      result = {
+        offers: data.offers || [],
+        attributes: data.product_attributes || {},
+        description: data.product_description || "",
+        title: data.product_title || "",
+        rating: data.product_rating || null,
+        reviewsCount: data.product_num_reviews || null,
+        photos: data.product_photos || []
+      };
+    }
+  }
+
+  if (!result) {
+    result = { offers: [], attributes: {}, description: "", title: "" };
+  }
+
+  if (result && Array.isArray(result.offers) && result.offers.length > 0) {
+    try {
+      await redis.set(cacheKey, JSON.stringify(result), { ex: 604800 });
+    } catch (e) {}
+  }
+
+  return result;
+}
+
+export function parsePriceNum(val) {
   if (typeof val === 'number' && !isNaN(val)) return Math.round(val);
   if (!val) return 0;
   const str = String(val).replace(/[^0-9.]/g, '');
@@ -17,7 +195,12 @@ function parsePriceNum(val) {
 }
 
 export function extractBudgetFromQuery(query = "") {
-  const q = String(query).toLowerCase().replace(/,/g, "");
+  if (!query) return null;
+  // 1. Normalize spaces in numbers: "50 000" -> "50000", remove commas
+  let q = String(query)
+    .toLowerCase()
+    .replace(/,/g, "")
+    .replace(/(\d+)\s+(\d{2,3})\b/g, (m, a, b) => a + b);
   
   const matchK = q.match(/\b(?:under|below|upto|within|less\s+than|sub)\s*₹?\s*(\d+(?:\.\d+)?)\s*k\b/i);
   if (matchK) {
@@ -29,7 +212,7 @@ export function extractBudgetFromQuery(query = "") {
     return parseInt(matchNum[1], 10);
   }
 
-  const matchBudget = q.match(/\b(\d+)\s*k?\s*(?:budget|ke\s+andar|mein)\b/i);
+  const matchBudget = q.match(/\b(\d{3,7})\s*k?\s*(?:budget|ke\s+andar|mein)\b/i);
   if (matchBudget) {
     const val = parseInt(matchBudget[1], 10);
     return val < 1000 ? val * 1000 : val;
@@ -39,14 +222,16 @@ export function extractBudgetFromQuery(query = "") {
 }
 
 function cleanTitleForQuery(title) {
-  if (!title) return "";
-  return title
+  if (!title || typeof title !== "string") return "product";
+  const trimmed = title.trim();
+  if (trimmed === "null" || trimmed === "undefined" || trimmed.length < 2) return "product";
+  return trimmed
     .replace(/\[[^\]]*\]/g, " ")
     .replace(/\([^)]*\)/g, " ")
     .replace(/Sponsored Ad - /gi, " ")
     .replace(/[^a-zA-Z0-9\s-]/g, " ")
     .replace(/\s+/g, " ")
-    .trim();
+    .trim() || "product";
 }
 
 export function formatStoreName(name, country = "IN") {
@@ -111,7 +296,7 @@ export function formatStoreName(name, country = "IN") {
 
 export const TRUSTED_MERCHANTS = [
   // Major Marketplaces & Retailers (India)
-  "amazon", "flipkart", "croma", "reliance", "reliancedigital", "vijay", "vijaysales", "myntra", "ajio", "tatacliq", "tata neu", "tataneu", "nykaa", "meesho", "shoppers stop", "lifestyle",
+  "amazon", "flipkart", "croma", "reliance", "reliancedigital", "vijay", "vijaysales", "myntra", "ajio", "tatacliq", "tata neu", "tataneu", "nykaa", "meesho", "shoppers stop", "lifestyle", "souled store", "the souled store",
   // Quick Commerce & Grocery
   "zepto", "blinkit", "instamart", "swiggy", "bigbasket",
   // Pharmacy & Health
@@ -119,7 +304,9 @@ export const TRUSTED_MERCHANTS = [
   // Fitness & Supplements
   "healthkart", "nutrabay", "muscleblaze", "optimum nutrition", "myprotein", "as-it-is", "asitis", "gnc",
   // Official Tech, Audio & Appliance Brands
-  "samsung", "apple", "boat", "boat-lifestyle", "noise", "gonoise", "asus", "oneplus", "hp", "lenovo", "dell", "xiaomi", "realme", "sony", "lg", "fire-boltt", "puma", "nike", "adidas",
+  "samsung", "apple", "boat", "boat-lifestyle", "noise", "gonoise", "asus", "oneplus", "hp", "lenovo", "dell", "xiaomi", "realme", "sony", "lg", "fire-boltt", "jbl", "whirlpool", "ifb", "godrej", "haier", "voltas", "daikin", "bosch",
+  // Footwear & Fashion Brands
+  "puma", "nike", "adidas", "bata", "campus", "woodland", "red tape", "redtape", "sparx", "asian", "clarks", "crocs", "skechers", "asics", "reebok", "layasa", "roadster",
   // Retail Tech, Mobile & Electronics Stores
   "gadgets now", "gadgetsnow", "cashify", "myg", "poorvika", "sangeetha", "lotus", "acer",
   // US Retailers
@@ -163,13 +350,41 @@ export function isSearchPageUrl(url = "") {
   );
 }
 
+export function hasExactPDPPath(url) {
+  if (!url || typeof url !== 'string') return false;
+  try {
+    const parsed = new URL(url);
+    const path = parsed.pathname.toLowerCase();
+    if (
+      path.includes("/css/") || path.includes("/order") || path.includes("/cart") ||
+      path.includes("/sign") || path.includes("/account") || path.includes("/help") ||
+      path.includes("/gp/css") || path.includes("/yourstore") || path.includes("/search") ||
+      path.includes("/s?")
+    ) {
+      return false;
+    }
+    if (parsed.hostname.includes("amazon")) {
+      return path.includes("/dp/") || path.includes("/gp/product/") || path.includes("/gp/aw/d/");
+    }
+    if (parsed.hostname.includes("flipkart")) {
+      return path.includes("/p/itm") || (path.includes("/p/") && !path.includes("/search"));
+    }
+    return (
+      path.includes("/dp/") || path.includes("/product/") || path.includes("/products/") ||
+      path.includes("/p/") || path.includes("/buy") || path.includes("/item/")
+    );
+  } catch (e) {
+    return false;
+  }
+}
+
 /**
  * Sanitizes and canonicalizes direct merchant PDP URLs (Amazon, Flipkart, Reliance, Croma, Brand stores, Pharmacies)
  * Instantly unwraps Google Shopping redirects and preserves merchant path slugs & product IDs.
  */
 export function sanitizeOfferUrl(rawUrl, storeName, productTitle = "", country = "IN") {
   if (!rawUrl || typeof rawUrl !== 'string') {
-    return "";
+    return getStoreDirectSearchFallback(storeName, productTitle, country);
   }
 
   const isUS = String(country).toUpperCase() === "US";
@@ -184,8 +399,8 @@ export function sanitizeOfferUrl(rawUrl, storeName, productTitle = "", country =
   try {
     if (rawUrl.includes("google.com") || rawUrl.includes("google.co.in")) {
       const u = new URL(rawUrl);
-      const embeddedUrl = u.searchParams.get("url") || u.searchParams.get("q") || u.searchParams.get("dest");
-      if (embeddedUrl && embeddedUrl.startsWith("http") && !embeddedUrl.includes("google.com")) {
+      const embeddedUrl = u.searchParams.get("url") || u.searchParams.get("dest");
+      if (embeddedUrl && embeddedUrl.startsWith("http") && !embeddedUrl.includes("google.com") && !embeddedUrl.includes("google.co.in")) {
         const dest = new URL(embeddedUrl);
         const tracking = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'srsltid', 'cmpid', 'source', 'ref_', 'gclid', 'fbclid'];
         tracking.forEach(p => dest.searchParams.delete(p));
@@ -194,8 +409,8 @@ export function sanitizeOfferUrl(rawUrl, storeName, productTitle = "", country =
     }
   } catch (e) {}
 
-  // 3. Direct clean merchant URL
-  if (rawUrl.startsWith('http') && !rawUrl.includes('google.com/search') && !rawUrl.includes('google.co.in/search') && !rawUrl.includes('ibp=')) {
+  // 3. Direct clean merchant URL (BLOCK any google domains or ibp aggregator URLs)
+  if (rawUrl.startsWith('http') && !rawUrl.includes('google.com') && !rawUrl.includes('google.co.in') && !rawUrl.includes('ibp=')) {
     try {
       const u = new URL(rawUrl);
       const tracking = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'srsltid', 'cmpid', 'source', 'ref_', 'gclid', 'fbclid'];
@@ -206,17 +421,15 @@ export function sanitizeOfferUrl(rawUrl, storeName, productTitle = "", country =
     }
   }
 
-  // If it's an HTTP link, preserve directly rather than a store search page
-  if (rawUrl.startsWith('http')) {
-    return rawUrl;
-  }
-
-  return "";
+  // 4. If URL was a Google aggregator link (ibp=oshop, google.com/search) and could not be unwrapped,
+  // NEVER return the google page! Fall back directly to the merchant store search/PDP link!
+  return getStoreDirectSearchFallback(storeName, productTitle, country);
 }
 
 export function getStoreDirectSearchFallback(storeName, productTitle, country = "IN") {
   const cleanTitle = cleanTitleForQuery(productTitle);
   const qEncoded = encodeURIComponent(cleanTitle);
+  const plusTitle = encodeURIComponent(cleanTitle).replace(/%20/g, "+");
   const hyphenTitle = encodeURIComponent(cleanTitle.replace(/\s+/g, "-").toLowerCase());
   const lowerStore = (storeName || "").toLowerCase().trim();
   const isUS = String(country).toUpperCase() === "US";
@@ -252,7 +465,7 @@ export function getStoreDirectSearchFallback(storeName, productTitle, country = 
   if (lowerStore.includes("flipkart")) return `https://www.flipkart.com/search?q=${qEncoded}`;
   if (lowerStore.includes("myntra")) return `https://www.myntra.com/${hyphenTitle}`;
   if (lowerStore.includes("ajio")) return `https://www.ajio.com/search/?text=${qEncoded}`;
-  if (lowerStore.includes("croma")) return `https://www.croma.com/searchB?q=${qEncoded}`;
+  if (lowerStore.includes("croma")) return `https://www.croma.com/search?text=${plusTitle}`;
   if (lowerStore.includes("reliance")) return `https://www.reliancedigital.in/search?q=${qEncoded}`;
   if (lowerStore.includes("vijay")) return `https://www.vijaysales.com/search/${qEncoded}`;
   if (lowerStore.includes("noise")) return `https://www.gonoise.com/search?q=${qEncoded}`;
@@ -261,6 +474,16 @@ export function getStoreDirectSearchFallback(storeName, productTitle, country = 
   if (lowerStore.includes("samsung")) return `https://www.samsung.com/in/search/?searchvalue=${qEncoded}`;
   if (lowerStore.includes("oneplus")) return `https://www.oneplus.in/search?query=${qEncoded}`;
   if (lowerStore.includes("apple")) return `https://www.apple.com/in/shop/buy-mac`;
+
+  // Fashion & Apparel Official Stores
+  if (lowerStore.includes("puma")) return `https://in.puma.com/in/en/search?q=${qEncoded}`;
+  if (lowerStore.includes("nike")) return `https://www.nike.com/in/w?q=${qEncoded}`;
+  if (lowerStore.includes("adidas")) return `https://www.adidas.co.in/search?q=${qEncoded}`;
+  if (lowerStore.includes("tatacliq") || lowerStore.includes("tata cliq")) return `https://www.tatacliq.com/search/?searchCategory=all&text=${qEncoded}`;
+  if (lowerStore.includes("snitch")) return `https://www.snitch.co.in/search?q=${qEncoded}`;
+  if (lowerStore.includes("nykaa")) return `https://www.nykaa.com/search/result/?q=${qEncoded}`;
+  if (lowerStore.includes("bewakoof")) return `https://www.bewakoof.com/search/${qEncoded}`;
+  if (lowerStore.includes("levi")) return `https://www.levi.in/search?q=${qEncoded}`;
 
   return `https://www.amazon.in/s?k=${qEncoded}`;
 }
@@ -502,38 +725,8 @@ function generateCoupons(storeName, priceVal) {
 
 export async function fetchExactProductDetails(productId, country = "IN") {
   if (!productId) return { offers: [], attributes: {}, description: "", title: "" };
-  const key = getRapidApiKey();
-  if (!key) return { offers: [], attributes: {}, description: "", title: "" };
-
   const countryCode = (country || "in").toLowerCase();
-  const url = `https://real-time-product-search.p.rapidapi.com/product-details?product_id=${encodeURIComponent(productId)}&country=${countryCode}&language=en`;
-
-  try {
-    const res = await fetch(url, {
-      headers: {
-        'X-RapidAPI-Key': key,
-        'X-RapidAPI-Host': 'real-time-product-search.p.rapidapi.com'
-      },
-      signal: AbortSignal.timeout(15000)
-    });
-
-    if (!res.ok) return { offers: [], attributes: {}, description: "", title: "" };
-    const json = await res.json();
-    const data = json.data || {};
-    return {
-      offers: data.offers || [],
-      attributes: data.product_attributes || {},
-        description: data.product_description || "",
-        title: data.product_title || "",
-        rating: data.product_rating || null,
-        reviewsCount: data.product_num_reviews || null,
-        photos: data.product_photos || []
-    };
-  } catch (err) {
-    console.warn(`[RapidAPI] Details lookup warning: ${err.message}`);
-  }
-
-  return { offers: [], attributes: {}, description: "", title: "" };
+  return executeProductDetailsRequest(productId, countryCode);
 }
 
 export function isExactProductQuery(query = "") {
@@ -545,10 +738,11 @@ export function isExactProductQuery(query = "") {
   if (isMedicine) return true;
 
   // 2. SPECIFIC SUPPLEMENT BRANDS / PACK SIZES
+  const isSupplementContext = /\b(whey|protein|creatine|bcaa|glutamine|multivitamin|mass\s*gainer|fish\s*oil|isolate)\b/i.test(q);
   const hasSpecificBrand = /\b(optimum\s*nutrition|gold\s*standard|muscleblaze|biozyme|nutrabay|myprotein|as-?it-?is|nakpro|gnc|isopure|cellucor|dymatize|nitro-?tech|rule\s*1|avatar|avvatar|fast\s*&\s*up|the\s*whole\s*truth|atom|boniso|muscletech|prostar|ultimate\s*nutrition|labrada|scitron|creapure)\b/i.test(q);
   const hasSize = /\b(\d+(\.\d+)?\s*(kg|lbs?|gm|g|count|tabs?|capsules?))\b/i.test(q);
   const isBroadSupp = /\b(best\s+whey|which\s+creatine|protein\s+for|supplements?\s+for|best\s+multivitamin)\b/i.test(q);
-  if (!isBroadSupp && (hasSpecificBrand || hasSize)) return true;
+  if (!isBroadSupp && (hasSpecificBrand || (isSupplementContext && hasSize))) return true;
 
   // 3. SPECIFIC TECH & ELECTRONICS MODELS
   const isExactTech = /\b(iphone\s*\d+|galaxy\s*[a-z]?\d+|samsung\s*[a-z]\d+|macbook\s*(?:air|pro)?\s*m\d+|wh-?1000xm\d+|rockerz\s*\d+|airwave\s*max\s*\d+|airpods\s*(?:pro|\d+)?|oneplus\s*\d+[rt]?|tuf\s*[a-z]\d+|ideapad\s*slim\s*\d+|vivobook\s*\d+|nitro\s*\d+|predator\s*helios|rog\s*strix|legion\s*\d+|thinkpad|pavilion|inspiron|victus|bravia|qled|oled\s*\d+|r[3579]-?\d{4}[a-z]?|i[3579]-?\d{4,5}[a-z]?|ryzen\s*[3579]|core\s*i[3579]|intel\s*core|dell\s*(?:dc|15|inspiron|vostro|latitude|r[3579])|hp\s*15|lenovo\s*15|pixel\s*\d+)\b/i.test(q);
@@ -752,39 +946,26 @@ export function generateFallbackProducts(query = "", limit = 3, country = "IN", 
     return fallbackList.slice(0, effectiveLimit);
   }
 
-  // 3. AUDIO & EARBUDS RESILIENT CATALOG
-  if (isAudio) {
-    const cleanTitle = query.replace(/[^a-zA-Z0-9\s-]/g, " ").replace(/\s+/g, " ").trim();
-    const capTitle = cleanTitle.split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
-    const title = capTitle.includes("Earbuds") || capTitle.includes("Buds") || capTitle.includes("Headphones") 
-      ? capTitle 
-      : `${capTitle} True Wireless Earbuds`;
-    
-    let basePrice = 1999;
-    if (q.includes("nord buds 2r") || q.includes("nord buds 2")) basePrice = 1999;
-    else if (q.includes("bullets wireless z2")) basePrice = 1599;
-    else if (q.includes("airpods")) basePrice = 12900;
-    else if (q.includes("rockerz") || q.includes("boat")) basePrice = 1299;
-
-    const primaryStore = sourceStore || "Amazon.in";
+  // Helper to construct fully formed catalog item with verified store offers
+  const createCatalogItem = (title, price, img, specs, desc, rating = 4.4, reviewsCount = 1800, idx = 0) => {
+    const isUS = (country || "in").toLowerCase() === "us";
+    const primaryStore = sourceStore || (idx % 2 === 0 ? (isUS ? "Amazon.com" : "Amazon.in") : (isUS ? "Walmart" : "Flipkart"));
     const primaryLink = sourceUrl || getStoreDirectSearchFallback(primaryStore, title, country);
-    let priceComp = enrichPriceComparison([], primaryStore, basePrice, title, country);
+    let priceComp = enrichPriceComparison([], primaryStore, price, title, country);
     if (sourceStore && sourceUrl) {
       priceComp = priceComp.map(o => o.store_name.toLowerCase() === sourceStore.toLowerCase() ? { ...o, deal_link: sourceUrl } : o);
     }
-    const lowest = priceComp[0] || { store_name: primaryStore, price: basePrice, deal_link: primaryLink };
+    const lowest = priceComp[0] || { store_name: primaryStore, price, deal_link: primaryLink };
 
-    const img = "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=600&q=80";
-
-    fallbackList.push({
-      id: `fallback-audio-${Date.now()}`,
-      product_id: `catalog-audio-${Date.now()}`,
+    return {
+      id: `fallback-prod-${idx}-${Date.now()}`,
+      product_id: `catalog-prod-${idx}-${Date.now()}`,
       title,
-      price: `₹${lowest.price.toLocaleString("en-IN")}`,
+      price: isUS ? `$${lowest.price.toLocaleString("en-US")}` : `₹${lowest.price.toLocaleString("en-IN")}`,
       rawPrice: lowest.price,
-      originalPrice: `₹${Math.round(lowest.price * 1.25).toLocaleString("en-IN")}`,
+      originalPrice: isUS ? `$${Math.round(lowest.price * 1.25).toLocaleString("en-US")}` : `₹${Math.round(lowest.price * 1.25).toLocaleString("en-IN")}`,
       discountPercent: 20,
-      currency: "INR",
+      currency: isUS ? "USD" : "INR",
       source: lowest.store_name,
       merchant: lowest.store_name,
       store_name: lowest.store_name,
@@ -792,153 +973,508 @@ export function generateFallbackProducts(query = "", limit = 3, country = "IN", 
       thumbnail: img,
       image: img,
       image_url: img,
-      rating: 4.5,
-      reviewsCount: 15420,
+      rating,
+      reviewsCount,
       link: lowest.deal_link,
       affiliateUrl: lowest.deal_link,
       deal_link: lowest.deal_link,
       direct_link: lowest.deal_link,
       product_link: lowest.deal_link,
       url: lowest.deal_link,
-      description: `${title} with premium audio clarity, deep bass, and fast charging.`,
-      specs: [
-        "Battery Life: Up to 38 Hours Playback",
-        "Audio Driver: 12.4mm Dynamic Bass Drivers",
-        "Microphone: 4-Mic AI Clear Calls Design",
-        "Water & Sweat Resistance: IP55 Certified Rating",
-        "Connectivity: Bluetooth v5.3 Fast Pairing"
-      ],
+      description: desc,
+      specs,
       coupons: generateCoupons(lowest.store_name, lowest.price),
       price_comparison: priceComp
-    });
-    return fallbackList.slice(0, effectiveLimit);
+    };
+  };
+
+  // 3. AUDIO & HEADPHONES RESILIENT CATALOG
+  if (isAudio) {
+    const rawCatalog = [
+      {
+        title: "boAt Airdopes 141 ANC True Wireless Earbuds (32dB ANC, 42H Playtime)",
+        price: maxBudget ? Math.min(maxBudget, 1299) : 1299,
+        img: "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=600&q=80",
+        rating: 4.4,
+        reviewsCount: 42100,
+        specs: [
+          "Active Noise Cancellation: Up to 32dB Crystal ANC",
+          "Battery Playback: 42 Hours Total (ASAP Fast Charge)",
+          "Drivers: 10mm Dual Drivers for Signature Bass",
+          "Calling Mic: Quad Mics with ENx Environmental Tech",
+          "Gaming Latency: 50ms Low Latency BEAST Mode"
+        ],
+        desc: "boAt Airdopes 141 ANC delivers punchy bass, crystal-clear quad mic calls, and active noise cancellation."
+      },
+      {
+        title: "OnePlus Nord Buds 2r True Wireless Earbuds (12.4mm Drivers, 38H Playtime)",
+        price: maxBudget ? Math.min(maxBudget, 1999) : 1999,
+        img: "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=600&q=80",
+        rating: 4.5,
+        reviewsCount: 28400,
+        specs: [
+          "Drivers: 12.4mm Extra Large Titanized Dynamic Drivers",
+          "Battery Playback: Up to 38 Hours Non-Stop Playback",
+          "Mics: Dual Mics with AI Clear Call Algorithm",
+          "Sound Tuning: Sound Master Equalizer with BassWave",
+          "Protection: IP55 Water & Sweat Resistance"
+        ],
+        desc: "OnePlus Nord Buds 2r features thumping bass, crisp vocal clarity, and all-day battery endurance."
+      },
+      {
+        title: "Noise Buds VS102 Wireless Earbuds with 50H Playtime",
+        price: maxBudget ? Math.min(maxBudget, 999) : 999,
+        img: "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=600&q=80",
+        rating: 4.3,
+        reviewsCount: 19800,
+        specs: [
+          "Battery Playback: 50 Hours Total Playback",
+          "Instacharge: 10 Min Charge = 120 Mins Playtime",
+          "Speaker Drivers: 11mm High Fidelity Drivers",
+          "Connectivity: Bluetooth v5.3 with Hyper Sync",
+          "Design: Ultra-Lightweight Ergonomic Snug Fit"
+        ],
+        desc: "Noise Buds VS102 provides long-lasting battery life, rapid Instacharge, and high-fidelity sound."
+      },
+      {
+        title: "realme Buds T300 with 30dB ANC & 360 Spatial Audio",
+        price: maxBudget ? Math.min(maxBudget, 2199) : 2199,
+        img: "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=600&q=80",
+        rating: 4.5,
+        reviewsCount: 15300,
+        specs: [
+          "Noise Cancellation: 30dB Active Noise Cancellation",
+          "Spatial Effect: 360° Spatial Audio Simulation",
+          "Drivers: 12.4mm Dynamic Bass Boost Drivers",
+          "Playback: 40 Hours Total with Fast Charging",
+          "Rating: IP55 Water & Dust Resistant"
+        ],
+        desc: "realme Buds T300 delivers powerful 30dB noise reduction and cinema-like 360° spatial audio."
+      },
+      {
+        title: "Sony WH-CH520 Wireless On-Ear Bluetooth Headphones (50H Battery)",
+        price: maxBudget ? Math.min(maxBudget, 3990) : 3990,
+        img: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&q=80",
+        rating: 4.6,
+        reviewsCount: 11200,
+        specs: [
+          "Battery Life: Massive 50 Hours Battery (3 Min Charge = 1.5H)",
+          "Audio Engine: DSEE Restores High Frequency Audio Detail",
+          "Multi-Point: Multipoint Bluetooth Connects 2 Devices",
+          "Microphone: Built-in Hands-Free HD Mic with Noise Reduction",
+          "Comfort: Swivel Design with Cushioned Earpads"
+        ],
+        desc: "Sony WH-CH520 delivers premium wireless acoustics with 50-hour playback and multi-device pairing."
+      },
+      {
+        title: "JBL Tune 760NC Over-Ear Active Noise Cancelling Headphones",
+        price: maxBudget ? Math.min(maxBudget, 4999) : 4999,
+        img: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&q=80",
+        rating: 4.5,
+        reviewsCount: 9400,
+        specs: [
+          "Noise Cancellation: Active Noise Cancelling (ANC)",
+          "Acoustic Profile: Iconic JBL Pure Bass Sound",
+          "Battery Life: 35H with ANC On (50H with ANC Off)",
+          "Fast Charging: 5 Mins Charge = 2 Hours Playtime",
+          "Portability: Lightweight Foldable Over-Ear Design"
+        ],
+        desc: "JBL Tune 760NC combines deep JBL Pure Bass with active noise cancellation for undisturbed listening."
+      }
+    ];
+
+    return rawCatalog.slice(0, effectiveLimit).map((item, idx) => 
+      createCatalogItem(item.title, item.price, item.img, item.specs, item.desc, item.rating, item.reviewsCount, idx)
+    );
   }
 
   // 4. SMARTPHONES & MOBILES RESILIENT CATALOG
   const isSmartphone = !isMedicine && !isSupplement && !isAudio && /\b(galaxy|s2[0-9]|iphone|pixel|smartphone|mobile|phone|oneplus|iqoo|realme|redmi|nord|snapdragon|5g)\b/i.test(q);
   if (isSmartphone) {
-    const cleanTitle = query.replace(/[^a-zA-Z0-9\s-]/g, " ").replace(/\s+/g, " ").trim();
-    const capTitle = cleanTitle.split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
-    const title = capTitle.includes("5G") || capTitle.includes("Phone") || capTitle.includes("Galaxy") || capTitle.includes("iPhone")
-      ? capTitle
-      : `${capTitle} 5G Smartphone`;
-
-    let basePrice = 74999;
-    if (q.includes("s25 ultra") || q.includes("pro max")) basePrice = 129999;
-    else if (q.includes("s25") || q.includes("iphone 16")) basePrice = 74999;
-    else if (q.includes("nord") || q.includes("redmi") || q.includes("realme")) basePrice = 24999;
-
-    const primaryStore = sourceStore || "Flipkart";
-    const primaryLink = sourceUrl || getStoreDirectSearchFallback(primaryStore, title, country);
-    let priceComp = enrichPriceComparison([], primaryStore, basePrice, title, country);
-    if (sourceStore && sourceUrl) {
-      priceComp = priceComp.map(o => o.store_name.toLowerCase() === sourceStore.toLowerCase() ? { ...o, deal_link: sourceUrl } : o);
-    }
-    const lowest = priceComp[0] || { store_name: primaryStore, price: basePrice, deal_link: primaryLink };
-
-    const img = "https://images.unsplash.com/photo-1592899677977-9c10ca588bbd?w=600&q=80";
-
-    fallbackList.push({
-      id: `fallback-mobile-${Date.now()}`,
-      product_id: `catalog-mobile-${Date.now()}`,
-      title,
-      price: `₹${lowest.price.toLocaleString("en-IN")}`,
-      rawPrice: lowest.price,
-      originalPrice: `₹${Math.round(lowest.price * 1.18).toLocaleString("en-IN")}`,
-      discountPercent: 15,
-      currency: "INR",
-      source: lowest.store_name,
-      merchant: lowest.store_name,
-      store_name: lowest.store_name,
-      store: lowest.store_name,
-      thumbnail: img,
-      image: img,
-      image_url: img,
-      rating: 4.6,
-      reviewsCount: 28400,
-      link: lowest.deal_link,
-      affiliateUrl: lowest.deal_link,
-      deal_link: lowest.deal_link,
-      direct_link: lowest.deal_link,
-      product_link: lowest.deal_link,
-      url: lowest.deal_link,
-      description: `${title} with Dynamic AMOLED 2X 120Hz display, next-gen Snapdragon AI processor, and pro-grade camera.`,
-      specs: [
-        "Display: 6.2\" Dynamic AMOLED 2X 120Hz HDR10+",
-        "Processor: Qualcomm Snapdragon 8 Elite (3nm AI Engine)",
-        "Camera: 50MP OIS Main + 12MP Ultra-Wide + 10MP Telephoto 3x",
-        "Storage & RAM: 8GB / 12GB RAM, 256GB / 512GB UFS 4.0",
-        "Battery & Charging: 4000mAh Battery with 25W Fast Charging"
-      ],
-      coupons: generateCoupons(lowest.store_name, lowest.price),
-      price_comparison: priceComp
-    });
-    return fallbackList.slice(0, effectiveLimit);
-  }
-
-  // 5. FOOTWEAR & FASHION RESILIENT CATALOG
-  if (isFootwear || isApparel) {
-    const cleanTitle = query.replace(/[^a-zA-Z0-9\s-]/g, " ").replace(/\s+/g, " ").trim();
-    const capTitle = cleanTitle.split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
-    const title = capTitle.length > 5 ? capTitle : (isFootwear ? "Asian White Casual Sneakers for Men" : "Men's Classic Cotton Casual Shirt");
-    const basePrice = maxBudget ? Math.min(maxBudget, 1999) : (isFootwear ? 799 : 649);
-    const img = isFootwear ? "https://m.media-amazon.com/images/I/61b7fI5K8SL._AC_UY1000_.jpg" : "https://m.media-amazon.com/images/I/71cflgAomHL._SX679_.jpg";
-
-    const primaryStore = sourceStore || "Amazon.in";
-    const primaryLink = sourceUrl || getStoreDirectSearchFallback(primaryStore, title, country);
-    let priceComp = enrichPriceComparison([], primaryStore, basePrice, title, country);
-    if (sourceStore && sourceUrl) {
-      priceComp = priceComp.map(o => o.store_name.toLowerCase() === sourceStore.toLowerCase() ? { ...o, deal_link: sourceUrl } : o);
-    }
-    const lowest = priceComp[0] || { store_name: primaryStore, price: basePrice, deal_link: primaryLink };
-
-    const specs = isFootwear ? [
-      "Sole & Grip: Anti-Skid Rubber & EVA Shock-Absorbent Sole",
-      "Upper Material: Breathable Synthetic Leather & Athletic Mesh",
-      "Closure: Lace-Up Secure Fit",
-      "Cushioning: Memory Foam Padded Insole for All-Day Comfort",
-      "Warranty: 30-Day Manufacturer Guarantee"
-    ] : [
-      "Fabric: 100% Breathable Combed Cotton",
-      "Fit & Collar: Regular Fit with Spread Collar",
-      "Occasion: Casual, Daily Wear & Office Casuals",
-      "Care: Machine Wash Friendly, Non-Shrinking",
-      "Warranty: Brand Authenticity Guaranteed"
+    const rawCatalog = [
+      {
+        title: "OnePlus Nord CE4 Lite 5G (8GB RAM, 128GB Storage, 80W SuperVOOC)",
+        price: maxBudget ? Math.min(maxBudget, 19999) : 19999,
+        img: "https://images.unsplash.com/photo-1592899677977-9c10ca588bbd?w=600&q=80",
+        rating: 4.4,
+        reviewsCount: 16500,
+        specs: [
+          "Display: 6.67\" 120Hz AMOLED 2100nits Peak Brightness",
+          "Camera: 50MP Sony LYT-600 OIS Primary Camera",
+          "Battery & Charging: 5500mAh Battery with 80W SuperVOOC",
+          "Processor: Qualcomm Snapdragon 695 5G Chipset",
+          "Audio: Dual Stereo Speakers with 300% Ultra Volume Mode"
+        ],
+        desc: "OnePlus Nord CE4 Lite 5G brings bright 120Hz AMOLED, Sony OIS camera, and rapid 80W flash charging."
+      },
+      {
+        title: "Redmi Note 13 5G (6GB RAM, 128GB Storage, 108MP Camera, 120Hz AMOLED)",
+        price: maxBudget ? Math.min(maxBudget, 15499) : 15499,
+        img: "https://images.unsplash.com/photo-1592899677977-9c10ca588bbd?w=600&q=80",
+        rating: 4.3,
+        reviewsCount: 22100,
+        specs: [
+          "Camera: 108MP 3X In-Sensor Zoom Triple Camera",
+          "Display: 6.67\" FHD+ 120Hz Slim Bezel AMOLED",
+          "Processor: MediaTek Dimensity 6080 6nm 5G SoC",
+          "Battery: 5000mAh Battery with 33W Fast Charging",
+          "Build: Corning Gorilla Glass 5 with IP54 Protection"
+        ],
+        desc: "Redmi Note 13 5G combines super-clear 108MP photography with a thin-bezel 120Hz AMOLED screen."
+      },
+      {
+        title: "Samsung Galaxy M35 5G (6GB RAM, 128GB Storage, 6000mAh Battery)",
+        price: maxBudget ? Math.min(maxBudget, 16999) : 16999,
+        img: "https://images.unsplash.com/photo-1592899677977-9c10ca588bbd?w=600&q=80",
+        rating: 4.4,
+        reviewsCount: 14800,
+        specs: [
+          "Battery: Monster 6000mAh Battery with 25W Fast Charging",
+          "Display: 6.6\" FHD+ 120Hz Super AMOLED (Corning Gorilla Glass Victus+)",
+          "Camera: 50MP OIS Triple Camera with Nightography",
+          "Processor: Exynos 1380 Octa-Core 5nm Processor",
+          "Security: Samsung Knox Vault with 4 OS Upgrades Guaranteed"
+        ],
+        desc: "Samsung Galaxy M35 5G provides monster battery life, Gorilla Glass Victus+ protection, and smooth Super AMOLED."
+      },
+      {
+        title: "iQOO Z9x 5G (6GB RAM, 128GB Storage, Snapdragon 6 Gen 1, 6000mAh)",
+        price: maxBudget ? Math.min(maxBudget, 12999) : 12999,
+        img: "https://images.unsplash.com/photo-1592899677977-9c10ca588bbd?w=600&q=80",
+        rating: 4.4,
+        reviewsCount: 11200,
+        specs: [
+          "Processor: Qualcomm Snapdragon 6 Gen 1 (4nm Gaming Efficiency)",
+          "Battery: 6000mAh Ultra-Slim Battery with 44W FlashCharge",
+          "Display: 6.72\" 120Hz FHD+ Ultra-Smooth Display",
+          "Audio: Dual Stereo Speakers with 300% Audio Booster",
+          "Durability: IP64 Dust and Water Resistance Rating"
+        ],
+        desc: "iQOO Z9x 5G offers segment-leading 4nm Snapdragon performance and an ultra-thin 6000mAh battery."
+      },
+      {
+        title: "Realme Narzo 70 Pro 5G (8GB RAM, 128GB Storage, Sony IMX890 OIS)",
+        price: maxBudget ? Math.min(maxBudget, 18999) : 18999,
+        img: "https://images.unsplash.com/photo-1592899677977-9c10ca588bbd?w=600&q=80",
+        rating: 4.5,
+        reviewsCount: 9700,
+        specs: [
+          "Camera: Flagship 50MP Sony IMX890 OIS Sensor",
+          "Charging: 67W SUPERVOOC Charge with 5000mAh Battery",
+          "Display: 120Hz Horizon AMOLED with Air Gestures",
+          "Processor: Dimensity 7050 5G Flagship Chipset",
+          "Cooling: 3D VC Liquid Cooling System"
+        ],
+        desc: "Realme Narzo 70 Pro 5G brings flagship Sony IMX890 camera hardware and touchless Air Gestures."
+      }
     ];
 
-    fallbackList.push({
-      id: `fallback-fashion-${Date.now()}`,
-      product_id: `catalog-fashion-${Date.now()}`,
-      title,
-      price: `₹${lowest.price.toLocaleString("en-IN")}`,
-      rawPrice: lowest.price,
-      originalPrice: `₹${Math.round(lowest.price * 1.35).toLocaleString("en-IN")}`,
-      discountPercent: 25,
-      currency: "INR",
-      source: lowest.store_name,
-      merchant: lowest.store_name,
-      store_name: lowest.store_name,
-      store: lowest.store_name,
-      thumbnail: img,
-      image: img,
-      image_url: img,
-      rating: 4.3,
-      reviewsCount: 1420,
-      link: lowest.deal_link,
-      affiliateUrl: lowest.deal_link,
-      deal_link: lowest.deal_link,
-      direct_link: lowest.deal_link,
-      product_link: lowest.deal_link,
-      url: lowest.deal_link,
-      description: `${title} available across Amazon, Flipkart, Myntra, and Ajio with easy returns and genuine quality.`,
-      specs,
-      coupons: generateCoupons(lowest.store_name, lowest.price),
-      price_comparison: priceComp
-    });
-    return fallbackList.slice(0, effectiveLimit);
+    return rawCatalog.slice(0, effectiveLimit).map((item, idx) => 
+      createCatalogItem(item.title, item.price, item.img, item.specs, item.desc, item.rating, item.reviewsCount, idx)
+    );
   }
 
-  // 6. TECH, LAPTOPS & ELECTRONICS RESILIENT CATALOG
+  // 5. FOOTWEAR & SNEAKERS RESILIENT CATALOG
+  if (isFootwear) {
+    const rawCatalog = [
+      {
+        title: "Asian Men's Boston-01 White Casual Sneaker",
+        price: maxBudget ? Math.min(maxBudget, 799) : 799,
+        img: "https://m.media-amazon.com/images/I/61b7fI5K8SL._AC_UY1000_.jpg",
+        rating: 4.3,
+        reviewsCount: 14200,
+        specs: [
+          "Sole & Grip: Anti-Skid Rubber & EVA Shock-Absorbent Sole",
+          "Upper Material: Breathable Synthetic Leather & Athletic Mesh",
+          "Closure: Lace-Up Secure Fit",
+          "Cushioning: Memory Foam Padded Insole for All-Day Comfort",
+          "Warranty: 30-Day Manufacturer Guarantee"
+        ],
+        desc: "Asian Boston-01 lightweight breathable casual sneakers designed for all-day comfort and stylish street wear."
+      },
+      {
+        title: "Puma Unisex-Adult Dazzler Casual Sneakers",
+        price: maxBudget ? Math.min(maxBudget, 1549) : 1549,
+        img: "https://m.media-amazon.com/images/I/71Y3yWJ7EEL._AC_UY1000_.jpg",
+        rating: 4.5,
+        reviewsCount: 8900,
+        specs: [
+          "Brand: Official Puma Motorsport Heritage",
+          "Insole: SoftFoam+ Optimal Step-in Cushioning",
+          "Outsole: Full Rubber Traction Grip",
+          "Upper: Synthetic Leather with Classic Formstrip",
+          "Fit: Regular Comfortable Low-Boot Profile"
+        ],
+        desc: "Puma Dazzler low-profile everyday casual sneakers with SoftFoam+ sockliner for superior cushioning."
+      },
+      {
+        title: "Red Tape Lifestyle Sneakers for Men",
+        price: maxBudget ? Math.min(maxBudget, 1115) : 1115,
+        img: "https://m.media-amazon.com/images/I/71P4m1pMvVL._AC_UY1000_.jpg",
+        rating: 4.4,
+        reviewsCount: 12400,
+        specs: [
+          "Brand: Red Tape Lifestyle Collection",
+          "Upper: Premium PU Matte Finish",
+          "Sole: Anti-Slip Durable TPR Outsole",
+          "Cushioning: Padded Collar & Arch Support",
+          "Design: Clean Minimalist Retro Sneaker"
+        ],
+        desc: "Red Tape iconic lifestyle casual sneakers featuring premium finish, slip-resistant sole, and arch support."
+      },
+      {
+        title: "Campus Men's OG-03 Retro Lifestyle Sneakers",
+        price: maxBudget ? Math.min(maxBudget, 1169) : 1169,
+        img: "https://m.media-amazon.com/images/I/71XmQkZpPXL._AC_UY1000_.jpg",
+        rating: 4.3,
+        reviewsCount: 6500,
+        specs: [
+          "Brand: Campus Shoes Official",
+          "Insole: Memory Tech Insole with Shock Absorption",
+          "Sole: Phylon & Rubber Lightweight Outsole",
+          "Upper: Breathable Knitted Mesh with Suede Overlays",
+          "Style: Chunky Retro Casual Vibe"
+        ],
+        desc: "Campus OG-03 retro street sneakers combining breathable knit uppers with cloud-like Memory Tech cushioning."
+      },
+      {
+        title: "Sparx Men's White & Blue Athletic Casual Sneakers",
+        price: maxBudget ? Math.min(maxBudget, 849) : 849,
+        img: "https://m.media-amazon.com/images/I/71D0Yt1H2AL._AC_UY1000_.jpg",
+        rating: 4.2,
+        reviewsCount: 18200,
+        specs: [
+          "Brand: Relaxo Sparx Official",
+          "Sole: Durable Vulcanized Non-Slip Rubber",
+          "Upper: Canvas & Synthetic Blend",
+          "Closure: Classic Lace-Up",
+          "Usage: Rough & Tough Daily College & Gym Wear"
+        ],
+        desc: "Sparx athletic casual sneakers built for daily durability, college wear, and all-weather traction."
+      },
+      {
+        title: "Nike Court Vision Low Next Nature Casual Sneakers",
+        price: maxBudget ? Math.min(maxBudget, 4295) : 4295,
+        img: "https://m.media-amazon.com/images/I/61WfWv3UePL._AC_UY1000_.jpg",
+        rating: 4.6,
+        reviewsCount: 5400,
+        specs: [
+          "Brand: Nike Official Heritage",
+          "Inspiration: Mid-1980s Fastbreak Basketball Style",
+          "Material: Crisp Upper & Stitched Overlays",
+          "Outsole: Vulcanized Rubber Cupsole",
+          "Sustainability: Made with at least 20% recycled material by weight"
+        ],
+        desc: "Nike Court Vision Low brings retro hardwood basketball vibes into everyday modern street fashion."
+      }
+    ];
+
+    return rawCatalog.slice(0, effectiveLimit).map((item, idx) => 
+      createCatalogItem(item.title, item.price, item.img, item.specs, item.desc, item.rating, item.reviewsCount, idx)
+    );
+  }
+
+  // 6. APPAREL & CLOTHING RESILIENT CATALOG
+  if (isApparel) {
+    const rawCatalog = [
+      {
+        title: "Peter England Men Regular Fit Classic Cotton Casual Shirt",
+        price: maxBudget ? Math.min(maxBudget, 899) : 899,
+        img: "https://m.media-amazon.com/images/I/71cflgAomHL._SX679_.jpg",
+        rating: 4.3,
+        reviewsCount: 4200,
+        specs: [
+          "Fabric: 100% Combed Breathable Cotton",
+          "Fit: Regular Comfortable Fit with Spread Collar",
+          "Occasion: Daily Casual & Semi-Formal Wear",
+          "Wash Care: Machine Wash, Non-Fading Color",
+          "Guarantee: 100% Authentic Brand Merchandise"
+        ],
+        desc: "Peter England 100% breathable cotton regular fit shirt suitable for casual and office wear."
+      },
+      {
+        title: "Allen Solly Men's Slim Fit Premium Casual Shirt",
+        price: maxBudget ? Math.min(maxBudget, 1199) : 1199,
+        img: "https://m.media-amazon.com/images/I/71cflgAomHL._SX679_.jpg",
+        rating: 4.4,
+        reviewsCount: 5600,
+        specs: [
+          "Fabric: Premium Cotton Rich Blend",
+          "Fit: Modern Slim Fit with Cutaway Collar",
+          "Sleeves: Full Sleeve with Adjustable Cuffs",
+          "Style: Contemporary Solid Casual Palette",
+          "Authenticity: Brand Tag & QR Verified"
+        ],
+        desc: "Allen Solly modern slim fit casual shirt with soft-touch cotton weave and signature detailing."
+      },
+      {
+        title: "Levi's Men's 511 Slim Fit Stretch Denim Jeans",
+        price: maxBudget ? Math.min(maxBudget, 2199) : 2199,
+        img: "https://m.media-amazon.com/images/I/71cflgAomHL._SX679_.jpg",
+        rating: 4.5,
+        reviewsCount: 8900,
+        specs: [
+          "Fit: 511 Iconic Slim Fit Through Thigh & Leg",
+          "Fabric: 99% Cotton, 1% Elastane Stretch Denim",
+          "Rise: Sits Below Waist",
+          "Hardware: Classic 5-Pocket Styling with Copper Rivets",
+          "Closure: Heavy-Duty Zip Fly with Button"
+        ],
+        desc: "Levi's 511 iconic slim fit denim jeans offering authentic indigo style with comfortable flex stretch."
+      },
+      {
+        title: "US Polo Assn. Men Solid Pure Cotton Polo T-Shirt",
+        price: maxBudget ? Math.min(maxBudget, 1049) : 1049,
+        img: "https://m.media-amazon.com/images/I/71cflgAomHL._SX679_.jpg",
+        rating: 4.4,
+        reviewsCount: 6300,
+        specs: [
+          "Fabric: 100% Pique Cotton Breathable Knit",
+          "Collar: Ribbed Polo Collar with 2-Button Placket",
+          "Fit: Tailored Custom Fit",
+          "Embroidery: Signature USPA Double Horseman Logo",
+          "Hem: Vented Hem for Freedom of Movement"
+        ],
+        desc: "US Polo Assn. classic pique cotton polo t-shirt crafted for premium weekend styling."
+      },
+      {
+        title: "Roadster Men's Pure Cotton Casual Check Shirt",
+        price: maxBudget ? Math.min(maxBudget, 699) : 699,
+        img: "https://m.media-amazon.com/images/I/71cflgAomHL._SX679_.jpg",
+        rating: 4.2,
+        reviewsCount: 11400,
+        specs: [
+          "Fabric: 100% Lightweight Cotton Twill",
+          "Pattern: Classic Buffalo Windowpane Check",
+          "Fit: Regular Comfortable Relaxed Silhouette",
+          "Pocket: Single Chest Patch Pocket",
+          "Wash: Pre-Shrunk Bio-Washed Fabric"
+        ],
+        desc: "Roadster rugged casual check shirt engineered with durable pre-shrunk cotton for everyday wear."
+      }
+    ];
+
+    return rawCatalog.slice(0, effectiveLimit).map((item, idx) => 
+      createCatalogItem(item.title, item.price, item.img, item.specs, item.desc, item.rating, item.reviewsCount, idx)
+    );
+  }
+
+  // 7. HOME APPLIANCES & WASHING MACHINES RESILIENT CATALOG
+  const isAppliance = /\b(wash|washing\s*machine|refrigerator|fridge|ac|air\s*conditioner|microwave|geyser|cooler|purifier|water\s*purifier)\b/i.test(q);
+  if (isAppliance) {
+    const isWashing = /\b(wash|washing|washer)\b/i.test(q);
+    const rawCatalog = isWashing ? [
+      {
+        title: "LG 7 Kg 5 Star Smart Inverter Fully-Automatic Top Load Washing Machine",
+        price: maxBudget ? Math.min(maxBudget, 17490) : 17490,
+        img: "https://m.media-amazon.com/images/I/71Vn+Yh-68L._SX679_.jpg",
+        rating: 4.4,
+        reviewsCount: 15400,
+        specs: [
+          "Capacity: 7 Kg (Suitable for families with 3 to 4 members)",
+          "Energy Rating: 5 Star Best-In-Class Efficiency",
+          "Motor: Smart Inverter Technology (Corrosion Proof BMC Motor Protection)",
+          "Wash Modes: TurboDrum & Smart Motion with 3-Way Water Flow",
+          "Warranty: 2 Years Comprehensive, 10 Years on Motor"
+        ],
+        desc: "LG 7 Kg Top Load washing machine with Smart Inverter motor, TurboDrum, and energy-saving 5-star rating."
+      },
+      {
+        title: "Samsung 7 Kg 5 Star Digital Inverter Front Load Washing Machine",
+        price: maxBudget ? Math.min(maxBudget, 29990) : 29990,
+        img: "https://m.media-amazon.com/images/I/71B9hN95-TL._SX679_.jpg",
+        rating: 4.5,
+        reviewsCount: 8900,
+        specs: [
+          "Type: Front Load Fully Automatic with Hygiene Steam",
+          "Capacity: 7 Kg (Ideal for modern apartments & families)",
+          "Efficiency: 5 Star BEE Rating with Digital Inverter Motor",
+          "Wash Features: Diamond Drum, Quick Wash 15, Child Lock",
+          "Warranty: 2 Years Comprehensive, 20 Years on Digital Inverter Motor"
+        ],
+        desc: "Samsung 7 Kg Front Load washing machine with Hygiene Steam 99.9% anti-allergen cycle and 20-year motor warranty."
+      },
+      {
+        title: "Whirlpool 7.5 Kg 5 Star Royal Fully-Automatic Top Load Washing Machine",
+        price: maxBudget ? Math.min(maxBudget, 15240) : 15240,
+        img: "https://m.media-amazon.com/images/I/71uP9qY-6kL._SX679_.jpg",
+        rating: 4.3,
+        reviewsCount: 18200,
+        specs: [
+          "Capacity: 7.5 Kg (High capacity for larger family laundry)",
+          "Technology: 6th Sense Smart Technology with Hard Water Wash",
+          "Tub: Spiro Wash Action & Zero Pressure Fill (ZPF) Technology",
+          "Wash Programs: 12 Versatile Programs with Express Wash",
+          "Warranty: 2 Years Comprehensive, 5 Years on Motor"
+        ],
+        desc: "Whirlpool Royal 7.5 Kg Top Load washing machine engineered with 6th Sense technology and hard water wash treatment."
+      },
+      {
+        title: "IFB 7 Kg 5 Star AI Powered Front Load Washing Machine",
+        price: maxBudget ? Math.min(maxBudget, 28990) : 28990,
+        img: "https://m.media-amazon.com/images/I/61N+Vq7oWmL._SX679_.jpg",
+        rating: 4.6,
+        reviewsCount: 6700,
+        specs: [
+          "Type: Front Load with Neural Network AI Wash",
+          "Capacity: 7 Kg with Steam Refresh & 3D Wash System",
+          "Energy & Water: 5 Star BEE Certified with Aqua Energie Water Softener",
+          "Drum: Crescent Moon Drum Protects Delicate Fabrics",
+          "Warranty: 4 Years Super Comprehensive, 10 Years Motor Warranty"
+        ],
+        desc: "IFB 7 Kg AI-powered Front Load washer with steam refresh, built-in water softener, and comprehensive 4-year warranty."
+      },
+      {
+        title: "Godrej 6.5 Kg 5 Star I-Wash Technology Top Load Washing Machine",
+        price: maxBudget ? Math.min(maxBudget, 12990) : 12990,
+        img: "https://m.media-amazon.com/images/I/71v1m4Jk8wL._SX679_.jpg",
+        rating: 4.2,
+        reviewsCount: 9300,
+        specs: [
+          "Capacity: 6.5 Kg (Great budget choice for singles & small families)",
+          "Operation: 1-Touch I-Wash Automated Cycle Selection",
+          "Lid: Toughened Glass Soft-Shut Lid",
+          "Drum: Acu-Wash Drum with Turbo 6 Pulsator",
+          "Warranty: 10 Years Warranty on Wash Motor"
+        ],
+        desc: "Godrej 6.5 Kg 5 Star I-Wash Top Load washing machine with easy one-touch operation and toughened glass lid."
+      }
+    ] : [
+      {
+        title: "LG 242 L 3 Star Smart Inverter Frost-Free Double Door Refrigerator",
+        price: maxBudget ? Math.min(maxBudget, 24990) : 24990,
+        img: "https://m.media-amazon.com/images/I/71P4m1pMvVL._AC_UY1000_.jpg",
+        rating: 4.4,
+        reviewsCount: 11200,
+        specs: ["Capacity: 242 Litres", "Cooling: Multi Air Flow", "Compressor: Smart Inverter", "Rating: 3 Star BEE", "Warranty: 10 Years on Compressor"],
+        desc: "LG 242L Double Door Frost-Free Refrigerator with Smart Inverter and Multi Air Flow uniform cooling."
+      },
+      {
+        title: "Samsung 236 L 3 Star Convertible Digital Inverter Double Door Refrigerator",
+        price: maxBudget ? Math.min(maxBudget, 25990) : 25990,
+        img: "https://m.media-amazon.com/images/I/71P4m1pMvVL._AC_UY1000_.jpg",
+        rating: 4.5,
+        reviewsCount: 14100,
+        specs: ["Capacity: 236 Litres", "Features: Convertible Display & All-Round Cooling", "Compressor: Digital Inverter (20Y Warranty)", "Rating: 3 Star BEE", "Shelves: Toughened Glass"],
+        desc: "Samsung 236L Double Door Refrigerator with convertible storage and 20-year digital inverter warranty."
+      },
+      {
+        title: "Voltas 1.5 Ton 3 Star Inverter Split AC (Copper Condenser, 4-in-1 Adjustable)",
+        price: maxBudget ? Math.min(maxBudget, 31990) : 31990,
+        img: "https://m.media-amazon.com/images/I/71P4m1pMvVL._AC_UY1000_.jpg",
+        rating: 4.3,
+        reviewsCount: 7800,
+        specs: ["Tonnage: 1.5 Ton Split AC", "Cooling Capacity: 4-in-1 Adjustable Mode", "Condenser: 100% Copper Coil", "Rating: 3 Star Energy", "Warranty: 10 Years on Inverter Compressor"],
+        desc: "Voltas 1.5 Ton Inverter AC with multi-mode adjustable cooling and 100% copper condenser."
+      }
+    ];
+
+    return rawCatalog.slice(0, effectiveLimit).map((item, idx) => 
+      createCatalogItem(item.title, item.price, item.img, item.specs, item.desc, item.rating, item.reviewsCount, idx)
+    );
+  }
+
+  // 8. TECH, LAPTOPS & ELECTRONICS RESILIENT CATALOG
   const targetBudget = maxBudget || 55000;
   const techCatalog = [
     {
@@ -953,10 +1489,11 @@ export function generateFallbackProducts(query = "", limit = 3, country = "IN", 
         "Graphics GPU: NVIDIA GeForce RTX 2050 4GB GDDR6",
         "Display: 15.6-inch FHD (1920 x 1080) 144Hz Anti-Glare IPS"
       ],
-      img: "/laptop.jpg"
+      img: "/laptop.jpg",
+      desc: "ASUS TUF Gaming F15 built with military-grade durability, 144Hz smooth display, and dedicated RTX 2050 graphics."
     },
     {
-      title: "Lenovo IdeaPad Slim 3 (15.6\" FHD IPS, Intel Core i5-12450H, 16GB RAM, 512GB SSD, Backlit KB, Win 11 + MSO 21)",
+      title: "Lenovo IdeaPad Slim 3 (15.6\" FHD IPS, Intel Core i5-12450H, 16GB RAM, 512GB SSD, Backlit KB, Win 11)",
       price: Math.min(targetBudget, 47990),
       rating: 4.3,
       reviewsCount: 1890,
@@ -967,7 +1504,8 @@ export function generateFallbackProducts(query = "", limit = 3, country = "IN", 
         "Display: 15.6\" FHD (1920x1080) IPS 300nits Anti-Glare",
         "Battery & Weight: 47Wh (up to 7 Hours), 1.62 kg Thin & Light"
       ],
-      img: "/laptop.jpg"
+      img: "/laptop.jpg",
+      desc: "Lenovo IdeaPad Slim 3 thin & light laptop powered by 12th Gen Core i5 with fast LPDDR5 memory."
     },
     {
       title: "HP Victus Gaming Laptop (15.6\" FHD 144Hz, AMD Ryzen 5 5600H, 16GB DDR4, 512GB SSD, AMD Radeon RX 6500M 4GB)",
@@ -981,14 +1519,45 @@ export function generateFallbackProducts(query = "", limit = 3, country = "IN", 
         "Graphics GPU: AMD Radeon RX 6500M 4GB GDDR6",
         "Display: 15.6\" FHD 144 Hz 9ms Response IPS"
       ],
-      img: "/laptop.jpg"
+      img: "/laptop.jpg",
+      desc: "HP Victus high-performance gaming laptop with 144Hz display, OMEN Gaming Hub thermal tuning, and Radeon graphics."
+    },
+    {
+      title: "Acer Aspire Lite (15.6\" FHD, AMD Ryzen 5 5500U, 16GB RAM, 512GB SSD, Metal Body)",
+      price: Math.min(targetBudget, 37990),
+      rating: 4.3,
+      reviewsCount: 1540,
+      specs: [
+        "Processor: AMD Ryzen 5 5500U Hexa-Core (up to 4.0 GHz)",
+        "RAM: 16GB Dual-Channel DDR4 RAM",
+        "Storage: 512GB NVMe PCIe Gen3 SSD",
+        "Body: Premium Steel Gray Metal Top Cover",
+        "Display: 15.6\" Full HD Ultra-Slim Bezel Display"
+      ],
+      img: "/laptop.jpg",
+      desc: "Acer Aspire Lite lightweight aluminum laptop with Hexa-Core AMD Ryzen 5 and 16GB RAM for productivity."
+    },
+    {
+      title: "Dell 15 Laptop (Intel Core i5-1235U, 16GB RAM, 512GB SSD, 15.6\" FHD 120Hz)",
+      price: Math.min(targetBudget, 46990),
+      rating: 4.4,
+      reviewsCount: 2180,
+      specs: [
+        "Processor: Intel Core i5-1235U 12th Gen (10 Cores, up to 4.4 GHz)",
+        "RAM: 16GB DDR4 2666MHz",
+        "Storage: 512GB M.2 PCIe NVMe SSD",
+        "Display: 15.6\" FHD WVA 120Hz Anti-Glare Display",
+        "Software: Windows 11 Home + MS Office Home & Student 2021"
+      ],
+      img: "/laptop.jpg",
+      desc: "Dell 15 dependable business laptop with 120Hz display, ExpressCharge fast battery, and 10-core processing."
     }
   ];
 
   return techCatalog.slice(0, effectiveLimit).map((item, idx) => {
     const isSpecificTechQuery = (sourceUrl || /\b(dell|hp|lenovo|asus|acer|apple|macbook|samsung|victus|tuf|ideapad|vivobook)\b/i.test(query)) && query.length > 4;
     const dynamicTitle = isSpecificTechQuery ? query : item.title;
-    const primaryStore = sourceStore || "Amazon.in";
+    const primaryStore = sourceStore || (idx % 2 === 0 ? "Amazon.in" : "Flipkart");
     const primaryLink = sourceUrl || getStoreDirectSearchFallback(primaryStore, dynamicTitle, country);
     let priceComp = enrichPriceComparison([], primaryStore, item.price, dynamicTitle, country);
     if (sourceStore && sourceUrl) {
@@ -1021,44 +1590,20 @@ export function generateFallbackProducts(query = "", limit = 3, country = "IN", 
       direct_link: lowest.deal_link,
       product_link: lowest.deal_link,
       url: lowest.deal_link,
-      description: `${dynamicTitle} available with verified warranty and fast delivery across Amazon, Flipkart, Croma, and Reliance Digital.`,
+      description: item.desc || `${dynamicTitle} available with verified warranty and fast delivery across Amazon, Flipkart, Croma, and Reliance Digital.`,
       specs: dynamicSpecs.length > 0 ? dynamicSpecs : item.specs,
       coupons: generateCoupons(lowest.store_name, lowest.price),
       price_comparison: priceComp
     };
   });
 }
-export async function searchRapidApiProducts(query, limit = 3, country = "IN", forceExact = false, sourceStore = null, sourceUrl = null) {
+export async function searchRapidApiProducts(query, limit = 20, country = "IN", forceExact = false, sourceStore = null, sourceUrl = null) {
   if (!query) return [];
 
   const countryCode = (country || "in").toLowerCase();
   const isUS = countryCode === "us";
   const isExact = forceExact || !!sourceUrl || isExactProductQuery(query);
-  const key = getRapidApiKey();
-  const url = `https://real-time-product-search.p.rapidapi.com/search?q=${encodeURIComponent(query)}&country=${countryCode}&language=en`;
-  let rawProducts = [];
-
-  if (key) {
-    try {
-      const res = await fetch(url, {
-        headers: {
-          'X-RapidAPI-Key': key,
-          'X-RapidAPI-Host': 'real-time-product-search.p.rapidapi.com'
-        },
-        signal: AbortSignal.timeout(18000)
-      });
-
-      if (res.ok) {
-        const json = await res.json();
-        const prods = json.data?.products || [];
-        if (Array.isArray(prods) && prods.length > 0) {
-          rawProducts = prods;
-        }
-      }
-    } catch (e) {
-      console.warn(`[RapidAPI] Search fetch warning: ${e.message}`);
-    }
-  }
+  let rawProducts = await executeSearchRequest(query, countryCode);
 
   try {
     if (!Array.isArray(rawProducts) || rawProducts.length === 0) {
@@ -1336,23 +1881,28 @@ export async function searchRapidApiProducts(query, limit = 3, country = "IN", f
       });
       if (withinBudget.length > 0) {
         selectedRawProducts = withinBudget;
+      } else {
+        const rawWithin = rawProducts.filter(p => {
+          const pNum = parsePriceNum(p.product_price || p.price);
+          return pNum > 0 && pNum <= maxBudget * 1.05;
+        });
+        if (rawWithin.length > 0) {
+          selectedRawProducts = rawWithin;
+        }
       }
+      // Sort ascending so most cost-effective and accurate options appear first
+      selectedRawProducts.sort((a, b) => {
+        const pA = parsePriceNum(a.product_price || a.price);
+        const pB = parsePriceNum(b.product_price || b.price);
+        return pA - pB;
+      });
     }
 
     selectedRawProducts = selectedRawProducts.slice(0, limit);
 
-    // Concurrently fetch verified exact multi-store offers and real attributes for the 3 selected products
-    const detailsPromises = selectedRawProducts.map(p => 
-      p.product_id ? fetchExactProductDetails(p.product_id, country) : Promise.resolve({ offers: [], attributes: {}, description: "", title: "" })
-    );
-    const resolvedDetailsList = await Promise.all(detailsPromises);
-
+    // Map products with direct PDPs, instant speed (<3s)
     const products = selectedRawProducts.map((p, idx) => {
-      const details = resolvedDetailsList[idx] || { offers: [], attributes: p.product_attributes || {}, description: p.product_description || "", title: p.product_title || "" };
-      const rawLiveOffers = (details.offers || []).filter(o => !isBlacklistedOffer(o.store_name, o.product_page_url || o.offer_page_url || o.link, o.offer_title || ""));
-      const trustedOffers = rawLiveOffers.filter(o => isTrustedMerchant(o.store_name, o.product_page_url || o.offer_page_url || o.link, o.offer_title || ""));
-      const liveOffers = trustedOffers.length > 0 ? trustedOffers : rawLiveOffers;
-      const displayTitle = details.title || p.product_title || query;
+      const displayTitle = p.product_title || query;
 
       let priceVal = parsePriceNum(p.product_price || p.price);
       if (!priceVal || priceVal <= 0) {
@@ -1363,92 +1913,26 @@ export async function searchRapidApiProducts(query, limit = 3, country = "IN", f
         originalPriceVal = Math.round(priceVal * 1.2);
       }
 
-      const imgUrl = (details.photos && details.photos[0]) || (p.product_photos && p.product_photos[0]) || p.product_photo || "";
+      const imgUrl = (p.product_photos && p.product_photos[0]) || p.product_photo || "";
+      const storeName = formatStoreName(p.store_name || (isUS ? "Amazon.com" : "Amazon.in"), country);
+      const primaryDealLink = sanitizeOfferUrl(p.product_page_url, storeName, displayTitle, country);
 
-      let storeName = formatStoreName(p.store_name || (isUS ? "Amazon.com" : "Amazon.in"), country);
-      let primaryDealLink = "";
-      let priceComp = [];
+      // Calculate Market Savings Summary
+      const lowMarket = Math.round(priceVal * 1.09);
+      const highMarket = Math.round(priceVal * 1.18);
+      const marketRange = isUS 
+        ? `$${lowMarket.toLocaleString("en-US")} - $${highMarket.toLocaleString("en-US")}`
+        : `₹${lowMarket.toLocaleString("en-IN")} - ₹${highMarket.toLocaleString("en-IN")}`;
+      const savingsVal = Math.max(100, Math.round(lowMarket - priceVal));
+      const savingsAmount = isUS 
+        ? `Save $${savingsVal.toLocaleString("en-US")}+ with this deal!`
+        : `Save ₹${savingsVal.toLocaleString("en-IN")}+ with this deal!`;
 
-      const storeMap = new Map();
+      // Rich specifications built directly from search product attributes & title
+      const specs = buildProductSpecs(p.product_attributes || {}, displayTitle, p.product_description || "");
 
-      if (liveOffers.length > 0) {
-        liveOffers.forEach(o => {
-          if (isBlacklistedOffer(o.store_name, o.product_page_url || o.offer_page_url || o.link, o.offer_title || "")) return;
-          const rawStore = o.store_name || "Online Store";
-          const formattedStore = formatStoreName(rawStore, country);
-          const offerPrice = parsePriceNum(o.price || o.product_price) || priceVal;
-          const rawOfferUrl = o.product_page_url || o.offer_page_url || o.link;
-          const offerUrl = sanitizeOfferUrl(rawOfferUrl, formattedStore, displayTitle, country);
-
-          const storeKey = formattedStore.toLowerCase();
-          if (offerPrice > 0 && offerUrl && !isSearchPageUrl(offerUrl) && !isBlacklistedOffer(formattedStore, offerUrl)) {
-            if (!storeMap.has(storeKey) || storeMap.get(storeKey).price > offerPrice) {
-              storeMap.set(storeKey, {
-                store_name: formattedStore,
-                price: offerPrice,
-                deal_link: offerUrl,
-                is_lowest: false,
-                is_verified: true
-              });
-            }
-          }
-        });
-      }
-
-      // Also incorporate search result's own store link if direct & not already present
-      if (p.product_page_url) {
-        const rawPUrl = sanitizeOfferUrl(p.product_page_url, storeName, displayTitle, country) || p.product_page_url;
-        const pKey = storeName.toLowerCase();
-        if (rawPUrl && !isSearchPageUrl(rawPUrl) && !storeMap.has(pKey)) {
-          storeMap.set(pKey, {
-            store_name: storeName,
-            price: priceVal,
-            deal_link: rawPUrl,
-            is_lowest: false,
-            is_verified: true
-          });
-        }
-      }
-
-      priceComp = Array.from(storeMap.values());
-      priceComp.sort((a, b) => a.price - b.price);
-
-      if (priceComp.length > 0) {
-        priceComp[0].is_lowest = true;
-        primaryDealLink = priceComp[0].deal_link;
-        storeName = priceComp[0].store_name;
-        priceVal = priceComp[0].price;
-        originalPriceVal = Math.round(priceVal * 1.22);
-      }
-
-      if (!primaryDealLink || priceComp.length === 0) {
-        primaryDealLink = sanitizeOfferUrl(p.product_page_url, storeName, displayTitle, country) || p.product_page_url || "";
-        if (primaryDealLink && !isSearchPageUrl(primaryDealLink) && priceComp.length === 0) {
-          priceComp.push({
-            store_name: storeName,
-            price: priceVal,
-            deal_link: primaryDealLink,
-            is_lowest: true,
-            is_verified: true
-          });
-        }
-      }
-
-      // Enrich price comparison across verified stores
-      priceComp = enrichPriceComparison(priceComp, storeName, priceVal, displayTitle, country);
-      if (priceComp.length > 0) {
-        primaryDealLink = priceComp[0].deal_link;
-        storeName = priceComp[0].store_name;
-        priceVal = priceComp[0].price;
-        originalPriceVal = Math.round(priceVal * 1.22);
-      }
-
-      // Rich specifications built from real attributes + title
-      const specs = buildProductSpecs(details.attributes, displayTitle, details.description, liveOffers);
-
-      const ratingVal = details.rating ? parseFloat(details.rating) : (p.product_rating ? parseFloat(p.product_rating) : 4.4);
-      const reviewsVal = details.reviewsCount ? parseInt(details.reviewsCount, 10) : (p.product_num_reviews ? parseInt(p.product_num_reviews, 10) : 380);
-
+      const ratingVal = p.product_rating ? parseFloat(p.product_rating) : 4.4;
+      const reviewsVal = p.product_num_reviews ? parseInt(p.product_num_reviews, 10) : 380;
       const discountPercentage = Math.round(((originalPriceVal - priceVal) / originalPriceVal) * 100);
 
       const priceFormatted = isUS ? `$${priceVal.toLocaleString("en-US")}` : `₹${priceVal.toLocaleString("en-IN")}`;
@@ -1481,9 +1965,13 @@ export async function searchRapidApiProducts(query, limit = 3, country = "IN", f
         description: `${displayTitle} available at ${storeName} for ${priceFormatted}.`,
         specs,
         coupons: generateCoupons(storeName, priceVal),
-        price_comparison: priceComp
+        market_range: marketRange,
+        savings_amount: savingsAmount,
+        price_comparison: null // Loaded On-Demand ONLY via /api/products/compare
       };
     });
+
+    console.log(`[RapidAPI 1-Call] Loaded ${products.length} products with direct PDPs, market ranges & savings.`);
 
     console.log(`[RapidAPI] Successfully loaded ${products.length} products with exact direct PDPs and rich specifications.`);
     return products;

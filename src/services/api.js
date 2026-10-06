@@ -102,11 +102,15 @@ function cleanProductPageUrl(rawUrl = "", storeName = "", title = "") {
 
 function getDirectStoreLink(storeName = "", title = "") {
   const store = storeName.toLowerCase().trim();
-  const q = encodeURIComponent(title.trim());
+  let cleanTitle = title ? String(title).trim() : "";
+  if (!cleanTitle || cleanTitle === "null" || cleanTitle === "undefined") {
+    cleanTitle = "product";
+  }
+  const q = encodeURIComponent(cleanTitle);
 
   if (store.includes("amazon")) return `https://www.amazon.in/s?k=${q}`;
   if (store.includes("flipkart")) return `https://www.flipkart.com/search?q=${q}`;
-  if (store.includes("croma")) return `https://www.croma.com/searchB?q=${q}`;
+  if (store.includes("croma")) return `https://www.croma.com/search?text=${q.replace(/%20/g, "+")}`;
   if (store.includes("reliance")) return `https://www.reliancedigital.in/search?q=${q}`;
   if (store.includes("vijay")) return `https://www.vijaysales.com/search/${q}`;
   if (store.includes("meesho")) return `https://www.meesho.com/search?q=${q}`;
@@ -215,14 +219,7 @@ export async function searchProducts(query, country = "IN", isUrlLookup = false,
           is_lowest: !!o.is_lowest
         }));
       } else {
-        rawOffers = [
-          {
-            store: p.store_name || p.store || "Online Store",
-            price: basePrice,
-            link: p.deal_link || p.link || "#",
-            is_lowest: true
-          }
-        ];
+        rawOffers = [];
       }
 
       const priceComparison = rawOffers.map(offer => {
@@ -273,6 +270,10 @@ export async function searchProducts(query, country = "IN", isUrlLookup = false,
         deal_link: directProductUrl,
         revealUrl: directProductUrl,
         currency: currencyCode,
+        product_id: p.product_id || "",
+        market_range: p.market_range || null,
+        savings_amount: p.savings_amount || null,
+        rawPrice: p.rawPrice || basePrice,
         priceComparison,
         price_comparison: priceComparison
       };
