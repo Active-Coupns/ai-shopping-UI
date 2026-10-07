@@ -13,7 +13,8 @@ import {
   Image as ImageIcon, 
   ArrowRight,
   Zap,
-  Loader2
+  Loader2,
+  Mic
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -133,6 +134,60 @@ export default function SearchHero({
   const [cartImagePreview, setCartImagePreview] = useState(null);
   const [isAnalyzingCart, setIsAnalyzingCart] = useState(false);
   const fileInputRef = useRef(null);
+
+  // Voice Search State
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef(null);
+
+  const toggleVoiceSearch = () => {
+    if (typeof window === "undefined") return;
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Voice search is not supported in this browser. Please use Google Chrome or Microsoft Edge.");
+      return;
+    }
+
+    if (isListening && recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch (e) {}
+      setIsListening(false);
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.lang = isUS ? "en-US" : "en-IN";
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+
+      recognition.onstart = () => {
+        setIsListening(true);
+      };
+
+      recognition.onresult = (event) => {
+        const transcript = event.results[0]?.[0]?.transcript;
+        if (transcript) {
+          setQuery(transcript);
+        }
+        setIsListening(false);
+      };
+
+      recognition.onerror = () => {
+        setIsListening(false);
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+      };
+
+      recognitionRef.current = recognition;
+      recognition.start();
+    } catch (err) {
+      console.warn("Speech recognition error:", err);
+      setIsListening(false);
+    }
+  };
 
   const isUS = String(country).toUpperCase() === "US";
   const isHealth = activeTab === "health";
@@ -311,10 +366,11 @@ export default function SearchHero({
       </AnimatePresence>
 
       {/* 2. Interactive 3-Vertical Segmented Toggle */}
-      <div className="flex items-center p-1 bg-slate-100/90 rounded-2xl border border-slate-200/80 mb-4 sm:mb-6 w-full max-w-sm shadow-inner">
+      <div className="flex items-center p-1 bg-slate-100/90 rounded-2xl border border-slate-200/80 mb-4 sm:mb-6 w-full max-w-sm shadow-inner" suppressHydrationWarning>
         {/* Shopping Tab */}
         <button
           type="button"
+          suppressHydrationWarning
           onClick={() => setActiveTab("ecommerce")}
           className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
             activeTab === "ecommerce"
@@ -329,6 +385,7 @@ export default function SearchHero({
         {/* Pharmacy Tab */}
         <button
           type="button"
+          suppressHydrationWarning
           onClick={() => setActiveTab("health")}
           className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
             activeTab === "health"
@@ -343,6 +400,7 @@ export default function SearchHero({
         {/* Coupons Tab */}
         <button
           type="button"
+          suppressHydrationWarning
           onClick={() => setActiveTab("coupons")}
           className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
             activeTab === "coupons"
@@ -364,6 +422,7 @@ export default function SearchHero({
       >
         <form 
           onSubmit={handleSubmit}
+          suppressHydrationWarning
           className={`flex items-center gap-1.5 bg-white border rounded-2xl p-1.5 sm:p-2 shadow-lg shadow-slate-100/80 transition-all ${
             isCoupons
               ? "border-violet-200 hover:border-violet-300 focus-within:border-violet-500 focus-within:ring-4 focus-within:ring-violet-500/15"
@@ -384,6 +443,7 @@ export default function SearchHero({
 
           <input
             type="text"
+            suppressHydrationWarning
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={
@@ -400,6 +460,7 @@ export default function SearchHero({
           {query && (
             <button
               type="button"
+              suppressHydrationWarning
               onClick={() => setQuery("")}
               className="p-1 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
             >
@@ -407,8 +468,24 @@ export default function SearchHero({
             </button>
           )}
 
+          {/* Voice Search Button */}
+          <button
+            type="button"
+            suppressHydrationWarning
+            onClick={toggleVoiceSearch}
+            title={isListening ? "Listening... Click to stop" : "Search with Voice"}
+            className={`p-2 rounded-xl transition-all cursor-pointer flex items-center justify-center shrink-0 ${
+              isListening
+                ? "bg-rose-600 text-white animate-pulse shadow-md shadow-rose-500/30"
+                : "text-slate-400 hover:text-slate-700 hover:bg-slate-100"
+            }`}
+          >
+            <Mic className={`w-4 h-4 sm:w-4.5 sm:h-4.5 ${isListening ? "animate-bounce text-white" : ""}`} />
+          </button>
+
           <button
             type="submit"
+            suppressHydrationWarning
             className={`px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-xl text-white text-xs sm:text-sm font-bold shadow-md transition-all active:scale-95 cursor-pointer shrink-0 ${
               isCoupons
                 ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:opacity-95 shadow-violet-500/20"
@@ -422,7 +499,7 @@ export default function SearchHero({
         </form>
 
         {/* Quick Trending Chips */}
-        <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 mt-3 sm:mt-4">
+        <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 mt-3 sm:mt-4" suppressHydrationWarning>
           <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mr-1">
             Trending:
           </span>
@@ -430,6 +507,7 @@ export default function SearchHero({
             <button
               key={idx}
               type="button"
+              suppressHydrationWarning
               onClick={() => handlePromptClick(item.query)}
               className={`px-2.5 py-1 rounded-xl text-[11px] sm:text-xs font-semibold border transition-all cursor-pointer active:scale-95 shadow-2xs ${
                 isCoupons

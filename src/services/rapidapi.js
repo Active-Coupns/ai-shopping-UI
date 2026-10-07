@@ -179,7 +179,7 @@ export async function executeProductDetailsRequest(productId, countryCode = "in"
 
   if (result && Array.isArray(result.offers) && result.offers.length > 0) {
     try {
-      await redis.set(cacheKey, JSON.stringify(result), { ex: 604800 });
+      await redis.set(cacheKey, JSON.stringify(result), { ex: 86400 });
     } catch (e) {}
   }
 

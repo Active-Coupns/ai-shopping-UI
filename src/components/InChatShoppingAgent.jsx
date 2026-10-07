@@ -15,14 +15,27 @@ import {
   Zap, 
   ChevronDown, 
   ChevronUp,
-  MessageSquare
+  MessageSquare,
+  ExternalLink,
+  Check,
+  X,
+  ShoppingBag,
+  Mic,
+  MicOff
 } from "lucide-react";
 
-export default function InChatShoppingAgent({ products = [], searchQuery = "", onExecuteSearch }) {
+export default function InChatShoppingAgent({
+  products = [],
+  displayedProducts = [],
+  searchQuery = "",
+  aiSessionLedger = null,
+  onExecuteSearch
+}) {
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isExpanded, setIsExpanded] = useState(true);
+  const [dismissedConfirmations, setDismissedConfirmations] = useState({});
   const [activeFollowUps, setActiveFollowUps] = useState([
     "Which one is the best value for money?",
     "Compare battery life & performance",
@@ -30,14 +43,78 @@ export default function InChatShoppingAgent({ products = [], searchQuery = "", o
     "What if I need heavy gaming or 4K editing?"
   ]);
   const messagesEndRef = useRef(null);
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef(null);
+
+  const effectiveDisplayed = displayedProducts && displayedProducts.length > 0 
+    ? displayedProducts 
+    : (products || []).slice(0, 3);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
+    }
   };
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, isLoading]);
+    const t1 = setTimeout(scrollToBottom, 150);
+    const t2 = setTimeout(scrollToBottom, 400);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+  }, [messages, isLoading, dismissedConfirmations]);
+
+  const toggleVoiceInput = () => {
+    if (typeof window === "undefined") return;
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Voice search is not supported in this browser. Please use Google Chrome or Edge.");
+      return;
+    }
+
+    if (isListening && recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch (e) {}
+      setIsListening(false);
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.lang = "en-IN";
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+
+      recognition.onstart = () => {
+        setIsListening(true);
+      };
+
+      recognition.onresult = (event) => {
+        const transcript = event.results[0]?.[0]?.transcript;
+        if (transcript) {
+          setInputValue(transcript);
+        }
+        setIsListening(false);
+      };
+
+      recognition.onerror = () => {
+        setIsListening(false);
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+      };
+
+      recognitionRef.current = recognition;
+      recognition.start();
+    } catch (err) {
+      console.warn("Speech recognition error:", err);
+      setIsListening(false);
+    }
+  };
 
   // Initial welcome message from AI
   useEffect(() => {
@@ -45,7 +122,7 @@ export default function InChatShoppingAgent({ products = [], searchQuery = "", o
       setMessages([
         {
           role: "assistant",
-          text: `I've analyzed the ${products.length} live deals for "${searchQuery}". Ask me anything—I can compare their battery, performance, or advise if a different product fits your exact lifestyle better!`,
+          text: `I've analyzed all ${products.length} products found for "${searchQuery}". Ask me anything—I can compare the 3 on your screen, pull other hidden matches from our inventory, or advise on better alternatives!`,
           quickFollowUps: [
             "Which one is the best value for money?",
             "Compare battery life & performance",
@@ -72,28 +149,61 @@ export default function InChatShoppingAgent({ products = [], searchQuery = "", o
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userMessage: queryText,
-          products: (products || []).slice(0, 3).map(p => ({
+          displayedProducts: effectiveDisplayed.map(p => ({
             title: p.title,
             price: p.price,
             store_name: p.store_name || p.store,
             specs: p.specs || [],
             rating: p.rating
           })),
+          allPoolProducts: (products || []).slice(0, 20).map(p => ({
+            title: p.title,
+            price: p.price,
+            store_name: p.store_name || p.store,
+            specs: p.specs || [],
+            rating: p.rating,
+            image: p.image || p.thumbnail,
+            deal_link: p.deal_link || p.link || p.affiliateUrl
+          })),
           searchQuery,
+          sessionLedger: {
+            viewedReviews: Object.values(aiSessionLedger?.viewedReviews || {}).map(r => ({
+              title: r.productTitle,
+              fitVerdict: r.fitVerdict,
+              bestFor: r.bestFor,
+              skipIf: r.skipIf,
+              pros: (r.pros || []).slice(0, 2),
+              cons: (r.cons || []).slice(0, 2)
+            })),
+            lastViewedProduct: aiSessionLedger?.lastViewedProduct || null
+          },
           conversationHistory: newHistory.slice(-6)
         })
       });
 
       const data = await res.json();
 
+      // Find full product object if suggestedPoolProduct was returned
+      let matchedPoolProduct = null;
+      if (data.suggestedPoolProduct) {
+        matchedPoolProduct = (products || []).find(p => 
+          (p.title || "").toLowerCase().includes((data.suggestedPoolProduct.title || "").toLowerCase().slice(0, 20)) ||
+          (data.suggestedPoolProduct.title || "").toLowerCase().includes((p.title || "").toLowerCase().slice(0, 20))
+        ) || data.suggestedPoolProduct;
+      }
+
       setMessages(prev => [
         ...prev,
         {
           role: "assistant",
           text: data.reply || "I analyzed your requirements against the current deals.",
-          recommendedProductIndex: data.recommendedProductIndex,
+          recommendedDisplayedIndex: data.recommendedDisplayedIndex,
+          suggestedPoolProduct: matchedPoolProduct ? {
+            ...matchedPoolProduct,
+            whyRecommended: data.suggestedPoolProduct?.whyRecommended || matchedPoolProduct.whyRecommended
+          } : null,
           intentShiftDetected: data.intentShiftDetected,
-          pivotSuggestion: data.pivotSuggestion,
+          intentShiftReconfirmation: data.intentShiftReconfirmation,
           quickFollowUps: data.quickFollowUps || []
         }
       ]);
@@ -197,9 +307,12 @@ export default function InChatShoppingAgent({ products = [], searchQuery = "", o
               <div className="p-6 max-h-[480px] overflow-y-auto space-y-4 bg-slate-50/50">
                 {messages.map((msg, mIdx) => {
                   const isUser = msg.role === "user";
-                  const recProd = msg.recommendedProductIndex !== undefined && msg.recommendedProductIndex !== null
-                    ? products[msg.recommendedProductIndex]
+                  const recDisplayedProd = (msg.recommendedDisplayedIndex !== undefined && msg.recommendedDisplayedIndex !== null)
+                    ? effectiveDisplayed[msg.recommendedDisplayedIndex]
                     : null;
+                  const poolProd = msg.suggestedPoolProduct;
+                  const reconfirm = msg.intentShiftReconfirmation;
+                  const isDismissed = !!dismissedConfirmations[mIdx];
 
                   return (
                     <motion.div
@@ -227,44 +340,137 @@ export default function InChatShoppingAgent({ products = [], searchQuery = "", o
                           {msg.text}
                         </div>
 
-                        {/* Top Pick Highlight Card (if AI recommended a current product) */}
-                        {recProd && !isUser && (
+                        {/* 1. Winner Among Currently Displayed 3 Cards */}
+                        {recDisplayedProd && !isUser && (
                           <div className="mt-3 p-3 rounded-xl bg-emerald-50 border border-emerald-200/80 text-emerald-950 flex items-center justify-between gap-3">
                             <div className="flex items-center gap-2">
                               <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
                               <div className="text-left">
                                 <span className="text-[10px] uppercase font-extrabold text-emerald-700 tracking-wider block">
-                                  AI Winner for Your Needs
+                                  Top Pick From Screen Cards
                                 </span>
-                                <span className="font-bold text-xs line-clamp-1">{recProd.title}</span>
+                                <span className="font-bold text-xs line-clamp-1">{recDisplayedProd.title}</span>
                               </div>
                             </div>
                             <span className="text-xs font-black shrink-0 px-2.5 py-1 rounded-lg bg-emerald-600 text-white">
-                              {recProd.price}
+                              {recDisplayedProd.price}
                             </span>
                           </div>
                         )}
 
-                        {/* ⚡ Intent Shift / Smart Pivot Card */}
-                        {msg.intentShiftDetected && msg.pivotSuggestion && !isUser && (
-                          <div className="mt-3.5 p-4 rounded-2xl bg-gradient-to-br from-indigo-950 via-slate-900 to-indigo-950 text-white border border-indigo-400/40 shadow-lg space-y-2.5">
+                        {/* 2. In-Chat Suggested Product (Discovered from 15-20 Inventory Pool) */}
+                        {poolProd && !isUser && (
+                          <div className="mt-3.5 p-3.5 rounded-2xl bg-gradient-to-br from-indigo-50/70 via-purple-50/40 to-white border border-indigo-200 shadow-sm text-left space-y-2.5">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-indigo-600 text-white text-[10px] font-black tracking-wide">
+                                <Sparkles className="w-3 h-3 text-amber-300 animate-pulse" />
+                                <span>Discovered in Search Inventory</span>
+                              </span>
+                              <span className="text-[11px] font-bold text-indigo-700">
+                                {poolProd.store_name || poolProd.store || "Online Store"}
+                              </span>
+                            </div>
+
+                            <div className="flex items-start gap-3">
+                              {poolProd.image && (
+                                <img 
+                                  src={poolProd.image} 
+                                  alt={poolProd.title} 
+                                  className="w-14 h-14 object-contain rounded-xl bg-white border border-slate-200/70 p-1 shrink-0" 
+                                />
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-bold text-xs md:text-sm text-slate-900 line-clamp-2 leading-tight">
+                                  {poolProd.title}
+                                </h4>
+                                <div className="mt-1 flex items-baseline gap-2">
+                                  <span className="text-sm md:text-base font-black text-emerald-700">
+                                    {poolProd.price}
+                                  </span>
+                                  {poolProd.rating && (
+                                    <span className="text-[11px] text-slate-500 font-semibold">
+                                      ⭐ {poolProd.rating}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Why AI Recommended This Product */}
+                            {poolProd.whyRecommended && (
+                              <p className="text-[11px] text-slate-600 bg-white/80 p-2 rounded-lg border border-indigo-100/60 leading-snug">
+                                <strong className="text-indigo-900">Why this fits you better:</strong> {poolProd.whyRecommended}
+                              </p>
+                            )}
+
+                            {/* Key Specs Pills */}
+                            {Array.isArray(poolProd.specs) && poolProd.specs.length > 0 && (
+                              <div className="flex flex-wrap gap-1">
+                                {poolProd.specs.slice(0, 3).map((s, sIdx) => (
+                                  <span key={sIdx} className="px-2 py-0.5 rounded-md bg-white border border-slate-200 text-[10px] font-medium text-slate-700">
+                                    {s}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+
+                            {/* Direct View Deal Link (Pure in-chat experience) */}
+                            {(poolProd.deal_link || poolProd.link || poolProd.affiliateUrl) && (
+                              <a
+                                href={poolProd.deal_link || poolProd.link || poolProd.affiliateUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center justify-center gap-1.5 w-full py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs transition-all active:scale-98 cursor-pointer mt-1"
+                              >
+                                <ShoppingBag className="w-3.5 h-3.5" />
+                                <span>View Deal at {poolProd.store_name || poolProd.store || "Store"}</span>
+                                <ExternalLink className="w-3 h-3 ml-0.5" />
+                              </a>
+                            )}
+                          </div>
+                        )}
+
+                        {/* 3. Intent Shift Re-Confirmation Card (Double-Check Before Firing API) */}
+                        {msg.intentShiftDetected && reconfirm && !isUser && (
+                          <div className="mt-3.5 p-4 rounded-2xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white border border-indigo-400/30 shadow-lg space-y-3">
                             <div className="flex items-center gap-2 text-amber-300 font-bold text-xs uppercase tracking-wider">
-                              <Compass className="w-4 h-4 text-amber-400 animate-spin" style={{ animationDuration: "8s" }} />
-                              <span>Smart Recommendation Update</span>
+                              <Compass className="w-4 h-4 text-amber-400" />
+                              <span>Search Suggestion & Shift</span>
                             </div>
                             
-                            <p className="text-xs text-slate-200 leading-normal">
-                              {msg.pivotSuggestion.reason}
+                            <p className="text-xs text-slate-200 leading-relaxed">
+                              {reconfirm.understoodRequirement}
                             </p>
 
-                            <button
-                              type="button"
-                              onClick={() => onExecuteSearch && onExecuteSearch(msg.pivotSuggestion.suggestedQuery)}
-                              className="w-full mt-2 py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs md:text-sm flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer active:scale-98"
-                            >
-                              <span>{msg.pivotSuggestion.buttonText || `Search "${msg.pivotSuggestion.suggestedQuery}" →`}</span>
-                              <ArrowRight className="w-4 h-4" />
-                            </button>
+                            <p className="text-xs font-semibold text-indigo-200">
+                              {reconfirm.confirmationQuestion || `Would you like me to search for "${reconfirm.suggestedQuery}"?`}
+                            </p>
+
+                            {!isDismissed ? (
+                              <div className="pt-1 flex flex-col sm:flex-row gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => onExecuteSearch && onExecuteSearch(reconfirm.suggestedQuery)}
+                                  className="flex-1 py-2.5 px-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 shadow-md transition-all cursor-pointer active:scale-98"
+                                >
+                                  <Check className="w-3.5 h-3.5 stroke-[3]" />
+                                  <span>Yes, Search "{reconfirm.suggestedQuery}"</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setDismissedConfirmations(prev => ({ ...prev, [mIdx]: true }))}
+                                  className="py-2.5 px-3 rounded-xl bg-white/10 hover:bg-white/15 text-slate-300 font-semibold text-xs flex items-center justify-center gap-1 transition-all cursor-pointer"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                  <span>No, Keep Current Options</span>
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="p-2 rounded-xl bg-white/10 text-emerald-300 text-[11px] font-semibold flex items-center gap-1.5">
+                                <CheckCircle className="w-3.5 h-3.5" />
+                                <span>Continuing with current options. Ask me anything else!</span>
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
@@ -289,9 +495,28 @@ export default function InChatShoppingAgent({ products = [], searchQuery = "", o
                   type="text"
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
-                  placeholder="Ask AI anything about these products (e.g. 'Which is best for coding?', 'Can I upgrade RAM?')..."
-                  className="flex-1 px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs md:text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:bg-white transition-all"
+                  placeholder={isListening ? "Listening... speak now in English or Hindi..." : "Ask AI anything about these products (e.g. 'Which is best for coding?', 'Can I upgrade RAM?')..."}
+                  className={`flex-1 px-4 py-2.5 rounded-xl border text-xs md:text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none transition-all ${
+                    isListening
+                      ? "bg-rose-50/80 border-rose-300 ring-2 ring-rose-400/20"
+                      : "bg-slate-50 border-slate-200 focus:border-indigo-500 focus:bg-white"
+                  }`}
                 />
+                
+                {/* Voice Input Mic Button */}
+                <button
+                  type="button"
+                  onClick={toggleVoiceInput}
+                  title={isListening ? "Listening... Click to stop" : "Speak your question (Voice Input)"}
+                  className={`p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-center shrink-0 ${
+                    isListening
+                      ? "bg-rose-600 text-white border-rose-700 animate-pulse shadow-md shadow-rose-500/30"
+                      : "bg-slate-100 hover:bg-slate-200 text-slate-600 border-slate-200/90 hover:text-slate-900"
+                  }`}
+                >
+                  <Mic className={`w-4 h-4 ${isListening ? "animate-bounce text-white" : "text-slate-600"}`} />
+                </button>
+
                 <button
                   type="submit"
                   disabled={!inputValue.trim() || isLoading}

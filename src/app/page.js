@@ -97,6 +97,37 @@ export default function Home() {
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
   const [activeFilterChipId, setActiveFilterChipId] = useState("all");
 
+  // Unified AI Session Journey Ledger
+  const [aiSessionLedger, setAiSessionLedger] = useState({
+    viewedReviews: {},
+    lastViewedProduct: null
+  });
+
+  const handleReviewInspected = (product, reviewData) => {
+    if (!product || !reviewData) return;
+    setAiSessionLedger(prev => ({
+      viewedReviews: {
+        ...prev.viewedReviews,
+        [product.id || product.title]: {
+          productTitle: product.title,
+          price: product.price,
+          store: product.store || product.store_name,
+          fitVerdict: reviewData.fitVerdict,
+          bestFor: reviewData.bestFor,
+          skipIf: reviewData.skipIf,
+          pros: reviewData.pros,
+          cons: reviewData.cons
+        }
+      },
+      lastViewedProduct: {
+        id: product.id,
+        title: product.title,
+        price: product.price,
+        store: product.store || product.store_name
+      }
+    }));
+  };
+
   const displayedProducts = React.useMemo(() => {
     if (!products || products.length === 0) return [];
     if (activeFilterChipId === "all") {
@@ -147,6 +178,7 @@ export default function Home() {
     const cleanQuery = isUrl ? extractProductTitleFromUrl(query) : query;
 
     setSearchQuery(cleanQuery);
+    setAiSessionLedger({ viewedReviews: {}, lastViewedProduct: null });
     setAppState("searching");
     setApiError(null);
     setIsApiLoading(true);
@@ -215,6 +247,7 @@ export default function Home() {
 
     setActiveFilterChipId("all");
     setSearchQuery(resolvedTitle);
+    setAiSessionLedger({ viewedReviews: {}, lastViewedProduct: null });
     setAppState("searching");
     setApiError(null);
     setIsApiLoading(true);
@@ -681,16 +714,29 @@ export default function Home() {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
                       <AnimatePresence mode="popLayout">
-                        {displayedProducts.map((product, idx) => (
-                          <ProductCard key={product.id || `product-${idx}-${product.title}`} product={product} searchQuery={searchQuery} />
-                        ))}
+                        {displayedProducts.map((product, idx) => {
+                          const siblingProducts = displayedProducts.filter((_, i) => i !== idx);
+                          const previouslyViewedList = Object.values(aiSessionLedger.viewedReviews || {});
+                          return (
+                            <ProductCard
+                              key={product.id || `product-${idx}-${product.title}`}
+                              product={product}
+                              searchQuery={searchQuery}
+                              siblingProducts={siblingProducts}
+                              previouslyViewed={previouslyViewedList}
+                              onReviewInspected={handleReviewInspected}
+                            />
+                          );
+                        })}
                       </AnimatePresence>
                     </div>
 
                     {/* Interactive In-Chat Shopping Agent */}
                     <InChatShoppingAgent 
                       products={products}
+                      displayedProducts={displayedProducts}
                       searchQuery={searchQuery}
+                      aiSessionLedger={aiSessionLedger}
                       onExecuteSearch={handleDirectSearch}
                     />
 

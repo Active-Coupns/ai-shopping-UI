@@ -83,35 +83,140 @@ Sample 2 (When preferences are provided or questionnaire is answered):
  * Call Gemini Flash API with automatic model fallback
  */
 async function callGemini(userPrompt) {
-  const models = ["gemini-flash-latest", "gemini-2.5-flash-lite", "gemini-3.1-flash-lite", "gemini-3.6-flash", "gemini-3.8-flash"];
+  const GROQ_API_KEY = process.env.GROQ_API_KEY || "";
+  const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || "";
 
-  for (const model of models) {
-    try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: userPrompt }] }],
-          generationConfig: {
-            temperature: 0.2
+  // 1. Prioritize Ultra-Fast Groq Engine (Sub-Second Response)
+  if (GROQ_API_KEY) {
+    const groqModels = ["qwen/qwen3.8-27b", "openai/gpt-oss-120b"];
+    for (const gModel of groqModels) {
+      try {
+        const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${GROQ_API_KEY}`
+          },
+          body: JSON.stringify({
+            model: gModel,
+            messages: [{ role: "user", content: userPrompt }],
+            temperature: 0.2,
+            response_format: { type: "json_object" }
+          }),
+          signal: AbortSignal.timeout(10000)
+        });
+
+        if (!res.ok) {
+          const errBody = await res.text().catch(() => "");
+          console.warn(`[AI Guide] Groq ${gModel} status ${res.status}:`, errBody);
+          continue;
+        }
+
+        const data = await res.json();
+        const rawText = data.choices?.[0]?.message?.content;
+        if (rawText) {
+          let cleaned = rawText.replace(/```json/gi, "").replace(/```/g, "").trim();
+          const firstBrace = cleaned.indexOf("{");
+          const lastBrace = cleaned.lastIndexOf("}");
+          if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+            cleaned = cleaned.substring(firstBrace, lastBrace + 1);
           }
-        })
-      });
-
-      if (!res.ok) continue;
-
-      const data = await res.json();
-      const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (rawText) {
-        const cleaned = rawText.replace(/```json/gi, "").replace(/```/g, "").trim();
-        const parsed = JSON.parse(cleaned);
-        return { parsed, modelUsed: model };
+          const parsed = JSON.parse(cleaned);
+          console.log(`[AI Guide] Successfully generated response with Groq ${gModel}`);
+          return { parsed, modelUsed: `groq/${gModel}` };
+        }
+      } catch (err) {
+        console.warn(`[AI Guide] Groq ${gModel} error:`, err.message);
       }
-    } catch (err) {
-      console.warn(`Error with model ${model}:`, err.message);
     }
   }
+
+  // 2. Fallback to OpenRouter AI (Verified Working & Free)
+  if (OPENROUTER_API_KEY) {
+    const orModels = ["cohere/north-mini-code:free", "liquid/lfm-2.5-2.6b:free", "dots-studio/dots-3-note-preview:free"];
+    for (const orModel of orModels) {
+      try {
+        const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
+            "HTTP-Referer": "http://localhost:3000",
+            "X-Title": "ShopSmart AI"
+          },
+          body: JSON.stringify({
+            model: orModel,
+            messages: [{ role: "user", content: userPrompt }],
+            temperature: 0.2,
+            max_tokens: 1000
+          }),
+          signal: AbortSignal.timeout(25000)
+        });
+
+        if (!res.ok) {
+          const errBody = await res.text().catch(() => "");
+          console.warn(`[AI Guide] OpenRouter ${orModel} status ${res.status}:`, errBody);
+          continue;
+        }
+
+        const data = await res.json();
+        const rawText = data.choices?.[0]?.message?.content;
+        if (rawText) {
+          let cleaned = rawText.replace(/```json/gi, "").replace(/```/g, "").trim();
+          const firstBrace = cleaned.indexOf("{");
+          const lastBrace = cleaned.lastIndexOf("}");
+          if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+            cleaned = cleaned.substring(firstBrace, lastBrace + 1);
+          }
+          const parsed = JSON.parse(cleaned);
+          console.log(`[AI Guide] Successfully generated response with ${orModel}`);
+          return { parsed, modelUsed: orModel };
+        }
+      } catch (err) {
+        console.warn(`[AI Guide] OpenRouter ${orModel} error:`, err.message);
+      }
+    }
+  }
+
+  // 2. Fallback to Gemini API if OpenRouter was unavailable
+  if (GEMINI_API_KEY) {
+    const models = ["gemini-flash-latest", "gemini-2.5-flash-lite", "gemini-3.1-flash-lite", "gemini-3.6-flash", "gemini-3.8-flash"];
+    for (const model of models) {
+      try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: userPrompt }] }],
+            generationConfig: {
+              temperature: 0.2
+            }
+          }),
+          signal: AbortSignal.timeout(15000)
+        });
+
+        if (!res.ok) continue;
+
+        const data = await res.json();
+        const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (rawText) {
+          let cleaned = rawText.replace(/```json/gi, "").replace(/```/g, "").trim();
+          const firstBrace = cleaned.indexOf("{");
+          const lastBrace = cleaned.lastIndexOf("}");
+          if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+            cleaned = cleaned.substring(firstBrace, lastBrace + 1);
+          }
+          const parsed = JSON.parse(cleaned);
+          console.log(`[AI Guide] Successfully generated response with Gemini ${model}`);
+          return { parsed, modelUsed: model };
+        }
+      } catch (err) {
+        console.warn(`Error with model ${model}:`, err.message);
+      }
+    }
+  }
+
   return null;
 }
 

@@ -7,7 +7,16 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
  */
 export async function POST(request) {
   try {
-    const { productTitle, productPrice, specs = [], storeName = "", userPersona = "", userRequirement = "" } = await request.json();
+    const {
+      productTitle,
+      productPrice,
+      specs = [],
+      storeName = "",
+      userPersona = "",
+      userRequirement = "",
+      siblingProducts = [],
+      previouslyViewed = []
+    } = await request.json();
 
     if (!productTitle) {
       return NextResponse.json({ error: "Product title is required" }, { status: 400 });
@@ -78,60 +87,199 @@ Respond ONLY with a valid JSON object matching this schema:
   "authenticityCheck": "Verify official importer hologram & scratch-code on container seal before consumption."
 }`;
     } else {
-      prompt = `You are ShopSmart AI, an honest, transparent consumer advocate and product expert in India.
-Analyze this product with 100% brutal honesty. DO NOT act like a salesperson. Tell the customer what brands hide and what real buyers face after 3-6 months.
+      const otherCardsContext = (siblingProducts || []).length > 0
+        ? `\nOTHER OPTIONS PRESENT ON SCREEN FOR THE USER:\n` +
+          siblingProducts.slice(0, 2).map((s, idx) => `- Alternative ${idx + 1}: "${s.title}" (${s.price || s.productPrice || 'N/A'})`).join("\n") +
+          `\nDIFFERENTIATION MANDATE:\nHighlight what makes THIS product distinct or unique compared to the alternatives above (e.g. lower price, better screen, larger SSD, lighter weight, better brand trust). Avoid generic statements that could apply to any laptop.`
+        : "";
 
+      const userSessionContext = (previouslyViewed || []).length > 0
+        ? `\nPRODUCTS THE USER ALREADY INSPECTED IN THIS SESSION:\n` +
+          previouslyViewed.slice(0, 2).map(p => `- Already viewed: "${p.title}"`).join("\n") +
+          `\nEnsure your commentary is coherent and naturally complements what the user has already inspected without contradictory advice.`
+        : "";
+
+      prompt = `You are ShopSmart AI, an independent, trusted consumer advisor and product advocate in India.
+Your mission is to provide an objective, authentic, and differentiated evaluation for this specific product.
+
+ETHOS & PHILOSOPHY:
+- We are an UNBIASED BUYER ADVOCATE, NOT an e-commerce salesperson trying to push a transaction.
+- NEVER tell the buyer "do not buy this" or dismiss the product.
+- Affirm that this product was shortlisted specifically to match the user's search and budget.
+- Explain why it is a solid choice, what makes it stand out against other options, and objectively state what limitations/trade-offs real buyers will encounter after 3-6 months.
+
+PRODUCT UNDER REVIEW:
 Product Title: "${productTitle}"
 Current Price: ${productPrice} at ${storeName}
 Key Specs: ${specs.join(", ")}
-Shopper Profile/Requirement: "${userPersona || userRequirement || "General Tech Buyer"}"
+User Search Query / Need: "${userRequirement || userPersona || "General Value Buyer"}"
+${otherCardsContext}
+${userSessionContext}
 
-Always respond ONLY with a JSON object matching this schema:
+OUTPUT GUIDELINES:
+1. "fitVerdict": Exactly 2 clear sentences.
+   - Sentence 1: Affirm that this model was shortlisted specifically for "${userRequirement || 'your search'}" and fits the required budget/use-case.
+   - Sentence 2: Highlight this specific model's distinctive strength/advantage (relative to alternatives on screen if available).
+2. "bestFor": 1 concise sentence describing the ideal user and practical workloads (e.g. "Best suited for college coursework, office multitasking, and daily streaming.").
+3. "skipIf": 1 constructive sentence highlighting when a user should step up (e.g. "Step up to an RTX GPU model if your primary goal is competitive AAA gaming or 4K video rendering.").
+4. "hiddenCatch": 1 real-world fact observed after 3-6 months of usage (e.g. realistic battery backup of 4-5 hours vs claimed 8 hours, or keyboard flex).
+5. "pros": Exactly 3 genuine, distinct strengths specific to this model.
+6. "cons": Exactly 2 realistic trade-offs at this price tier.
+7. "dealVerdict": Realistic market price verdict for ₹${priceNum}.
+8. "trustScore": Integer 88-96.
+
+Always respond ONLY with a valid JSON object matching this schema:
 {
   "categoryType": "ecommerce",
   "isMedicine": false,
-  "fitVerdict": "A 2-3 sentence personalized verdict explaining how well this product matches the shopper's requirement/profile, pointing out any specific limitation for their workload.",
-  "hiddenCatch": "1-2 non-obvious long-term drawbacks (e.g., heating under load, real-world battery vs advertised, plastic build flex, service center quality, proprietary charger).",
+  "fitVerdict": "Affirmation of match for query followed by this model's unique standout advantage.",
+  "bestFor": "Target user and ideal everyday workloads.",
+  "skipIf": "Specific advanced workload where the buyer should consider stepping up.",
+  "hiddenCatch": "1 practical long-term note based on real buyer experiences.",
   "pros": [
-    "Top genuine pro 1",
-    "Top genuine pro 2",
-    "Top genuine pro 3"
+    "Model-specific strength 1",
+    "Model-specific strength 2",
+    "Model-specific strength 3"
   ],
   "cons": [
-    "Real drawback 1",
-    "Real drawback 2"
+    "Realistic trade-off 1",
+    "Realistic trade-off 2"
   ],
-  "dealVerdict": "Is current price ₹${priceNum} a genuine discount or regular price? (e.g., 'Genuine 90-day low! Best time to buy before festival rush.' or 'Normal market price - decent value.')",
+  "dealVerdict": "Price assessment for ₹${priceNum}.",
   "trustScore": 92
 }`;
     }
 
-    const models = ["gemini-3.1-flash-lite", "gemini-3.6-flash", "gemini-3.8-flash"];
     let aiReview = null;
+    const GROQ_API_KEY = process.env.GROQ_API_KEY || "";
+    const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || "";
 
-    for (const model of models) {
-      try {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
-        const res = await fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: { temperature: 0.2 }
-          })
-        });
+    // 1. Prioritize Ultra-Fast Groq Engine (Sub-Second Response)
+    if (GROQ_API_KEY) {
+      const groqModels = ["qwen/qwen3.8-27b", "openai/gpt-oss-120b"];
+      for (const gModel of groqModels) {
+        try {
+          const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${GROQ_API_KEY}`
+            },
+            body: JSON.stringify({
+              model: gModel,
+              messages: [{ role: "user", content: prompt }],
+              temperature: 0.2,
+              response_format: { type: "json_object" }
+            }),
+            signal: AbortSignal.timeout(10000)
+          });
 
-        if (!res.ok) continue;
+          if (!res.ok) {
+            const errBody = await res.text().catch(() => "");
+            console.warn(`[AI Review] Groq ${gModel} status ${res.status}:`, errBody);
+            continue;
+          }
 
-        const data = await res.json();
-        const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (rawText) {
-          const cleaned = rawText.replace(/```json/gi, "").replace(/```/g, "").trim();
-          aiReview = JSON.parse(cleaned);
-          break;
+          const data = await res.json();
+          const rawText = data.choices?.[0]?.message?.content;
+          if (rawText) {
+            let cleaned = rawText.replace(/```json/gi, "").replace(/```/g, "").trim();
+            const firstBrace = cleaned.indexOf("{");
+            const lastBrace = cleaned.lastIndexOf("}");
+            if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+              cleaned = cleaned.substring(firstBrace, lastBrace + 1);
+            }
+            aiReview = JSON.parse(cleaned);
+            console.log(`[AI Review] Successfully generated dynamic review with Groq ${gModel} for "${productTitle}"`);
+            break;
+          }
+        } catch (err) {
+          console.warn(`[AI Review] Groq ${gModel} error:`, err.message);
         }
-      } catch (err) {
-        console.warn(`[AI Review] Model ${model} error:`, err.message);
+      }
+    }
+
+    // 2. Fallback to OpenRouter AI (Verified Working & Free)
+    if (!aiReview && OPENROUTER_API_KEY) {
+      const orModels = ["cohere/north-mini-code:free", "liquid/lfm-2.5-2.6b:free", "dots-studio/dots-3-note-preview:free"];
+      for (const orModel of orModels) {
+        try {
+          const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
+              "HTTP-Referer": "http://localhost:3000",
+              "X-Title": "ShopSmart AI"
+            },
+            body: JSON.stringify({
+              model: orModel,
+              messages: [{ role: "user", content: prompt }],
+              temperature: 0.2,
+              max_tokens: 800
+            }),
+            signal: AbortSignal.timeout(25000)
+          });
+
+          if (!res.ok) {
+            const errBody = await res.text().catch(() => "");
+            console.warn(`[AI Review] OpenRouter ${orModel} status ${res.status}:`, errBody);
+            continue;
+          }
+
+          const data = await res.json();
+          const rawText = data.choices?.[0]?.message?.content;
+          if (rawText) {
+            let cleaned = rawText.replace(/```json/gi, "").replace(/```/g, "").trim();
+            const firstBrace = cleaned.indexOf("{");
+            const lastBrace = cleaned.lastIndexOf("}");
+            if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+              cleaned = cleaned.substring(firstBrace, lastBrace + 1);
+            }
+            aiReview = JSON.parse(cleaned);
+            console.log(`[AI Review] Successfully generated dynamic review with ${orModel} for "${productTitle}"`);
+            break;
+          }
+        } catch (err) {
+          console.warn(`[AI Review] OpenRouter ${orModel} error:`, err.message);
+        }
+      }
+    }
+
+    // 2. Fallback to Gemini AI if OpenRouter was unavailable
+    if (!aiReview && GEMINI_API_KEY) {
+      const models = ["gemini-3.1-flash-lite", "gemini-3.6-flash", "gemini-3.8-flash"];
+      for (const model of models) {
+        try {
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
+          const res = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: prompt }] }],
+              generationConfig: { temperature: 0.2 }
+            }),
+            signal: AbortSignal.timeout(15000)
+          });
+
+          if (!res.ok) continue;
+
+          const data = await res.json();
+          const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (rawText) {
+            let cleaned = rawText.replace(/```json/gi, "").replace(/```/g, "").trim();
+            const firstBrace = cleaned.indexOf("{");
+            const lastBrace = cleaned.lastIndexOf("}");
+            if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+              cleaned = cleaned.substring(firstBrace, lastBrace + 1);
+            }
+            aiReview = JSON.parse(cleaned);
+            console.log(`[AI Review] Successfully generated dynamic review with Gemini ${model} for "${productTitle}"`);
+            break;
+          }
+        } catch (err) {
+          console.warn(`[AI Review] Gemini ${model} error:`, err.message);
+        }
       }
     }
 
@@ -183,7 +331,9 @@ Always respond ONLY with a JSON object matching this schema:
         aiReview = {
           categoryType: "ecommerce",
           isMedicine: false,
-          fitVerdict: `This product offers reliable performance for daily computing and multitasking at ${productPrice}. Ensure the ${specs[0] || "specifications"} align with your primary workload.`,
+          fitVerdict: `This product offers reliable performance for daily computing and multitasking at ${productPrice}. It is a dependable choice within your budget range.`,
+          bestFor: "Daily office tasks, college assignments, and web multitasking.",
+          skipIf: "Heavy 3D rendering or hardcore gaming needing dedicated high-tier GPU.",
           hiddenCatch: "Expect moderate battery life under sustained heavy workloads; consider using with cooling pad during extended sessions.",
           pros: [
             specs[0] || "Solid hardware performance for price",
@@ -234,6 +384,8 @@ Always respond ONLY with a JSON object matching this schema:
       authenticityCheck: aiReview.authenticityCheck || null,
       // E-commerce specific fields
       fitVerdict: aiReview.fitVerdict,
+      bestFor: aiReview.bestFor || null,
+      skipIf: aiReview.skipIf || null,
       hiddenCatch: aiReview.hiddenCatch,
       pros: aiReview.pros || [],
       cons: aiReview.cons || [],

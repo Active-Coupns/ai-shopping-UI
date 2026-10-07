@@ -428,7 +428,7 @@ export async function GET(request) {
         const exactPdp = match.offer_page_url || match.product_page_url;
         if (exactPdp && (exactPdp.startsWith("http://") || exactPdp.startsWith("https://")) && !exactPdp.includes("google.com") && !exactPdp.includes("ibp=")) {
           try {
-            await redis.set(cacheKey, exactPdp, { ex: 604800 });
+            await redis.set(cacheKey, exactPdp, { ex: 86400 });
           } catch (e) {}
           console.log(`Dynamic Redirect: Resolved 100% EXACT PDP for ${storeName} -> ${exactPdp}`);
           return safeRedirect(exactPdp);

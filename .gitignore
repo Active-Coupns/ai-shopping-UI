@@ -55,4 +55,6 @@ src/data/backup/
 scripts/test_*
 scripts/*.jpg
 scripts/scan_secrets.mjs
-
+AGENTS.md
+CLAUDE.md
+LOCAL_WORK_AND_NEXT_STEPS_CHECKPOINT.md

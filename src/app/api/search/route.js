@@ -4,6 +4,7 @@ import { redis } from "@/services/redis";
 import { getAdminSettings } from "@/services/admin";
 import { monetizeUrl } from "@/services/affiliate";
 import { searchRapidApiProducts, isExactProductQuery, getStoreDirectSearchFallback } from "@/services/rapidapi";
+import { addToInventoryPool, consultAiShopkeeper } from "@/services/semanticCache";
 
 function getCacheKey(country, query) {
   const clean = query
@@ -285,6 +286,9 @@ export async function POST(request) {
             });
           }
 
+          // Asynchronously enrich Central Store Inventory Pool from direct cache
+          addToInventoryPool(country, finalCachedProducts).catch(() => {});
+
           return NextResponse.json({
             products: finalCachedProducts,
             coupons: cachedPayload.coupons || [],
@@ -297,6 +301,51 @@ export async function POST(request) {
       }
     } catch (cacheErr) {
       console.warn("Redis cache read error:", cacheErr);
+    }
+
+    // 3b. Smart AI Shopkeeper Brain (Intelligent Store Inventory Consultation)
+    if (!isExactProduct && !isUrlLookup) {
+      try {
+        const shopkeeperResult = await consultAiShopkeeper(country, cleanQuery);
+        if (shopkeeperResult && Array.isArray(shopkeeperResult.products) && shopkeeperResult.products.length >= 3) {
+          // Increment quota on successful shopkeeper cache hit
+          try {
+            await Promise.all([
+              redis.set(userQuotaKey, String(userCount + 1), { ex: 86400 }),
+              redis.set(ipQuotaKey, String(ipCount + 1), { ex: 86400 })
+            ]);
+          } catch (e) {}
+
+          const remainingSearches = Math.max(0, MAX_USER_SEARCHES - (userCount + 1));
+          const finalSemanticProducts = shopkeeperResult.products.map(p => {
+            const rawL = p.deal_link || p.link || p.affiliateUrl || "";
+            if (rawL.includes("google.com") || rawL.includes("ibp=")) {
+              const cleanL = getStoreDirectSearchFallback(p.store_name, p.title, country);
+              return {
+                ...p,
+                link: cleanL,
+                deal_link: cleanL,
+                affiliateUrl: cleanL,
+                direct_link: cleanL
+              };
+            }
+            return p;
+          });
+
+          return NextResponse.json({
+            products: finalSemanticProducts,
+            coupons: [],
+            intent: "E-COMMERCE",
+            error: null,
+            searchesLeft: remainingSearches,
+            fromCache: true,
+            cacheStrategy: "AI_SHOPKEEPER_BRAIN",
+            shopkeeperReason: shopkeeperResult.reason
+          }, { status: 200 });
+        }
+      } catch (shopkeeperErr) {
+        console.warn("[Search Route] AI Shopkeeper consultation error:", shopkeeperErr.message);
+      }
     }
 
     // 4. Admin Settings & Coupons
@@ -397,15 +446,18 @@ export async function POST(request) {
       console.error("Failed matching store coupons:", couponMatchErr);
     }
 
-    // 8. Save Fresh Search Results to Redis Cache (6-Hour TTL) - Live deals only
+    // 8. Save Fresh Search Results to Redis Cache & Cluster Pool (24-Hour Synchronized TTL) - Live deals only
     const hasAnyFallback = cleanProducts.some(p => p.id?.startsWith("fallback-") || p.is_catalog_fallback);
     if (cleanProducts.length >= 1 && !hasAnyFallback) {
       try {
-        await redis.set(cacheKey, JSON.stringify({ 
-          products: cleanProducts,
-          coupons: matchedStoreCoupons,
-          intent: "E-COMMERCE"
-        }), { ex: 21600 });
+        await Promise.all([
+          redis.set(cacheKey, JSON.stringify({ 
+            products: cleanProducts,
+            coupons: matchedStoreCoupons,
+            intent: "E-COMMERCE"
+          }), { ex: 86400 }),
+          addToInventoryPool(country, cleanProducts)
+        ]);
       } catch (cacheWriteErr) {
         console.warn("Redis cache save error:", cacheWriteErr);
       }

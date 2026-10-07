@@ -100,7 +100,7 @@ export async function POST(request) {
         const cleanStoreKey = (s.store_name || "").toLowerCase().replace(/[^a-z0-9]/g, "");
         const cacheKey = `cache:pdp:direct:v4:${productId.slice(-50)}:${cleanStoreKey}`;
         try {
-          redis.set(cacheKey, s.deal_link, { ex: 604800 }).catch(() => {});
+          redis.set(cacheKey, s.deal_link, { ex: 86400 }).catch(() => {});
         } catch (e) {}
       }
     });

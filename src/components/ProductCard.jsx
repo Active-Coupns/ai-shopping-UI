@@ -27,7 +27,14 @@ const formatPrice = (val, currency) => {
   }).format(num);
 };
 
-export default function ProductCard({ product, searchQuery, userPersona = "" }) {
+export default function ProductCard({
+  product,
+  searchQuery,
+  userPersona = "",
+  siblingProducts = [],
+  previouslyViewed = [],
+  onReviewInspected
+}) {
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [copiedCode, setCopiedCode] = useState(null);
@@ -164,8 +171,10 @@ export default function ProductCard({ product, searchQuery, userPersona = "" }) 
     setAlertSubmitted(false);
 
     if (cachedReviews[product.id]) {
-      setAiAnalysis(cachedReviews[product.id]);
+      const cached = cachedReviews[product.id];
+      setAiAnalysis(cached);
       setIsAnalyzingAi(false);
+      onReviewInspected?.(product, cached);
       return;
     }
 
@@ -182,13 +191,24 @@ export default function ProductCard({ product, searchQuery, userPersona = "" }) 
           specs: product.specs || [],
           storeName: selectedStore.name,
           userPersona: userPersona || searchQuery,
-          userRequirement: searchQuery
+          userRequirement: searchQuery,
+          siblingProducts: (siblingProducts || []).map(p => ({
+            title: p.title,
+            price: formatPrice(p.price, p.currency),
+            specs: p.specs || []
+          })),
+          previouslyViewed: (previouslyViewed || []).map(p => ({
+            title: p.title,
+            bestFor: p.bestFor,
+            fitVerdict: p.fitVerdict
+          }))
         })
       });
 
       const data = await res.json();
       setAiAnalysis(data);
       setCachedReviews(prev => ({ ...prev, [product.id]: data }));
+      onReviewInspected?.(product, data);
     } catch (err) {
       console.error("AI Review Fetch Error:", err);
     } finally {
@@ -574,7 +594,7 @@ export default function ProductCard({ product, searchQuery, userPersona = "" }) 
                 className="w-full py-3 px-4 mb-2 rounded-2xl font-extrabold text-xs md:text-sm flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer border bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 hover:from-slate-800 hover:to-indigo-900 text-white border-indigo-500/30 hover:shadow-indigo-500/25 group/ai"
               >
                 <Sparkles className="w-4 h-4 text-amber-300 animate-pulse group-hover/ai:rotate-12 transition-transform" />
-                <span>🤖 Honest AI Review & 90-Day Price Graph</span>
+                <span>✨ Ask AI About This Product</span>
               </button>
             );
           })()}
@@ -650,19 +670,19 @@ export default function ProductCard({ product, searchQuery, userPersona = "" }) 
                             ? "Clinical Medicine Factsheet"
                             : isSupp
                             ? "Supplement Nutrition & Trust Sheet"
-                            : "Product Truth Sheet"}
+                            : "AI Product Analysis & Buyer Insights"}
                         </h3>
                         <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
                           isMed
                             ? "bg-teal-100 text-teal-800"
                             : isSupp
                             ? "bg-amber-100 text-amber-900"
-                            : "bg-emerald-100 text-emerald-800"
+                            : "bg-indigo-100 text-indigo-800"
                         }`}>
-                          {isMed ? "🌿 100% IP Grade Verified" : isSupp ? "🛡️ Lab Tested & Authentic" : "100% Honest AI"}
+                          {isMed ? "🌿 100% IP Grade Verified" : isSupp ? "🛡️ Lab Tested & Authentic" : "✨ Unbiased AI Analysis"}
                         </span>
                       </div>
-                      <p className="text-xs text-slate-500 font-medium truncate max-w-sm">
+                      <p className="text-xs text-slate-600 font-medium line-clamp-2 max-w-md mt-0.5 leading-snug">
                         {product.title}
                       </p>
                     </div>
@@ -863,15 +883,30 @@ export default function ProductCard({ product, searchQuery, userPersona = "" }) 
                     <>
                       {/* 3. E-COMMERCE & TECH TRUTH SHEET VIEW (LOCKED) */}
                       {/* Fit for Your Profile */}
-                      <div className="p-4 rounded-2xl bg-indigo-50/70 border border-indigo-200">
-                        <div className="flex items-center gap-2 mb-1.5">
+                      <div className="p-4 rounded-2xl bg-indigo-50/70 border border-indigo-200 space-y-2.5">
+                        <div className="flex items-center justify-between">
                           <span className="text-[10px] uppercase font-black tracking-wider text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded">
-                            🎯 Fit For You: {userPersona || "Shopper Profile"}
+                            🎯 Fit & Recommendation
+                          </span>
+                          <span className="text-[10px] font-bold text-slate-500 truncate max-w-[220px]">
+                            {userPersona || searchQuery || "Requirement Match"}
                           </span>
                         </div>
                         <p className="text-xs text-slate-800 font-medium leading-relaxed">
                           {aiAnalysis.fitVerdict}
                         </p>
+                        {aiAnalysis.bestFor && (
+                          <div className="pt-2 border-t border-indigo-100/90 flex items-start gap-1.5 text-xs text-emerald-900 bg-emerald-50/80 p-2.5 rounded-xl border border-emerald-200/70">
+                            <span className="font-extrabold text-emerald-700 shrink-0">✅ Best For:</span>
+                            <span className="font-medium">{aiAnalysis.bestFor}</span>
+                          </div>
+                        )}
+                        {aiAnalysis.skipIf && (
+                          <div className="flex items-start gap-1.5 text-xs text-amber-950 bg-amber-50/80 p-2.5 rounded-xl border border-amber-200/70">
+                            <span className="font-extrabold text-amber-700 shrink-0">⚡ Step Up If:</span>
+                            <span className="font-medium">{aiAnalysis.skipIf}</span>
+                          </div>
+                        )}
                       </div>
 
                       {/* What Brands Hide */}
@@ -1001,7 +1036,7 @@ export default function ProductCard({ product, searchQuery, userPersona = "" }) 
                   )}
 
                   {/* Direct Store Buy CTA */}
-                  <div className="pt-2">
+                  <div className="pt-2 pb-6">
                     <a
                       href={selectedStore.url || product.affiliateUrl || product.deal_link}
                       target="_blank"

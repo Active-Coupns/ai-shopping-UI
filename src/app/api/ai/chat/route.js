@@ -10,16 +10,18 @@ export async function POST(request) {
   try {
     const body = await request.json();
     const userMessage = body.userMessage || body.message || "";
-    const products = body.products || [];
+    const displayedProducts = body.displayedProducts || (body.products || []).slice(0, 3);
+    const allPoolProducts = body.allPoolProducts || body.products || [];
     const searchQuery = body.searchQuery || "";
     const conversationHistory = body.conversationHistory || [];
+    const sessionLedger = body.sessionLedger || null;
 
     if (!userMessage || typeof userMessage !== "string") {
       return NextResponse.json({ error: "userMessage is required" }, { status: 400 });
     }
 
-    const productsSummary = (products || []).slice(0, 4).map((p, idx) => ({
-      index: idx,
+    const displayedSummary = displayedProducts.slice(0, 3).map((p, idx) => ({
+      displayedIndex: idx,
       title: p.title || "Product",
       price: p.price || "N/A",
       store: p.store_name || p.store || "Online Store",
@@ -27,12 +29,49 @@ export async function POST(request) {
       rating: p.rating || "4.4"
     }));
 
+    const displayedTitles = new Set(displayedProducts.map(p => (p.title || "").toLowerCase()));
+    const otherPoolProducts = allPoolProducts
+      .filter(p => !displayedTitles.has((p.title || "").toLowerCase()))
+      .slice(0, 15);
+
+    const otherPoolSummary = otherPoolProducts.map((p, idx) => ({
+      poolIndex: idx,
+      title: p.title || "Product",
+      price: p.price || "N/A",
+      store: p.store_name || p.store || "Online Store",
+      specs: (p.specs || []).slice(0, 4),
+      rating: p.rating || "4.4"
+    }));
+
+    const viewedReviews = sessionLedger?.viewedReviews || [];
+    const lastViewedProduct = sessionLedger?.lastViewedProduct || null;
+
+    const ledgerContext = (viewedReviews.length > 0 || lastViewedProduct)
+      ? `\n- USER ACTIVITY & PREVIOUSLY INSPECTED REVIEWS IN THIS SESSION:\n` +
+        (lastViewedProduct ? `* Most Recently Inspected Product Card: "${lastViewedProduct.title}" (${lastViewedProduct.price})\n` : "") +
+        viewedReviews.map(r => `* Inspected Review for "${r.title}":
+  - Verdict: "${r.fitVerdict || 'Reviewed'}"
+  - Best For: "${r.bestFor || 'General use'}"
+  - Limitation/Step Up: "${r.skipIf || 'N/A'}"
+  - Pros: ${(r.pros || []).join("; ")}
+  - Cons: ${(r.cons || []).join("; ")}`).join("\n") +
+        `\nCRITICAL CONVERSATIONAL COHERENCE MANDATE:\n` +
+        `- Maintain 100% harmony with what the user was shown above in their product insights.\n` +
+        `- DO NOT contradict or jumble advice. If the user asks about a product they already inspected, reference it smoothly (e.g., 'As we noticed in the insights for [Product]...').\n` +
+        `- We are an UNBIASED BUYER ADVOCATE, not an e-commerce seller. Never say 'don't buy this', but honestly reinforce the genuine pros and trade-offs so the user makes a confident decision.\n`
+      : "";
+
     const prompt = `You are ShopSmart AI, an honest, empathetic, and expert personal shopping assistant for an Indian e-commerce platform.
 
 CONTEXT:
 - User's Current Search Query: "${searchQuery}"
-- Products Currently Displayed on User's Screen:
-${JSON.stringify(productsSummary, null, 2)}
+
+- PRODUCTS ON USER'S SCREEN (Currently Visible 3 Cards):
+${JSON.stringify(displayedSummary, null, 2)}
+
+- OTHER INVENTORY PRODUCTS FROM THIS SEARCH (Hidden in Store Pool, up to 15 more):
+${JSON.stringify(otherPoolSummary, null, 2)}
+${ledgerContext}
 
 - Recent Conversation History:
 ${(conversationHistory || []).slice(-4).map(m => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.text}`).join("\n")}
@@ -40,32 +79,50 @@ ${(conversationHistory || []).slice(-4).map(m => `${m.role === 'user' ? 'User' :
 - User's Latest Message:
 "${userMessage}"
 
-YOUR MISSION:
-1. ANSWER THE USER'S QUESTION DIRECTLY & HONESTLY:
-   - Speak conversationally in friendly, helpful English/Hinglish (matching the user's natural language).
-   - If they ask to compare or ask which is best: compare the actual specs, prices, and value. Name the clear winner and explain why.
-   - Mention specific stores and prices where relevant.
+YOUR MISSION & DECISION FLOW:
+1. ANSWER THE USER'S QUESTION DIRECTLY & OBJECTIVELY (Friendly, helpful tone).
 
-2. DETECT INTENT SHIFT (CRITICAL AGENTIC BEHAVIOR):
-   - Check if the user's requirement actually differs from or exceeds the currently displayed products.
-   - Example 1: User looking at budget ₹50k office laptops asks "Can I do heavy 4K Premiere editing and Blender 3D?". -> Current laptops lack dedicated GPU! Detect shift! Recommend dedicated RTX gaming laptop around ₹55k-₹60k.
-   - Example 2: User looking at laptops says "Actually I just want to watch Netflix in bed and take handwritten notes." -> Recommend iPad or tablet.
-   - Example 3: User looking at running shoes asks for party/formal wear. -> Recommend formal shoes.
-   - Example 4: User budget is too low or they want a completely different brand/category.
-   - If user's intent shifted or current products are a poor fit for their stated goal, set "intentShiftDetected": true.
-   - Formulate an optimized "suggestedQuery" (always include budget/key spec if applicable) and an action-oriented "buttonText".
+2. DETERMINE THE BEST PRODUCT SOURCE:
+   A) IF one of the 3 DISPLAYED products satisfies the user's requirement best:
+      - Name it clearly, explain why, and set "recommendedDisplayedIndex" to that card's index (0, 1, or 2).
+      - Set "suggestedPoolProduct" to null.
+   B) IF the 3 DISPLAYED products do NOT satisfy the user's specific need (e.g. user asks for 16GB RAM, higher storage, gaming GPU, or a particular brand/price), BUT one of the OTHER INVENTORY PRODUCTS does:
+      - Highlight this discovery in your reply! Say something like: "None of the 3 laptops currently on your screen have 16GB RAM, but in our search inventory we found the [Product Title] with 16GB RAM for [Price] at [Store]."
+      - Set "recommendedDisplayedIndex" to null.
+      - Return "suggestedPoolProduct" with exact details from the inventory pool:
+        {
+          "title": "Exact Title",
+          "price": "Price",
+          "store": "Store",
+          "specs": ["spec 1", "spec 2"],
+          "whyRecommended": "1 clear sentence explaining why this fits better than the 3 on screen"
+        }
+   C) IF the user's requirement CANNOT be fulfilled by ANY product in either list (e.g. user searching 50k budget laptops now asks for an Apple MacBook, or RTX 4080 GPU, or iPad/tablet, or completely different category):
+      - DO NOT force any mismatch product!
+      - Explain politely why the current search does not have it.
+      - Trigger INTENT SHIFT RE-CONFIRMATION:
+        Ask the user if they would like a new search for their specific requirement.
+      - Set "intentShiftDetected": true.
+      - Return "intentShiftReconfirmation":
+        {
+          "understoodRequirement": "1 concise sentence summarizing what the user specifically needs (in English or natural Hinglish).",
+          "suggestedQuery": "clean search query (e.g. 'Apple MacBook Air M1')",
+          "confirmationQuestion": "Natural question asking if user wants to search (in English or natural Hinglish, e.g. 'Would you like me to search for ... deals now?' or 'Kya aap chahte hain ki main ... search karun?')"
+        }
+
+LANGUAGE & TONE POLICY:
+- We strictly use natural English or modern conversational Hinglish (standard daily spoken Hindi with tech terms like RAM, Battery, Display, Budget, Coding in English).
+- DO NOT use archaic, bookish, or formal Sanskritized Hindi words. Keep it friendly, empathetic, and authentic.
+- If user talks in English, respond in English. If user talks in Hindi/Hinglish, respond in natural conversational Hinglish.
 
 3. STRICT JSON RESPONSE SCHEMA:
 Respond ONLY with a valid JSON object matching this schema:
 {
-  "reply": "Your clear, empathetic, and objective response (2-4 concise paragraphs with bullet points if helpful).",
-  "recommendedProductIndex": 0, // index of best product among displayed (0, 1, or 2), or null if none fit user's need
-  "intentShiftDetected": false, // true ONLY if user's actual need requires a different search query
-  "pivotSuggestion": {
-    "reason": "Brief explanation of why a new search is recommended.",
-    "suggestedQuery": "optimized search query (e.g. 'gaming laptop rtx under 60000')",
-    "buttonText": "Short CTA (e.g. 'Search RTX Gaming Laptops →')"
-  }, // or null if intentShiftDetected is false
+  "reply": "Your clear, empathetic, and objective response (2-3 paragraphs with key highlights).",
+  "recommendedDisplayedIndex": 0, // 0, 1, 2 or null
+  "suggestedPoolProduct": null, // or { "title": "...", "price": "...", "store": "...", "specs": [...], "whyRecommended": "..." }
+  "intentShiftDetected": false, // true ONLY if user's need requires a completely new search query
+  "intentShiftReconfirmation": null, // or { "understoodRequirement": "...", "suggestedQuery": "...", "confirmationQuestion": "..." }
   "quickFollowUps": [
     "Short question 1",
     "Short question 2",
@@ -73,10 +130,105 @@ Respond ONLY with a valid JSON object matching this schema:
   ]
 }`;
 
-    const models = ["gemini-flash-latest", "gemini-2.5-flash-lite", "gemini-pro-latest"];
     let aiResponse = null;
+    const GROQ_API_KEY = process.env.GROQ_API_KEY || "";
+    const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || "";
 
-    if (GEMINI_API_KEY) {
+    // 1. Prioritize Ultra-Fast Groq Engine (Sub-Second Response)
+    if (GROQ_API_KEY) {
+      const groqModels = ["qwen/qwen3.8-27b", "openai/gpt-oss-120b"];
+      for (const gModel of groqModels) {
+        try {
+          const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${GROQ_API_KEY}`
+            },
+            body: JSON.stringify({
+              model: gModel,
+              messages: [{ role: "user", content: prompt }],
+              temperature: 0.2,
+              response_format: { type: "json_object" }
+            }),
+            signal: AbortSignal.timeout(10000)
+          });
+
+          if (!res.ok) {
+            const errBody = await res.text().catch(() => "");
+            console.warn(`[AI Chat] Groq ${gModel} status ${res.status}:`, errBody);
+            continue;
+          }
+
+          const data = await res.json();
+          const rawText = data.choices?.[0]?.message?.content;
+          if (rawText) {
+            let cleaned = rawText.replace(/```json/gi, "").replace(/```/g, "").trim();
+            const firstBrace = cleaned.indexOf("{");
+            const lastBrace = cleaned.lastIndexOf("}");
+            if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+              cleaned = cleaned.substring(firstBrace, lastBrace + 1);
+            }
+            aiResponse = JSON.parse(cleaned);
+            console.log(`[AI Chat] Successfully generated dynamic response with Groq ${gModel}`);
+            break;
+          }
+        } catch (err) {
+          console.warn(`[AI Chat] Groq ${gModel} error:`, err.message);
+        }
+      }
+    }
+
+    // 2. Fallback to OpenRouter AI (Verified Working & Free)
+    if (!aiResponse && OPENROUTER_API_KEY) {
+      const orModels = ["cohere/north-mini-code:free", "liquid/lfm-2.5-2.6b:free", "dots-studio/dots-3-note-preview:free"];
+      for (const orModel of orModels) {
+        try {
+          const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
+              "HTTP-Referer": "http://localhost:3000",
+              "X-Title": "ShopSmart AI"
+            },
+            body: JSON.stringify({
+              model: orModel,
+              messages: [{ role: "user", content: prompt }],
+              temperature: 0.2,
+              max_tokens: 1000
+            }),
+            signal: AbortSignal.timeout(25000)
+          });
+
+          if (!res.ok) {
+            const errBody = await res.text().catch(() => "");
+            console.warn(`[AI Chat] OpenRouter ${orModel} status ${res.status}:`, errBody);
+            continue;
+          }
+
+          const data = await res.json();
+          const rawText = data.choices?.[0]?.message?.content;
+          if (rawText) {
+            let cleaned = rawText.replace(/```json/gi, "").replace(/```/g, "").trim();
+            const firstBrace = cleaned.indexOf("{");
+            const lastBrace = cleaned.lastIndexOf("}");
+            if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+              cleaned = cleaned.substring(firstBrace, lastBrace + 1);
+            }
+            aiResponse = JSON.parse(cleaned);
+            console.log(`[AI Chat] Successfully generated dynamic response with ${orModel}`);
+            break;
+          }
+        } catch (err) {
+          console.warn(`[AI Chat] OpenRouter ${orModel} error:`, err.message);
+        }
+      }
+    }
+
+    // 2. Fallback to Gemini AI if OpenRouter was unavailable
+    if (!aiResponse && GEMINI_API_KEY) {
+      const models = ["gemini-flash-latest", "gemini-2.5-flash-lite", "gemini-pro-latest"];
       for (const model of models) {
         try {
           const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
@@ -91,7 +243,7 @@ Respond ONLY with a valid JSON object matching this schema:
                 maxOutputTokens: 1200
               }
             }),
-            signal: AbortSignal.timeout(25000)
+            signal: AbortSignal.timeout(15000)
           });
 
           if (!res.ok) continue;
@@ -99,17 +251,23 @@ Respond ONLY with a valid JSON object matching this schema:
           const data = await res.json();
           const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
           if (rawText) {
-            const cleaned = rawText.replace(/```json/gi, "").replace(/```/g, "").trim();
+            let cleaned = rawText.replace(/```json/gi, "").replace(/```/g, "").trim();
+            const firstBrace = cleaned.indexOf("{");
+            const lastBrace = cleaned.lastIndexOf("}");
+            if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+              cleaned = cleaned.substring(firstBrace, lastBrace + 1);
+            }
             aiResponse = JSON.parse(cleaned);
+            console.log(`[AI Chat] Successfully generated dynamic response with Gemini ${model}`);
             break;
           }
         } catch (err) {
-          console.warn(`[AI Chat] Model ${model} error:`, err.message);
+          console.warn(`[AI Chat] Gemini ${model} error:`, err.message);
         }
       }
     }
 
-    // High-Fidelity Heuristic Fallback if Gemini unavailable
+    // High-Fidelity Heuristic Fallback if AI unavailable
     if (!aiResponse) {
       const msgLower = userMessage.toLowerCase();
       const hasTabletIntent = /\b(tablet|ipad|stylus|drawing|late\s+kar|movies\s+dekhna|handwritten|pen)\b/i.test(msgLower);
@@ -181,15 +339,27 @@ Respond ONLY with a valid JSON object matching this schema:
       }
     }
 
-    return NextResponse.json(aiResponse, { status: 200 });
+    return NextResponse.json({
+      reply: aiResponse.reply || "I analyzed your requirements against the deals.",
+      recommendedDisplayedIndex: aiResponse.recommendedDisplayedIndex !== undefined ? aiResponse.recommendedDisplayedIndex : (aiResponse.recommendedProductIndex ?? null),
+      suggestedPoolProduct: aiResponse.suggestedPoolProduct || null,
+      intentShiftDetected: !!aiResponse.intentShiftDetected,
+      intentShiftReconfirmation: aiResponse.intentShiftReconfirmation || (aiResponse.pivotSuggestion ? {
+        understoodRequirement: aiResponse.pivotSuggestion.reason,
+        suggestedQuery: aiResponse.pivotSuggestion.suggestedQuery,
+        confirmationQuestion: `Would you like me to search for ${aiResponse.pivotSuggestion.suggestedQuery} now?`
+      } : null),
+      quickFollowUps: aiResponse.quickFollowUps || []
+    }, { status: 200 });
 
   } catch (error) {
     console.error("[AI Chat API Error]:", error);
     return NextResponse.json({
       reply: "I am ready to help you evaluate these products. Ask me anything about their performance, battery, or alternatives!",
-      recommendedProductIndex: null,
+      recommendedDisplayedIndex: null,
+      suggestedPoolProduct: null,
       intentShiftDetected: false,
-      pivotSuggestion: null,
+      intentShiftReconfirmation: null,
       quickFollowUps: ["Which has the best battery?", "Compare value for money"]
     }, { status: 200 });
   }

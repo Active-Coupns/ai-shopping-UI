@@ -33,20 +33,34 @@ The entire user journey must consume **at most 2 external API calls** to RapidAP
 
 - **Shopify & Brand Parameters:** URLs from Shopify stores (e.g. `gonoise.com`) must have regional query parameters stripped (`country`, `currency`) so that regional country-selection modals and 404 redirection errors are completely prevented.
 - **Search URL Protection:** In `getSafeDirectPdpLink` (`ProductCard.jsx`), any URL containing `/search`, `/s?k=`, `/search/?text=`, or `searchterm=` must NEVER be falsely classified as an exact direct PDP.
-- **Redis Caching:** All resolved product details and store direct PDPs are cached in Redis (`cache:details:v2:...` and `cache:pdp:direct:v4:...`) for **7 days** (`ex: 604800`). Repeated clicks or comparisons on the same product cost **0 API calls**.
+- **Redis Caching (Synchronized 24-Hour TTL):** All resolved product details, store direct PDPs, search results, and category cluster pools are cached in Redis for **24 hours** (`ex: 86400`). Because main search data and comparison pools expire together after 24 hours, prices and comparisons are strictly synchronized with zero stale "ghost" records. Repeated searches or comparisons cost **0 API calls**.
 
 ---
 
-## 3. Summary of Core Invariants
+## 3. AI Shopkeeper Brain & Central Store Inventory Pool
+
+- **Central Store Inventory Pool:** All live search results populate the central store inventory pool in Redis (`cache:inventory:pool:v2:<country>`) with a 24-hour TTL (`ex: 86400`).
+- **AI Shopkeeper (Zero Rigid Rules):** Instead of thousands of hardcoded if-else regex filters for every category, Gemini 2.5 Flash acts as an intelligent, honest shopkeeper evaluating the store's current inventory.
+  - If the shop has products that genuinely satisfy the customer's intent (broad queries, matching category, budget, or specifications), the AI Shopkeeper selects the top 3 best matching products (**0 API calls, ~250ms latency**).
+  - If the customer asks for something not in stock (different brand, different product category), the AI Shopkeeper honestly reports `available: false`, triggering a single fresh Live RapidAPI search with zero forced mismatches.
+- **Synchronized 24-Hour TTL:** Inventory pool, product details, direct PDPs, and comparison data all expire in 24 hours (`ex: 86400`), ensuring complete data freshness.
+
+---
+
+## 4. Summary of Core Invariants
 
 | Component | Rule | API Calls |
 | :--- | :--- | :---: |
-| **Search Bar** | 1 query loads 15–20 products | **1 Call** |
+| **Search Bar (Direct Match)** | Direct Redis key cache hit | **0 Calls** (<15ms) |
+| **Search Bar (Semantic Match)** | Cluster Pool match ($\ge 85\%$ confidence) | **0 Calls** (<20ms) |
+| **Search Bar (Fresh/Mismatch)** | Live RapidAPI search (populates 15–20 products) | **1 Call** |
 | **Product Cards** | Displays strictly 3 cards (`slice(0, 3)`) | **0 Calls** |
 | **Smart Filter Chips** | In-memory filtering of 15–20 products | **0 Calls** |
-| **Compare Prices Drawer** | Loads only verified real store PDPs | **1 Call** |
+| **Compare Prices Drawer (Cached)** | Verified PDPs within 24 hours | **0 Calls** |
+| **Compare Prices Drawer (Fresh)** | Loads only verified real store PDPs | **1 Call** (cached 24h) |
 | **Buy Now / Store Clicks** | Direct merchant PDP links | **0 Calls** |
-| **Total Session Cost** | Search + 1 Comparison + Clicks | **Flat 2 Calls** |
+| **Total Session Cost** | Search + 1 Comparison + Clicks | **0 to Flat 2 Calls** |
 
 ---
 **DO NOT ALTER THESE SPECIFICATIONS WITHOUT EXPLICIT USER APPROVAL.**
+
