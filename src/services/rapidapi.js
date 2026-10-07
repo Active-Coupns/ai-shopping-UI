@@ -540,6 +540,16 @@ function buildProductSpecs(attributes = {}, title = '', description = '', offers
     specs.push(`${label}: ${cleanVal}`);
   };
 
+  // 1. Prioritize Raw Product Metadata Attributes directly from Merchant
+  const rawKeys = Object.keys(attributes || {});
+  for (const k of rawKeys) {
+    if (specs.length >= 5) break;
+    const v = attributes[k];
+    if (v && typeof v === "string" && v.trim().length > 1 && !v.includes("http")) {
+      addSpec(k, v);
+    }
+  }
+
   const combinedText = [
     title,
     description,
@@ -623,21 +633,31 @@ function buildProductSpecs(attributes = {}, title = '', description = '', offers
   }
 
   // 4. Computing / Laptops Specific Extractions
-  if (textLower.includes("laptop") || textLower.includes("notebook") || textLower.includes("macbook") || textLower.includes("thinkpad") || textLower.includes("ideapad") || textLower.includes("vivobook") || textLower.includes("tuf") || textLower.includes("loq") || textLower.includes("legion") || textLower.includes("victus")) {
-    const cpuMatch = combinedText.match(/\b(intel\s*core\s*i[3579]-?\d+[a-z0-9]*|amd\s*ryzen\s*(?:ai\s*)?[3579]\s*\d+[a-z0-9]*|apple\s*m[1234](?:\s*(?:pro|max|ultra))?|intel\s*core\s*ultra\s*[579]\s*\d+[a-z0-9]*|snapdragon\s*x\s*elite)\b/i);
+  const isLaptop = textLower.includes("laptop") || textLower.includes("notebook") || textLower.includes("macbook") || 
+                   textLower.includes("thinkpad") || textLower.includes("ideapad") || textLower.includes("vivobook") || 
+                   textLower.includes("tuf") || textLower.includes("loq") || textLower.includes("legion") || 
+                   textLower.includes("victus") || textLower.includes("aspire") || textLower.includes("acer") || 
+                   textLower.includes("pavilion") || textLower.includes("zenbook") || textLower.includes("galaxy book") ||
+                   textLower.includes("ryzen") || textLower.includes("core i");
+
+  if (isLaptop) {
+    const cpuMatch = combinedText.match(/\b(intel\s*(?:core\s*)?i[3579](?:-?\d+[a-z0-9]*|\s*\d+th\s*gen)?|amd\s*ryzen\s*(?:ai\s*)?[3579](?:\s*\d+[a-z0-9]*)?|apple\s*m[1234](?:\s*(?:pro|max|ultra))?|intel\s*core\s*ultra\s*[579]\s*\d+[a-z0-9]*|snapdragon\s*x\s*elite)\b/i);
     if (cpuMatch) addSpec("Processor", cpuMatch[0].trim());
 
-    const ramMatch = combinedText.match(/\b(\d{1,2}\s*gb\s*(?:ddr[45]\s*)?(?:ram|memory)?)\b/i);
+    const ramMatch = combinedText.match(/\b((?:4|8|16|24|32|64)\s*gb(?:\s*ddr[45]\s*)?(?:\s*ram|\s*memory)?)\b/i);
     if (ramMatch) addSpec("RAM", ramMatch[0].trim().toUpperCase());
 
-    const ssdMatch = combinedText.match(/\b(\d{1,3}\s*(?:gb|tb)\s*(?:ssd|nvme|pcie|storage))\b/i);
+    const ssdMatch = combinedText.match(/\b((?:128|256|512)\s*gb\s*(?:ssd|nvme|storage)?|(?:1|2)\s*tb\s*(?:ssd|nvme|storage)?)\b/i);
     if (ssdMatch) addSpec("Storage", ssdMatch[0].trim().toUpperCase());
 
-    const gpuMatch = combinedText.match(/\b(rtx\s*\d{4}(?:\s*ti)?|gtx\s*\d{4}(?:\s*ti)?|geforce\s*rtx\s*\d{4}|radeon\s*\w+)\b/i);
+    const gpuMatch = combinedText.match(/\b(rtx\s*\d{4}(?:\s*ti)?|gtx\s*\d{4}(?:\s*ti)?|geforce\s*rtx\s*\d{4}|radeon\s*graphics|iris\s*xe)\b/i);
     if (gpuMatch) addSpec("Graphics GPU", gpuMatch[0].trim().toUpperCase());
 
-    const displayMatch = combinedText.match(/\b(\d{2}(?:\.\d+)?\s*(?:inch|in|\"|cm)\s*(?:fhd\+?|qhd\+?|oled|ips|144hz|165hz|120hz|240hz)?)\b/i) || combinedText.match(/\b(144hz|165hz|120hz|240hz|oled|fhd\+?|qhd)\s*(?:display|screen)?\b/i);
-    if (displayMatch) addSpec("Display", displayMatch[0].trim());
+    const displayMatch = combinedText.match(/\b((?:14|15\.6|16|13\.3)\s*(?:inch|in|\"|\s)?\s*(?:fhd|hd|ips|oled|144hz|120hz)?(?:\s*(?:display|screen))?)\b/i);
+    if (displayMatch && displayMatch[0].trim().length > 2) addSpec("Display", displayMatch[0].trim());
+
+    const osMatch = combinedText.match(/\b(windows\s*11(?:\s*home)?|windows\s*10|macos|chrome\s*os)\b/i);
+    if (osMatch) addSpec("OS", osMatch[0].trim());
   }
 
   // 5. Smartphones Specific Extractions
@@ -653,27 +673,6 @@ function buildProductSpecs(attributes = {}, title = '', description = '', offers
 
     const scrMatch = combinedText.match(/\b(120hz\s*(?:amoled|oled|fluid amoled)|amoled|super amoled)\b/i);
     if (scrMatch) addSpec("Display", scrMatch[0].trim().toUpperCase());
-  }
-
-  // 6. Pass through structured RapidAPI attributes
-  const rawKeys = Object.keys(attributes || {});
-  const ignoreKeys = new Set(["use", "type", "form", "model", "generic name", "department", "item weight", "colour"]);
-
-  for (const k of rawKeys) {
-    if (specs.length >= 5) break;
-    const kLower = k.toLowerCase().trim();
-    if (ignoreKeys.has(kLower)) continue;
-    const v = attributes[k];
-    if (v && typeof v === "string" && v.length > 1 && !v.includes("http")) {
-      addSpec(k, v);
-    }
-  }
-
-  // Fallback defaults if still empty
-  if (specs.length === 0) {
-    addSpec("Authenticity", "100% Genuine Sealed Unit");
-    addSpec("Warranty", "Official Brand / Manufacturer Warranty");
-    addSpec("Delivery", "Verified Express Shipping");
   }
 
   return specs.slice(0, 5);
@@ -1852,6 +1851,8 @@ export async function searchRapidApiProducts(query, limit = 20, country = "IN", 
         url: primaryStoreObj.deal_link,
         description: `${bestTitle} available at ${primaryStoreObj.store_name} for ${priceFormatted}.`,
         specs,
+        product_attributes: primaryAttributes || {},
+        product_description: primaryDescription || "",
         coupons: generateCoupons(primaryStoreObj.store_name, priceVal),
         price_comparison: priceComp
       };
@@ -1965,6 +1966,8 @@ export async function searchRapidApiProducts(query, limit = 20, country = "IN", 
         url: primaryDealLink,
         description: `${displayTitle} available at ${storeName} for ${priceFormatted}.`,
         specs,
+        product_attributes: p.product_attributes || {},
+        product_description: p.product_description || "",
         coupons: generateCoupons(storeName, priceVal),
         market_range: marketRange,
         savings_amount: savingsAmount,

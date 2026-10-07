@@ -25,7 +25,9 @@ export async function POST(request) {
       title: p.title || "Product",
       price: p.price || "N/A",
       store: p.store_name || p.store || "Online Store",
-      specs: (p.specs || []).slice(0, 4),
+      specs: (p.specs || []).slice(0, 5),
+      attributes: p.product_attributes || p.attributes || {},
+      description: (p.product_description || p.description || "").slice(0, 200),
       rating: p.rating || "4.4"
     }));
 
@@ -39,7 +41,9 @@ export async function POST(request) {
       title: p.title || "Product",
       price: p.price || "N/A",
       store: p.store_name || p.store || "Online Store",
-      specs: (p.specs || []).slice(0, 4),
+      specs: (p.specs || []).slice(0, 5),
+      attributes: p.product_attributes || p.attributes || {},
+      description: (p.product_description || p.description || "").slice(0, 200),
       rating: p.rating || "4.4"
     }));
 
@@ -110,12 +114,30 @@ YOUR MISSION & DECISION FLOW:
           "confirmationQuestion": "Natural question asking if user wants to search (in English or natural Hinglish, e.g. 'Would you like me to search for ... deals now?' or 'Kya aap chahte hain ki main ... search karun?')"
         }
 
+3. DIRECT SCREEN FILTER CONTROL (Interactive In-Memory Actions):
+   - IF the user asks to filter the screen cards or see specific specs (e.g. "16GB RAM dikhao", "Ryzen dikhao", "Intel wale", "Gaming GPU", "saste wale / budget dikhao", "Thin and light", "Top rated dikhao", or "Sabhi dikhao / reset to all"):
+     Set "screenAction": { "type": "SET_FILTER", "chipId": "<chip_id>" }
+     Allowed chipId values:
+     - "16gb-ram" (for 16GB RAM)
+     - "8gb-ram" (for 8GB RAM)
+     - "intel-core" (for Intel Core i5 / i7)
+     - "amd-ryzen" (for AMD Ryzen)
+     - "gaming-gpu" (for Dedicated GPU / RTX / Gaming)
+     - "budget-tier" (for Budget / Under Midpoint)
+     - "thin-light" (for Thin & Light)
+     - "512gb-ssd" (for 512GB+ SSD)
+     - "fhd-display" (for 15.6" FHD Display)
+     - "top-rated" (for 4.3+ Rating)
+     - "all" (to reset and show all top deals)
+     And in your "reply", confirm what you did naturally (e.g. "Maine screen par 16GB RAM wale laptops filter kar diye hain...").
+   - If the user is NOT requesting a filter change, set "screenAction": null.
+
 LANGUAGE & TONE POLICY:
 - We strictly use natural English or modern conversational Hinglish (standard daily spoken Hindi with tech terms like RAM, Battery, Display, Budget, Coding in English).
 - DO NOT use archaic, bookish, or formal Sanskritized Hindi words. Keep it friendly, empathetic, and authentic.
 - If user talks in English, respond in English. If user talks in Hindi/Hinglish, respond in natural conversational Hinglish.
 
-3. STRICT JSON RESPONSE SCHEMA:
+4. STRICT JSON RESPONSE SCHEMA:
 Respond ONLY with a valid JSON object matching this schema:
 {
   "reply": "Your clear, empathetic, and objective response (2-3 paragraphs with key highlights).",
@@ -123,6 +145,7 @@ Respond ONLY with a valid JSON object matching this schema:
   "suggestedPoolProduct": null, // or { "title": "...", "price": "...", "store": "...", "specs": [...], "whyRecommended": "..." }
   "intentShiftDetected": false, // true ONLY if user's need requires a completely new search query
   "intentShiftReconfirmation": null, // or { "understoodRequirement": "...", "suggestedQuery": "...", "confirmationQuestion": "..." }
+  "screenAction": null, // or { "type": "SET_FILTER", "chipId": "16gb-ram" }
   "quickFollowUps": [
     "Short question 1",
     "Short question 2",

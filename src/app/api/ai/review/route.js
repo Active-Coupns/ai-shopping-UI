@@ -11,6 +11,8 @@ export async function POST(request) {
       productTitle,
       productPrice,
       specs = [],
+      productAttributes = {},
+      productDescription = "",
       storeName = "",
       userPersona = "",
       userRequirement = "",
@@ -112,26 +114,40 @@ PRODUCT UNDER REVIEW:
 Product Title: "${productTitle}"
 Current Price: ${productPrice} at ${storeName}
 Key Specs: ${specs.join(", ")}
+Product Attributes from Merchant: ${JSON.stringify(productAttributes)}
+Product Description: ${productDescription || "N/A"}
 User Search Query / Need: "${userRequirement || userPersona || "General Value Buyer"}"
 ${otherCardsContext}
 ${userSessionContext}
 
 OUTPUT GUIDELINES:
-1. "fitVerdict": Exactly 2 clear sentences.
+1. "technicalSpecs": Exactly 4 to 6 authentic specifications directly extracted from the product's metadata (Product Attributes from Merchant, Product Title, and Description).
+   - Only extract genuine specifications and properties directly present in the product's metadata.
+   - Do NOT invent fake attributes or follow rigid category rules.
+   - Every item must be an object with "label" and "value" directly reflecting this product's actual metadata.
+2. "fitVerdict": Exactly 2 clear sentences.
    - Sentence 1: Affirm that this model was shortlisted specifically for "${userRequirement || 'your search'}" and fits the required budget/use-case.
    - Sentence 2: Highlight this specific model's distinctive strength/advantage (relative to alternatives on screen if available).
-2. "bestFor": 1 concise sentence describing the ideal user and practical workloads (e.g. "Best suited for college coursework, office multitasking, and daily streaming.").
-3. "skipIf": 1 constructive sentence highlighting when a user should step up (e.g. "Step up to an RTX GPU model if your primary goal is competitive AAA gaming or 4K video rendering.").
-4. "hiddenCatch": 1 real-world fact observed after 3-6 months of usage (e.g. realistic battery backup of 4-5 hours vs claimed 8 hours, or keyboard flex).
-5. "pros": Exactly 3 genuine, distinct strengths specific to this model.
-6. "cons": Exactly 2 realistic trade-offs at this price tier.
-7. "dealVerdict": Realistic market price verdict for ₹${priceNum}.
-8. "trustScore": Integer 88-96.
+3. "bestFor": 1 concise sentence describing the ideal user and practical workloads (e.g. "Best suited for college coursework, office multitasking, and daily streaming.").
+4. "skipIf": 1 constructive sentence highlighting when a user should step up (e.g. "Step up to an RTX GPU model if your primary goal is competitive AAA gaming or 4K video rendering.").
+5. "hiddenCatch": 1 real-world fact observed after 3-6 months of usage (e.g. realistic battery backup of 4-5 hours vs claimed 8 hours, or keyboard flex).
+6. "pros": Exactly 3 genuine, distinct strengths specific to this model.
+7. "cons": Exactly 2 realistic trade-offs at this price tier.
+8. "dealVerdict": Realistic market price verdict for ₹${priceNum}.
+9. "trustScore": Integer 88-96.
 
 Always respond ONLY with a valid JSON object matching this schema:
 {
   "categoryType": "ecommerce",
   "isMedicine": false,
+  "technicalSpecs": [
+    { "label": "Processor / Core Engine", "value": "Model-specific CPU / Engine / Primary Spec" },
+    { "label": "RAM / Memory / Capacity", "value": "Exact Memory / Size / Capacity" },
+    { "label": "Storage / Secondary Spec", "value": "Exact Storage / Material / Tech" },
+    { "label": "Display / Interface / Driver", "value": "Exact Display / Panel / Driver Size" },
+    { "label": "Battery / Power / Efficiency", "value": "Exact Battery / Star Rating / Power" },
+    { "label": "Form Factor / OS / Build", "value": "Weight / OS / Construction" }
+  ],
   "fitVerdict": "Affirmation of match for query followed by this model's unique standout advantage.",
   "bestFor": "Target user and ideal everyday workloads.",
   "skipIf": "Specific advanced workload where the buyer should consider stepping up.",
@@ -328,24 +344,55 @@ Always respond ONLY with a valid JSON object matching this schema:
           authenticityCheck: "Verify official importer hologram scratch-code on container seal upon delivery."
         };
       } else {
+        const fallbackSpecs = [];
+
+        // 1. Pure extraction directly from productAttributes provided in product metadata
+        if (productAttributes && typeof productAttributes === "object") {
+          for (const [k, v] of Object.entries(productAttributes)) {
+            if (fallbackSpecs.length >= 6) break;
+            if (v && typeof v === "string" && v.trim().length > 0 && !v.includes("http")) {
+              const normLabel = k.trim();
+              if (!fallbackSpecs.some(f => f.label.toLowerCase() === normLabel.toLowerCase())) {
+                fallbackSpecs.push({ label: normLabel, value: v.trim() });
+              }
+            }
+          }
+        }
+
+        // 2. Pure extraction from specs already present in the product metadata
+        if (fallbackSpecs.length < 6 && Array.isArray(specs) && specs.length > 0) {
+          specs.forEach(s => {
+            if (fallbackSpecs.length >= 6) return;
+            const parts = s.split(":");
+            if (parts.length >= 2) {
+              const label = parts[0].trim();
+              const value = parts.slice(1).join(":").trim();
+              if (label && value && !fallbackSpecs.some(f => f.label.toLowerCase() === label.toLowerCase())) {
+                fallbackSpecs.push({ label, value });
+              }
+            }
+          });
+        }
+
         aiReview = {
           categoryType: "ecommerce",
           isMedicine: false,
-          fitVerdict: `This product offers reliable performance for daily computing and multitasking at ${productPrice}. It is a dependable choice within your budget range.`,
-          bestFor: "Daily office tasks, college assignments, and web multitasking.",
-          skipIf: "Heavy 3D rendering or hardcore gaming needing dedicated high-tier GPU.",
-          hiddenCatch: "Expect moderate battery life under sustained heavy workloads; consider using with cooling pad during extended sessions.",
+          technicalSpecs: fallbackSpecs,
+          fitVerdict: `This product is tailored to meet your requirements at ${productPrice}. It is an authentic and dependable choice within your budget range.`,
+          bestFor: "Everyday practical use and dependable performance for your budget.",
+          skipIf: "You require ultra-premium bespoke tier features or extreme commercial workloads.",
+          hiddenCatch: "Standard real-world wear applies over 6+ months of daily use.",
           pros: [
-            specs[0] || "Solid hardware performance for price",
+            specs[0] || "Dependable quality for the listed price",
             "Competitive pricing across major Indian retailers",
-            "Decent display quality and verified manufacturer warranty"
+            "Verified manufacturer authentic stock"
           ],
           cons: [
-            "Speakers and webcam are standard entry-grade",
-            "Battery drains faster during intensive gaming/rendering"
+            "Availability of sizes/variants may vary across stores",
+            "Price subject to active seasonal coupon validity"
           ],
           dealVerdict: "Fair market price with active store discounts.",
-          trustScore: 89
+          trustScore: 91
         };
       }
     }
@@ -383,6 +430,7 @@ Always respond ONLY with a valid JSON object matching this schema:
       buyerReviewTruth: aiReview.buyerReviewTruth || null,
       authenticityCheck: aiReview.authenticityCheck || null,
       // E-commerce specific fields
+      technicalSpecs: aiReview.technicalSpecs || [],
       fitVerdict: aiReview.fitVerdict,
       bestFor: aiReview.bestFor || null,
       skipIf: aiReview.skipIf || null,

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, ShoppingBag, ArrowLeft, RefreshCw, Layers, ShieldAlert, Coins, Tag, AlertCircle, Shirt, User, Globe, Search, Pill } from "lucide-react";
+import { Sparkles, ShoppingBag, ArrowLeft, RefreshCw, Layers, ShieldAlert, Coins, Tag, AlertCircle, Shirt, User, Globe, Search, Pill, Heart, Scale, Bell, X } from "lucide-react";
 import { SignedIn, SignedOut, SignInButton, useUser, useClerk } from "@clerk/nextjs";
 import SearchHero from "@/components/SearchHero";
 import RocketLoader from "@/components/RocketLoader";
@@ -15,6 +15,9 @@ import FashionTrialRoom from "@/components/FashionTrialRoom";
 import CouponResultView from "@/components/CouponResultView";
 import InChatShoppingAgent from "@/components/InChatShoppingAgent";
 import SmartFilterChips, { generateSmartChips } from "@/components/SmartFilterChips";
+import HeadToHeadModal from "@/components/HeadToHeadModal";
+import SavedDealsDrawer from "@/components/SavedDealsDrawer";
+import PriceDropModal from "@/components/PriceDropModal";
 import { isProductUrl, extractProductTitleFromUrl, extractProductInfoFromUrl } from "@/lib/urlProductParser";
 import { searchProducts } from "@/services/api";
 
@@ -96,6 +99,102 @@ export default function Home() {
   const [isCartAnalysis, setIsCartAnalysis] = useState(false);
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
   const [activeFilterChipId, setActiveFilterChipId] = useState("all");
+
+  // 1. Saved Deals / Bookmarks (LocalStorage persistence)
+  const [savedDeals, setSavedDeals] = useState([]);
+  const [isSavedDrawerOpen, setIsSavedDrawerOpen] = useState(false);
+
+  // 2. Head-to-Head VS Comparison State
+  const [vsSelectedProducts, setVsSelectedProducts] = useState([]);
+  const [isVsModalOpen, setIsVsModalOpen] = useState(false);
+
+  // 3. Price Drop Alerts State (Zero email liability)
+  const [savedAlerts, setSavedAlerts] = useState([]);
+  const [selectedAlertProduct, setSelectedAlertProduct] = useState(null);
+  const [isPriceAlertModalOpen, setIsPriceAlertModalOpen] = useState(false);
+
+  // Load saved deals & price alerts from localStorage on client mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("shopsmart_saved_deals");
+      if (saved) setSavedDeals(JSON.parse(saved));
+      const alerts = localStorage.getItem("shopsmart_price_alerts");
+      if (alerts) setSavedAlerts(JSON.parse(alerts));
+    } catch (e) {}
+  }, []);
+
+  const handleToggleBookmark = (product) => {
+    if (!product) return;
+    const prodId = product.id || product.product_id || product.title;
+    setSavedDeals(prev => {
+      const exists = prev.some(p => (p.id || p.product_id || p.title) === prodId);
+      let updated;
+      if (exists) {
+        updated = prev.filter(p => (p.id || p.product_id || p.title) !== prodId);
+      } else {
+        const itemToSave = {
+          id: prodId,
+          product_id: product.product_id,
+          title: product.title,
+          price: product.price,
+          currency: product.currency || "INR",
+          image: product.image,
+          store_name: product.store_name || product.store || "Online Store",
+          deal_link: product.affiliateUrl || product.deal_link || product.link || "#",
+          savedAt: new Date().toISOString()
+        };
+        updated = [itemToSave, ...prev];
+      }
+      try {
+        localStorage.setItem("shopsmart_saved_deals", JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+  };
+
+  const handleRemoveSavedDeal = (id) => {
+    setSavedDeals(prev => {
+      const updated = prev.filter(p => (p.id || p.product_id || p.title) !== id);
+      try {
+        localStorage.setItem("shopsmart_saved_deals", JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+  };
+
+  const handleClearAllSavedDeals = () => {
+    setSavedDeals([]);
+    try {
+      localStorage.removeItem("shopsmart_saved_deals");
+    } catch (e) {}
+  };
+
+  const handleToggleVs = (product) => {
+    if (!product) return;
+    const prodId = product.id || product.product_id || product.title;
+    // Immediate 1-click comparison: product becomes Option A, candidate becomes default Option B
+    const candidateB = (products || []).find(p => (p.id || p.product_id || p.title) !== prodId) || null;
+    setVsSelectedProducts([product, candidateB].filter(Boolean));
+    setIsVsModalOpen(true);
+  };
+
+  const handleSavePriceAlert = (alertItem) => {
+    setSavedAlerts(prev => {
+      const updated = [alertItem, ...prev.filter(a => a.id !== alertItem.id)];
+      try {
+        localStorage.setItem("shopsmart_price_alerts", JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+  };
+
+  // 4. Interactive Chat Action (Direct Screen Control)
+  const handleChatAction = (action) => {
+    if (!action) return;
+    if (action.type === "SET_FILTER" && action.chipId) {
+      setActiveFilterChipId(action.chipId);
+    }
+  };
 
   // Unified AI Session Journey Ledger
   const [aiSessionLedger, setAiSessionLedger] = useState({
@@ -478,6 +577,23 @@ export default function Home() {
               )}
             </div>
 
+            {/* Saved Deals Button (Bookmarks Drawer Trigger) */}
+            <button
+              type="button"
+              suppressHydrationWarning
+              onClick={() => setIsSavedDrawerOpen(true)}
+              className="relative flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl sm:rounded-2xl bg-white hover:bg-rose-50 text-slate-700 hover:text-rose-600 border border-slate-200/90 shadow-2xs transition-all cursor-pointer active:scale-95 text-xs font-bold"
+              title="View Saved Bookmarks"
+            >
+              <Heart className={`w-3.5 h-3.5 ${savedDeals.length > 0 ? "fill-rose-500 text-rose-500" : ""}`} />
+              <span className="hidden sm:inline">Saved</span>
+              {savedDeals.length > 0 && (
+                <span className="px-1.5 py-0.2 rounded-full bg-rose-500 text-white text-[10px] font-black">
+                  {savedDeals.length}
+                </span>
+              )}
+            </button>
+
             {/* Unified Account & Region Trigger (Desktop & Mobile) */}
             <button
               type="button"
@@ -717,6 +833,10 @@ export default function Home() {
                         {displayedProducts.map((product, idx) => {
                           const siblingProducts = displayedProducts.filter((_, i) => i !== idx);
                           const previouslyViewedList = Object.values(aiSessionLedger.viewedReviews || {});
+                          const prodId = product.id || product.product_id || product.title;
+                          const isVsSelected = vsSelectedProducts.some(p => (p.id || p.product_id || p.title) === prodId);
+                          const isBookmarked = savedDeals.some(p => (p.id || p.product_id || p.title) === prodId);
+
                           return (
                             <ProductCard
                               key={product.id || `product-${idx}-${product.title}`}
@@ -725,6 +845,14 @@ export default function Home() {
                               siblingProducts={siblingProducts}
                               previouslyViewed={previouslyViewedList}
                               onReviewInspected={handleReviewInspected}
+                              isVsSelected={isVsSelected}
+                              onToggleVs={handleToggleVs}
+                              isBookmarked={isBookmarked}
+                              onToggleBookmark={handleToggleBookmark}
+                              onOpenPriceAlert={(p) => {
+                                setSelectedAlertProduct(p);
+                                setIsPriceAlertModalOpen(true);
+                              }}
                             />
                           );
                         })}
@@ -738,6 +866,7 @@ export default function Home() {
                       searchQuery={searchQuery}
                       aiSessionLedger={aiSessionLedger}
                       onExecuteSearch={handleDirectSearch}
+                      onExecuteAction={handleChatAction}
                     />
 
                     {coupons.length > 0 && (
@@ -836,6 +965,32 @@ export default function Home() {
       <QuotaModal
         isOpen={isQuotaOpen}
         onClose={() => setIsQuotaOpen(false)}
+      />
+
+      {/* Head-to-Head Comparison Modal (VS Mode) */}
+      <HeadToHeadModal
+        isOpen={isVsModalOpen}
+        onClose={() => setIsVsModalOpen(false)}
+        productA={vsSelectedProducts[0]}
+        productB={vsSelectedProducts[1]}
+        allProducts={products}
+      />
+
+      {/* Saved Deals Drawer (Bookmarks) */}
+      <SavedDealsDrawer
+        isOpen={isSavedDrawerOpen}
+        onClose={() => setIsSavedDrawerOpen(false)}
+        savedDeals={savedDeals}
+        onRemoveDeal={handleRemoveSavedDeal}
+        onClearAll={handleClearAllSavedDeals}
+      />
+
+      {/* Price Drop Alert Modal (Zero Email Liability) */}
+      <PriceDropModal
+        isOpen={isPriceAlertModalOpen}
+        onClose={() => setIsPriceAlertModalOpen(false)}
+        product={selectedAlertProduct}
+        onSaveAlert={handleSavePriceAlert}
       />
     </div>
   );
