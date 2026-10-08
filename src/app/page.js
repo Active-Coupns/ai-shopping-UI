@@ -18,6 +18,7 @@ import SmartFilterChips, { generateSmartChips } from "@/components/SmartFilterCh
 import HeadToHeadModal from "@/components/HeadToHeadModal";
 import SavedDealsDrawer from "@/components/SavedDealsDrawer";
 import PriceDropModal from "@/components/PriceDropModal";
+import SearchAiConciergeModal from "@/components/SearchAiConciergeModal";
 import { isProductUrl, extractProductTitleFromUrl, extractProductInfoFromUrl } from "@/lib/urlProductParser";
 import { searchProducts } from "@/services/api";
 
@@ -196,11 +197,38 @@ export default function Home() {
     }
   };
 
-  // Unified AI Session Journey Ledger
+  // Pre-Search AI Concierge State
+  const [isConciergeOpen, setIsConciergeOpen] = useState(false);
+  const [conciergeTopic, setConciergeTopic] = useState("");
+
+  const handleOpenConcierge = (topic = "") => {
+    setConciergeTopic(topic || "");
+    setIsConciergeOpen(true);
+  };
+
+  // Unified AI Session Journey Ledger (Connects Concierge -> Product AI Reviews -> In-Chat Shopping Agent)
   const [aiSessionLedger, setAiSessionLedger] = useState({
     viewedReviews: {},
-    lastViewedProduct: null
+    lastViewedProduct: null,
+    userPersona: "",
+    userRequirement: "",
+    budgetLimit: "",
+    conciergeSummary: ""
   });
+
+  const handleConfirmConciergeSearch = (query, sharedContext = {}) => {
+    setAiSessionLedger(prev => ({
+      ...prev,
+      viewedReviews: {},
+      lastViewedProduct: null,
+      userPersona: sharedContext.userPersona || "",
+      userRequirement: sharedContext.userRequirement || "",
+      budgetLimit: sharedContext.budgetLimit || "",
+      conciergeSummary: sharedContext.conciergeSummary || ""
+    }));
+    setIsConciergeOpen(false);
+    handleDirectSearch(query);
+  };
 
   const handleReviewInspected = (product, reviewData) => {
     if (!product || !reviewData) return;
@@ -346,7 +374,7 @@ export default function Home() {
 
     setActiveFilterChipId("all");
     setSearchQuery(resolvedTitle);
-    setAiSessionLedger({ viewedReviews: {}, lastViewedProduct: null });
+    setAiSessionLedger(prev => ({ ...prev, viewedReviews: {}, lastViewedProduct: null }));
     setAppState("searching");
     setApiError(null);
     setIsApiLoading(true);
@@ -670,6 +698,7 @@ export default function Home() {
                 onSubmit={handleSearchSubmit}
                 onCouponSearch={handleCouponSearch}
                 onAnalyzeCartScreenshot={handleAnalyzeCartScreenshot}
+                onOpenConcierge={handleOpenConcierge}
               />
             </motion.div>
           )}
@@ -842,6 +871,7 @@ export default function Home() {
                               key={product.id || `product-${idx}-${product.title}`}
                               product={product}
                               searchQuery={searchQuery}
+                              userPersona={aiSessionLedger.userPersona || ""}
                               siblingProducts={siblingProducts}
                               previouslyViewed={previouslyViewedList}
                               onReviewInspected={handleReviewInspected}
@@ -991,6 +1021,19 @@ export default function Home() {
         onClose={() => setIsPriceAlertModalOpen(false)}
         product={selectedAlertProduct}
         onSaveAlert={handleSavePriceAlert}
+      />
+
+      {/* Pre-Search AI Concierge & Query Optimizer Modal */}
+      <SearchAiConciergeModal
+        isOpen={isConciergeOpen}
+        onClose={() => setIsConciergeOpen(false)}
+        initialQuery={conciergeTopic}
+        country={selectedCountry}
+        onConfirmSearch={handleConfirmConciergeSearch}
+        onDirectSearch={(directQ) => {
+          setIsConciergeOpen(false);
+          handleDirectSearch(directQ);
+        }}
       />
     </div>
   );
