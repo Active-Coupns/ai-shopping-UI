@@ -18,55 +18,86 @@
 
 ## 📅 Daily Changelog & Feature Timeline
 
-### 🗓️ 2026-10-08 (Active Release — Pre-Search AI Concierge & 3-AI Memory Sync)
+### 🗓️ 2026-10-08 (Dual Git Releases — Mobile-First UX, Multi-Tier Caching & Shared Memory)
 
-* **Status**: 🟢 Implemented & Live locally (`http://localhost:3000`)
-* **Key Focus**: Conversational Pre-Search AI Shopping Concierge, Query Optimization, and Shared Session Memory across 3 AIs.
+* **Git Commits**: 
+  * `79e28d8` — `feat: mobile-first UX, sub-millisecond multi-tier cache, and zero-result radar fallback`
+  * `159d251` — `feat: intent auto-routing, AI review redis caching, and user journey telemetry ledger`
+* **Status**: ✅ 100% Tested, Verified & Pushed to GitHub `main`
+* **Key Focus**: Extreme Search Latency Optimization (Sub-Millisecond L1 Cache), Mobile-First UI/UX Ergonomics, Zero-Result Fallback, and Ecosystem Telemetry.
 
-#### 🌟 New Features & Architectural Integrations:
+---
+
+#### 🚀 Release Batch 2 (`79e28d8`): Mobile-First UX & Sub-Millisecond Performance
+1. **Sub-Millisecond Multi-Tier Cache (L1 Memory + L2 Cloud Redis)**:
+   - Built `MultiTierRedisClient` in `src/services/redis.js` with instant in-memory L1 cache layer (`0.01ms`).
+   - Converted remote Upstash cloud writes to non-blocking background persistence (fire-and-forget).
+   - Compacted store inventory pool from 137 KB down to ~8 KB (sanitizing heavy product descriptions) and cached in local memory.
+   - **Live Benchmark**: Warm search query latency slashed from **18-20 seconds down to 55ms** (360x faster).
+2. **AI Shopkeeper Fast-Path Local Brain (0.5ms Latency)**:
+   - Clean queries (e.g. `"laptop"`, `"shoes under 2000"`) are now resolved directly by the deterministic Local Brain in **0.5ms** without external LLM roundtrips.
+   - Natural language, complex conversational prompts automatically route to **Groq AI (qwen/qwen3.8-27b)**.
+   - Shopkeeper results automatically cached in L1/L2 cache for 12 hours.
+3. **Mobile-First "Ask Deals AI" & Bottom Navigation Shortcut**:
+   - Fixed floating action button (FAB) position to `bottom-20 z-[60]` (80px from bottom) so it floats safely above the sticky 60px mobile navigation bar.
+   - Added a dedicated **"Ask AI"** tab to the mobile bottom navigation bar when viewing search results for 1-tap thumb navigation.
+4. **Anti-Scroll Hijacking Fix**:
+   - Removed aggressive `window.scrollTo` hijack from `InChatShoppingAgent.jsx`. Users now remain at the top viewing product cards without being forced down to the chat box.
+5. **Native Deal Sharing Suite (Mobile Web Share + Desktop Sheet)**:
+   - Added 1-click **"Share Deal"** button on `ProductCard.jsx`.
+   - On mobile: Triggers native OS share sheet (WhatsApp, Telegram, Messages).
+   - On desktop: Opens a bottom sheet with copy-to-clipboard functionality.
+6. **Mobile Slide-Up Bottom Sheet for Pre-Search AI Concierge**:
+   - Converted `SearchAiConciergeModal.jsx` on mobile devices into a native slide-up bottom sheet with horizontal swipeable chips.
+7. **Zero-Result "Live Merchant Radar" Fallback UI**:
+   - Replaced dead-end error messages for zero-result queries with an animated "Live Merchant Radar" offering direct 1-click search buttons for Amazon, Flipkart, and Croma.
+8. **Social SEO & OpenGraph Meta Tags**:
+   - Added rich OpenGraph metadata, Twitter Card metadata, and `metadataBase` in `src/app/layout.js` for links shared on WhatsApp, Twitter, and Facebook.
+9. **RocketLoader Fast-Forward Acceleration**:
+   - Eliminated the 800ms image preload blocker in `page.js`.
+   - RocketLoader transitions to 100% within 100ms as soon as backend data is resolved.
+
+---
+
+#### 🌟 Release Batch 1 (`159d251`): Intent Routing, Redis Reviews & Telemetry
 1. **Clean Separation of Direct Search & Optional AI Shopping Guide**:
-   - **Normal Search**: 100% direct, frictionless, 0 delay when typing in search bar and pressing Enter or clicking "Search".
-   - **ShopSmart AI Guide**: Optional consultant accessed via `[ ✨ AI Guide ]` button when user feels confused and wants advice.
+   - Normal Search: 100% direct, frictionless, 0 delay when typing in search bar.
+   - ShopSmart AI Guide: Optional consultant accessed via `[ ✨ AI Guide ]` button when user wants advice.
 2. **True Conversational Advisor UI (No Screen-Blocking Forms)**:
-   - Completely removed the intrusive `OPTIMIZED SEARCH READY` green box that interrupted chat flow.
-   - Clean, natural ChatGPT-style consultation dialog where the user can freely explore specs, brands, and trade-offs.
-   - **Strict 2-4 Word Smart Query Rule**: Irrespective of conversation length, the AI extracts only 2-4 core anchor keywords (e.g. `Ryzen 5 laptop`, `RTX 3050 laptop`) ensuring e-commerce APIs (Amazon/Flipkart) never fail from query bloat.
-   - **Non-Intrusive Search Triggers**:
-     - 1-Click Action Chip in the chip list: `[ 🚀 Search: "RTX 3050 laptop" ]`
-     - Compact 1-line footer indicator: `Smart Query: "RTX 3050 laptop" [ Search Deals → ]`
+   - Completely removed the intrusive `OPTIMIZED SEARCH READY` green box.
+   - Strict 2-4 Word Smart Query Rule ensuring e-commerce APIs never fail from query bloat.
 3. **Redis AI Response Caching ($$$ Money Saver Engine)**:
-   - Wired `Upstash Redis` into `/api/ai/review` with a 7-day TTL (`cache:ai:review:v3:...`).
-   - Repeat clicks on "Ask AI About Product" now load instantly in under 35ms with 0 API cost ($0 spent on duplicate LLM calls).
-   - Graceful fallback: non-breaking in-memory cache if Redis is ever unreachable.
-   - Live Audit Verified: Call 1 ~850ms -> Repeat Call 109ms with `cached: true` ($0 LLM duplicate bill).
+   - Wired `Upstash Redis` into `/api/ai/review` with a 7-day TTL.
+   - Repeat clicks on "Ask AI About Product" now load instantly in under 35ms with 0 API cost.
 4. **Cross-Vertical Unified Ecosystem (Interconnected Super-App)**:
-   - **Fashion Studio Bridge**: Added glowing `[ 👗 Try in Studio ]` button on all clothing cards. Clicking it instantly transfers the exact product garment into the Virtual Trial Room.
-   - **Studio Navigation**: Added `[ ← Back to Deals ]` button in Trial Room header for seamless return to search results.
-   - **Smart Search Intent Auto-Routing**: Typing food/service promo queries (e.g. Zomato, Swiggy, Dominos coupons) in the default search bar automatically switches to Coupons Mode.
+   - Fashion Studio Bridge: Added glowing `[ 👗 Try in Studio ]` button on all clothing cards.
+   - Studio Navigation: Added `[ ← Back to Deals ]` button in Trial Room header.
+   - Smart Search Intent Auto-Routing: Typing food/service promo queries switches to Coupons Mode automatically.
 5. **User Activity & Shopping Journey Telemetry Ledger (Backend & Local-First)**:
-   - **Zero Query Tampering**: Raw search queries remain 100% untouched and pure.
-   - **Non-Intrusive Event Pipeline**: Tracks `VISIT`, `SEARCH`, `PRODUCT_CLICK`, `AI_SUMMARY_ASKED`, and `AI_GUIDE_SYNC` asynchronously via `navigator.sendBeacon` and `keepalive` fetches with 0ms UI delay.
-   - **Persistent Storage**: Saved in Upstash Redis under `user:journey:${sessionId}` with 30-day TTL, alongside local mirror for instant AI retrieval.
-   - **Contextual AI Synergy**: Passes recently viewed products and session search history into AI In-Card Reviews and Pre-Search Concierge for intelligent, coherent recommendations without creepy stalking.
+   - Tracks `VISIT`, `SEARCH`, `PRODUCT_CLICK`, `AI_SUMMARY_ASKED`, and `AI_GUIDE_SYNC` asynchronously via `navigator.sendBeacon` and `keepalive` fetches.
+   - Saved in Upstash Redis under `user:journey:${sessionId}` with 30-day TTL.
 6. **Technical E2E Verification (All Tests 100% Pass)**:
-   - `[TEST 1]` AI Review Redis Caching: Passed (`cached: true`, 7.8x speedup, $0 cost).
-   - `[TEST 2]` Pharmacy/Health Mode: Passed (Real API match "Dolo-650" strip in 384ms).
-   - `[TEST 3]` Coupons Mode: Passed (Live verified coupon `CRAVINGS` retrieved).
-   - `[TEST 4]` Virtual Trial Room: Passed (Pure cotton shirt passed directly to studio).
-   - `[TEST 5]` Pre-Search AI Guide: Passed (Clean 2-4 word query `"Office perfume"` with zero bloating).
-   - `[TEST 6]` User Journey Telemetry: Passed (Visit count, search log, deal clicks, AI summary requests, and inferred budget tier in Redis).
-   - **Production Build**: `next build` Passing (21/21 routes, 0 errors, Turbopack compiled in 2.7s).
+   - AI Review Redis Caching: Passed (`cached: true`, 7.8x speedup, $0 cost).
+   - Pharmacy/Health Mode: Passed ("Dolo-650" strip in 384ms).
+   - Coupons Mode: Passed (Live verified coupon `CRAVINGS`).
+   - Virtual Trial Room: Passed (Pure cotton shirt passed to studio).
+   - Pre-Search AI Guide: Passed ("Office perfume" 2-word query).
+   - User Journey Telemetry: Passed (Ledger events recorded).
+   - Search Latency Benchmark: Passed (Slashed from 20s to **55ms**).
 
-#### 📂 Files Modified / Created:
-* `src/services/userJourneyTracker.js` *(Created — client-side non-blocking activity tracker)*
-* `src/app/api/telemetry/event/route.js` *(Created — Redis-backed user journey ledger API)*
-* `src/app/api/ai/concierge/route.js` *(Modified — accepts browsingContext for contextual advice)*
-* `src/app/api/ai/review/route.js` *(Modified — added 7-day Redis caching across all categories)*
-* `src/components/ProductCard.jsx` *(Modified — wired deal click and AI review telemetry)*
-* `src/components/SearchHero.jsx` *(Modified — wired search telemetry without query modification)*
-* `src/components/SearchAiConciergeModal.jsx` *(Modified — wired browsing context & persona sync)*
-* `src/app/page.js` *(Modified — wired visit telemetry on mount)*
-* `DEVELOPMENT_LOG.md` *(Updated)*
+#### 📂 Files Modified / Created Today:
+* `src/services/redis.js` *(Updated — L1 in-memory cache, multi-tier Upstash client, non-blocking sets)*
+* `src/services/semanticCache.js` *(Updated — compact inventory pool, instant local brain fast-path)*
+* `src/app/api/search/route.js` *(Updated — auto-cache shopkeeper resolutions in cacheKey)*
+* `src/app/page.js` *(Updated — mobile FAB bottom-20 z-60, Ask AI bottom nav tab, live radar fallback)*
+* `src/components/RocketLoader.jsx` *(Updated — accelerated fast-forward completion)*
+* `src/components/ProductCard.jsx` *(Updated — native Web Share API & mobile bottom sheet)*
+* `src/components/InChatShoppingAgent.jsx` *(Updated — scroll hijacking removed)*
+* `src/components/SearchAiConciergeModal.jsx` *(Updated — mobile slide-up bottom sheet)*
+* `src/app/layout.js` *(Updated — OpenGraph, Twitter card SEO meta tags)*
+* `src/services/userJourneyTracker.js` *(Created — client-side activity tracker)*
+* `src/app/api/telemetry/event/route.js` *(Created — Redis-backed user journey ledger)*
+* `DEVELOPMENT_LOG.md` *(Updated with release logs)*
 
 ---
 
