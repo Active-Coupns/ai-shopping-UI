@@ -206,16 +206,23 @@ export default function SearchAiConciergeModal({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-md">
+      <div 
+        className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/80 backdrop-blur-md"
+        onClick={onClose}
+      >
         <motion.div
-          initial={{ opacity: 0, scale: 0.94, y: 15 }}
+          initial={{ opacity: 0, scale: 0.96, y: 30 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.94, y: 15 }}
+          exit={{ opacity: 0, scale: 0.96, y: 30 }}
           transition={{ duration: 0.25, ease: "easeOut" }}
-          className="relative w-full max-w-xl bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] text-slate-100"
+          onClick={(e) => e.stopPropagation()}
+          className="relative w-full sm:max-w-xl bg-slate-900 border border-slate-800 rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col h-[94vh] sm:h-auto sm:max-h-[88vh] text-slate-100"
         >
+          {/* Mobile Pull Handle */}
+          <div className="w-12 h-1 bg-slate-700/80 rounded-full mx-auto mt-2.5 mb-1 sm:hidden" />
+
           {/* Header */}
-          <div className="px-5 py-4 border-b border-slate-800/80 bg-slate-900/90 flex items-center justify-between shrink-0">
+          <div className="px-5 py-3 sm:py-4 border-b border-slate-800/80 bg-slate-900/90 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-white shadow-md shadow-indigo-500/25">
                 <Sparkles className="w-4 h-4 animate-pulse" />
@@ -300,7 +307,7 @@ export default function SearchAiConciergeModal({
 
             {/* Quick Tap Chips */}
             {activeChips.length > 0 && !isLoading && (
-              <div className="pl-9 pt-1 flex flex-wrap gap-1.5">
+              <div className="pl-2 sm:pl-9 pt-1 flex flex-nowrap overflow-x-auto sm:flex-wrap gap-1.5 pb-1.5 -mx-1 px-1 sm:mx-0 sm:px-0">
                 {activeChips.map((chip, cIdx) => {
                   const isSearchChip = chip.startsWith("🚀");
                   return (
@@ -308,7 +315,7 @@ export default function SearchAiConciergeModal({
                       key={cIdx}
                       type="button"
                       onClick={() => handleChipClick(chip)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer shadow-xs active:scale-95 flex items-center gap-1.5 ${
+                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer shadow-xs active:scale-95 flex items-center gap-1.5 shrink-0 sm:shrink ${
                         isSearchChip
                           ? "bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold shadow-md shadow-indigo-600/30 border border-indigo-400/40"
                           : "bg-slate-800/90 hover:bg-indigo-600/30 text-indigo-200 hover:text-white border border-indigo-500/30 hover:border-indigo-400"

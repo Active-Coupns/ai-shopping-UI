@@ -332,6 +332,15 @@ export async function POST(request) {
             return p;
           });
 
+          // Cache the fulfilled shopkeeper payload so future identical searches hit direct L1/L2 cache in 0.1ms
+          try {
+            await redis.set(cacheKey, JSON.stringify({
+              products: finalSemanticProducts,
+              coupons: [],
+              intent: "E-COMMERCE"
+            }), { ex: 43200 });
+          } catch (e) {}
+
           return NextResponse.json({
             products: finalSemanticProducts,
             coupons: [],

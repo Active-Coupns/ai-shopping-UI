@@ -88,17 +88,17 @@ export default function RocketLoader({ query = "", country = "IN", onComplete, a
   const stages = useMemo(() => {
     if (isPharma) {
       return [
-        { id: 1, text: "🔬 Dissecting formulation specs, dosage & brand variants...", duration: 1500, icon: Cpu, badge: "AI Intent" },
-        { id: 2, text: `🌐 Parallel radar scan across ${activeStores.map(s => s.name).join(", ")}...`, duration: 1800, icon: Radio, badge: "Live Radar" },
-        { id: 3, text: "🏷️ Benchmarking batch prices, per-unit costs & expiry guarantees...", duration: 1500, icon: Database, badge: "Best Offer" },
-        { id: 4, text: "🎟️ Unlocking active pharmacy promo codes & subscription vouchers...", duration: 1500, icon: ShieldCheck, badge: "Verified Coupons" }
+        { id: 1, text: "🔬 Dissecting formulation specs, dosage & brand variants...", duration: 600, icon: Cpu, badge: "AI Intent" },
+        { id: 2, text: `🌐 Parallel radar scan across ${activeStores.map(s => s.name).join(", ")}...`, duration: 700, icon: Radio, badge: "Live Radar" },
+        { id: 3, text: "🏷️ Benchmarking batch prices, per-unit costs & expiry guarantees...", duration: 600, icon: Database, badge: "Best Offer" },
+        { id: 4, text: "🎟️ Unlocking active pharmacy promo codes & subscription vouchers...", duration: 500, icon: ShieldCheck, badge: "Verified Coupons" }
       ];
     }
     return [
-      { id: 1, text: "🧠 Dissecting product intent, model specs & variants...", duration: 1500, icon: Cpu, badge: "AI Engine" },
-      { id: 2, text: `🌐 Parallel radar sweep across ${activeStores.map(s => s.name).join(", ")}...`, duration: 1800, icon: Radio, badge: "Live Radar" },
-      { id: 3, text: "📊 Benchmarking live store prices & finding lowest price drops...", duration: 1500, icon: Database, badge: "Price Match" },
-      { id: 4, text: "🎟️ Scanning & unlocking active coupon vouchers & bank offers...", duration: 1500, icon: ShieldCheck, badge: "Coupon Hunter" }
+      { id: 1, text: "🧠 Dissecting product intent, model specs & variants...", duration: 600, icon: Cpu, badge: "AI Engine" },
+      { id: 2, text: `🌐 Parallel radar sweep across ${activeStores.map(s => s.name).join(", ")}...`, duration: 700, icon: Radio, badge: "Live Radar" },
+      { id: 3, text: "📊 Benchmarking live store prices & finding lowest price drops...", duration: 600, icon: Database, badge: "Price Match" },
+      { id: 4, text: "🎟️ Scanning & unlocking active coupon vouchers & bank offers...", duration: 500, icon: ShieldCheck, badge: "Coupon Hunter" }
     ];
   }, [isPharma, activeStores]);
 
@@ -128,7 +128,7 @@ export default function RocketLoader({ query = "", country = "IN", onComplete, a
   useEffect(() => {
     const storeInterval = setInterval(() => {
       setActiveStoreIdx((prev) => (prev + 1) % activeStores.length);
-    }, 1400);
+    }, 1000);
     return () => clearInterval(storeInterval);
   }, [activeStores]);
 
@@ -136,9 +136,23 @@ export default function RocketLoader({ query = "", country = "IN", onComplete, a
   useEffect(() => {
     const telInterval = setInterval(() => {
       setTelemetryIndex((prev) => (prev + 1) % telemetryLogs.length);
-    }, 2000);
+    }, 1200);
     return () => clearInterval(telInterval);
   }, [telemetryLogs]);
+
+  // Instant Fast-Forward when backend responds (Redis Cache Hit or Fast API)
+  useEffect(() => {
+    if (!apiLoading) {
+      // Results are ready! Fast-forward to 100% and transition smoothly
+      setProgress(100);
+      setCurrentStage(4);
+      setCompletedStages([1, 2, 3, 4]);
+      const fastTimer = setTimeout(() => {
+        if (onComplete) onComplete();
+      }, 100);
+      return () => clearTimeout(fastTimer);
+    }
+  }, [apiLoading, onComplete]);
 
   // Stage transition & progress logic
   useEffect(() => {
@@ -148,20 +162,20 @@ export default function RocketLoader({ query = "", country = "IN", onComplete, a
 
     const progressInterval = setInterval(() => {
       setProgress((prev) => {
-        if (prev >= 98) {
-          if (!apiLoadingRef.current) {
-            clearInterval(progressInterval);
-            return 100;
-          }
-          return 98;
+        if (!apiLoadingRef.current) {
+          clearInterval(progressInterval);
+          return 100;
         }
-        return prev + 1;
+        if (prev >= 98) return 98;
+        return prev + 2;
       });
-    }, Math.max(20, totalDuration / 98));
+    }, Math.max(15, totalDuration / 70));
 
     stages.forEach((stage, index) => {
       const activeTimer = setTimeout(() => {
-        setCurrentStage(stage.id);
+        if (apiLoadingRef.current) {
+          setCurrentStage(stage.id);
+        }
       }, accumulatedTime);
       timers.push(activeTimer);
 
@@ -172,10 +186,10 @@ export default function RocketLoader({ query = "", country = "IN", onComplete, a
         if (index === stages.length - 1) {
           const checkCompletion = () => {
             if (apiLoadingRef.current) {
-              setTimeout(checkCompletion, 100);
+              setTimeout(checkCompletion, 80);
             } else {
               setProgress(100);
-              setTimeout(onComplete, 350);
+              setTimeout(onComplete, 200);
             }
           };
           checkCompletion();

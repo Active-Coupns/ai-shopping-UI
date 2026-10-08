@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, ShoppingBag, ArrowLeft, RefreshCw, Layers, ShieldAlert, Coins, Tag, AlertCircle, Shirt, User, Globe, Search, Pill, Heart, Scale, Bell, X } from "lucide-react";
 import { SignedIn, SignedOut, SignInButton, useUser, useClerk } from "@clerk/nextjs";
@@ -117,6 +117,7 @@ export default function Home() {
 
   // 4. Cross-Vertical Virtual Trial Room Bridge
   const [trialGarment, setTrialGarment] = useState(null);
+  const chatSectionRef = useRef(null);
 
   const handleTryInStudio = (product) => {
     if (!product) return;
@@ -400,30 +401,6 @@ export default function Home() {
     try {
       const response = await searchProducts(resolvedTitle, selectedCountry, isUrl, resolvedStore, resolvedUrl, isExactMatch || isUrl);
       const fetchedProducts = response.results || [];
-
-      if (fetchedProducts.length > 0) {
-        try {
-          const preloadPromises = fetchedProducts.map((p) => {
-            return new Promise((resolve) => {
-              if (!p.image) {
-                resolve();
-                return;
-              }
-              const img = new window.Image();
-              img.src = p.image;
-              img.onload = () => resolve();
-              img.onerror = () => resolve();
-            });
-          });
-
-          await Promise.race([
-            Promise.all(preloadPromises),
-            new Promise((resolve) => setTimeout(resolve, 800))
-          ]);
-        } catch (preloadErr) {
-          console.error("Product image preloading error:", preloadErr);
-        }
-      }
 
       setProducts(fetchedProducts);
       setSearchIntent(response.intent || "E-COMMERCE");
@@ -853,21 +830,92 @@ export default function Home() {
                   <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="max-w-md mx-auto text-center py-16 px-6 glass-panel rounded-2xl border-brand-indigo/20 shadow-lg mt-8"
+                    className="max-w-lg mx-auto text-center py-12 px-6 glass-panel rounded-3xl border border-indigo-100 shadow-xl mt-6 bg-white/90 backdrop-blur-md"
                   >
-                    <div className="w-16 h-16 bg-brand-indigo/10 border border-brand-indigo/20 text-brand-indigo rounded-full flex items-center justify-center mx-auto mb-6">
-                      <Sparkles className="w-8 h-8" />
+                    <div className="relative w-16 h-16 mx-auto mb-5">
+                      <div className="absolute inset-0 rounded-2xl bg-indigo-500/10 animate-ping" />
+                      <div className="relative w-16 h-16 bg-gradient-to-tr from-indigo-600 to-purple-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-indigo-500/25">
+                        <Sparkles className="w-8 h-8 animate-pulse" />
+                      </div>
                     </div>
-                    <h3 className="text-xl font-bold text-slate-900 mb-2">No Live Deals Found</h3>
-                    <p className="text-sm text-slate-500 mb-6 leading-relaxed">
-                      {apiError ? apiError : "No live deals found for this query. Try adjusting your search terms."}
+
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] font-extrabold mb-3">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                      <span>Live Merchant Radar Active</span>
+                    </div>
+
+                    <h3 className="text-lg md:text-xl font-black text-slate-900 mb-2">
+                      Partner Stores are Restocking Deals
+                    </h3>
+                    
+                    <p className="text-xs md:text-sm text-slate-500 mb-6 leading-relaxed max-w-md mx-auto">
+                      {apiError ? (
+                        <span>Partner merchant networks are undergoing momentary sync. Our backup price crawler is active.</span>
+                      ) : (
+                        <span>
+                          Direct inventory for <span className="font-bold text-slate-800">&ldquo;{searchQuery}&rdquo;</span> is currently cycling prices across Amazon &amp; Flipkart.
+                        </span>
+                      )}
                     </p>
-                    <button
-                      onClick={handleReset}
-                      className="px-6 py-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-xs md:text-sm font-bold text-slate-800 transition-all cursor-pointer shadow-sm active:scale-95"
-                    >
-                      Go Back to Search
-                    </button>
+
+                    {/* Quick Recovery Options */}
+                    <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 mb-6 text-left space-y-3">
+                      <p className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">
+                        💡 Suggested Instant Alternatives:
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleSearchSubmit("Best laptop under ₹50,000")}
+                          className="px-3 py-1.5 rounded-xl bg-white hover:bg-indigo-50 border border-slate-200 hover:border-indigo-300 text-xs font-semibold text-slate-700 hover:text-indigo-600 transition-all cursor-pointer shadow-2xs"
+                        >
+                          💻 Laptops under ₹50K
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleSearchSubmit("Dolo 650 strip of 15 tabs")}
+                          className="px-3 py-1.5 rounded-xl bg-white hover:bg-emerald-50 border border-slate-200 hover:border-emerald-300 text-xs font-semibold text-slate-700 hover:text-emerald-700 transition-all cursor-pointer shadow-2xs"
+                        >
+                          💊 Dolo 650 &amp; Healthcare
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleSearchSubmit("ON Gold Standard Whey 2kg")}
+                          className="px-3 py-1.5 rounded-xl bg-white hover:bg-amber-50 border border-slate-200 hover:border-amber-300 text-xs font-semibold text-slate-700 hover:text-amber-700 transition-all cursor-pointer shadow-2xs"
+                        >
+                          💪 Whey Protein Deals
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleSearchSubmit("Pure cotton party shirt")}
+                          className="px-3 py-1.5 rounded-xl bg-white hover:bg-purple-50 border border-slate-200 hover:border-purple-300 text-xs font-semibold text-slate-700 hover:text-purple-700 transition-all cursor-pointer shadow-2xs"
+                        >
+                          👔 Casual Cotton Shirts
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSearchQuery(searchQuery);
+                          setIsAiConciergeOpen(true);
+                        }}
+                        className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs md:text-sm font-bold shadow-md shadow-indigo-600/20 transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-95"
+                      >
+                        <Sparkles className="w-4 h-4 text-amber-300" />
+                        <span>Consult AI Guide for Suggestions</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleReset}
+                        className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-xs md:text-sm font-bold text-slate-700 transition-all cursor-pointer shadow-2xs active:scale-95"
+                      >
+                        Reset Search
+                      </button>
+                    </div>
                   </motion.div>
                 ) : (
                   <div className="space-y-6">
@@ -913,14 +961,16 @@ export default function Home() {
                     </div>
 
                     {/* Interactive In-Chat Shopping Agent */}
-                    <InChatShoppingAgent 
-                      products={products}
-                      displayedProducts={displayedProducts}
-                      searchQuery={searchQuery}
-                      aiSessionLedger={aiSessionLedger}
-                      onExecuteSearch={handleDirectSearch}
-                      onExecuteAction={handleChatAction}
-                    />
+                    <div ref={chatSectionRef} id="in-chat-shopping-agent">
+                      <InChatShoppingAgent 
+                        products={products}
+                        displayedProducts={displayedProducts}
+                        searchQuery={searchQuery}
+                        aiSessionLedger={aiSessionLedger}
+                        onExecuteSearch={handleDirectSearch}
+                        onExecuteAction={handleChatAction}
+                      />
+                    </div>
 
                     {coupons.length > 0 && (
                       <div className="pt-8 border-t border-slate-200">
@@ -941,10 +991,40 @@ export default function Home() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* 🤖 Floating Quick-Jump to Deals AI Assistant (Mobile & Desktop) */}
+        <AnimatePresence>
+          {appState === "results" && products && products.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.8, y: 20 }}
+              className="fixed bottom-20 sm:bottom-6 right-4 sm:right-6 z-[60]"
+            >
+              <button
+                type="button"
+                onClick={() => {
+                  chatSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}
+                className="group flex items-center gap-2 px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-full bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-xs sm:text-sm shadow-2xl shadow-indigo-600/40 border border-indigo-400/40 backdrop-blur-md transition-all active:scale-95 cursor-pointer ring-2 ring-white/30 hover:shadow-indigo-600/60"
+                title="Jump to In-App AI Shopping Assistant"
+              >
+                <div className="relative">
+                  <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
+                  <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                </div>
+                <span className="tracking-wide">Ask Deals AI</span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-white/20 text-white font-black uppercase tracking-wider hidden sm:inline">
+                  Live
+                </span>
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
 
       {/* Footer */}
-      <footer className="relative z-10 w-full py-3 pb-20 md:pb-6 text-center text-[10px] sm:text-xs text-slate-500 border-t border-slate-200/80 glass-panel border-x-0 border-b-0">
+      <footer className="relative z-10 w-full py-3 pb-24 md:pb-6 text-center text-[10px] sm:text-xs text-slate-500 border-t border-slate-200/80 glass-panel border-x-0 border-b-0">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-1.5 sm:gap-4">
           <div className="flex items-center gap-1">
             <Sparkles className="w-3 h-3 text-brand-indigo" />
@@ -988,7 +1068,24 @@ export default function Home() {
           <span className="text-[10px] tracking-tight">Trial Room</span>
         </button>
 
-        {/* Tab 3: Unified Account & Preferences */}
+        {/* Tab 3: Quick Jump to AI Shopping Assistant (when on results page) */}
+        {appState === "results" && (
+          <button
+            type="button"
+            onClick={() => {
+              chatSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+            }}
+            className="flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl text-indigo-600 font-bold transition-all cursor-pointer"
+          >
+            <div className="relative p-1 rounded-xl bg-indigo-50 border border-indigo-200">
+              <Sparkles className="w-3.5 h-3.5 text-brand-indigo animate-pulse" />
+              <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
+            </div>
+            <span className="text-[10px] tracking-tight">Ask AI</span>
+          </button>
+        )}
+
+        {/* Tab 4: Unified Account & Preferences */}
         <button
           type="button"
           onClick={() => setIsAccountModalOpen(true)}

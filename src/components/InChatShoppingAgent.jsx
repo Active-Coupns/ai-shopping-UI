@@ -42,7 +42,8 @@ export default function InChatShoppingAgent({
     "Is the most expensive one worth the extra cost?",
     "What if I need heavy gaming or 4K editing?"
   ]);
-  const messagesEndRef = useRef(null);
+  const chatScrollRef = useRef(null);
+  const [hasUserMessaged, setHasUserMessaged] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef(null);
 
@@ -50,21 +51,13 @@ export default function InChatShoppingAgent({
     ? displayedProducts 
     : (products || []).slice(0, 3);
 
-  const scrollToBottom = () => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
-    }
-  };
-
   useEffect(() => {
-    scrollToBottom();
-    const t1 = setTimeout(scrollToBottom, 150);
-    const t2 = setTimeout(scrollToBottom, 400);
-    return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
-    };
-  }, [messages, isLoading, dismissedConfirmations]);
+    // Only scroll the internal chat container when the user explicitly sends a chat message.
+    // Never hijack or scroll the main browser window!
+    if (hasUserMessaged && chatScrollRef.current) {
+      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+    }
+  }, [messages, isLoading, hasUserMessaged]);
 
   const toggleVoiceInput = () => {
     if (typeof window === "undefined") return;
@@ -138,6 +131,7 @@ export default function InChatShoppingAgent({
     const queryText = (textToSend || inputValue).trim();
     if (!queryText || isLoading) return;
 
+    setHasUserMessaged(true);
     setInputValue("");
     const newHistory = [...messages, { role: "user", text: queryText }];
     setMessages(newHistory);
@@ -304,7 +298,7 @@ export default function InChatShoppingAgent({
               )}
 
               {/* Chat Stream */}
-              <div className="p-6 max-h-[480px] overflow-y-auto space-y-4 bg-slate-50/50">
+              <div ref={chatScrollRef} className="p-6 max-h-[480px] overflow-y-auto space-y-4 bg-slate-50/50">
                 {messages.map((msg, mIdx) => {
                   const isUser = msg.role === "user";
                   const recDisplayedProd = (msg.recommendedDisplayedIndex !== undefined && msg.recommendedDisplayedIndex !== null)
@@ -485,8 +479,6 @@ export default function InChatShoppingAgent({
                     <span>AI Shopping Advisor is analyzing hardware specs...</span>
                   </div>
                 )}
-
-                <div ref={messagesEndRef} />
               </div>
 
               {/* Input Bar */}

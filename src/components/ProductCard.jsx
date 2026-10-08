@@ -6,7 +6,7 @@ import {
   ArrowUpRight, Star, CheckCircle, Sparkles, ChevronDown, ChevronUp, 
   ShoppingBag, ShieldCheck, Zap, Award, X, Bot, ThumbsUp, ThumbsDown, CheckCircle2, AlertTriangle,
   TrendingDown, TrendingUp, Bell, DollarSign, Activity, History, Pill, HeartPulse, Dumbbell, Flame,
-  Heart, Scale, Cpu, Shirt
+  Heart, Scale, Cpu, Shirt, Share2
 } from "lucide-react";
 import { userJourneyTracker } from "@/services/userJourneyTracker";
 
@@ -51,8 +51,37 @@ export default function ProductCard({
   const [isAskAiOpen, setIsAskAiOpen] = useState(false);
   const [isAnalyzingAi, setIsAnalyzingAi] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState(null);
-  const [alertEmail, setAlertEmail] = useState("");
   const [alertSubmitted, setAlertSubmitted] = useState(false);
+  const [shareSuccess, setShareSuccess] = useState(false);
+
+  const handleShareDeal = async (e) => {
+    if (e) e.stopPropagation();
+    const store = selectedStore?.name || product.store_name || product.store || "Online Store";
+    const price = formatPrice(selectedStore?.price || product.price, product.currency);
+    const shareText = `🔥 Found this deal on ShopSmart: *${product.title}* for only *${price}* at ${store}!\nCompare prices & AI review here:`;
+    const shareUrl = typeof window !== "undefined" ? window.location.href : "https://shopsmart-ai.com";
+
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share({
+          title: `ShopSmart Deal: ${product.title}`,
+          text: shareText,
+          url: shareUrl
+        });
+        setShareSuccess(true);
+        setTimeout(() => setShareSuccess(false), 2000);
+        return;
+      } catch (err) {
+        if (err.name === "AbortError") return;
+      }
+    }
+
+    // Direct WhatsApp web fallback (100% free, zero external API needed)
+    const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(`${shareText} ${shareUrl}`)}`;
+    window.open(waUrl, "_blank");
+    setShareSuccess(true);
+    setTimeout(() => setShareSuccess(false), 2000);
+  };
 
   const combinedCardText = ((product.title || "") + " " + (searchQuery || "")).toLowerCase();
   const isCosmeticOrFragrance = /\b(perfume|cologne|fragrance|deodorant|deo|eau de parfum|eau de cologne|eau de toilette|edp|edt|edc|attar|scent|mist|spray|shampoo|conditioner|face\s*wash|body\s*wash|lotion|serum|skincare|hair\s*oil|sunscreen|moisturizer|lip\s*balm|makeup|lipstick|eyeliner|kajal|mascara)\b/i.test(combinedCardText);
@@ -384,22 +413,39 @@ export default function ProductCard({
               </span>
             )}
 
-            {/* Bookmark Heart Button */}
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onToggleBookmark && onToggleBookmark(product);
-              }}
-              className={`absolute top-2.5 right-2.5 p-2 rounded-xl transition-all cursor-pointer z-20 border shadow-sm ${
-                isBookmarked
-                  ? "bg-rose-50 border-rose-300 text-rose-600 shadow-rose-500/10"
-                  : "bg-white/90 hover:bg-white border-slate-200/90 text-slate-400 hover:text-rose-500"
-              }`}
-              title={isBookmarked ? "Saved in Bookmarks" : "Save for Later"}
-            >
-              <Heart className={`w-3.5 h-3.5 ${isBookmarked ? "fill-rose-500 text-rose-500" : ""}`} />
-            </button>
+            {/* Top-Right Action Badges: Share Deal & Bookmark */}
+            <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5 z-20">
+              {/* WhatsApp / Social Share Button */}
+              <button
+                type="button"
+                onClick={handleShareDeal}
+                className={`p-2 rounded-xl transition-all cursor-pointer border shadow-sm ${
+                  shareSuccess
+                    ? "bg-emerald-50 border-emerald-300 text-emerald-600 scale-105"
+                    : "bg-white/90 hover:bg-white border-slate-200/90 text-slate-400 hover:text-emerald-600 active:scale-95"
+                }`}
+                title="Share Deal on WhatsApp & Social Media"
+              >
+                <Share2 className="w-3.5 h-3.5" />
+              </button>
+
+              {/* Bookmark Heart Button */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleBookmark && onToggleBookmark(product);
+                }}
+                className={`p-2 rounded-xl transition-all cursor-pointer border shadow-sm ${
+                  isBookmarked
+                    ? "bg-rose-50 border-rose-300 text-rose-600 shadow-rose-500/10"
+                    : "bg-white/90 hover:bg-white border-slate-200/90 text-slate-400 hover:text-rose-500 active:scale-95"
+                }`}
+                title={isBookmarked ? "Saved in Bookmarks" : "Save for Later"}
+              >
+                <Heart className={`w-3.5 h-3.5 ${isBookmarked ? "fill-rose-500 text-rose-500" : ""}`} />
+              </button>
+            </div>
 
             {/* Cross-Vertical Try in Studio Button for Clothing */}
             {isClothingCard && onTryInStudio && (
@@ -686,21 +732,24 @@ export default function ProductCard({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md"
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/75 backdrop-blur-md"
             onClick={() => setIsAskAiOpen(false)}
           >
             <motion.div
-              initial={{ scale: 0.94, y: 20 }}
+              initial={{ scale: 0.95, y: 30 }}
               animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.94, y: 20 }}
+              exit={{ scale: 0.95, y: 30 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-3xl p-6 md:p-7 shadow-2xl relative border border-slate-200 bg-white text-slate-900"
+              className="w-full sm:max-w-xl max-h-[92vh] sm:max-h-[90vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl p-5 sm:p-7 shadow-2xl relative border border-slate-200 bg-white text-slate-900 pb-8 sm:pb-7"
             >
+              {/* Mobile Drag Indicator */}
+              <div className="w-12 h-1 bg-slate-200 rounded-full mx-auto mb-3 sm:hidden" />
+
               {/* Close Button */}
               <button
                 type="button"
                 onClick={() => setIsAskAiOpen(false)}
-                className="absolute top-4.5 right-4.5 p-2 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer z-20"
+                className="absolute top-4 right-4 p-2 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer z-20"
               >
                 <X className="w-5 h-5" />
               </button>
