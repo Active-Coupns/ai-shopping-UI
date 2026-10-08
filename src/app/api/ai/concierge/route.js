@@ -15,7 +15,8 @@ export async function POST(request) {
       userMessage = "",
       conversationHistory = [],
       initialTopic = "",
-      country = "IN"
+      country = "IN",
+      browsingContext = {}
     } = await request.json();
 
     if (!userMessage && !initialTopic) {
@@ -24,6 +25,15 @@ export async function POST(request) {
 
     const isUS = String(country).toUpperCase() === "US";
     const currencySymbol = isUS ? "$" : "₹";
+
+    const browsingLines = [];
+    if (Array.isArray(browsingContext.recentSearches) && browsingContext.recentSearches.length > 0) {
+      browsingLines.push(`Recent searches in this session: ${browsingContext.recentSearches.map(s => s.query || s).join(", ")}`);
+    }
+    if (Array.isArray(browsingContext.recentProducts) && browsingContext.recentProducts.length > 0) {
+      browsingLines.push(`Products user clicked/reviewed earlier: ${browsingContext.recentProducts.map(p => p.title || p).join(", ")}`);
+    }
+    const browsingNote = browsingLines.length > 0 ? `\nSESSION BROWSING SIGNALS (Use gently for relevant context, never creep out the user):\n${browsingLines.join("\n")}\n` : "";
 
     const prompt = `You are ShopSmart AI Shopping Guide, an expert, honest, and friendly personal shopping consultant for an ${isUS ? "US" : "Indian"} e-commerce search platform.
 
@@ -48,7 +58,7 @@ LANGUAGE & TONE:
 CONTEXT:
 Initial Search Topic: "${initialTopic}"
 Country: ${country} (${currencySymbol})
-Recent Conversation:
+${browsingNote}Recent Conversation:
 ${(conversationHistory || []).slice(-6).map(m => `${m.role === 'user' ? 'Buyer' : 'Guide'}: ${m.text || m.content}`).join("\n")}
 Latest Buyer Message: "${userMessage || initialTopic}"
 

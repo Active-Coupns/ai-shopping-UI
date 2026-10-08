@@ -17,6 +17,7 @@ import {
   Mic
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { userJourneyTracker } from "@/services/userJourneyTracker";
 
 const ECOM_QUERIES_IN = [
   "Best laptop under ₹50,000",
@@ -251,7 +252,21 @@ export default function SearchHero({
     if (now - lastSubmitTime < 1500) return;
     setLastSubmitTime(now);
 
-    const finalQuery = query.trim() || exampleQueries[queryIndex];
+    const finalQuery = (query.trim() || exampleQueries[queryIndex]).trim();
+    const lower = finalQuery.toLowerCase();
+
+    // Record non-intrusive search telemetry (Strict: never tampers with finalQuery)
+    const activeSearchMode = isCoupons ? "coupons" : isHealth ? "medicine" : "shopping";
+    userJourneyTracker.recordSearch(finalQuery, activeSearchMode);
+
+    // Auto-Routing: If user searches food/store promo codes while in Shopping/Pharmacy tab:
+    const isCouponIntent = /\b(zomato|swiggy|zepto|blinkit|domino'?s|ubereats|doordash|instamart|promo\s*codes?|coupons?|voucher|discount\s*codes?)\b/i.test(lower);
+    if (!isCoupons && isCouponIntent && onCouponSearch) {
+      setActiveTab("coupons");
+      onCouponSearch(finalQuery);
+      return;
+    }
+
     if (isCoupons && onCouponSearch) {
       onCouponSearch(finalQuery);
     } else {
@@ -265,6 +280,9 @@ export default function SearchHero({
     setLastSubmitTime(now);
 
     setQuery(promptQuery);
+    const activeSearchMode = isCoupons ? "coupons" : isHealth ? "medicine" : "shopping";
+    userJourneyTracker.recordSearch(promptQuery, activeSearchMode);
+
     if (isCoupons && onCouponSearch) {
       onCouponSearch(promptQuery);
     } else {

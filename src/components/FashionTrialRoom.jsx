@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import Image from "next/image";
-import { Sparkles, Shirt, Camera, RefreshCw, ExternalLink, Check, ChevronRight, Send } from "lucide-react";
+import { Sparkles, Shirt, Camera, RefreshCw, ExternalLink, Check, ChevronRight, Send, ArrowLeft } from "lucide-react";
 import { FASHION_CATALOG } from "@/data/fashionCatalog";
 
 const SAMPLE_MODELS = {
@@ -59,7 +59,7 @@ const CATEGORY_TABS = [
   { key: "girls_casuals", label: "🌸 Girls Tops & Co-Ords", gender: "kids" }
 ];
 
-export default function FashionTrialRoom() {
+export default function FashionTrialRoom({ initialGarment = null, onBackToSearch }) {
   const [gender, setGender] = useState("men");
   const [skinTone, setSkinTone] = useState("wheatish");
   const [userImage, setUserImage] = useState(SAMPLE_MODELS.men.image);
@@ -76,6 +76,22 @@ export default function FashionTrialRoom() {
   );
   const [currentTryonGarment, setCurrentTryonGarment] = useState(activeOutfits[0] || null);
   const [isRendering, setIsRendering] = useState(false);
+
+  // Auto-load cross-bridged garment from Live Deals Search
+  useEffect(() => {
+    if (initialGarment && initialGarment.image) {
+      const formatted = {
+        id: initialGarment.id || "deal-item",
+        title: initialGarment.title,
+        price: initialGarment.price,
+        image: initialGarment.image,
+        category: "Featured Deal",
+        brand: initialGarment.brand || "Selected Outfit"
+      };
+      setCurrentTryonGarment(formatted);
+      setActiveOutfits(prev => [formatted, ...prev.filter(p => p.id !== formatted.id).slice(0, 5)]);
+    }
+  }, [initialGarment]);
 
   // Conversational 2-Way Stylist Chat State
   const [chatInput, setChatInput] = useState("");
@@ -507,9 +523,21 @@ export default function FashionTrialRoom() {
       <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-indigo-50/90 via-purple-50/70 to-pink-50/80 border border-indigo-100 p-4 sm:p-6 md:p-8 backdrop-blur-xl shadow-xs">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6 relative z-10">
           <div className="space-y-1.5 sm:space-y-2">
-            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-indigo-100/90 border border-indigo-200/80 text-brand-indigo text-[10px] sm:text-xs font-bold tracking-wide uppercase">
-              <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              AI Virtual Trial Room & Stylist
+            <div className="flex items-center gap-2">
+              {onBackToSearch && (
+                <button
+                  type="button"
+                  onClick={onBackToSearch}
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white hover:bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700 shadow-2xs transition-all active:scale-95 cursor-pointer"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5 text-brand-indigo" />
+                  <span>Back to Deals</span>
+                </button>
+              )}
+              <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-indigo-100/90 border border-indigo-200/80 text-brand-indigo text-[10px] sm:text-xs font-bold tracking-wide uppercase">
+                <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                AI Virtual Trial Room & Stylist
+              </div>
             </div>
             <h1 className="text-xl sm:text-3xl md:text-4xl font-black text-slate-900 tracking-tight">
               Virtual Studio <span className="bg-gradient-to-r from-brand-indigo via-purple-600 to-pink-600 bg-clip-text text-transparent">Try-On</span>

@@ -17,6 +17,7 @@ import {
   Search 
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { userJourneyTracker } from "@/services/userJourneyTracker";
 
 export default function SearchAiConciergeModal({
   isOpen,
@@ -61,6 +62,11 @@ export default function SearchAiConciergeModal({
 
   const sendInitialGreeting = async (topic) => {
     setIsLoading(true);
+    const browsingCtx = {
+      recentSearches: userJourneyTracker.getJourneyContext()?.searches?.slice(0, 3) || [],
+      recentProducts: userJourneyTracker.getRecentViewedProducts()?.slice(0, 3) || []
+    };
+
     try {
       const res = await fetch("/api/ai/concierge", {
         method: "POST",
@@ -69,7 +75,8 @@ export default function SearchAiConciergeModal({
           userMessage: topic ? `I am looking for: ${topic}` : "Hi, please guide me to find the best deals.",
           conversationHistory: [],
           initialTopic: topic,
-          country
+          country,
+          browsingContext: browsingCtx
         })
       });
 
@@ -114,6 +121,11 @@ export default function SearchAiConciergeModal({
     setActiveChips([]);
     setIsLoading(true);
 
+    const browsingCtx = {
+      recentSearches: userJourneyTracker.getJourneyContext()?.searches?.slice(0, 3) || [],
+      recentProducts: userJourneyTracker.getRecentViewedProducts()?.slice(0, 3) || []
+    };
+
     try {
       const res = await fetch("/api/ai/concierge", {
         method: "POST",
@@ -122,7 +134,8 @@ export default function SearchAiConciergeModal({
           userMessage: text,
           conversationHistory: newMessages,
           initialTopic: initialQuery,
-          country
+          country,
+          browsingContext: browsingCtx
         })
       });
 
@@ -173,8 +186,12 @@ export default function SearchAiConciergeModal({
       userPersona: readySearchData?.userPersona || "Custom Buyer Profile",
       userRequirement: readySearchData?.userRequirement || finalQuery,
       budgetLimit: readySearchData?.budgetLimit || null,
-      conciergeSummary: readySearchData?.reply || ""
+      conciergeSummary: readySearchData?.reply || "",
+      suggestedQuery: finalQuery
     };
+    // Sync into user journey telemetry ledger
+    userJourneyTracker.recordGuideSync(sharedContext);
+
     onConfirmSearch(finalQuery, sharedContext);
     onClose();
   };

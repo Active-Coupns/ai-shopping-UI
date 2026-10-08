@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { redis } from "@/services/redis";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
 
@@ -22,6 +23,22 @@ export async function POST(request) {
 
     if (!productTitle) {
       return NextResponse.json({ error: "Product title is required" }, { status: 400 });
+    }
+
+    // 0. Check Redis Cache First (Save 100% LLM cost on repeat views)
+    const cleanCacheTitle = String(productTitle).trim().toLowerCase().slice(0, 80).replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-");
+    const personaSuffix = userPersona ? `:${userPersona.trim().toLowerCase().slice(0, 30).replace(/[^a-z0-9]/g, "-")}` : "";
+    const cacheKey = `cache:ai:review:v3:${cleanCacheTitle}${personaSuffix}`;
+    try {
+      const cached = await redis.get(cacheKey);
+      if (cached) {
+        const parsed = typeof cached === "string" ? JSON.parse(cached) : cached;
+        if (parsed && (parsed.fitVerdict || parsed.nutritionSummary || parsed.activeSalt || parsed.trustScore)) {
+          return NextResponse.json({ ...parsed, cached: true });
+        }
+      }
+    } catch (cacheErr) {
+      console.warn("[AI Review Cache Check Error]", cacheErr);
     }
 
     const priceNum = parseInt(String(productPrice).replace(/[^0-9]/g, ""), 10) || 45000;
@@ -412,7 +429,7 @@ Always respond ONLY with a valid JSON object matching this schema:
       dealVerdict: aiReview.dealVerdict || "Genuine 90-Day Low Price!"
     };
 
-    return NextResponse.json({
+    const responsePayload = {
       success: true,
       productTitle,
       categoryType: aiReview.categoryType || (isMedicine ? "medicine" : isSupplement ? "supplement" : "ecommerce"),
@@ -439,7 +456,16 @@ Always respond ONLY with a valid JSON object matching this schema:
       cons: aiReview.cons || [],
       trustScore: aiReview.trustScore || (isMedicine ? 99 : isSupplement ? 94 : 91),
       priceHistory
-    });
+    };
+
+    // Cache in Redis for 7 days (604,800 seconds) to eliminate duplicate API bills
+    try {
+      await redis.set(cacheKey, JSON.stringify(responsePayload), { ex: 604800 });
+    } catch (saveErr) {
+      console.warn("[AI Review Cache Save Error]", saveErr);
+    }
+
+    return NextResponse.json(responsePayload);
 
   } catch (err) {
     console.error("AI Review API Error:", err);

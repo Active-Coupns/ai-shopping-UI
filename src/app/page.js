@@ -21,6 +21,7 @@ import PriceDropModal from "@/components/PriceDropModal";
 import SearchAiConciergeModal from "@/components/SearchAiConciergeModal";
 import { isProductUrl, extractProductTitleFromUrl, extractProductInfoFromUrl } from "@/lib/urlProductParser";
 import { searchProducts } from "@/services/api";
+import { userJourneyTracker } from "@/services/userJourneyTracker";
 
 function detectCategory(query, title) {
   const text = (query + " " + title).toLowerCase();
@@ -114,9 +115,25 @@ export default function Home() {
   const [selectedAlertProduct, setSelectedAlertProduct] = useState(null);
   const [isPriceAlertModalOpen, setIsPriceAlertModalOpen] = useState(false);
 
-  // Load saved deals & price alerts from localStorage on client mount
+  // 4. Cross-Vertical Virtual Trial Room Bridge
+  const [trialGarment, setTrialGarment] = useState(null);
+
+  const handleTryInStudio = (product) => {
+    if (!product) return;
+    setTrialGarment({
+      id: product.id || product.product_id,
+      title: product.title,
+      price: product.price,
+      image: product.image,
+      brand: product.store_name || product.store
+    });
+    setAppState("trial_room");
+  };
+
+  // Load saved deals & price alerts from localStorage on client mount & record visit telemetry
   useEffect(() => {
     try {
+      userJourneyTracker.recordVisit();
       const saved = localStorage.getItem("shopsmart_saved_deals");
       if (saved) setSavedDeals(JSON.parse(saved));
       const alerts = localStorage.getItem("shopsmart_price_alerts");
@@ -679,7 +696,12 @@ export default function Home() {
               transition={{ duration: 0.3 }}
               className="w-full"
             >
-              <FashionTrialRoom />
+              <FashionTrialRoom
+                initialGarment={trialGarment}
+                onBackToSearch={() => {
+                  setAppState(products && products.length > 0 ? "results" : "idle");
+                }}
+              />
             </motion.div>
           )}
 
@@ -883,6 +905,7 @@ export default function Home() {
                                 setSelectedAlertProduct(p);
                                 setIsPriceAlertModalOpen(true);
                               }}
+                              onTryInStudio={handleTryInStudio}
                             />
                           );
                         })}

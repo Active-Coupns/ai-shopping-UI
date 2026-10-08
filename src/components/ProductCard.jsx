@@ -6,8 +6,9 @@ import {
   ArrowUpRight, Star, CheckCircle, Sparkles, ChevronDown, ChevronUp, 
   ShoppingBag, ShieldCheck, Zap, Award, X, Bot, ThumbsUp, ThumbsDown, CheckCircle2, AlertTriangle,
   TrendingDown, TrendingUp, Bell, DollarSign, Activity, History, Pill, HeartPulse, Dumbbell, Flame,
-  Heart, Scale, Cpu
+  Heart, Scale, Cpu, Shirt
 } from "lucide-react";
+import { userJourneyTracker } from "@/services/userJourneyTracker";
 
 const formatPrice = (val, currency) => {
   if (val === undefined || val === null || val === "" || String(val).toLowerCase().includes("nan")) return "";
@@ -39,7 +40,8 @@ export default function ProductCard({
   onToggleVs,
   isBookmarked = false,
   onToggleBookmark,
-  onOpenPriceAlert
+  onOpenPriceAlert,
+  onTryInStudio
 }) {
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -57,6 +59,7 @@ export default function ProductCard({
 
   const isMedicineCard = !isCosmeticOrFragrance && /\b(dolo|telma|shelcal|augmentin|pantocid|crocin|paracetamol|azithromycin|metformin|glycomet|atorvastatin|amlodipine|pantoprazole|amoxicillin|combiflam|allegra|montair|vicks|benadryl|strepsils|betadine|limcee|zincovit|becosules|supradyn|liv\s*52|digene|gelusil|omez|pan\s*40|pan\s*d|rantac|zinetac|ciplox|norflox|cifran|taxim|calpol|sumo|meftal|disprin|saridon|cetrizine|levocetrizine|okacet|avil|tablets?|capsules?|syrup\s*ip|cough\s*syrup|injections?|strip\s*of|\d+\s*mg\s*(?:tablets?|capsules?|tabs?))\b/i.test(combinedCardText);
   const isSupplementCard = !isMedicineCard && !isCosmeticOrFragrance && /\b(whey|protein|creatine|bcaa|glutamine|multivitamin|mass gainer|fish oil|isolate|optimum nutrition|muscleblaze|nutrabay|as-it-is|myprotein|gnc|isopure|cellucor|dymatize|nitro-tech|rule 1|avatar|avvatar|fast & up|creapure)\b/i.test(combinedCardText);
+  const isClothingCard = !isMedicineCard && !isSupplementCard && !isCosmeticOrFragrance && /\b(shirt|t-shirt|tshirt|jeans|top|dress|saree|kurti|jacket|hoodie|coat|pant|trouser|suit|blazer|lehenga|skirt|sweater|cardigan|sweatshirt|clothing|outfit|apparel)\b/i.test(combinedCardText);
 
   const getInitialStore = () => {
     const rawComp = product.price_comparison || product.priceComparison;
@@ -176,6 +179,10 @@ export default function ProductCard({
     setIsAskAiOpen(true);
     setAlertSubmitted(false);
 
+    // Record non-blocking telemetry event for AI summary request
+    const cardCat = isMedicineCard ? "medicine" : isSupplementCard ? "supplement" : "ecommerce";
+    userJourneyTracker.recordAiSummary(product, selectedStore.name, cardCat);
+
     if (cachedReviews[product.id]) {
       const cached = cachedReviews[product.id];
       setAiAnalysis(cached);
@@ -186,6 +193,19 @@ export default function ProductCard({
 
     setIsAnalyzingAi(true);
     setAiAnalysis(null);
+
+    // Retrieve recent session products so AI review can provide natural, differentiated context
+    const recentSessionProds = userJourneyTracker.getRecentViewedProducts() || [];
+    const augmentedPreviouslyViewed = [
+      ...(previouslyViewed || []).map(p => ({
+        title: p.title,
+        bestFor: p.bestFor,
+        fitVerdict: p.fitVerdict
+      })),
+      ...recentSessionProds
+        .filter(p => p.title && p.title.toLowerCase() !== (product.title || "").toLowerCase())
+        .map(p => ({ title: p.title, store: p.store, price: p.price }))
+    ].slice(0, 4);
 
     try {
       const res = await fetch("/api/ai/review", {
@@ -205,11 +225,7 @@ export default function ProductCard({
             price: formatPrice(p.price, p.currency),
             specs: p.specs || []
           })),
-          previouslyViewed: (previouslyViewed || []).map(p => ({
-            title: p.title,
-            bestFor: p.bestFor,
-            fitVerdict: p.fitVerdict
-          }))
+          previouslyViewed: augmentedPreviouslyViewed
         })
       });
 
@@ -255,6 +271,7 @@ export default function ProductCard({
   }, [rawImg, productTitle]);
 
   const handleBuyNow = () => {
+    userJourneyTracker.recordProductClick(product, selectedStore.name);
     fetch("/api/telemetry/click", { method: "POST" }).catch(() => {});
   };
 
@@ -383,6 +400,22 @@ export default function ProductCard({
             >
               <Heart className={`w-3.5 h-3.5 ${isBookmarked ? "fill-rose-500 text-rose-500" : ""}`} />
             </button>
+
+            {/* Cross-Vertical Try in Studio Button for Clothing */}
+            {isClothingCard && onTryInStudio && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onTryInStudio(product);
+                }}
+                className="absolute bottom-2.5 right-2.5 px-2.5 py-1 rounded-xl bg-purple-950/90 hover:bg-purple-900 text-white text-[10px] font-bold shadow-md shadow-purple-950/40 border border-purple-400/40 backdrop-blur-xs flex items-center gap-1 transition-all active:scale-95 cursor-pointer z-20 group/btn"
+                title="Try this outfit in the AI Virtual Trial Room"
+              >
+                <Shirt className="w-3 h-3 text-pink-400 group-hover/btn:rotate-12 transition-transform" />
+                <span>Try in Studio</span>
+              </button>
+            )}
           </div>
 
           {/* Title & Price */}
