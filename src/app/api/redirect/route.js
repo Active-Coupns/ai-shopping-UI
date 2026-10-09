@@ -330,6 +330,29 @@ export async function GET(request) {
     let cleanFallback = fallbackUrl;
     const storeLower = (store || "").toLowerCase().trim();
 
+    // 1. Amazon ASIN Instant Detection (100% Direct Product Page)
+    const asinMatch = fallbackUrl?.match(/\/dp\/([A-Z0-9]{10})/i) || fallbackUrl?.match(/\/gp\/product\/([A-Z0-9]{10})/i);
+    if (asinMatch) {
+      const isUS = String(region).toUpperCase() === "US";
+      return safeRedirect(isUS ? `https://www.amazon.com/dp/${asinMatch[1]}` : `https://www.amazon.in/dp/${asinMatch[1]}`);
+    }
+
+    // 2. Unwrap Google redirect parameters (url, dest, q, adurl)
+    try {
+      if (fallbackUrl && (fallbackUrl.includes("google.com") || fallbackUrl.includes("google.co.in"))) {
+        const u = new URL(fallbackUrl);
+        const embedded = u.searchParams.get("url") || u.searchParams.get("dest") || u.searchParams.get("q") || u.searchParams.get("adurl");
+        if (embedded && embedded.startsWith("http") && !embedded.includes("google.com") && !embedded.includes("google.co.in")) {
+          const unwrappedAsin = embedded.match(/\/dp\/([A-Z0-9]{10})/i) || embedded.match(/\/gp\/product\/([A-Z0-9]{10})/i);
+          if (unwrappedAsin) {
+            const isUS = String(region).toUpperCase() === "US";
+            return safeRedirect(isUS ? `https://www.amazon.com/dp/${unwrappedAsin[1]}` : `https://www.amazon.in/dp/${unwrappedAsin[1]}`);
+          }
+          cleanFallback = cleanUrlParams(embedded);
+        }
+      }
+    } catch (e) {}
+
     if (fallbackUrl && isSearchUrl(fallbackUrl)) {
       try {
         const u = new URL(fallbackUrl);
@@ -422,6 +445,14 @@ export async function GET(request) {
       }
       if (!match && storeName.toLowerCase().includes("adidas")) {
         match = offers.find(o => (o.store_name || "").toLowerCase().includes("adidas") || (o.offer_page_url || "").includes("adidas"));
+      }
+
+      // If specific store name didn't match, fall back to best available merchant PDP in offers
+      if (!match && offers.length > 0) {
+        match = offers.find(o => {
+          const u = o.offer_page_url || o.product_page_url;
+          return u && (u.startsWith("http://") || u.startsWith("https://")) && !u.includes("google.com") && !u.includes("ibp=");
+        }) || offers[0];
       }
 
       if (match) {

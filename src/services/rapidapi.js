@@ -678,49 +678,14 @@ function buildProductSpecs(attributes = {}, title = '', description = '', offers
   return specs.slice(0, 5);
 }
 
-function generateCoupons(storeName, priceVal) {
-  const coupons = [];
-  const lowerStore = (storeName || '').toLowerCase();
-
-  if (lowerStore.includes('amazon')) {
-    if (priceVal >= 10000) {
-      coupons.push({
-        code: "HDFC1500",
-        type: "BANK_DISCOUNT",
-        discount: "Flat ₹1,500 Instant Off",
-        description: "On HDFC Bank Credit Cards & EMI",
-        effective_price: Math.max(0, priceVal - 1500)
-      });
-    } else {
-      coupons.push({
-        code: "AMAZON500",
-        type: "PROMO_CODE",
-        discount: "Flat ₹500 Coupon",
-        description: "Apply coupon at checkout",
-        effective_price: Math.max(0, priceVal - 500)
-      });
-    }
-  } else if (lowerStore.includes('flipkart')) {
-    const disc = Math.min(1500, Math.round(priceVal * 0.1));
-    coupons.push({
-      code: "ICICI10",
-      type: "BANK_DISCOUNT",
-      discount: `10% Off (up to ₹${disc})`,
-      description: "On ICICI Bank Credit Cards",
-      effective_price: Math.max(0, priceVal - disc)
-    });
-  } else {
-    coupons.push({
-      code: "SBI1000",
-      type: "BANK_DISCOUNT",
-      discount: "Flat ₹1,000 Cashback",
-      description: "On SBI Credit Card checkout",
-      effective_price: Math.max(0, priceVal - 1000)
-    });
+function generateCoupons(storeName, priceVal, authenticCoupon = null) {
+  if (authenticCoupon && typeof authenticCoupon === "object") {
+    return [authenticCoupon];
   }
-
-  return coupons;
+  // Zero default/fake coupons: only authentic promotions from API calls
+  return [];
 }
+
 
 export async function fetchExactProductDetails(productId, country = "IN") {
   if (!productId) return { offers: [], attributes: {}, description: "", title: "" };
@@ -1968,7 +1933,7 @@ export async function searchRapidApiProducts(query, limit = 20, country = "IN", 
         specs,
         product_attributes: p.product_attributes || {},
         product_description: p.product_description || "",
-        coupons: generateCoupons(storeName, priceVal),
+        coupons: generateCoupons(storeName, priceVal, p.coupon || p.offer_coupon || null),
         market_range: marketRange,
         savings_amount: savingsAmount,
         price_comparison: null // Loaded On-Demand ONLY via /api/products/compare
