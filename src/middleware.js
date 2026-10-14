@@ -14,7 +14,11 @@ const isPublicRoute = createRouteMatcher([
   "/api/admin/(.*)",
   "/api/vton/(.*)",
   "/api/user/(.*)",
-  "/api/compliance/(.*)"
+  "/api/compliance/(.*)",
+  "/api/deals(.*)",
+  "/api/coupons(.*)",
+  "/api/terminal(.*)",
+  "/api/products(.*)"
 ]);
 
 const handler = clerkMiddleware(

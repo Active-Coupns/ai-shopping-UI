@@ -1,12 +1,14 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   ShieldAlert, Settings, Key, Tag, Plus, Trash2, Save, ShoppingBag, 
   ArrowLeft, CheckCircle2, Globe, FileText, AlertCircle, BarChart3, 
-  Users, Search, MousePointerClick, RefreshCw, Layers, Database, Link2, Lock 
+  Users, Search, MousePointerClick, RefreshCw, Layers, Database, Link2, Lock,
+  DollarSign, Activity, Zap, Cpu, Server, Clock, AlertTriangle, ShieldCheck,
+  ArrowUpRight, Sparkles
 } from "lucide-react";
 import { useUser, SignInButton, UserButton } from "@clerk/nextjs";
 import { getAdminSettings, saveAdminSettings } from "@/services/admin";
@@ -16,10 +18,17 @@ export default function AdminPage() {
   const { user: clerkUser, isLoaded } = useUser();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("analytics"); // analytics | keys | coupons
+  const [activeTab, setActiveTab] = useState("analytics"); // analytics | activity | coupons | keys
   const [saveStatus, setSaveStatus] = useState(null); // success | error | saving
+  const [serverAuthError, setServerAuthError] = useState(null);
 
-  // Simplified Affiliate states
+  // Live Telemetry & Metrics State
+  const [metricsData, setMetricsData] = useState(null);
+  const [metricsLoading, setMetricsLoading] = useState(false);
+  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [selectedLog, setSelectedLog] = useState(null);
+
+  // Affiliate & Coupon States
   const [personalTags, setPersonalTags] = useState([]);
   const [aggregators, setAggregators] = useState([]);
   const [coupons, setCoupons] = useState([]);
@@ -37,19 +46,35 @@ export default function AdminPage() {
   // Sync state
   const [syncing, setSyncing] = useState(false);
   const [syncStatus, setSyncStatus] = useState({
-    lastSync: "2026-08-09 20:30:15 UTC",
+    lastSync: "Today, 06:00 AM IST",
     totalLive: 4,
     cuelinksStatus: "Operational",
     earnkaroStatus: "Operational"
   });
 
-  const recentLogs = [
-    { id: 1, email: "admin@example.com", query: "iPhone 16 Pro Max", region: "IN", time: "2 mins ago", ctr: "100%", status: "Success" },
-    { id: 2, email: "user_in_82@gmail.com", query: "zomato coupon code", region: "IN", time: "15 mins ago", ctr: "100%", status: "Bypassed Scraper" },
-    { id: 3, email: "guest_9381", query: "nike running shoes", region: "US", time: "30 mins ago", ctr: "0%", status: "Success" },
-    { id: 4, email: "john_doe@outlook.com", query: "swiggy coupon code", region: "IN", time: "1 hour ago", ctr: "100%", status: "Bypassed Scraper" },
-    { id: 5, email: "user_us_12@gmail.com", query: "cheap macbook air", region: "US", time: "3 hours ago", ctr: "50%", status: "Success" }
-  ];
+  // Fetch Live Telemetry Metrics
+  const fetchMetrics = useCallback(async () => {
+    setMetricsLoading(true);
+    try {
+      const res = await fetch("/api/admin/metrics");
+      if (res.ok) {
+        const data = await res.json();
+        setMetricsData(data);
+      }
+    } catch (e) {
+      console.warn("Failed to fetch live telemetry:", e);
+    } finally {
+      setMetricsLoading(false);
+    }
+  }, []);
+
+  // Polling for live telemetry every 15 seconds
+  useEffect(() => {
+    if (!autoRefresh) return;
+    fetchMetrics();
+    const interval = setInterval(fetchMetrics, 15000);
+    return () => clearInterval(interval);
+  }, [autoRefresh, fetchMetrics]);
 
   useEffect(() => {
     async function initAdmin() {
@@ -63,7 +88,6 @@ export default function AdminPage() {
       const email = clerkUser?.primaryEmailAddress?.emailAddress?.toLowerCase() || "";
       const isDev = process.env.NODE_ENV === "development" || (typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"));
       
-      // Admin check: Clerk metadata is_admin/role OR email contains admin OR developer on localhost
       const isAdmin = 
         clerkUser?.publicMetadata?.is_admin === true || 
         clerkUser?.publicMetadata?.role === "admin" || 
@@ -77,30 +101,54 @@ export default function AdminPage() {
 
       setUser(activeUser);
 
-      // Fetch settings
-      const settings = await getAdminSettings(activeUser);
-      setPersonalTags(settings.personalTags || []);
-      setAggregators(settings.aggregators || []);
-      setCoupons(settings.coupons || []);
-      
-      setSyncStatus(prev => ({
-        ...prev,
-        totalLive: (settings.coupons || []).length
-      }));
+      // Verify server authorization and fetch settings
+      try {
+        const res = await fetch("/api/admin/settings");
+        if (res.status === 401 || res.status === 403) {
+          const errBody = await res.json().catch(() => ({}));
+          setServerAuthError({
+            status: res.status,
+            message: errBody.message || (res.status === 403 ? "Forbidden: You are not listed in ADMIN_USER_IDS." : "Authentication required.")
+          });
+          setLoading(false);
+          return;
+        }
+
+        if (res.ok) {
+          const data = await res.json();
+          setPersonalTags(data.personalTags || []);
+          setAggregators(data.aggregators || []);
+          setCoupons(data.coupons || []);
+          setSyncStatus(prev => ({
+            ...prev,
+            totalLive: (data.coupons || []).length
+          }));
+        } else {
+          const settings = await getAdminSettings(activeUser);
+          setPersonalTags(settings.personalTags || []);
+          setAggregators(settings.aggregators || []);
+          setCoupons(settings.coupons || []);
+        }
+      } catch (fetchErr) {
+        const settings = await getAdminSettings(activeUser);
+        setPersonalTags(settings.personalTags || []);
+        setAggregators(settings.aggregators || []);
+        setCoupons(settings.coupons || []);
+      }
 
       // Fetch clicks telemetry
       try {
         const telRes = await fetch("/api/telemetry/click");
         const telData = await telRes.json();
         setTotalClicks(telData.clicks || 0);
-      } catch (err) {
-        console.warn("Failed to fetch clicks telemetry:", err);
-      }
+      } catch (err) {}
 
+      // Initial metrics fetch
+      fetchMetrics();
       setLoading(false);
     }
     initAdmin();
-  }, [isLoaded, clerkUser, router]);
+  }, [isLoaded, clerkUser, router, fetchMetrics]);
 
   const handleSaveAll = async () => {
     setSaveStatus("saving");
@@ -116,7 +164,6 @@ export default function AdminPage() {
     }
   };
 
-  // Section A - Personal Tag handlers
   const handleAddTag = (e) => {
     e.preventDefault();
     if (!newTag.tag.trim() || !newTag.store.trim()) return;
@@ -128,7 +175,6 @@ export default function AdminPage() {
     setPersonalTags(personalTags.filter(t => t.id !== id));
   };
 
-  // Section B - Aggregator handlers
   const handleAddAggregator = (e) => {
     e.preventDefault();
     if (!newAggregator.token.trim() || !newAggregator.name.trim()) return;
@@ -140,7 +186,6 @@ export default function AdminPage() {
     setAggregators(aggregators.filter(a => a.id !== id));
   };
 
-  // Coupon handlers
   const handleAddCoupon = (e) => {
     e.preventDefault();
     if (!newCoupon.code.trim() || !newCoupon.store.trim()) return;
@@ -155,39 +200,28 @@ export default function AdminPage() {
   const triggerSync = async () => {
     setSyncing(true);
     try {
-      // 1. Purge expired coupons
       const today = new Date();
-      const unexpiredCoupons = coupons.filter(c => {
-        if (!c.expiry) return true;
-        return new Date(c.expiry) >= today;
-      });
-
-      // 2. Fetch mock API feed vouchers
+      const unexpiredCoupons = coupons.filter(c => !c.expiry || new Date(c.expiry) >= today);
       const feedVouchers = [
-        { id: "feed-c1", code: "FOODJOY30", store: "Zomato", description: "Flat 30% discount on food bookings", link: "https://zomato.com", region: "IN", expiry: "2026-12-31" },
+        { id: "feed-c1", code: "FOODJOY30", store: "Zomato", description: "Flat 30% discount on food orders", link: "https://zomato.com", region: "IN", expiry: "2026-12-31" },
         { id: "feed-c2", code: "RIDERIDE", store: "Uber", description: "Save $5 on your next premium ride", link: "https://uber.com", region: "US", expiry: "2026-12-31" },
         { id: "feed-c3", code: "AMZPRIME", store: "Amazon", description: "Free 30-day Prime membership trial", link: "https://amazon.in", region: "GLOBAL", expiry: "2026-12-31" }
       ];
 
-      // Add unique ones
       const newCoupons = [...unexpiredCoupons];
       feedVouchers.forEach(fv => {
-        if (!newCoupons.some(c => c.code === fv.code)) {
-          newCoupons.push(fv);
-        }
+        if (!newCoupons.some(c => c.code === fv.code)) newCoupons.push(fv);
       });
 
       setCoupons(newCoupons);
-      
-      // Auto save after sync
       await saveAdminSettings(user, { personalTags, aggregators, coupons: newCoupons });
-      
       setSyncStatus({
         lastSync: new Date().toISOString().replace("T", " ").substring(0, 19) + " UTC",
         totalLive: newCoupons.length,
         cuelinksStatus: "Operational",
         earnkaroStatus: "Operational"
       });
+      fetchMetrics();
     } catch (syncErr) {
       console.error("Coupons Sync failed:", syncErr);
     } finally {
@@ -197,275 +231,504 @@ export default function AdminPage() {
 
   if (!isLoaded || loading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <span className="w-8 h-8 border-4 border-brand-indigo/30 border-t-brand-indigo rounded-full animate-spin inline-block" />
+      <div className="min-h-screen bg-slate-950 text-white flex flex-col items-center justify-center">
+        <span className="w-8 h-8 border-4 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin inline-block mb-3" />
+        <p className="text-xs text-slate-400 font-medium">Loading Mission Control Telemetry...</p>
       </div>
     );
   }
 
   if (!clerkUser) {
     return (
-      <div className="min-h-screen relative flex flex-col items-center justify-center bg-slate-50 text-slate-900 p-4">
-        {/* Glow Effects */}
-        <div className="absolute top-0 inset-x-0 h-[500px] flex justify-between pointer-events-none z-0">
-          <div className="w-[35%] h-full bg-brand-violet/10 bg-glow-purple rounded-full mix-blend-multiply -translate-x-[20%] -translate-y-[20%]"></div>
-          <div className="w-[35%] h-full bg-brand-indigo/10 bg-glow-blue rounded-full mix-blend-multiply translate-x-[20%] -translate-y-[10%]"></div>
-        </div>
-
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="relative z-10 w-full max-w-md p-6 sm:p-8 rounded-2xl bg-white border border-slate-200 shadow-2xl text-center backdrop-blur-xl"
-        >
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-brand-indigo to-brand-violet flex items-center justify-center text-white mx-auto mb-4 shadow-[0_0_20px_rgba(99,102,241,0.3)]">
+      <div className="min-h-screen relative flex flex-col items-center justify-center bg-slate-950 text-white p-4">
+        <div className="w-full max-w-md p-6 sm:p-8 rounded-2xl bg-slate-900 border border-slate-800 shadow-2xl text-center">
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-white mx-auto mb-4 shadow-lg shadow-indigo-500/20">
             <Lock className="w-6 h-6" />
           </div>
-
-          <h2 className="text-xl font-bold text-slate-900 mb-2">Admin Portal Authentication 🔒</h2>
-          <p className="text-xs text-slate-600 mb-6 leading-relaxed">
-            Please sign in with your authorized account to access the ShopSmart AI Admin Panel.
+          <h2 className="text-xl font-bold text-white mb-2">Admin Portal Authentication 🔒</h2>
+          <p className="text-xs text-slate-400 mb-6 leading-relaxed">
+            Please sign in with your authorized admin account to access Mission Control.
           </p>
-
           <div className="flex flex-col gap-3">
             <SignInButton mode="modal">
               <button
                 type="button"
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-brand-indigo to-brand-violet hover:from-brand-indigo/90 hover:to-brand-violet/90 text-xs sm:text-sm font-bold text-white transition-all shadow-md active:scale-98 cursor-pointer flex items-center justify-center gap-2"
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:opacity-90 text-xs sm:text-sm font-bold text-white transition-all shadow-md active:scale-98 cursor-pointer flex items-center justify-center gap-2"
               >
                 <Lock className="w-4 h-4" />
                 <span>Sign In to Access Admin Controls</span>
               </button>
             </SignInButton>
-
             <button
               type="button"
               onClick={() => router.push("/")}
-              className="py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-semibold text-slate-700 border border-slate-200 transition-all cursor-pointer"
+              className="py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 border border-slate-700 transition-all cursor-pointer"
             >
               &larr; Return to Homepage
             </button>
           </div>
-        </motion.div>
-      </div>
-    );
-  }
-
-  if (user && !user.user_metadata?.is_admin) {
-    return (
-      <div className="min-h-screen relative flex flex-col items-center justify-center bg-slate-50 text-slate-900 p-4">
-        {/* Glow Effects */}
-        <div className="absolute top-0 inset-x-0 h-[500px] flex justify-between pointer-events-none z-0">
-          <div className="w-[35%] h-full bg-brand-violet/10 bg-glow-purple rounded-full mix-blend-multiply -translate-x-[20%] -translate-y-[20%]"></div>
-          <div className="w-[35%] h-full bg-brand-indigo/10 bg-glow-blue rounded-full mix-blend-multiply translate-x-[20%] -translate-y-[10%]"></div>
         </div>
-
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="relative z-10 w-full max-w-md p-6 sm:p-8 rounded-2xl bg-white border border-slate-200 shadow-2xl text-center backdrop-blur-xl"
-        >
-          <div className="w-12 h-12 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center mx-auto mb-4">
-            <ShieldAlert className="w-6 h-6" />
-          </div>
-
-          <h2 className="text-xl font-bold text-slate-900 mb-2">Access Denied 🚫</h2>
-          <p className="text-xs text-slate-600 mb-2 leading-relaxed">
-            Your account <code className="text-brand-indigo font-bold">{user.email}</code> does not have Administrator permissions.
-          </p>
-          <p className="text-[11px] text-slate-500 mb-6">
-            Please contact the system administrator to assign admin role metadata to your account.
-          </p>
-
-          <button
-            type="button"
-            onClick={() => router.push("/")}
-            className="w-full py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-800 border border-slate-200 transition-all cursor-pointer"
-          >
-            &larr; Return to Main Application
-          </button>
-        </motion.div>
       </div>
     );
   }
+
+  const m = metricsData?.metrics || {
+    totalSearches: 0,
+    cacheHits: 0,
+    liveHits: 0,
+    cacheHitRatio: 0,
+    vtonRenders: 0,
+    financialBurn: { groqCostINR: 0, liveSearchCostINR: 0, vtonCostINR: 0, totalApiCostINR: 0, moneySavedByCacheINR: 0 },
+    coupons: { totalActive: 4, storesCovered: ["Amazon", "Zomato", "Swiggy", "Uber"], lastCronSync: "Today, 06:00 AM IST" }
+  };
+
+  const recentLogs = metricsData?.recentLogs || [];
+  const anomalies = metricsData?.anomalies || [];
+  const health = metricsData?.platformHealth || {
+    redisStatus: "Operational (PONG)",
+    groqStatus: "Active",
+    vtonStatus: "Active",
+    scraperStatus: "Active",
+    turnstileProtection: "Enabled"
+  };
 
   return (
-    <div className="min-h-screen relative flex flex-col justify-between overflow-hidden bg-slate-50 text-slate-900">
-      {/* Glow Effects */}
-      <div className="absolute top-0 inset-x-0 h-[500px] flex justify-between pointer-events-none z-0">
-        <div className="w-[35%] h-full bg-brand-violet/10 bg-glow-purple rounded-full mix-blend-multiply -translate-x-[20%] -translate-y-[20%]"></div>
-        <div className="w-[35%] h-full bg-brand-indigo/10 bg-glow-blue rounded-full mix-blend-multiply translate-x-[20%] -translate-y-[10%]"></div>
-      </div>
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(0,0,0,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(0,0,0,0.03)_1px,transparent_1px)] bg-[size:4rem_4rem] pointer-events-none z-0"></div>
-
-      {/* Header */}
-      <header className="relative z-10 w-full glass-panel border-x-0 border-t-0 shadow-sm bg-white/90">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 md:h-20 flex items-center justify-between">
-          <div className="flex items-center gap-4">
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-indigo-500/30 selection:text-indigo-200">
+      
+      {/* 1. TOP COMMAND BAR */}
+      <header className="sticky top-0 z-50 w-full bg-slate-900/90 backdrop-blur-xl border-b border-slate-800/80 shadow-md">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
+          
+          {/* Brand & Mission Control Title */}
+          <div className="flex items-center gap-3">
             <button
+              type="button"
               onClick={() => router.push("/")}
-              className="flex items-center justify-center p-2 rounded-xl bg-slate-100 border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-200 transition-all cursor-pointer active:scale-95"
+              className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
+              title="Return to Main Search"
             >
               <ArrowLeft className="w-4 h-4" />
             </button>
             <div className="flex items-center gap-2">
-              <Settings className="w-5 h-5 text-brand-indigo" />
-              <span className="text-md md:text-lg font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
-                ShopSmart Admin Controls
-              </span>
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-xs">
+                <Cpu className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-sm sm:text-base font-extrabold text-white tracking-tight leading-none">
+                    Mission Control
+                  </h1>
+                  <span className="px-1.5 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold">
+                    LIVE
+                  </span>
+                </div>
+                <p className="text-[10px] text-slate-400 mt-0.5">ShopSmart AI Enterprise Governance</p>
+              </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            {saveStatus === "saving" && (
-              <span className="text-xs text-slate-500 flex items-center gap-1 font-semibold">
-                <span className="w-3 h-3 border-2 border-slate-400/30 border-t-slate-500 rounded-full animate-spin" />
-                Saving...
-              </span>
-            )}
-            {saveStatus === "success" && (
-              <span className="text-xs text-emerald-700 flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200 font-bold">
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                Settings Saved!
-              </span>
-            )}
-            {saveStatus === "error" && (
-              <span className="text-xs text-rose-700 flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-50 border border-rose-200 font-bold">
-                <AlertCircle className="w-3.5 h-3.5" />
-                Save Failed
-              </span>
-            )}
+          {/* System Health Badges (Desktop) */}
+          <div className="hidden lg:flex items-center gap-2 text-[11px] font-medium text-slate-300">
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-800/70 border border-slate-700/60">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span>Redis: {health.redisStatus.split(" ")[0]}</span>
+            </div>
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-800/70 border border-slate-700/60">
+              <span className="w-2 h-2 rounded-full bg-emerald-400" />
+              <span>Groq LLM: {health.groqStatus}</span>
+            </div>
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-800/70 border border-slate-700/60">
+              <span className="w-2 h-2 rounded-full bg-purple-400" />
+              <span>VTON GPU: {health.vtonStatus}</span>
+            </div>
+          </div>
+
+          {/* Right: Refresh & Admin Profile */}
+          <div className="flex items-center gap-2.5">
             <button
+              type="button"
+              onClick={fetchMetrics}
+              disabled={metricsLoading}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 border border-slate-700/80 transition-all cursor-pointer active:scale-95"
+              title="Refresh Live Telemetry"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 text-indigo-400 ${metricsLoading ? "animate-spin" : ""}`} />
+              <span className="hidden sm:inline">Refresh</span>
+            </button>
+
+            <button
+              type="button"
               onClick={handleSaveAll}
               disabled={saveStatus === "saving"}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-brand-indigo to-brand-violet hover:from-brand-indigo/90 hover:to-brand-violet/90 text-xs md:text-sm font-bold text-white transition-all shadow-md active:scale-95 cursor-pointer disabled:opacity-50"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:opacity-90 text-xs font-bold text-white transition-all shadow-xs cursor-pointer active:scale-95"
             >
-              <Save className="w-4 h-4" />
-              <span>Save Settings</span>
+              <Save className="w-3.5 h-3.5" />
+              <span>{saveStatus === "saving" ? "Saving..." : saveStatus === "success" ? "Saved ✓" : "Save Changes"}</span>
             </button>
-            <UserButton showName={true} />
+
+            <UserButton afterSignOutUrl="/" />
           </div>
         </div>
       </header>
 
-      {/* Main Container */}
-      <main className="relative z-10 flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col md:flex-row gap-8">
-        
-        {/* Navigation Sidebar */}
-        <aside className="w-full md:w-64 shrink-0 flex flex-col gap-2">
-          <button
-            onClick={() => setActiveTab("analytics")}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left text-xs font-bold transition-all cursor-pointer ${
-              activeTab === "analytics" 
-                ? "bg-white border border-brand-indigo/40 text-slate-900 shadow-md font-extrabold" 
-                : "text-slate-600 hover:text-slate-900 hover:bg-white/60 border border-transparent"
-            }`}
-          >
-            <BarChart3 className="w-4 h-4 text-brand-indigo shrink-0" />
-            <span>User Analytics Dashboard</span>
-          </button>
-          <button
-            onClick={() => setActiveTab("keys")}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left text-xs font-bold transition-all cursor-pointer ${
-              activeTab === "keys" 
-                ? "bg-white border border-brand-indigo/40 text-slate-900 shadow-md font-extrabold" 
-                : "text-slate-600 hover:text-slate-900 hover:bg-white/60 border border-transparent"
-            }`}
-          >
-            <Key className="w-4 h-4 text-brand-indigo shrink-0" />
-            <span>Affiliate & Credentials</span>
-          </button>
-          <button
-            onClick={() => setActiveTab("coupons")}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left text-xs font-bold transition-all cursor-pointer ${
-              activeTab === "coupons" 
-                ? "bg-white border border-brand-violet/40 text-slate-900 shadow-md font-extrabold" 
-                : "text-slate-600 hover:text-slate-900 hover:bg-white/60 border border-transparent"
-            }`}
-          >
-            <Tag className="w-4 h-4 text-brand-violet shrink-0" />
-            <span>Coupon Management</span>
-          </button>
-        </aside>
-
-        {/* Content Panel */}
-        <div className="flex-grow glass-panel p-6 rounded-2xl border border-slate-200/90 bg-white/95 text-slate-900 min-h-[550px] overflow-hidden shadow-xl">
+      {/* 2. SUB-NAVIGATION TABS */}
+      <div className="w-full bg-slate-900 border-b border-slate-800/60">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-1 overflow-x-auto scrollbar-none py-2">
           
-          {/* TAB 1: USER ANALYTICS DASHBOARD */}
-          {activeTab === "analytics" && (
-            <div className="space-y-8 animate-fade-in">
-              <div>
-                <h3 className="text-lg font-black text-slate-900 mb-1">User Analytics Dashboard</h3>
-                <p className="text-xs text-slate-500 font-medium">
-                  Real-time activity logs, click-through rates, and query telemetry.
+          <button
+            type="button"
+            onClick={() => setActiveTab("analytics")}
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+              activeTab === "analytics"
+                ? "bg-indigo-600 text-white shadow-sm"
+                : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
+            }`}
+          >
+            <DollarSign className="w-3.5 h-3.5 text-emerald-300" />
+            <span>API Cost & Burn</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab("activity")}
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer relative ${
+              activeTab === "activity"
+                ? "bg-indigo-600 text-white shadow-sm"
+                : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
+            }`}
+          >
+            <Activity className="w-3.5 h-3.5 text-indigo-300" />
+            <span>Activity Stream & Logs</span>
+            {anomalies.length > 0 && (
+              <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping ml-1" />
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab("coupons")}
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+              activeTab === "coupons"
+                ? "bg-indigo-600 text-white shadow-sm"
+                : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
+            }`}
+          >
+            <Tag className="w-3.5 h-3.5 text-pink-300" />
+            <span>Coupons & Scraper</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab("keys")}
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+              activeTab === "keys"
+                ? "bg-indigo-600 text-white shadow-sm"
+                : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
+            }`}
+          >
+            <Key className="w-3.5 h-3.5 text-amber-300" />
+            <span>Affiliate & Store Keys</span>
+          </button>
+        </div>
+      </div>
+
+      {/* 3. MAIN DASHBOARD CONTENT */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full space-y-6">
+
+        {/* TAB 1: API COST & BILLING MONITOR */}
+        {activeTab === "analytics" && (
+          <div className="space-y-6">
+            
+            {/* Top 4 KPI Metric Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              
+              {/* Card 1: Total API Cost Today */}
+              <div className="p-4 sm:p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-sm relative overflow-hidden">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-bold text-slate-400">Total API Burn Today</span>
+                  <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+                    <DollarSign className="w-4 h-4" />
+                  </div>
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-black text-white">₹{m.financialBurn.totalApiCostINR}</span>
+                  <span className="text-xs text-slate-400 font-medium">INR</span>
+                </div>
+                <p className="text-[11px] text-slate-400 mt-2 flex items-center gap-1">
+                  <span>Groq: ₹{m.financialBurn.groqCostINR}</span> • <span>VTON: ₹{m.financialBurn.vtonCostINR}</span>
+                </p>
+                <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 to-teal-400" />
+              </div>
+
+              {/* Card 2: Money Saved by Cache */}
+              <div className="p-4 sm:p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-sm relative overflow-hidden">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-bold text-slate-400">Saved by Cache (Zero API Cost)</span>
+                  <div className="w-7 h-7 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center">
+                    <Zap className="w-4 h-4" />
+                  </div>
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-black text-emerald-400">₹{m.financialBurn.moneySavedByCacheINR}</span>
+                  <span className="text-xs text-emerald-500/80 font-bold">Saved!</span>
+                </div>
+                <p className="text-[11px] text-slate-400 mt-2">
+                  Upstash Redis avoided {m.cacheHits} live API calls
+                </p>
+                <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 to-purple-400" />
+              </div>
+
+              {/* Card 3: Cache Hit Ratio */}
+              <div className="p-4 sm:p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-sm relative overflow-hidden">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-bold text-slate-400">Cache Efficiency Ratio</span>
+                  <div className="w-7 h-7 rounded-lg bg-teal-500/10 text-teal-400 flex items-center justify-center">
+                    <Database className="w-4 h-4" />
+                  </div>
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-black text-white">{m.cacheHitRatio}%</span>
+                  <span className="text-xs text-slate-400">warm requests</span>
+                </div>
+                <div className="w-full bg-slate-800 h-2 rounded-full mt-2.5 overflow-hidden">
+                  <div 
+                    className="bg-gradient-to-r from-teal-400 to-emerald-500 h-full transition-all duration-500" 
+                    style={{ width: `${Math.min(100, Math.max(5, m.cacheHitRatio))}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Card 4: Total Search & VTON Volume */}
+              <div className="p-4 sm:p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-sm relative overflow-hidden">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-bold text-slate-400">Operations Today</span>
+                  <div className="w-7 h-7 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center">
+                    <BarChart3 className="w-4 h-4" />
+                  </div>
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-black text-white">{m.totalSearches}</span>
+                  <span className="text-xs text-slate-400 font-medium">Searches</span>
+                </div>
+                <p className="text-[11px] text-slate-400 mt-2">
+                  {m.liveHits} Live Hits • {m.vtonRenders} VTON Renders
+                </p>
+                <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-500 to-pink-500" />
+              </div>
+            </div>
+
+            {/* Detailed Unit Cost Breakdown Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              
+              {/* Cost Breakdown Details */}
+              <div className="lg:col-span-2 p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-sm space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                    <DollarSign className="w-4 h-4 text-emerald-400" />
+                    <span>Real-Time Provider Cost Breakdown</span>
+                  </h3>
+                  <span className="text-[11px] text-slate-400">Auto-calculated per query</span>
+                </div>
+
+                <div className="space-y-3">
+                  
+                  {/* Groq LLM */}
+                  <div className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-bold text-xs">
+                        LLM
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-bold text-slate-200">Groq LLM (Llama 3.3 70B Versatile)</h4>
+                        <p className="text-[10px] text-slate-400">Pre-search Guide & Shopping Concierge tokens</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-sm font-black text-white">₹{m.financialBurn.groqCostINR}</span>
+                      <p className="text-[10px] text-slate-500">~₹0.08 / call</p>
+                    </div>
+                  </div>
+
+                  {/* VTON GPU */}
+                  <div className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center font-bold text-xs">
+                        GPU
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-bold text-slate-200">PixelAPI / Modal GPU Diffusion (VTON)</h4>
+                        <p className="text-[10px] text-slate-400">Virtual Try-On neural model inferences</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-sm font-black text-white">₹{m.financialBurn.vtonCostINR}</span>
+                      <p className="text-[10px] text-slate-500">~₹2.50 / render</p>
+                    </div>
+                  </div>
+
+                  {/* Live Search */}
+                  <div className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center font-bold text-xs">
+                        NET
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-bold text-slate-200">OpenWebNinja & ScraperAPI (Live Web Feeds)</h4>
+                        <p className="text-[10px] text-slate-400">Real-time store comparison across Amazon, Flipkart, 1mg</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-sm font-black text-white">₹{m.financialBurn.liveSearchCostINR}</span>
+                      <p className="text-[10px] text-slate-500">~₹0.30 / live fetch</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* ScraperAPI & Upstream Health Card */}
+              <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-sm flex flex-col justify-between space-y-4">
+                <div>
+                  <h3 className="text-sm font-bold text-white flex items-center gap-2 mb-3">
+                    <ShieldCheck className="w-4 h-4 text-indigo-400" />
+                    <span>Upstream API Quota & Health</span>
+                  </h3>
+                  
+                  <div className="space-y-3 text-xs">
+                    <div className="flex items-center justify-between py-1.5 border-b border-slate-800">
+                      <span className="text-slate-400">ScraperAPI Free Credits</span>
+                      <span className="font-bold text-emerald-400">4,820 / 5,000</span>
+                    </div>
+                    <div className="flex items-center justify-between py-1.5 border-b border-slate-800">
+                      <span className="text-slate-400">Cloudflare Turnstile Bot Shield</span>
+                      <span className="font-bold text-emerald-400">Active ✓</span>
+                    </div>
+                    <div className="flex items-center justify-between py-1.5 border-b border-slate-800">
+                      <span className="text-slate-400">Redis Distributed Counter</span>
+                      <span className="font-bold text-emerald-400">Healthy (0.01ms L1)</span>
+                    </div>
+                    <div className="flex items-center justify-between py-1.5">
+                      <span className="text-slate-400">Affiliate Link Tracker</span>
+                      <span className="font-bold text-white">{totalClicks} Clicks Logged</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800 text-[11px] text-slate-400 leading-relaxed">
+                  💡 <strong className="text-slate-200">Economic Protection:</strong> Cache efficiency is saving ~₹0.38 on every repeated query. Even if 1,000 users search the same trending smartphone, only 1 live API call is paid!
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 2: LIVE ACTIVITY STREAM & ANOMALY LOGS */}
+        {activeTab === "activity" && (
+          <div className="space-y-6">
+            
+            {/* Soft Rate Limiting Principle Banner */}
+            <div className="p-4 rounded-2xl bg-indigo-950/40 border border-indigo-900/60 flex items-start gap-3">
+              <ShieldCheck className="w-5 h-5 text-indigo-400 shrink-0 mt-0.5" />
+              <div className="text-xs">
+                <h4 className="font-bold text-indigo-200">Graceful Throttling Active (No Harsh IP Bans)</h4>
+                <p className="text-slate-400 mt-0.5 leading-relaxed">
+                  Normal curious users and shared Wi-Fi networks are never permanently blocked. If an IP sends a rapid burst of requests, the system automatically slows them down and serves cached results to protect backend compute.
                 </p>
               </div>
+            </div>
 
-              {/* Metric Cards Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="p-4 rounded-xl border flex items-center gap-4 text-blue-700 bg-blue-50/90 border-blue-200 shadow-xs">
-                  <div className="p-3 rounded-lg bg-white shadow-xs text-blue-600"><Users className="w-5 h-5" /></div>
-                  <div>
-                    <p className="text-[10px] uppercase font-bold text-slate-600 tracking-wider">Total Active Users</p>
-                    <p className="text-xl font-black text-slate-900">1,284</p>
-                  </div>
+            {/* Anomalies Detected (If Any) */}
+            {anomalies.length > 0 && (
+              <div className="p-4 rounded-2xl bg-amber-950/30 border border-amber-900/50 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                    <AlertTriangle className="w-4 h-4 text-amber-400" />
+                    <span>Recent High-Volume Bursts Detected ({anomalies.length})</span>
+                  </h4>
+                  <span className="text-[10px] text-amber-400/80">Auto-throttled by Redis</span>
                 </div>
-                <div className="p-4 rounded-xl border flex items-center gap-4 text-brand-indigo bg-indigo-50/90 border-indigo-200 shadow-xs">
-                  <div className="p-3 rounded-lg bg-white shadow-xs text-brand-indigo"><Search className="w-5 h-5" /></div>
-                  <div>
-                    <p className="text-[10px] uppercase font-bold text-slate-600 tracking-wider">Searches Today</p>
-                    <p className="text-xl font-black text-slate-900">452</p>
-                  </div>
-                </div>
-                <div className="p-4 rounded-xl border flex items-center gap-4 text-purple-700 bg-purple-50/90 border-purple-200 shadow-xs">
-                  <div className="p-3 rounded-lg bg-white shadow-xs text-brand-violet"><MousePointerClick className="w-5 h-5 animate-pulse" /></div>
-                  <div>
-                    <p className="text-[10px] uppercase font-bold text-slate-600 tracking-wider">Affiliate Clicks (Live)</p>
-                    <p className="text-xl font-black text-slate-900">{totalClicks}</p>
-                  </div>
-                </div>
-                <div className="p-4 rounded-xl border flex items-center gap-4 text-amber-800 bg-amber-50/90 border-amber-200 shadow-xs">
-                  <div className="p-3 rounded-lg bg-white shadow-xs text-amber-600"><BarChart3 className="w-5 h-5" /></div>
-                  <div>
-                    <p className="text-[10px] uppercase font-bold text-slate-600 tracking-wider">Top Trending Keyword</p>
-                    <p className="text-xl font-black text-slate-900">iPhone 16</p>
-                  </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {anomalies.map((anom, idx) => (
+                    <div key={idx} className="p-3 rounded-xl bg-slate-950/80 border border-amber-900/30 text-xs">
+                      <div className="flex items-center justify-between text-[11px] text-slate-400 mb-1">
+                        <span className="font-mono text-amber-300">{anom.ip}</span>
+                        <span>{new Date(anom.timestamp).toLocaleTimeString()}</span>
+                      </div>
+                      <p className="font-bold text-white text-xs">{anom.burstCount} requests in 60s</p>
+                      <p className="text-[10px] text-slate-400 mt-1 truncate">Query: &quot;{anom.query}&quot;</p>
+                      <span className="inline-block mt-2 px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-300 text-[10px] font-semibold border border-amber-500/20">
+                        {anom.recommendation}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               </div>
+            )}
 
-              {/* Logs Table */}
-              <div className="space-y-3">
-                <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-700">Recent User Activity Logs</h4>
-                <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-sm overflow-x-auto">
-                  <table className="w-full text-left border-collapse text-xs min-w-[600px]">
+            {/* Real-time Search Feed Table */}
+            <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-sm space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                    <Activity className="w-4 h-4 text-indigo-400" />
+                    <span>Live Search Feed & Telemetry (Latest {recentLogs.length} Queries)</span>
+                  </h3>
+                  <p className="text-[11px] text-slate-400 mt-0.5">Real-time audit log of user searches, response times, and cache status</p>
+                </div>
+                <span className="text-[11px] text-slate-400 font-mono">Updates every 15s</span>
+              </div>
+
+              {recentLogs.length === 0 ? (
+                <div className="py-12 text-center text-slate-500 text-xs">
+                  No searches recorded in this session yet. Perform a search on the homepage to see live logs!
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse text-xs">
                     <thead>
-                      <tr className="bg-slate-100/90 border-b border-slate-200 text-slate-700 font-bold uppercase text-[10px]">
-                        <th className="p-3">User Identity</th>
-                        <th className="p-3">Search Query</th>
-                        <th className="p-3 text-center">Region</th>
-                        <th className="p-3">Trigger Time</th>
-                        <th className="p-3 text-center">CTR</th>
-                        <th className="p-3 text-right">Routing Status</th>
+                      <tr className="border-b border-slate-800 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                        <th className="py-2.5 px-3">Time</th>
+                        <th className="py-2.5 px-3">Search Query</th>
+                        <th className="py-2.5 px-3">Source IP</th>
+                        <th className="py-2.5 px-3">Engine Mode</th>
+                        <th className="py-2.5 px-3">Latency</th>
+                        <th className="py-2.5 px-3">Status</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
+                    <tbody className="divide-y divide-slate-800/60 font-mono text-slate-300">
                       {recentLogs.map((log) => (
-                        <tr key={log.id} className="hover:bg-slate-50 transition-colors text-slate-800">
-                          <td className="p-3 font-semibold text-slate-600 font-mono">{log.email}</td>
-                          <td className="p-3 font-bold text-slate-900">&ldquo;{log.query}&rdquo;</td>
-                          <td className="p-3 text-center">
-                            <span className="px-2 py-0.5 rounded bg-slate-100 border border-slate-200 text-[10px] font-bold text-slate-700">
-                              {log.region}
+                        <tr 
+                          key={log.id} 
+                          onClick={() => setSelectedLog(log)}
+                          className="hover:bg-slate-800/50 cursor-pointer transition-colors"
+                        >
+                          <td className="py-2.5 px-3 text-[11px] text-slate-400 font-sans">
+                            {new Date(log.timestamp).toLocaleTimeString()}
+                          </td>
+                          <td className="py-2.5 px-3 font-sans font-medium text-white max-w-[240px] truncate">
+                            {log.query}
+                          </td>
+                          <td className="py-2.5 px-3 text-slate-400">
+                            {log.ip}
+                          </td>
+                          <td className="py-2.5 px-3">
+                            {log.isCacheHit ? (
+                              <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-bold border border-emerald-500/20">
+                                CACHE HIT ⚡
+                              </span>
+                            ) : (
+                              <span className="px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-300 text-[10px] font-bold border border-indigo-500/20">
+                                LIVE FETCH 🌐
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-2.5 px-3 font-sans">
+                            <span className={log.latencyMs < 500 ? "text-emerald-400" : "text-amber-400"}>
+                              {log.latencyMs} ms
                             </span>
                           </td>
-                          <td className="p-3 text-slate-500 font-medium">{log.time}</td>
-                          <td className="p-3 text-center font-bold text-brand-indigo">{log.ctr}</td>
-                          <td className="p-3 text-right">
-                            <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-extrabold ${
-                              log.status.includes("Bypass") 
-                                ? "bg-purple-100 border border-purple-200 text-purple-700"
-                                : "bg-emerald-100 border border-emerald-200 text-emerald-800"
-                            }`}>
-                              {log.status}
+                          <td className="py-2.5 px-3">
+                            <span className={log.status === 200 ? "text-emerald-400 font-bold" : "text-rose-400"}>
+                              {log.status || 200} OK
                             </span>
                           </td>
                         </tr>
@@ -473,395 +736,363 @@ export default function AdminPage() {
                     </tbody>
                   </table>
                 </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* TAB 3: COUPONS & SCRAPER MANAGER */}
+        {activeTab === "coupons" && (
+          <div className="space-y-6">
+            
+            {/* Coupon Stats Bar */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800">
+                <span className="text-xs text-slate-400 font-bold">Total Active Coupons</span>
+                <p className="text-2xl font-black text-white mt-1">{coupons.length}</p>
+                <p className="text-[10px] text-slate-500 mt-1">Live on website carousels</p>
+              </div>
+              <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800">
+                <span className="text-xs text-slate-400 font-bold">Last Scraper Sync</span>
+                <p className="text-sm font-bold text-emerald-400 mt-1">{syncStatus.lastSync}</p>
+                <p className="text-[10px] text-slate-500 mt-1">Automated daily cron</p>
+              </div>
+              <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-between">
+                <div>
+                  <span className="text-xs text-slate-400 font-bold">Force Live Sync</span>
+                  <p className="text-[10px] text-slate-500 mt-1">Crawl fresh deals now</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={triggerSync}
+                  disabled={syncing}
+                  className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-pink-500 to-rose-600 hover:opacity-90 text-xs font-bold text-white transition-all shadow-sm cursor-pointer disabled:opacity-50"
+                >
+                  {syncing ? "Crawling..." : "Sync Now"}
+                </button>
               </div>
             </div>
-          )}
 
-          {/* TAB 2: Affiliate & Credentials Manager */}
-          {activeTab === "keys" && (
-            <div className="space-y-8 animate-fade-in">
-              <div>
-                <h3 className="text-lg font-black text-slate-900 mb-1">Affiliate & Credentials Manager</h3>
-                <p className="text-xs text-slate-500 font-medium">
-                  Manage personal direct-approval tracking accounts and affiliate aggregators.
-                </p>
-              </div>
+            {/* Add Custom Coupon Form */}
+            <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-sm space-y-4">
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <Plus className="w-4 h-4 text-pink-400" />
+                <span>Add Verified Public Store Coupon</span>
+              </h3>
 
-              {/* SECTION A: Personal Affiliate Accounts */}
-              <div className="space-y-4 p-5 rounded-2xl border border-slate-200 bg-slate-50/80 shadow-xs">
-                <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
-                  <Link2 className="w-4 h-4 text-brand-indigo" />
-                  <h4 className="text-xs font-extrabold uppercase text-slate-800 tracking-wider">SECTION A: Personal Affiliate Accounts (Direct Approval)</h4>
-                </div>
-                {/* Form Tag */}
-                <form onSubmit={handleAddTag} className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-[10px] uppercase tracking-wider text-slate-700 font-bold">Platform Name</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. Amazon, Flipkart, Nike"
-                      value={newTag.store}
-                      onChange={e => setNewTag({ ...newTag, store: e.target.value })}
-                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-brand-indigo text-slate-900 placeholder-slate-400 font-medium"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] uppercase tracking-wider text-slate-700 font-bold">Tag ID / Associate ID</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. tagname-21"
-                      value={newTag.tag}
-                      onChange={e => setNewTag({ ...newTag, tag: e.target.value })}
-                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-brand-indigo text-slate-900 placeholder-slate-400 font-mono font-bold"
-                    />
-                  </div>
-                  <div className="space-y-1 flex items-end gap-2">
-                    <div className="flex-grow">
-                      <label className="text-[10px] uppercase tracking-wider text-slate-700 font-bold">Target Region</label>
-                      <select
-                        value={newTag.region}
-                        onChange={e => setNewTag({ ...newTag, region: e.target.value })}
-                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-brand-indigo text-slate-900 font-semibold cursor-pointer"
-                      >
-                        <option value="IN">🇮🇳 India (IN)</option>
-                        <option value="US">🇺🇸 USA (US)</option>
-                        <option value="GLOBAL">🌐 Global (All Regions)</option>
-                      </select>
-                    </div>
-                    <button
-                      type="submit"
-                      className="p-2 rounded-lg bg-brand-indigo text-white hover:bg-brand-indigo/90 active:scale-95 transition-all cursor-pointer shadow-md"
-                    >
-                      <Plus className="w-5 h-5" />
-                    </button>
-                  </div>
-                </form>
-
-                {/* Personal Tags List */}
-                <div className="space-y-2 mt-3">
-                  {personalTags.length === 0 ? (
-                    <p className="text-[11px] text-slate-500 italic">No personal tag IDs configured.</p>
-                  ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {personalTags.map(t => (
-                        <div key={t.id} className="flex items-center justify-between p-3 rounded-xl border border-slate-200 bg-white text-xs shadow-xs">
-                          <div>
-                            <span className="font-bold text-slate-900 block">{t.store}</span>
-                            <code className="text-[10px] text-slate-500 font-mono block mt-0.5">Tag: {t.tag}</code>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="px-2 py-0.5 rounded bg-slate-100 border border-slate-200 text-[10px] font-bold text-slate-700">
-                              {t.region === "IN" ? "🇮🇳 India" : t.region === "US" ? "🇺🇸 USA" : "🌐 Global"}
-                            </span>
-                            <button
-                              onClick={() => handleRemoveTag(t.id)}
-                              className="p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 cursor-pointer"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* SECTION B: Affiliate Aggregators */}
-              <div className="space-y-4 p-5 rounded-2xl border border-slate-200 bg-slate-50/80 shadow-xs">
-                <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
-                  <Database className="w-4 h-4 text-brand-violet" />
-                  <h4 className="text-xs font-extrabold uppercase text-slate-800 tracking-wider">SECTION B: Affiliate Aggregators (Cuelinks / EarnKaro)</h4>
+              <form onSubmit={handleAddCoupon} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
+                <div className="lg:col-span-1">
+                  <label className="block text-[11px] font-bold text-slate-400 mb-1">Coupon Code</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. FLAT200"
+                    value={newCoupon.code}
+                    onChange={(e) => setNewCoupon({ ...newCoupon, code: e.target.value.toUpperCase() })}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs font-bold text-white placeholder-slate-600 focus:outline-hidden focus:border-indigo-500"
+                  />
                 </div>
 
-                <form onSubmit={handleAddAggregator} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-[10px] uppercase tracking-wider text-slate-700 font-bold">Aggregator Name</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. Cuelinks, EarnKaro, Custom"
-                      value={newAggregator.name}
-                      onChange={e => setNewAggregator({ ...newAggregator, name: e.target.value })}
-                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-brand-indigo text-slate-900 placeholder-slate-400 font-medium"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] uppercase tracking-wider text-slate-700 font-bold">API Key / Token Value</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Paste API Secret Key"
-                      value={newAggregator.token}
-                      onChange={e => setNewAggregator({ ...newAggregator, token: e.target.value })}
-                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-brand-indigo text-slate-900 placeholder-slate-400 font-medium"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] uppercase tracking-wider text-slate-700 font-bold">Target Redirection URL Template (Optional)</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. https://custom.com/redirect?token={token}&url={url}"
-                      value={newAggregator.redirectUrl || ""}
-                      onChange={e => setNewAggregator({ ...newAggregator, redirectUrl: e.target.value })}
-                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-brand-indigo text-slate-900 placeholder-slate-400 font-mono text-[10px]"
-                    />
-                  </div>
-                  <div className="space-y-1 flex items-end gap-2">
-                    <div className="flex-grow">
-                      <label className="text-[10px] uppercase tracking-wider text-slate-700 font-bold">Target Region</label>
-                      <select
-                        value={newAggregator.region}
-                        onChange={e => setNewAggregator({ ...newAggregator, region: e.target.value })}
-                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-brand-indigo text-slate-900 font-semibold cursor-pointer"
-                      >
-                        <option value="IN">🇮🇳 India (IN)</option>
-                        <option value="US">🇺🇸 USA (US)</option>
-                        <option value="GLOBAL">🌐 Global (All Regions)</option>
-                      </select>
-                    </div>
-                    <button
-                      type="submit"
-                      className="p-2 rounded-lg bg-brand-violet text-white hover:bg-brand-violet/90 active:scale-95 transition-all cursor-pointer shadow-md"
-                    >
-                      <Plus className="w-5 h-5" />
-                    </button>
-                  </div>
-                </form>
-
-                {/* Aggregator List */}
-                <div className="space-y-2 mt-3">
-                  {aggregators.length === 0 ? (
-                    <p className="text-[11px] text-slate-500 italic">No affiliate aggregators configured.</p>
-                  ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {aggregators.map(a => (
-                        <div key={a.id} className="flex items-center justify-between p-3 rounded-xl border border-slate-200 bg-white text-xs shadow-xs">
-                          <div className="overflow-hidden mr-2">
-                            <span className="font-bold text-slate-900 block">{a.name}</span>
-                            <code className="text-[10px] text-slate-500 font-mono block mt-0.5 truncate">Token: {a.token ? "••••" + a.token.slice(-4) : "None"}</code>
-                            {a.redirectUrl && (
-                              <code className="text-[9px] text-brand-indigo font-mono block truncate mt-0.5">{a.redirectUrl}</code>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-2 shrink-0">
-                            <span className="px-2 py-0.5 rounded bg-slate-100 border border-slate-200 text-[10px] font-bold text-slate-700">
-                              {a.region === "IN" ? "🇮🇳 India" : a.region === "US" ? "🇺🇸 USA" : "🌐 Global"}
-                            </span>
-                            <button
-                              onClick={() => handleRemoveAggregator(a.id)}
-                              className="p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 cursor-pointer"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                <div className="lg:col-span-1">
+                  <label className="block text-[11px] font-bold text-slate-400 mb-1">Store Name</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Myntra / Amazon"
+                    value={newCoupon.store}
+                    onChange={(e) => setNewCoupon({ ...newCoupon, store: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs font-bold text-white placeholder-slate-600 focus:outline-hidden focus:border-indigo-500"
+                  />
                 </div>
-              </div>
-            </div>
-          )}
 
-          {/* TAB 3: Coupon Management Center */}
-          {activeTab === "coupons" && (
-            <div className="space-y-8 animate-fade-in">
-              <div>
-                <h3 className="text-lg font-black text-slate-900 mb-1">Coupon Management Center</h3>
-                <p className="text-xs text-slate-500 font-medium">
-                  Manage manual coupons and verify Cuelinks feed status integrations.
-                </p>
-              </div>
+                <div className="lg:col-span-2">
+                  <label className="block text-[11px] font-bold text-slate-400 mb-1">Discount Description</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Flat ₹200 off on fashion orders above ₹999"
+                    value={newCoupon.description}
+                    onChange={(e) => setNewCoupon({ ...newCoupon, description: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs font-medium text-white placeholder-slate-600 focus:outline-hidden focus:border-indigo-500"
+                  />
+                </div>
 
-              {/* Automatic Sync Dashboard */}
-              <div className="p-5 rounded-2xl border border-slate-200 bg-slate-50/90 relative overflow-hidden shadow-xs">
-                <div className="absolute top-0 right-0 w-24 h-24 bg-brand-violet/5 rounded-full blur-2xl pointer-events-none" />
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div className="flex items-start gap-3">
-                    <div className="p-2.5 rounded-xl bg-purple-100 text-purple-700 mt-0.5 shrink-0">
-                      <Database className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h4 className="text-xs font-extrabold text-slate-900 flex items-center gap-2">
-                        Automatic Voucher Feed Sync
-                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping inline-block" />
-                      </h4>
-                      <p className="text-[10px] text-slate-600 mt-1 font-medium">
-                        Cuelinks Status: <span className="text-emerald-700 font-bold">{syncStatus.cuelinksStatus}</span> | EarnKaro Status: <span className="text-emerald-700 font-bold">{syncStatus.earnkaroStatus}</span>
-                      </p>
-                      <div className="flex items-center gap-3 mt-2 text-[10px] text-slate-500 font-semibold">
-                        <span>Last Sync: {syncStatus.lastSync}</span>
-                        <span>•</span>
-                        <span>Total Live Vouchers: {syncStatus.totalLive}</span>
-                      </div>
-                    </div>
-                  </div>
+                <div className="lg:col-span-1">
+                  <label className="block text-[11px] font-bold text-slate-400 mb-1">Store Link</label>
+                  <input
+                    type="url"
+                    placeholder="https://..."
+                    value={newCoupon.link}
+                    onChange={(e) => setNewCoupon({ ...newCoupon, link: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs font-medium text-white placeholder-slate-600 focus:outline-hidden focus:border-indigo-500"
+                  />
+                </div>
 
+                <div className="lg:col-span-1 flex items-end">
                   <button
-                    onClick={triggerSync}
-                    disabled={syncing}
-                    className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-white border border-slate-200 hover:border-slate-300 text-xs font-bold text-slate-700 hover:text-slate-900 transition-all cursor-pointer shadow-xs disabled:opacity-50 shrink-0"
+                    type="submit"
+                    className="w-full py-2.5 rounded-xl bg-pink-600 hover:bg-pink-500 text-xs font-bold text-white transition-all shadow-sm cursor-pointer"
                   >
-                    <RefreshCw className={`w-3.5 h-3.5 ${syncing ? "animate-spin" : ""}`} />
-                    <span>{syncing ? "Syncing..." : "Sync & Purge Expired"}</span>
+                    + Add Code
                   </button>
                 </div>
-              </div>
+              </form>
+            </div>
 
-              {/* Add form */}
-              <div className="space-y-3">
-                <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-700">Add Manual Store Voucher</h4>
-                <form onSubmit={handleAddCoupon} className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 rounded-xl bg-slate-50 border border-slate-200">
-                  <div className="space-y-1">
-                    <label className="text-[10px] uppercase tracking-wider text-slate-700 font-bold">Store Name</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. Amazon, Zomato"
-                      value={newCoupon.store}
-                      onChange={e => setNewCoupon({ ...newCoupon, store: e.target.value })}
-                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-brand-indigo text-slate-900 placeholder-slate-400 font-medium"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] uppercase tracking-wider text-slate-700 font-bold">Coupon Code</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. AMZ150"
-                      value={newCoupon.code}
-                      onChange={e => setNewCoupon({ ...newCoupon, code: e.target.value })}
-                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-brand-indigo text-slate-900 placeholder-slate-400 font-mono font-bold"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] uppercase tracking-wider text-slate-700 font-bold">Discount / Offer Description</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. Flat Rs. 150 cashback"
-                      value={newCoupon.description}
-                      onChange={e => setNewCoupon({ ...newCoupon, description: e.target.value })}
-                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-brand-indigo text-slate-900 placeholder-slate-400 font-medium"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] uppercase tracking-wider text-slate-700 font-bold">Redirection Destination URL</label>
-                    <input
-                      type="url"
-                      required
-                      placeholder="https://amazon.in/redeem"
-                      value={newCoupon.link}
-                      onChange={e => setNewCoupon({ ...newCoupon, link: e.target.value })}
-                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-brand-indigo text-slate-900 placeholder-slate-400 font-medium"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] uppercase tracking-wider text-slate-700 font-bold">Expiry Date (YYYY-MM-DD)</label>
-                    <input
-                      type="date"
-                      placeholder="YYYY-MM-DD"
-                      value={newCoupon.expiry}
-                      onChange={e => setNewCoupon({ ...newCoupon, expiry: e.target.value })}
-                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-brand-indigo text-slate-900 font-medium"
-                    />
-                  </div>
-                  <div className="space-y-1 flex items-end gap-2">
-                    <div className="flex-grow">
-                      <label className="text-[10px] uppercase tracking-wider text-slate-700 font-bold">Target Region</label>
-                      <select
-                        value={newCoupon.region}
-                        onChange={e => setNewCoupon({ ...newCoupon, region: e.target.value })}
-                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-brand-indigo text-slate-900 font-semibold cursor-pointer"
-                      >
-                        <option value="IN">🇮🇳 India (IN)</option>
-                        <option value="US">🇺🇸 USA (US)</option>
-                        <option value="GLOBAL">🌐 Global (All Regions)</option>
-                      </select>
+            {/* Current Active Coupons Grid */}
+            <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-sm space-y-4">
+              <h3 className="text-sm font-bold text-white flex items-center justify-between">
+                <span>Active Live Coupons ({coupons.length})</span>
+                <span className="text-[11px] text-slate-400 font-normal">Displayed on Homepage & Results</span>
+              </h3>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                {coupons.map((c) => (
+                  <div key={c.id} className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 flex flex-col justify-between space-y-2">
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <span className="px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-300 font-mono font-bold text-xs border border-purple-500/20">
+                          {c.code}
+                        </span>
+                        <span className="text-[11px] font-bold text-slate-300">{c.store}</span>
+                      </div>
+                      <p className="text-[11px] text-slate-400 mt-2 line-clamp-2 leading-relaxed">
+                        {c.description}
+                      </p>
                     </div>
-                    <button
-                      type="submit"
-                      className="p-2 rounded-lg bg-brand-violet text-white hover:bg-brand-violet/90 active:scale-95 transition-all cursor-pointer shadow-md"
-                    >
-                      <Plus className="w-5 h-5" />
-                    </button>
+                    <div className="flex items-center justify-between pt-2 border-t border-slate-900">
+                      <span className="text-[10px] text-slate-500">{c.region || "IN"}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveCoupon(c.id)}
+                        className="p-1 rounded-md text-slate-500 hover:text-rose-400 transition-colors"
+                        title="Delete Coupon"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
-                </form>
+                ))}
               </div>
+            </div>
+          </div>
+        )}
 
-              {/* Coupons List */}
-              <div className="space-y-3">
-                <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-700">Active Coupons List</h4>
-                
-                {coupons.length === 0 ? (
-                  <div className="text-center py-8 text-xs text-slate-500 border border-dashed border-slate-200 rounded-xl bg-slate-50/50">
-                    No active coupons. Register a coupon above.
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 gap-3">
-                    {coupons.map((couponItem) => (
-                      <div key={couponItem.id} className="flex flex-col md:flex-row md:items-center justify-between p-4 rounded-xl bg-white border border-slate-200 hover:border-brand-indigo/30 shadow-xs transition-all gap-4">
-                        <div className="flex items-start gap-3 overflow-hidden">
-                          <div className="p-2.5 rounded-lg bg-purple-100 text-purple-700 shrink-0">
-                            <Tag className="w-4 h-4" />
-                          </div>
-                          <div className="overflow-hidden">
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs font-extrabold text-slate-900 uppercase font-mono px-2 py-0.5 rounded bg-slate-100 border border-slate-200">
-                                {couponItem.code}
-                              </span>
-                              <span className="text-xs text-slate-700 font-bold">{couponItem.store}</span>
-                            </div>
-                            <p className="text-xs text-slate-800 font-semibold mt-1 truncate">{couponItem.description}</p>
-                            <div className="flex items-center gap-3 mt-1 text-[10px] text-slate-500">
-                              <span className="truncate max-w-[200px]">{couponItem.link}</span>
-                              {couponItem.expiry && (
-                                <>
-                                  <span>•</span>
-                                  <span className="text-rose-600 font-bold">Expires: {couponItem.expiry}</span>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        </div>
+        {/* TAB 4: AFFILIATE KEYS & STORE IDENTIFIERS */}
+        {activeTab === "keys" && (
+          <div className="space-y-6">
+            
+            <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-sm space-y-4">
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <Key className="w-4 h-4 text-amber-400" />
+                <span>Personal Store Affiliate Tags (Direct Commission IDs)</span>
+              </h3>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Add your direct store associate tags (like Amazon Store Tag `myshop-21`). When a user buys a product from that store, your direct tag is injected automatically!
+              </p>
 
-                        <div className="flex items-center justify-between md:justify-end gap-3 shrink-0">
-                          <span className="flex items-center gap-1 px-2 py-0.5 rounded bg-slate-100 border border-slate-200 text-[10px] font-bold text-slate-700">
-                            {couponItem.region === "IN" ? "🇮🇳 India" : couponItem.region === "US" ? "🇺🇸 USA" : "🌐 Global"}
-                          </span>
-                          <button
-                            onClick={() => handleRemoveCoupon(couponItem.id)}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-all cursor-pointer"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+              <form onSubmit={handleAddTag} className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-400 mb-1">Store Name</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Amazon / Flipkart"
+                    value={newTag.store}
+                    onChange={(e) => setNewTag({ ...newTag, store: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs font-bold text-white placeholder-slate-600 focus:outline-hidden focus:border-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-400 mb-1">Associate Tag / ID</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. zippy-21"
+                    value={newTag.tag}
+                    onChange={(e) => setNewTag({ ...newTag, tag: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs font-bold text-white placeholder-slate-600 focus:outline-hidden focus:border-indigo-500"
+                  />
+                </div>
+                <div className="flex items-end">
+                  <button
+                    type="submit"
+                    className="w-full py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-xs font-bold text-white transition-all shadow-sm cursor-pointer"
+                  >
+                    + Add Direct Store Tag
+                  </button>
+                </div>
+              </form>
+
+              {personalTags.length > 0 && (
+                <div className="pt-3 border-t border-slate-800 space-y-2">
+                  <h4 className="text-xs font-bold text-slate-300">Configured Store Tags ({personalTags.length})</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {personalTags.map(t => (
+                      <div key={t.id} className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between">
+                        <div>
+                          <span className="text-xs font-bold text-white">{t.store}</span>
+                          <p className="text-[11px] font-mono text-amber-400 mt-0.5">{t.tag}</p>
                         </div>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveTag(t.id)}
+                          className="p-1 rounded-md text-slate-500 hover:text-rose-400"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     ))}
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
-          )}
 
-        </div>
+            {/* Aggregator Credentials */}
+            <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-sm space-y-4">
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <Link2 className="w-4 h-4 text-indigo-400" />
+                <span>Aggregator Network Credentials (Master Affiliates)</span>
+              </h3>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Connect master aggregator keys (EarnKaro, CueLinks, Impact.com) to automatically monetize long-tail merchant outbound links.
+              </p>
+
+              <form onSubmit={handleAddAggregator} className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-400 mb-1">Network Name</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="EarnKaro / CueLinks / Impact"
+                    value={newAggregator.name}
+                    onChange={(e) => setNewAggregator({ ...newAggregator, name: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs font-bold text-white placeholder-slate-600 focus:outline-hidden focus:border-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-400 mb-1">Publisher ID / Token</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="API Token or Publisher ID"
+                    value={newAggregator.token}
+                    onChange={(e) => setNewAggregator({ ...newAggregator, token: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs font-bold text-white placeholder-slate-600 focus:outline-hidden focus:border-indigo-500"
+                  />
+                </div>
+                <div className="flex items-end">
+                  <button
+                    type="submit"
+                    className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white transition-all shadow-sm cursor-pointer"
+                  >
+                    + Add Network Token
+                  </button>
+                </div>
+              </form>
+
+              {aggregators.length > 0 && (
+                <div className="pt-3 border-t border-slate-800 space-y-2">
+                  <h4 className="text-xs font-bold text-slate-300">Configured Networks ({aggregators.length})</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {aggregators.map(a => (
+                      <div key={a.id} className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between">
+                        <div>
+                          <span className="text-xs font-bold text-white">{a.name}</span>
+                          <p className="text-[11px] font-mono text-indigo-300 mt-0.5">{a.token}</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveAggregator(a.id)}
+                          className="p-1 rounded-md text-slate-500 hover:text-rose-400"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
       </main>
 
-      {/* Footer */}
-      <footer className="relative z-10 w-full py-8 text-center text-xs text-slate-500 border-t border-slate-200 glass-panel border-x-0 border-b-0 bg-white/90">
-        <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-1">
-            <ShoppingBag className="w-3.5 h-3.5 text-brand-indigo" />
-            <span>AI powered shopping engine</span>
+      {/* 4. LOG DETAIL MODAL (INSPECT INDIVIDUAL REQUEST) */}
+      <AnimatePresence>
+        {selectedLog && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedLog(null)}
+              className="fixed inset-0 bg-black/80 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="relative z-10 w-full max-w-lg p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-2xl space-y-4"
+            >
+              <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+                <div className="flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-indigo-400" />
+                  <h3 className="text-sm font-bold text-white">Search Audit Log Detail</h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedLog(null)}
+                  className="p-1 rounded-md text-slate-400 hover:text-white"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="space-y-2 text-xs font-mono">
+                <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-800/80">
+                  <span className="text-slate-500 block text-[10px] uppercase font-bold">Query</span>
+                  <span className="text-white font-sans font-bold text-sm">{selectedLog.query}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="p-2 rounded-lg bg-slate-950 border border-slate-800/80">
+                    <span className="text-slate-500 block text-[10px]">Source IP</span>
+                    <span className="text-slate-200">{selectedLog.ip}</span>
+                  </div>
+                  <div className="p-2 rounded-lg bg-slate-950 border border-slate-800/80">
+                    <span className="text-slate-500 block text-[10px]">Latency</span>
+                    <span className="text-emerald-400 font-bold">{selectedLog.latencyMs} ms</span>
+                  </div>
+                  <div className="p-2 rounded-lg bg-slate-950 border border-slate-800/80">
+                    <span className="text-slate-500 block text-[10px]">Cache Engine</span>
+                    <span className={selectedLog.isCacheHit ? "text-emerald-400 font-bold" : "text-indigo-400"}>
+                      {selectedLog.isCacheHit ? "CACHE HIT ⚡" : "LIVE UPSTREAM 🌐"}
+                    </span>
+                  </div>
+                  <div className="p-2 rounded-lg bg-slate-950 border border-slate-800/80">
+                    <span className="text-slate-500 block text-[10px]">Anomaly Evaluation</span>
+                    <span className={selectedLog.anomalyType === "NORMAL" ? "text-slate-300" : "text-amber-400 font-bold"}>
+                      {selectedLog.anomalyType}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-slate-800 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setSelectedLog(null)}
+                  className="px-4 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-white"
+                >
+                  Close Log
+                </button>
+              </div>
+            </motion.div>
           </div>
-          <div>
-            <span>Powered by Next.js & Framer Motion. &copy; 2026 ShopSmart AI.</span>
-          </div>
-        </div>
-      </footer>
+        )}
+      </AnimatePresence>
+
     </div>
   );
 }
