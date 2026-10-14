@@ -78,7 +78,7 @@ The Coupon & Deals Discovery subsystem of ShopSmart AI allows users to find, eva
 ## 3. Production Deployment & Automation Pipeline
 
 ### A. Existing Connected Services
-1. **ScraperAPI:** `SCRAPERAPI_KEY=c062c77fb597678b33bf1849c34c989a` (4,954 active credits) for real-time coupon scraping.
+1. **ScraperAPI:** `SCRAPERAPI_KEY` (configured via server-side environment secret) for real-time coupon scraping.
 2. **Upstash Redis:** `UPSTASH_REDIS_REST_URL` & `UPSTASH_REDIS_REST_TOKEN` (Active cloud cache & database).
 3. **Google Gemini:** `GEMINI_API_KEY` (Active Vision OCR & AI Chat).
 

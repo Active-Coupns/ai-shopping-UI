@@ -1,4 +1,21 @@
 import { NextResponse } from 'next/server';
+import crypto from 'crypto';
+import { redis } from '@/services/redis';
+
+// Allow up to 300 seconds (5 minutes) for deep diffusion GPU inference
+export const maxDuration = 300;
+import { getAuth } from '@clerk/nextjs/server';
+import {
+  checkRateLimit,
+  reserveVtonFreeQuota,
+  commitVtonFreeQuota,
+  releaseVtonFreeQuota,
+  acquireDistributedVtonSlot,
+  releaseDistributedVtonSlot,
+  checkVtonIpAbuse,
+  incrementVtonIpUsage,
+  extractTrustedClientIp
+} from '@/services/rateLimiter';
 import {
   validateAndSanitizeImage,
   safeFetchImage,
@@ -26,6 +43,10 @@ function normalizeCategory(cat) {
 
 export async function POST(request) {
   let releaseSlot = null;
+  let attemptId = null;
+  let quotaReserved = false;
+  let quotaCommitted = false;
+  let authenticatedUserId = null;
   const startTime = Date.now();
 
   try {
@@ -35,19 +56,220 @@ export async function POST(request) {
       return NextResponse.json({ success: false, error: "Access denied: Unauthorized cross-origin request." }, { status: 403 });
     }
 
-    const { userImageBase64, garmentImageUrl, garmentCategory, garmentTitle } = await request.json();
+    // 2. Server-Side Cryptographic Clerk Session Verification (Zero Trust in Client Headers)
+    let userId = null;
+    try {
+      const authObj = getAuth(request);
+      userId = authObj?.userId || null;
+    } catch (authErr) {
+      safeLog('VTON Auth Gate', `Authentication resolution error: ${authErr.message}`);
+      userId = null;
+    }
 
-    if (!userImageBase64 || !garmentImageUrl) {
+    if (!userId) {
+      safeLog('VTON Auth Gate', 'Rejected unauthenticated try-on request');
+      return NextResponse.json(
+        { success: false, error: "UNAUTHORIZED", message: "Sign-in required to use Virtual Try-On." },
+        { status: 401 }
+      );
+    }
+    authenticatedUserId = userId;
+
+    // 3. Distributed Rate Limiting (Fail-Closed)
+    // Evaluated before expensive body/image payload parsing, resource lock, or GPU work.
+    try {
+      const minuteLimit = await checkRateLimit({
+        namespace: "vton_render_minute",
+        identifier: userId,
+        limit: 2,
+        windowSeconds: 60
+      });
+
+      if (minuteLimit.isBackendError) {
+        safeLog('VTON Limiter', 'Limiter backend failure (503 fail-closed)', { userId });
+        return NextResponse.json(
+          {
+            success: false,
+            error: "RATE_LIMITER_UNAVAILABLE",
+            message: "Virtual Try-On service is temporarily busy. Please retry shortly.",
+            retryAfter: minuteLimit.retryAfter || 60
+          },
+          {
+            status: 503,
+            headers: { "Retry-After": String(minuteLimit.retryAfter || 60) }
+          }
+        );
+      }
+
+      if (!minuteLimit.allowed) {
+        safeLog('VTON Limiter', 'User exceeded minute rate limit', { userId, retryAfter: minuteLimit.retryAfter });
+        return NextResponse.json(
+          {
+            success: false,
+            error: "RATE_LIMIT_EXCEEDED",
+            message: `Too many try-on requests. Please wait ${minuteLimit.retryAfter}s before trying on another outfit.`,
+            retryAfter: minuteLimit.retryAfter,
+            limit: minuteLimit.limit,
+            remaining: minuteLimit.remaining,
+            resetInSeconds: minuteLimit.resetInSeconds
+          },
+          {
+            status: 429,
+            headers: { "Retry-After": String(minuteLimit.retryAfter) }
+          }
+        );
+      }
+    } catch (limiterErr) {
+      safeLog('VTON Limiter', `Limiter unexpected exception: ${limiterErr.message}`);
+      return NextResponse.json(
+        {
+          success: false,
+          error: "RATE_LIMITER_UNAVAILABLE",
+          message: "Virtual Try-On service is temporarily busy. Please retry shortly.",
+          retryAfter: 60
+        },
+        {
+          status: 503,
+          headers: { "Retry-After": "60" }
+        }
+      );
+    }
+
+    // 4. Request Payload Parsing
+    let body;
+    try {
+      body = await request.json();
+    } catch (parseErr) {
+      return NextResponse.json({ success: false, error: "INVALID_JSON", message: "Invalid JSON request body." }, { status: 400 });
+    }
+
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return NextResponse.json({ success: false, error: "INVALID_PAYLOAD", message: "Request body must be a JSON object." }, { status: 400 });
+    }
+
+    const { userImageBase64, garmentImageUrl, garmentCategory, garmentTitle: rawGarmentTitle } = body;
+
+    // Sanitize garmentTitle to prevent prompt injection and script tags
+    const garmentTitle = typeof rawGarmentTitle === 'string'
+      ? rawGarmentTitle.replace(/<[^>]*>?/gm, '').replace(/[\r\n\t]+/g, ' ').trim().slice(0, 120)
+      : "Tailored Fit";
+
+    if (!userImageBase64 || typeof userImageBase64 !== "string" || !garmentImageUrl || typeof garmentImageUrl !== "string") {
       return NextResponse.json({ success: false, error: "Both user snapshot and garment image are required." }, { status: 400 });
     }
 
-    // 2. Identify client / user for atomic concurrency gating
-    const clientIp = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'anon_client';
-    const userId = request.headers.get('x-clerk-user-id') || clientIp;
+    // Attempt ID Sanitization & Generation
+    const candidateAttemptId = typeof body?.attemptId === "string" ? body.attemptId.trim() : "";
+    attemptId = /^[a-zA-Z0-9_\-]{8,128}$/.test(candidateAttemptId)
+      ? candidateAttemptId
+      : crypto.randomUUID();
 
-    // 3. Acquire Atomic GPU Slot & Concurrency Lock (OWASP API4)
+    // 5. Anti-Sybil Multi-Account Check (Max 2 free try-ons from same IP across all accounts)
+    const clientIp = extractTrustedClientIp(request);
+    const ipCheck = await checkVtonIpAbuse(clientIp, 2);
+    if (!ipCheck.allowed) {
+      safeLog('VTON Limiter', 'Blocked multi-account abuse from IP', { clientIp, userId });
+      return NextResponse.json(
+        {
+          success: false,
+          error: "IP_FREE_TRIAL_EXHAUSTED",
+          message: "This network/device has reached the limit of 2 free AI Try-Ons. Heavy GPU computing demand is currently high. Please upgrade to a Zippy Sachet pack (₹10 for 5 try-ons) to continue.",
+          upgradeRequired: true,
+          freeTier: { limit: 2, used: 2, remaining: 0 }
+        },
+        { status: 403 }
+      );
+    }
+
+    // 5b. Account Lifetime Free Try-On Quota Reservation (2 free try-ons per account)
+    const quotaRes = await reserveVtonFreeQuota({
+      identifier: userId,
+      attemptId,
+      limit: 2,
+      windowId: "account_lifetime"
+    });
+
+    if (!quotaRes.allowed && !quotaRes.isBackendError) {
+      safeLog('VTON Limiter', 'User exceeded lifetime free quota', { userId, quotaRes });
+      return NextResponse.json(
+        {
+          success: false,
+          error: "FREE_TIER_LIMIT_EXCEEDED",
+          message: "You have used both of your 2 free AI Try-Ons for this account.",
+          upgradeRequired: true,
+          freeTier: {
+            limit: 2,
+            used: quotaRes.confirmedCount || 2,
+            remaining: 0
+          }
+        },
+        { status: 403 }
+      );
+    }
+
+    quotaReserved = true;
+
+    // 6. Acquire Atomic Distributed GPU Slot & Concurrency Lock (Cluster-wide Redis + Local Queue)
     try {
-      releaseSlot = await globalResourceManager.acquire(userId);
+      const distributedSlot = await acquireDistributedVtonSlot({
+        userId,
+        attemptId,
+        maxGlobal: 5,
+        leaseTtlSeconds: 360
+      });
+
+      if (distributedSlot.isBackendError) {
+        safeLog('VTON Resource Gate', 'Distributed concurrency lock backend failure (503 fail-closed)', { userId });
+        return NextResponse.json(
+          {
+            success: false,
+            error: "RATE_LIMITER_UNAVAILABLE",
+            message: "Virtual Try-On service is temporarily busy. Please retry shortly.",
+            retryAfter: 15
+          },
+          {
+            status: 503,
+            headers: { "Retry-After": "15" }
+          }
+        );
+      }
+
+      if (!distributedSlot.success) {
+        if (distributedSlot.reason === 'USER_CONCURRENCY_LIMIT') {
+          return NextResponse.json(
+            {
+              success: false,
+              error: "USER_CONCURRENCY_LIMIT",
+              message: "You already have an active Try-On in progress. Please wait."
+            },
+            {
+              status: 429,
+              headers: { "Retry-After": "10" }
+            }
+          );
+        } else {
+          return NextResponse.json(
+            {
+              success: false,
+              error: "QUEUE_EXHAUSTED",
+              message: "VTON processing servers are currently at maximum capacity. Please retry shortly."
+            },
+            {
+              status: 503,
+              headers: { "Retry-After": "15" }
+            }
+          );
+        }
+      }
+
+      // Also acquire local process gate for metrics & in-process tracking
+      const localRelease = await globalResourceManager.acquire(userId);
+      releaseSlot = async () => {
+        try {
+          localRelease();
+        } catch (_) {}
+        await releaseDistributedVtonSlot({ userId, attemptId });
+      };
     } catch (resourceErr) {
       safeLog('VTON Resource Gate', resourceErr.message, { userId, statusCode: resourceErr.statusCode || 429 });
       return NextResponse.json(
@@ -59,7 +281,7 @@ export async function POST(request) {
       );
     }
 
-    // 4. Validate & Sanitize User Image (Magic Bytes + Pre-Decode Pixel Clamp + EXIF Strip)
+    // 6. Validate & Sanitize User Image (Magic Bytes + Pre-Decode Pixel Clamp + EXIF Strip)
     let sanitizedPerson;
     try {
       sanitizedPerson = await validateAndSanitizeImage(userImageBase64);
@@ -68,7 +290,7 @@ export async function POST(request) {
       return NextResponse.json({ success: false, error: valErr.message }, { status: 400 });
     }
 
-    // 5. Ingest & Validate Garment Image (Hardened SSRF Protection)
+    // 7. Ingest & Validate Garment Image (Hardened SSRF Protection)
     let sanitizedGarmentB64;
     try {
       if (garmentImageUrl.startsWith('data:image/')) {
@@ -87,44 +309,79 @@ export async function POST(request) {
       return NextResponse.json({ success: false, error: ssrfErr.message }, { status: 400 });
     }
 
-    // 6. Ephemeral In-Memory Cache Check (Max 15-min retention target, 0 GPU cost for repeat looks)
+    // 8. Ephemeral In-Memory Cache Check (Max 15-min retention target, 0 GPU cost for repeat looks)
     const cacheKey = `${sanitizedPerson.base64.slice(0, 40)}_${garmentImageUrl.slice(-40)}`;
     const cachedResult = ephemeralVtonCache.get(cacheKey);
     if (cachedResult) {
       safeLog('VTON Render', 'Served look from ephemeral cache', { garmentTitle });
+      if (quotaReserved) {
+        await releaseVtonFreeQuota({ identifier: userId, attemptId });
+        quotaReserved = false;
+      }
+      if (releaseSlot) {
+        try {
+          await releaseSlot();
+          releaseSlot = null;
+        } catch (_) {}
+      }
       return NextResponse.json({
         success: true,
         renderedImageUrl: cachedResult,
         processingTimeMs: Date.now() - startTime,
         engine: "PixelAPI-VTON-Cache",
-        garmentTitle: garmentTitle || "Tailored Fit"
+        garmentTitle: garmentTitle || "Tailored Fit",
+        freeTier: {
+          limit: 2,
+          used: quotaRes.confirmedCount || 0,
+          remaining: Math.max(0, 2 - (quotaRes.confirmedCount || 0)),
+          cached: true
+        }
       });
     }
 
-    // 7. Dispatch to Isolated VTON Inference Worker
+    // 9. Dispatch to Isolated VTON Inference Worker
     const PIXELAPI_KEY = process.env.PIXELAPI_KEY || "";
+    const MODAL_VTON_ENDPOINT = process.env.MODAL_VTON_ENDPOINT || "";
     const mappedCategory = normalizeCategory(garmentCategory);
 
+    // Primary Engine: Official PixelAPI Neural Virtual Try-On
     if (PIXELAPI_KEY) {
       try {
         safeLog('VTON Render', 'Submitting job to PixelAPI worker', { category: mappedCategory, garmentTitle });
 
-        const submitRes = await fetch("https://api.pixelapi.dev/v1/virtual-tryon", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${PIXELAPI_KEY}`,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            person_image: sanitizedPerson.base64,
-            garment_image: sanitizedGarmentB64,
-            category: mappedCategory,
-            n_samples: 1,
-            n_steps: 22
-          })
+        let submitRes = null;
+        const requestPayload = JSON.stringify({
+          person_image: sanitizedPerson.base64,
+          garment_image: sanitizedGarmentB64,
+          category: mappedCategory,
+          n_samples: 1,
+          n_steps: 22,
+          ephemeral: true,
+          auto_delete: true
         });
 
-        if (submitRes.ok) {
+        // Try with 1 automatic retry if safety check has a momentary 503 hiccup
+        for (let attempt = 1; attempt <= 2; attempt++) {
+          submitRes = await fetch("https://api.pixelapi.dev/v1/virtual-tryon", {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${PIXELAPI_KEY}`,
+              "Content-Type": "application/json"
+            },
+            body: requestPayload
+          });
+
+          if (submitRes.ok) break;
+
+          if (submitRes.status === 503 && attempt === 1) {
+            safeLog('VTON Render', 'PixelAPI temporary 503 detected, performing automatic 2.5s retry...');
+            await new Promise(r => setTimeout(r, 2500));
+          } else {
+            break;
+          }
+        }
+
+        if (submitRes && submitRes.ok) {
           const submitData = await submitRes.json();
           const jobId = submitData.job_id || submitData.id;
 
@@ -158,48 +415,54 @@ export async function POST(request) {
             }
 
             if (finalOutputUrl) {
+              const commitRes = await commitVtonFreeQuota({
+                identifier: userId,
+                attemptId,
+                limit: 2
+              });
+              if (commitRes.success) {
+                quotaCommitted = true;
+              }
+              incrementVtonIpUsage(clientIp).catch(() => {});
               ephemeralVtonCache.set(cacheKey, finalOutputUrl);
-              safeLog('VTON Render', 'Job completed successfully', { processingTimeMs: Date.now() - startTime });
+              safeLog('VTON Render', 'Job completed successfully', { processingTimeMs: Date.now() - startTime, quotaCommitted });
+              const currentUsage = commitRes.confirmedCount || (quotaRes.confirmedCount + 1);
               return NextResponse.json({
                 success: true,
                 renderedImageUrl: finalOutputUrl,
                 processingTimeMs: Date.now() - startTime,
                 engine: "PixelAPI-Neural-VTON",
-                garmentTitle: garmentTitle || "Tailored Fit"
+                garmentTitle: garmentTitle || "Tailored Fit",
+                freeTier: {
+                  limit: 2,
+                  used: currentUsage,
+                  remaining: Math.max(0, 2 - currentUsage)
+                }
               });
             } else {
               return NextResponse.json({
                 success: false,
-                error: "High-resolution AI render is taking a little longer than usual. Please retry in a moment.",
+                error: "High-resolution AI render is taking a little longer than usual due to high GPU demand. Please retry in a moment.",
                 processingTimeMs: Date.now() - startTime
               });
             }
           }
         } else {
           const errData = await submitRes.json().catch(() => ({}));
-          const errMsg = errData?.detail?.message || errData?.detail?.error || "PixelAPI request error";
+          const errMsg = errData?.detail?.message || errData?.detail?.error || errData?.friendly_message || "GPU Busy";
           safeLog('VTON Render', 'Worker rejected request', { status: submitRes.status, errMsg });
-
-          if (submitRes.status === 402 || (typeof errMsg === 'string' && errMsg.includes('trial_cap_reached'))) {
-            return NextResponse.json({
-              success: false,
-              isQuotaExceeded: true,
-              error: "PixelAPI Free Trial REST limit reached (100 credits). Please add a ₹200 top-up at pixelapi.dev to continue unlimited try-ons.",
-              processingTimeMs: Date.now() - startTime
-            });
-          }
 
           return NextResponse.json({
             success: false,
-            error: errMsg,
+            error: "Virtual Dressing Room is at peak capacity right now! Our AI stylists are serving thousands of shoppers. Your try-on quota has NOT been deducted. Please try again in 1-2 minutes.",
             processingTimeMs: Date.now() - startTime
           });
         }
       } catch (workerErr) {
-        safeLog('VTON Render', 'Worker network error', { err: workerErr.message });
+        safeLog('VTON Render', 'Worker network error', { err: workerErr?.message || 'Unknown network error' });
         return NextResponse.json({
           success: false,
-          error: workerErr.message,
+          error: "Virtual Dressing Room is currently experiencing peak traffic rush. Your try-on credit was preserved. Please try again in a few moments.",
           processingTimeMs: Date.now() - startTime
         });
       }
@@ -212,12 +475,69 @@ export async function POST(request) {
     });
 
   } catch (err) {
-    safeLog('VTON Render API Error', err.message);
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+    safeLog('VTON Render API Error', err?.message || 'Unexpected exception');
+    return NextResponse.json({
+      success: false,
+      error: "An unexpected error occurred while processing the virtual try-on. Please try again."
+    }, { status: 500 });
   } finally {
+    // If quota was reserved but render failed or aborted before commit, release reservation idempotently
+    if (quotaReserved && !quotaCommitted && authenticatedUserId && attemptId) {
+      try {
+        await releaseVtonFreeQuota({ identifier: authenticatedUserId, attemptId });
+      } catch (relErr) {
+        safeLog('VTON Limiter', `Failed to release free slot: ${relErr.message}`);
+      }
+    }
     // Crucial: Always release concurrency lock in finally block
     if (releaseSlot) {
-      releaseSlot();
+      try {
+        await releaseSlot();
+      } catch (slotErr) {
+        safeLog('VTON Limiter', `Failed to release concurrency slot: ${slotErr.message}`);
+      }
     }
+  }
+}
+
+/**
+ * GET: Lightweight endpoint to query live remaining free try-ons for the client
+ */
+export async function GET(request) {
+  try {
+    const clientIp = extractTrustedClientIp(request);
+    let userId = null;
+    try {
+      const authObj = getAuth(request);
+      userId = authObj?.userId || null;
+    } catch {}
+
+    const ipCheck = await checkVtonIpAbuse(clientIp, 2);
+    const ipUsed = ipCheck.count || 0;
+
+    let userUsed = 0;
+    if (userId) {
+      const userQuotaRaw = await redis.get(`vton:free_quota:account_lifetime:${userId}`).catch(() => "0");
+      userUsed = parseInt(userQuotaRaw || "0", 10);
+    }
+
+    const effectiveUsed = Math.min(2, Math.max(ipUsed, userUsed));
+    const remaining = Math.max(0, 2 - effectiveUsed);
+
+    return NextResponse.json({
+      success: true,
+      freeTier: {
+        limit: 2,
+        used: effectiveUsed,
+        remaining,
+        isIpExhausted: !ipCheck.allowed,
+        isUserExhausted: userUsed >= 2
+      }
+    }, { status: 200 });
+  } catch (err) {
+    return NextResponse.json({
+      success: true,
+      freeTier: { limit: 2, used: 0, remaining: 2 }
+    }, { status: 200 });
   }
 }

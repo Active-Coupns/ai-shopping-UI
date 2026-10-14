@@ -1,24 +1,114 @@
 import { NextResponse } from "next/server";
-
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
+import { getAuth } from "@clerk/nextjs/server";
+import { checkRateLimit, checkSharedIpQuota } from "@/services/rateLimiter";
 
 /**
  * In-Chat Shopping Agent Endpoint
  * Handles live Q&A, multi-product comparison, and autonomous intent shift detection.
  */
 export async function POST(request) {
+  // 1. Server-Side Cryptographic Clerk Session Verification (Zero Trust in Client Headers)
+  let userId = null;
   try {
-    const body = await request.json();
-    const userMessage = body.userMessage || body.message || "";
-    const displayedProducts = body.displayedProducts || (body.products || []).slice(0, 3);
-    const allPoolProducts = body.allPoolProducts || body.products || [];
-    const searchQuery = body.searchQuery || "";
-    const conversationHistory = body.conversationHistory || [];
-    const sessionLedger = body.sessionLedger || null;
+    const authObj = getAuth(request);
+    userId = authObj?.userId || null;
+  } catch (authErr) {
+    console.warn("[AI Chat] Authentication resolution error:", authErr.message);
+    userId = null;
+  }
 
-    if (!userMessage || typeof userMessage !== "string") {
+  if (!userId) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: "UNAUTHORIZED",
+        message: "Sign-in required to use AI Shopping Assistant chat."
+      },
+      { status: 401 }
+    );
+  }
+
+  // 2. Distributed Rate Limiting & Quota Protection (Fail-Closed)
+  try {
+    // Short anti-spam window: 20 requests per 60 seconds (prevents automated bot flooding while keeping user chat unlimited)
+    const minuteLimit = await checkRateLimit({
+      namespace: "ai_chat_minute",
+      identifier: userId,
+      limit: 20,
+      windowSeconds: 60
+    });
+
+    if (minuteLimit.isBackendError) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "RATE_LIMITER_UNAVAILABLE",
+          message: "AI Shopping Assistant is temporarily busy. Please retry shortly.",
+          retryAfter: minuteLimit.retryAfter || 60
+        },
+        {
+          status: 503,
+          headers: { "Retry-After": String(minuteLimit.retryAfter || 60) }
+        }
+      );
+    }
+
+    if (!minuteLimit.allowed) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "RATE_LIMIT_EXCEEDED",
+          message: `Too many chat messages sent quickly. Please wait ${minuteLimit.retryAfter}s before sending another message.`,
+          retryAfter: minuteLimit.retryAfter,
+          limit: minuteLimit.limit,
+          remaining: minuteLimit.remaining,
+          resetInSeconds: minuteLimit.resetInSeconds
+        },
+        {
+          status: 429,
+          headers: { "Retry-After": String(minuteLimit.retryAfter) }
+        }
+      );
+    }
+  } catch (limiterErr) {
+    console.warn("[AI Chat] Limiter unexpected exception:", limiterErr.message);
+    return NextResponse.json(
+      {
+        success: false,
+        error: "RATE_LIMITER_UNAVAILABLE",
+        message: "AI Shopping Assistant is temporarily busy. Please retry shortly.",
+        retryAfter: 60
+      },
+      {
+        status: 503,
+        headers: { "Retry-After": "60" }
+      }
+    );
+  }
+
+  try {
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json({ success: false, error: "INVALID_JSON", message: "Invalid JSON request body." }, { status: 400 });
+    }
+
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return NextResponse.json({ success: false, error: "INVALID_PAYLOAD", message: "Request body must be a JSON object." }, { status: 400 });
+    }
+
+    const rawUserMessage = body.userMessage || body.message || "";
+    if (!rawUserMessage || typeof rawUserMessage !== "string" || !rawUserMessage.trim()) {
       return NextResponse.json({ error: "userMessage is required" }, { status: 400 });
     }
+    // Hard input clamp (max 500 characters) to prevent token exhaustion and prompt injection
+    const userMessage = rawUserMessage.trim().slice(0, 500);
+    const displayedProducts = body.displayedProducts || (body.products || []).slice(0, 3);
+    const allPoolProducts = body.allPoolProducts || body.products || [];
+    const searchQuery = (body.searchQuery || "").slice(0, 150);
+    const conversationHistory = (body.conversationHistory || []).slice(-10);
+    const sessionLedger = body.sessionLedger || null;
 
     const displayedSummary = displayedProducts.slice(0, 3).map((p, idx) => ({
       displayedIndex: idx,
@@ -132,6 +222,29 @@ YOUR MISSION & DECISION FLOW:
      And in your "reply", confirm what you did naturally (e.g. "Maine screen par 16GB RAM wale laptops filter kar diye hain...").
    - If the user is NOT requesting a filter change, set "screenAction": null.
 
+ROLE & PURPOSE BOUNDARY & CATEGORY SPECIFIC RULES:
+- Your identity is strictly ShopSmart AI, a personal shopping consultant and buyer guide.
+- Your sole purpose is product discovery, specifications comparison, deal guidance, and purchase advice.
+- You are NOT a general-purpose writing assistant, code generator, or creative essayist.
+- If the user asks for out-of-scope non-shopping requests (such as writing general long-form essays, stories, blog posts, programming code, poems, or prompt engineering), gently and politely decline in 1-2 friendly sentences and guide them back to shopping.
+
+CATEGORY RULES (CRITICAL):
+1. MEDICINES (Prescription & Generic, e.g. Dolo, Paracetamol, Pantocid, Telma, Metformin):
+   - INFORMATION & USAGE EXPLANATION: If the user asks what a medicine is used for or why it is prescribed, explain clearly and neutrally based on pharmaceutical facts (e.g. active salt composition, general therapeutic use like fever/pain/GERD/blood pressure).
+   - ZERO MEDICAL PRESCRIPTION / DOSAGE: Never prescribe dosages, never say 'take this 2 times a day', never diagnose illnesses.
+   - MANDATORY MEDICAL DISCLAIMER: Always conclude with a gentle disclaimer: "Kripya koi bhi dawa lene se pehle apne registered doctor ya physician se salah zaroor lein."
+   - PRICE & GENERIC SAVINGS: Help compare store prices (Tata 1mg vs Apollo Pharmacy vs PharmEasy) and mention generic salt availability objectively.
+   - RECOMMENDATION POLICY: When user asks "which one is best?", clarify that medicines should strictly be chosen based on doctor's prescription, but point out verified stores and price comparisons on screen.
+
+2. HEALTH SUPPLEMENTS (Whey Protein, Creatine, Multivitamins, Fish Oil):
+   - SAFE NUTRITIONAL GUIDANCE: You MAY guide the user based on objective facts (e.g., Whey Isolate vs Concentrate for lactose sensitivity, unflavored creatine monohydrate benefits, protein per scoop).
+   - SAFE RECOMMENDATIONS: Clarify their requirements (beginner vs regular trainer, budget, lactose tolerance) before suggesting. When recommending, prioritize products with clean ingredients, certified lab test reports (Labdoor/Trustified/Informed Choice), and good price-per-gram protein.
+   - DISCLAIMER: Remind them to check with a nutritionist or coach according to their daily diet.
+
+3. GENERAL E-COMMERCE & TECH (Fashion, Electronics, Appliances):
+   - Unbiased buyer advocate behavior (price-to-performance, specifications, user reviews, battery, display).
+
+
 LANGUAGE & TONE POLICY:
 - We strictly use natural English or modern conversational Hinglish (standard daily spoken Hindi with tech terms like RAM, Battery, Display, Budget, Coding in English).
 - DO NOT use archaic, bookish, or formal Sanskritized Hindi words. Keep it friendly, empathetic, and authentic.
@@ -155,9 +268,8 @@ Respond ONLY with a valid JSON object matching this schema:
 
     let aiResponse = null;
     const GROQ_API_KEY = process.env.GROQ_API_KEY || "";
-    const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || "";
 
-    // 1. Prioritize Ultra-Fast Groq Engine (Sub-Second Response)
+    // 1. Ultra-Fast Groq Engine (Sub-Second Response)
     if (GROQ_API_KEY) {
       const groqModels = ["qwen/qwen3.8-27b", "openai/gpt-oss-120b"];
       for (const gModel of groqModels) {
@@ -202,95 +314,7 @@ Respond ONLY with a valid JSON object matching this schema:
       }
     }
 
-    // 2. Fallback to OpenRouter AI (Verified Working & Free)
-    if (!aiResponse && OPENROUTER_API_KEY) {
-      const orModels = ["cohere/north-mini-code:free", "liquid/lfm-2.5-2.6b:free", "dots-studio/dots-3-note-preview:free"];
-      for (const orModel of orModels) {
-        try {
-          const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
-              "HTTP-Referer": "http://localhost:3000",
-              "X-Title": "ShopSmart AI"
-            },
-            body: JSON.stringify({
-              model: orModel,
-              messages: [{ role: "user", content: prompt }],
-              temperature: 0.2,
-              max_tokens: 1000
-            }),
-            signal: AbortSignal.timeout(25000)
-          });
-
-          if (!res.ok) {
-            const errBody = await res.text().catch(() => "");
-            console.warn(`[AI Chat] OpenRouter ${orModel} status ${res.status}:`, errBody);
-            continue;
-          }
-
-          const data = await res.json();
-          const rawText = data.choices?.[0]?.message?.content;
-          if (rawText) {
-            let cleaned = rawText.replace(/```json/gi, "").replace(/```/g, "").trim();
-            const firstBrace = cleaned.indexOf("{");
-            const lastBrace = cleaned.lastIndexOf("}");
-            if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-              cleaned = cleaned.substring(firstBrace, lastBrace + 1);
-            }
-            aiResponse = JSON.parse(cleaned);
-            console.log(`[AI Chat] Successfully generated dynamic response with ${orModel}`);
-            break;
-          }
-        } catch (err) {
-          console.warn(`[AI Chat] OpenRouter ${orModel} error:`, err.message);
-        }
-      }
-    }
-
-    // 2. Fallback to Gemini AI if OpenRouter was unavailable
-    if (!aiResponse && GEMINI_API_KEY) {
-      const models = ["gemini-flash-latest", "gemini-2.5-flash-lite", "gemini-pro-latest"];
-      for (const model of models) {
-        try {
-          const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
-          const res = await fetch(url, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              contents: [{ parts: [{ text: prompt }] }],
-              generationConfig: {
-                temperature: 0.2,
-                responseMimeType: "application/json",
-                maxOutputTokens: 1200
-              }
-            }),
-            signal: AbortSignal.timeout(15000)
-          });
-
-          if (!res.ok) continue;
-
-          const data = await res.json();
-          const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (rawText) {
-            let cleaned = rawText.replace(/```json/gi, "").replace(/```/g, "").trim();
-            const firstBrace = cleaned.indexOf("{");
-            const lastBrace = cleaned.lastIndexOf("}");
-            if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-              cleaned = cleaned.substring(firstBrace, lastBrace + 1);
-            }
-            aiResponse = JSON.parse(cleaned);
-            console.log(`[AI Chat] Successfully generated dynamic response with Gemini ${model}`);
-            break;
-          }
-        } catch (err) {
-          console.warn(`[AI Chat] Gemini ${model} error:`, err.message);
-        }
-      }
-    }
-
-    // High-Fidelity Heuristic Fallback if AI unavailable
+    // High-Fidelity Heuristic Fallback if Groq unavailable or exhausted
     if (!aiResponse) {
       const msgLower = userMessage.toLowerCase();
       const hasTabletIntent = /\b(tablet|ipad|stylus|drawing|late\s+kar|movies\s+dekhna|handwritten|pen)\b/i.test(msgLower);

@@ -1,18 +1,20 @@
 import { NextResponse } from "next/server";
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
-const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || "";
-const secretKey = process.env.CLERK_SECRET_KEY || "";
-
 const isPublicRoute = createRouteMatcher([
   "/",
   "/sign-in(.*)",
   "/sign-up(.*)",
   "/reset-password(.*)",
+  "/admin(.*)",
   "/api/search(.*)",
   "/api/redirect(.*)",
   "/api/ai(.*)",
-  "/api/telemetry/(.*)"
+  "/api/telemetry/(.*)",
+  "/api/admin/(.*)",
+  "/api/vton/(.*)",
+  "/api/user/(.*)",
+  "/api/compliance/(.*)"
 ]);
 
 const handler = clerkMiddleware(
@@ -20,10 +22,6 @@ const handler = clerkMiddleware(
     if (!isPublicRoute(req)) {
       await auth.protect();
     }
-  },
-  {
-    publishableKey,
-    secretKey,
   }
 );
 

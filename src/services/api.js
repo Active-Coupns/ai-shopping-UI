@@ -286,6 +286,7 @@ export async function searchProducts(query, country = "IN", isUrlLookup = false,
       coupons: data.coupons || [],
       intent: data.intent || "E-COMMERCE",
       error: data.error || null,
+      message: data.message || null,
       newToken: data.newToken || null,
       searchesLeft: data.searchesLeft !== undefined ? data.searchesLeft : 10
     };

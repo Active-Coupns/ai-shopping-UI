@@ -18,6 +18,59 @@
 
 ## 📅 Daily Changelog & Feature Timeline
 
+### 🗓️ 2026-10-14 (Major Release — Zero-Data Retention VTON Security, 3-Domain AI Engine, Dual-Layer Anti-Abuse Quota & DPDP Act Compliance)
+
+* **Git Commit**: `feat: zero-data retention vton security, 3-domain ai fine-tuning, dual-layer anti-abuse quota, dpdp compliance, and smart purchase terminal`
+* **Status**: ✅ 100% Tested, Verified & Ready for GitHub `main` (Admin Mission Control held for separate release)
+* **Key Focus**: Core Security Overhaul, Ephemeral In-Memory VTON Privacy, 3-Domain AI Fine-Tuning (E-Commerce, Healthcare/Medicine, Fashion), Dual-Layer Quota Shield (IP + User), DPDP Act 2023 / GDPR Account & Data Deletion, Smart Purchase Terminal & Context-Aware Zero-Results Radar.
+
+---
+
+#### 🚀 Release Highlights (2026-10-14):
+
+1. **VTON Ephemeral Privacy & Zero-Data Retention Security Shield (`src/lib/vtonSecurity.js`)**:
+   - **Zero Database / S3 Storage Policy**: User selfies are processed strictly in-memory (RAM buffer) and permanently purged immediately after inference. Zero photo persistence to disk, S3, or database.
+   - **Strict SSRF Defense**: Exact FQDN Allowlist (no wildcards: `assets.myntassets.com`, `assets.ajio.com`, `m.media-amazon.com`, etc.) + blocking of all private IPv4/IPv6 subnets, loopbacks (`127.0.0.1`, `::1`), and cloud metadata services (`169.254.169.254`) with DNS rebinding resolution check.
+   - **Magic Bytes Validation**: Binary signature verification (JPEG `FF D8 FF`, PNG `89 50 4E 47`, WebP) to block disguised scripts or malicious uploads.
+   - **EXIF Metadata Stripping**: Sharp pipeline automatically strips GPS geolocation, camera serial numbers, and device hardware metadata before any inference.
+   - **503 Safety Microservice Auto-Retry**: Built-in silent retry for transient safety filter drops without consuming user quota or leaking errors.
+
+2. **3-Domain AI Chat Engine & Unified Session Ledger**:
+   - **In-Chat Shopping Agent (`/api/ai/chat`)**: Fine-tuned unbiased buyer advocate handling live catalog analysis, inventory pool discovery (up to 15 background deals), and strict prompt-injection defenses.
+   - **Healthcare & Medicine Guardrails**: Prescription drugs and medical queries automatically inject licensed chemist advisories and prohibit unauthorized medical claims.
+   - **Pre-Search Conversational AI Guide (`/api/ai/concierge`)**: Conversational pre-search optimizer distilling casual, long Hinglish prompts into sharp 2-4 word algorithmic shopping queries without hallucinations.
+   - **Fashion Virtual Trial Room Stylist (`/api/vton/stylist`, `fashionStylist.js`)**: Groq LLM integration with occasion-based styling (casual, formal, festive, date-night) recommending real items from the live fashion pool.
+   - **Unified AI Session Ledger (`aiSessionLedger`)**: Shared session context across all 3 AI agents so the user never has to repeat themselves.
+
+3. **Multi-Tier Rate Limiting & Anti-Abuse Quota Shield (`src/services/rateLimiter.js`)**:
+   - **Dual-Layer VTON Protection**: Hard cap of max 2 free try-ons per user lifetime AND max 2 free try-ons per IP address, stopping incognito, account-hopping, and bot attacks.
+   - **Search Rate Limiter**: Max 10 live searches per IP.
+   - **Chat Anti-Spam Sliding Window**: 20 requests per 60 seconds preventing automated flooding while keeping real user conversation uninterrupted.
+   - **Privacy Hashing**: IP addresses are SHA-256 hashed before storing in Redis (`rl:{hash}:...`) so raw IPs are never stored in plaintext.
+
+4. **In-App Account Deletion & DPDP Act 2023 / GDPR Compliance**:
+   - **In-App Account & Data Deletion (`/api/user/delete-account`, `UnifiedAccountModal.jsx`)**: Profile setting enabling users to permanently wipe their account, Redis session cache, bookmarks, and Clerk credentials with confirmation safety dialog.
+   - **Regulatory Compliance Audit Engine (`/api/compliance/consent`, `compliance.js`)**: Immutable audit logging of user IP hash, user agent, consent type, and version for regulatory compliance.
+
+5. **Smart Purchase Terminal (Money Saver Stacking Engine)**:
+   - Dedicated Single-Product Money Saver Terminal (`SmartPurchaseTerminal.jsx`, `/api/terminal/analyze`, `terminalStrategyService.js`).
+   - 4-layer discount stacking: Arbitrage price compare + verified coupon code auto-copy + 5% bank card savings + student/corporate perks.
+   - Direct launch from any product URL or search query.
+
+6. **Category-Aware 'Product Not Found' Smart Radar (`ProductNotFoundState.jsx`)**:
+   - Contextual fallback replacing generic restocking messages:
+     - **Healthcare/Medicine**: Local pharmacy advisory + 1-click search links on Tata 1mg & Apollo Pharmacy + common healthcare alternatives.
+     - **Fashion**: 1-click "Open AI Virtual Trial Room" button + trending style chips.
+     - **Electronics**: Model typo guidance, budget categories, and ANC earbuds/phones shortcuts.
+     - **High-Traffic Notice**: Polite busy notice with 1-click "⚡ Retry Search Now" button.
+
+7. **Zippy 3D Mascot Character Branding & Production Polish**:
+   - 3D Interactive Mascot component (`ZippyInteractiveMascot.jsx`) with dynamic persona modes (Shopping, Fashion Stylist, Pharmacy Doctor, Gym Fitness).
+   - Polite, high-trust server messaging across all endpoints.
+   - 58MB legacy dummy catalog cleaned from repository.
+
+---
+
 ### 🗓️ 2026-10-09 (Major Release — Today's Active Deals Engine, Vision Cart Scanner Hub & Exact PDP Routing)
 
 * **Git Commit**: `feat: today active deals engine, exact PDP routing, dynamic flash badges, and coupon hub lock`

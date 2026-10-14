@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { getAuth } from "@clerk/nextjs/server";
+import { checkRateLimit, checkSharedIpQuota } from "@/services/rateLimiter";
 import { calculateBestCartCoupon } from "@/services/couponService";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
@@ -7,11 +9,143 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
  * Multimodal Cart Screenshot Analyzer using Gemini Vision
  */
 export async function POST(req) {
+  // 1. Server-Side Cryptographic Clerk Session Verification
+  let userId = null;
   try {
-    const body = await req.json();
+    const authObj = getAuth(req);
+    userId = authObj?.userId || null;
+  } catch {
+    console.warn("[Cart Analysis API] Authentication resolution error.");
+    userId = null;
+  }
+
+  if (!userId) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: "UNAUTHORIZED",
+        message: "Sign-in required to analyze cart screenshots."
+      },
+      { status: 401 }
+    );
+  }
+
+  // 2. Distributed Rate Limiting & Quota Protection (Fail-Closed, 5/24 hours)
+  try {
+    const dailyLimit = await checkRateLimit({
+      namespace: "cart_analyze_daily",
+      identifier: userId,
+      limit: 5,
+      windowSeconds: 86400
+    });
+
+    if (!dailyLimit || typeof dailyLimit !== "object" || dailyLimit.isBackendError) {
+      const retrySec = Number.isInteger(dailyLimit?.retryAfter) && dailyLimit.retryAfter > 0 ? dailyLimit.retryAfter : 60;
+      return NextResponse.json(
+        {
+          success: false,
+          error: "RATE_LIMITER_UNAVAILABLE",
+          message: "Cart analysis service is temporarily busy. Please retry shortly.",
+          retryAfter: retrySec
+        },
+        {
+          status: 503,
+          headers: { "Retry-After": String(retrySec) }
+        }
+      );
+    }
+
+    if (!dailyLimit.allowed) {
+      const retrySec = Number.isInteger(dailyLimit.retryAfter) && dailyLimit.retryAfter > 0 ? dailyLimit.retryAfter : 60;
+      const hoursRemaining = Math.max(1, Math.ceil((dailyLimit.resetInSeconds || 86400) / 3600));
+      return NextResponse.json(
+        {
+          success: false,
+          error: "RATE_LIMIT_EXCEEDED",
+          message: `Daily cart analysis limit reached (5/5 requests). Your quota resets in ${hoursRemaining} hours.`,
+          retryAfter: retrySec,
+          limit: dailyLimit.limit,
+          remaining: dailyLimit.remaining,
+          resetInSeconds: dailyLimit.resetInSeconds
+        },
+        {
+          status: 429,
+          headers: { "Retry-After": String(retrySec) }
+        }
+      );
+    }
+
+    // Shared IP Rolling 24-Hour Quota (10 requests per rolling 24h, Fail-Closed)
+    const ipQuotaResult = await checkSharedIpQuota({
+      request: req,
+      limit: 10,
+      windowSeconds: 86400
+    });
+
+    if (!ipQuotaResult || typeof ipQuotaResult !== "object" || ipQuotaResult.isBackendError) {
+      const retrySec = Number.isInteger(ipQuotaResult?.retryAfter) && ipQuotaResult.retryAfter > 0 ? ipQuotaResult.retryAfter : 60;
+      return NextResponse.json(
+        {
+          success: false,
+          error: "RATE_LIMITER_UNAVAILABLE",
+          message: "Cart analysis service is temporarily busy. Please retry shortly.",
+          retryAfter: retrySec
+        },
+        {
+          status: 503,
+          headers: { "Retry-After": String(retrySec) }
+        }
+      );
+    }
+
+    if (!ipQuotaResult.allowed) {
+      const retrySec = Number.isInteger(ipQuotaResult.retryAfter) && ipQuotaResult.retryAfter > 0 ? ipQuotaResult.retryAfter : 60;
+      return NextResponse.json(
+        {
+          success: false,
+          error: "IP_QUOTA_EXHAUSTED",
+          message: "Daily limit reached for this network/device across free tools. Please try again later.",
+          retryAfter: retrySec,
+          limit: ipQuotaResult.limit,
+          remaining: ipQuotaResult.remaining
+        },
+        {
+          status: 429,
+          headers: { "Retry-After": String(retrySec) }
+        }
+      );
+    }
+  } catch {
+    console.error("[Cart Analysis API] Limiter exception occurred.");
+    return NextResponse.json(
+      {
+        success: false,
+        error: "RATE_LIMITER_UNAVAILABLE",
+        message: "Cart analysis service is temporarily busy. Please retry shortly.",
+        retryAfter: 60
+      },
+      {
+        status: 503,
+        headers: { "Retry-After": "60" }
+      }
+    );
+  }
+
+  try {
+    let body;
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json({ success: false, error: "INVALID_JSON", message: "Invalid JSON request body." }, { status: 400 });
+    }
+
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return NextResponse.json({ success: false, error: "INVALID_PAYLOAD", message: "Request body must be a JSON object." }, { status: 400 });
+    }
+
     const { imageBase64, mimeType = "image/jpeg" } = body;
 
-    if (!imageBase64) {
+    if (!imageBase64 || typeof imageBase64 !== "string") {
       return NextResponse.json(
         { error: "Image data is required" },
         { status: 400 }

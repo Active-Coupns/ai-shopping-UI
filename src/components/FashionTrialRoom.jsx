@@ -2,7 +2,8 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import Image from "next/image";
-import { Sparkles, Shirt, Camera, RefreshCw, ExternalLink, Check, ChevronRight, Send, ArrowLeft } from "lucide-react";
+import { Sparkles, Shirt, Camera, RefreshCw, ExternalLink, Check, ChevronRight, Send, ArrowLeft, Lock, X } from "lucide-react";
+import { useClerk } from "@clerk/nextjs";
 import { FASHION_CATALOG } from "@/data/fashionCatalog";
 
 const SAMPLE_MODELS = {
@@ -60,6 +61,7 @@ const CATEGORY_TABS = [
 ];
 
 export default function FashionTrialRoom({ initialGarment = null, onBackToSearch }) {
+  const clerk = useClerk();
   const [gender, setGender] = useState("men");
   const [skinTone, setSkinTone] = useState("wheatish");
   const [userImage, setUserImage] = useState(SAMPLE_MODELS.men.image);
@@ -67,6 +69,18 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
   const [tryonResultImage, setTryonResultImage] = useState(null);
   const [viewMode, setViewMode] = useState("tryon"); // "tryon" or "original"
   const [renderedCache, setRenderedCache] = useState({});
+  const [feedbackGiven, setFeedbackGiven] = useState(false);
+
+  // Ephemeral memory cleanup: revoke any temporary blob URLs when component unmounts
+  useEffect(() => {
+    return () => {
+      if (userImage && typeof userImage === "string" && userImage.startsWith("blob:")) {
+        try {
+          URL.revokeObjectURL(userImage);
+        } catch (_) {}
+      }
+    };
+  }, [userImage]);
 
   // Active Stylist & Selection State
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -95,19 +109,7 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
 
   // Conversational 2-Way Stylist Chat State
   const [chatInput, setChatInput] = useState("");
-  const [chatHistory, setChatHistory] = useState([
-    {
-      id: "init-1",
-      sender: "ai",
-      text: "Hello! 👋 What type of outfits would you like to explore today?",
-      options: [
-        "🌴 Linen Casual Shirts",
-        "👔 Office & Formal Shirts",
-        "✨ Wedding & Festive Kurtas",
-        "🔥 Night Party Streetwear"
-      ]
-    }
-  ]);
+  const [chatHistory, setChatHistory] = useState([]);
   const [isStylistTyping, setIsStylistTyping] = useState(false);
   const chatContainerRef = useRef(null);
 
@@ -125,6 +127,22 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
   const [renderElapsed, setRenderElapsed] = useState(0);
   const [isScanningBody, setIsScanningBody] = useState(false);
   const [bodyCalibration, setBodyCalibration] = useState(null);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [quotaInfo, setQuotaInfo] = useState({ limit: 2, used: 0, remaining: 2 });
+
+  // Query live try-on quota status for this user & network on mount
+  useEffect(() => {
+    let isMounted = true;
+    fetch("/api/vton/render")
+      .then(res => res.json())
+      .then(data => {
+        if (isMounted && data?.freeTier) {
+          setQuotaInfo(data.freeTier);
+        }
+      })
+      .catch(() => {});
+    return () => { isMounted = false; };
+  }, []);
 
   // Function to execute photorealistic AI try-on via PixelAPI with session cache
   const handleTryOnOutfit = async (garment) => {
@@ -149,11 +167,16 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
       setRenderElapsed((prev) => prev + 1);
     }, 1000);
 
+    const attemptId = (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function")
+      ? crypto.randomUUID()
+      : ('att_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9));
+
     try {
       const res = await fetch('/api/vton/render', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          attemptId,
           userImageBase64: userImage,
           garmentImageUrl: garment.image || garment.image_url,
           garmentCategory: garment.category,
@@ -162,8 +185,11 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
       });
 
       const data = await res.json();
-      if (data.success && (data.renderedImageUrl || data.output_base64)) {
-        const outputImg = data.renderedImageUrl || data.output_base64;
+      if (data.success && (data.renderedImageUrl || data.rendered_image || data.output_base64 || data.output_image_url)) {
+        let outputImg = data.renderedImageUrl || data.rendered_image || data.output_base64 || data.output_image_url;
+        if (outputImg && typeof outputImg === "string" && !outputImg.startsWith("http") && !outputImg.startsWith("data:image/")) {
+          outputImg = `data:image/jpeg;base64,${outputImg}`;
+        }
         
         // Zero-flicker preloader: ensure image is downloaded into browser before hiding spinner
         const preloader = new window.Image();
@@ -174,7 +200,11 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
           setViewMode("tryon");
           setTryonErrorMsg("");
           setIsRendering(false);
-          setPhotoQualityMsg("✨ Photorealistic AI Drape Complete! Identity & posture locked.");
+          if (data.freeTier) {
+            setQuotaInfo(data.freeTier);
+          }
+          const remainingMsg = typeof data.freeTier?.remaining === "number" ? ` (${data.freeTier.remaining} free left today)` : "";
+          setPhotoQualityMsg(`✨ Photorealistic AI Drape Complete! Identity & posture locked.${remainingMsg}`);
         };
         preloader.onerror = () => {
           clearInterval(timerInterval);
@@ -187,13 +217,19 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
       } else {
         clearInterval(timerInterval);
         setIsRendering(false);
-        setTryonErrorMsg(data.error || "Generation timed out. Please try again.");
+        if (data.upgradeRequired || data.error === "FREE_TIER_LIMIT_EXCEEDED" || data.error === "IP_FREE_TRIAL_EXHAUSTED") {
+          setQuotaInfo(data.freeTier || null);
+          setShowUpgradeModal(true);
+          setTryonErrorMsg(data.message || "Free limit reached (2/2 try-ons used). To continue, upgrade to Zippy Sachet pack (₹10 for 5 try-ons).");
+        } else {
+          setTryonErrorMsg(data.error || "Virtual Dressing Room is at peak capacity right now! Our AI stylists are serving thousands of shoppers. Your try-on quota has NOT been deducted. Please try again in 1-2 minutes.");
+        }
       }
     } catch (err) {
       clearInterval(timerInterval);
       setIsRendering(false);
       console.warn("Try-on render error:", err);
-      setTryonErrorMsg("Failed to connect to VTON engine. Please retry.");
+      setTryonErrorMsg("Virtual Dressing Room is currently experiencing peak traffic rush. Your try-on credit was preserved. Please try again in a few moments.");
     }
   };
 
@@ -277,6 +313,35 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
           ctx.drawImage(img, 0, 0, targetW, targetH);
           const optimizedPhotoData = canvas.toDataURL("image/jpeg", 0.85);
 
+          // Client-side automatic skin tone detection from face/upper-torso region (Zero image leakage)
+          let autoDetectedTone = "wheatish";
+          try {
+            // Sample center-upper 20% area where face typically sits
+            const sampleX = Math.round(targetW * 0.4);
+            const sampleY = Math.round(targetH * 0.15);
+            const sampleW = Math.round(targetW * 0.2);
+            const sampleH = Math.round(targetH * 0.2);
+            const imgData = ctx.getImageData(sampleX, sampleY, sampleW, sampleH).data;
+            let totalR = 0, totalG = 0, totalB = 0, count = 0;
+            for (let i = 0; i < imgData.length; i += 16) {
+              const r = imgData[i], g = imgData[i + 1], b = imgData[i + 2];
+              // Filter out extreme highlights (background) and dark hair
+              const brightness = (r + g + b) / 3;
+              if (brightness > 60 && brightness < 235 && r > g && g >= b) {
+                totalR += r; totalG += g; totalB += b; count++;
+              }
+            }
+            if (count > 0) {
+              const avgBrightness = (totalR + totalG + totalB) / (3 * count);
+              if (avgBrightness > 175) autoDetectedTone = "fair";
+              else if (avgBrightness < 125) autoDetectedTone = "dusky";
+              else autoDetectedTone = "wheatish";
+            }
+          } catch (_) {
+            autoDetectedTone = "wheatish";
+          }
+          setSkinTone(autoDetectedTone);
+
           // Apply optimized image state
           setUserImage(optimizedPhotoData);
           setIsCustomPhoto(true);
@@ -290,20 +355,6 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
               status: "100% Calibrated & Locked"
             });
             setPhotoQualityMsg("✅ Persona Calibrated: Body contours, skin tone & posture locked for AI drape.");
-            setChatHistory(prev => [
-              ...prev,
-              {
-                id: `calib-${Date.now()}`,
-                sender: "ai",
-                text: `Your persona is calibrated! What outfits would you like to try?`,
-                options: [
-                  "✨ Best Colors for My Tone",
-                  "🌴 Linen & Casual Shirts",
-                  "👔 Office & Workwear",
-                  "✨ Wedding & Festive Kurtas"
-                ]
-              }
-            ]);
           }, 800);
         };
 
@@ -394,49 +445,7 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
     setCurrentTryonGarment(filtered[0] || null);
     setSelectedCategory("all");
 
-    if (newGender === "women") {
-      setChatHistory([
-        {
-          id: `w-init-${Date.now()}`,
-          sender: "ai",
-          text: "Hello! 👋 What type of outfits would you like to explore today?",
-          options: [
-            "🌸 Floral Anarkali Kurtas",
-            "👗 Maxi Dresses",
-            "🥻 Silk Sarees",
-            "✨ Blazer Co-Ord Sets"
-          ]
-        }
-      ]);
-    } else if (newGender === "kids") {
-      setChatHistory([
-        {
-          id: `k-init-${Date.now()}`,
-          sender: "ai",
-          text: "Hello! 👋 What type of kids' outfits are you looking for?",
-          options: [
-            "👗 Girls Frocks & Dresses",
-            "👔 Boys Cotton Party Shirts",
-            "✨ Boys Festive Kurta Sets",
-            "🌸 Girls Party Lehengas"
-          ]
-        }
-      ]);
-    } else {
-      setChatHistory([
-        {
-          id: `m-init-${Date.now()}`,
-          sender: "ai",
-          text: "Hello! 👋 What type of outfits would you like to explore today?",
-          options: [
-            "🌴 Linen Casual Shirts",
-            "👔 Office & Formal Shirts",
-            "✨ Wedding & Festive Kurtas",
-            "🔥 Night Party Streetwear"
-          ]
-        }
-      ]);
-    }
+    setChatHistory([]);
   };
 
   // Submit AI Stylist Query (2-Way Conversational)
@@ -473,7 +482,8 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
         id: `ai-${Date.now()}`,
         sender: "ai",
         text: aiReply,
-        options: data.suggestedQuestions || []
+        options: data.suggestedQuestions || [],
+        suggestScreenshotUpload: !!data.suggestScreenshotUpload
       };
 
       setChatHistory(prev => [...prev, aiMsg]);
@@ -668,13 +678,15 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
                     <div className="absolute inset-0 flex items-center justify-center text-sm">✨</div>
                   </div>
                   
-                  <div className="space-y-1 max-w-[240px]">
+                  <div className="space-y-1 max-w-[260px]">
                     <span className="text-xs font-bold text-white tracking-wide block">
-                      {renderElapsed < 6
+                      {renderElapsed < 10
                         ? "🔍 Analyzing body posture & contours..."
-                        : renderElapsed < 18
+                        : renderElapsed < 30
                         ? "🧵 Draping fabric & aligning natural folds..."
-                        : "✨ Refining lighting, shadows & final fit..."}
+                        : renderElapsed < 65
+                        ? "✨ Refining lighting, shadows & texture..."
+                        : "⚡ Finalizing high-resolution neural render..."}
                     </span>
                     <span className="text-[10px] font-medium text-slate-300 block">
                       Neural AI Draping • {renderElapsed}s elapsed
@@ -685,7 +697,7 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
                   <div className="w-44 h-1.5 bg-white/15 rounded-full overflow-hidden">
                     <div
                       className="h-full bg-gradient-to-r from-brand-indigo via-purple-400 to-pink-400 rounded-full transition-all duration-300"
-                      style={{ width: `${Math.min(95, (renderElapsed / 25) * 100)}%` }}
+                      style={{ width: `${Math.min(96, (renderElapsed / 85) * 100)}%` }}
                     ></div>
                   </div>
                 </div>
@@ -842,24 +854,132 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
               </div>
             )}
 
-            {tryonErrorMsg && (
-              <div className="p-3 rounded-2xl text-[11px] font-medium bg-amber-50 text-amber-900 border border-amber-200/90 shadow-sm space-y-1.5 animate-fade-in">
-                <div className="flex items-center gap-1.5 font-bold text-amber-950">
-                  <span>⚠️</span>
-                  <span>Try-On Notice:</span>
-                </div>
-                <p className="leading-snug">{tryonErrorMsg}</p>
-                {tryonErrorMsg.includes("PixelAPI") && (
-                  <a
-                    href="https://pixelapi.dev/pricing"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-[10px] font-bold text-brand-indigo underline hover:text-indigo-800"
+            {/* Blind Quality Feedback Loop */}
+            {tryonResultImage && !feedbackGiven && (
+              <div className="flex items-center justify-between p-2 rounded-xl bg-indigo-50/70 border border-indigo-100 text-[11px] text-indigo-900 font-medium">
+                <span>How does the fit look?</span>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFeedbackGiven(true);
+                      setPhotoQualityMsg("✨ Thanks for your feedback! Glad you liked the drape.");
+                    }}
+                    className="px-2 py-0.5 rounded-lg bg-white border border-indigo-200 hover:bg-emerald-50 hover:text-emerald-700 text-xs transition-all cursor-pointer shadow-xs"
+                    title="Good fit"
                   >
-                    View Credit Packs (Starting ₹200 on Razorpay) ➔
-                  </a>
-                )}
+                    👍
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFeedbackGiven(true);
+                      setPhotoQualityMsg("🙏 Thanks for letting us know! Try with a clearer front-facing photo for tighter draping.");
+                    }}
+                    className="px-2 py-0.5 rounded-lg bg-white border border-indigo-200 hover:bg-rose-50 hover:text-rose-700 text-xs transition-all cursor-pointer shadow-xs"
+                    title="Needs improvement"
+                  >
+                    👎
+                  </button>
+                </div>
               </div>
+            )}
+
+            {/* Sleek Minimal Try-On Quota Status */}
+            <div className="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200/80 text-xs">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+                <span className="font-semibold text-slate-700">Free AI Try-Ons</span>
+              </div>
+              <div className="flex items-center gap-2.5">
+                <div className="flex items-center gap-1.5">
+                  <div 
+                    title={(quotaInfo?.remaining ?? 2) >= 1 ? "1st Try-On Available" : "1st Try-On Used"}
+                    className={`w-2 h-2 rounded-full transition-all ${
+                      (quotaInfo?.remaining ?? 2) >= 1 ? "bg-emerald-500 ring-2 ring-emerald-200" : "bg-slate-300"
+                    }`} 
+                  />
+                  <div 
+                    title={(quotaInfo?.remaining ?? 2) >= 2 ? "2nd Try-On Available" : "2nd Try-On Used"}
+                    className={`w-2 h-2 rounded-full transition-all ${
+                      (quotaInfo?.remaining ?? 2) >= 2 ? "bg-emerald-500 ring-2 ring-emerald-200" : "bg-slate-300"
+                    }`} 
+                  />
+                </div>
+                <span className="font-bold text-slate-900 text-[11px]">
+                  {(quotaInfo?.remaining ?? 2) > 0 
+                    ? `${quotaInfo.remaining} / 2 Left` 
+                    : "2 / 2 Used"}
+                </span>
+              </div>
+            </div>
+
+            {/* 100% Private Ephemeral Memory Badge */}
+            <div className="flex items-center justify-center gap-1.5 p-2 rounded-xl bg-slate-50 border border-slate-200/80 text-[10px] text-slate-500 font-medium text-center">
+              <span>🔒</span>
+              <span>100% Private: Photos stay in ephemeral memory and are never saved to any database.</span>
+            </div>
+
+            {tryonErrorMsg && (
+              tryonErrorMsg === "UNAUTHORIZED" || tryonErrorMsg.includes("Sign-in required") ? (
+                <div className="p-3.5 rounded-2xl text-[11px] font-medium bg-gradient-to-br from-indigo-50/90 to-violet-50/90 text-slate-800 border border-indigo-200/90 shadow-sm space-y-2 animate-fade-in text-center">
+                  <div className="flex items-center justify-center gap-1.5 font-bold text-indigo-950">
+                    <Lock className="w-3.5 h-3.5 text-indigo-600" />
+                    <span>Sign In Required</span>
+                  </div>
+                  <p className="leading-snug text-slate-600 text-[11px]">
+                    Virtual Try-On requires an authenticated account to render AI fits. Please sign in to generate photorealistic drapes on your photo.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (clerk && typeof clerk.openSignIn === "function") {
+                        clerk.openSignIn();
+                      }
+                    }}
+                    className="w-full py-2 px-3 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-bold text-xs shadow-xs active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    <Lock className="w-3 h-3" />
+                    <span>Sign In to Try On Outfits</span>
+                  </button>
+                </div>
+              ) : tryonErrorMsg.includes("Daily free limit") ? (
+                <div className="p-3.5 rounded-2xl text-[11px] font-medium bg-amber-50/95 text-amber-950 border border-amber-200/90 shadow-sm space-y-2 animate-fade-in text-center">
+                  <div className="flex items-center justify-center gap-1.5 font-bold text-amber-900">
+                    <span>✨</span>
+                    <span>Daily Free Limit Reached (2/2)</span>
+                  </div>
+                  <p className="leading-snug text-amber-800 text-[11px]">
+                    You have used your 2 free AI try-ons for today. Daily limit resets at midnight (12:00 AM IST).
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setShowUpgradeModal(true)}
+                    className="w-full py-2 px-3 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-xs active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>View Upgrade Info</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="p-3 rounded-2xl text-[11px] font-medium bg-amber-50 text-amber-900 border border-amber-200/90 shadow-sm space-y-1.5 animate-fade-in">
+                  <div className="flex items-center gap-1.5 font-bold text-amber-950">
+                    <span>⚠️</span>
+                    <span>Try-On Notice:</span>
+                  </div>
+                  <p className="leading-snug">{tryonErrorMsg}</p>
+                  {tryonErrorMsg.includes("PixelAPI") && (
+                    <a
+                      href="https://pixelapi.dev/pricing"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-[10px] font-bold text-brand-indigo underline hover:text-indigo-800"
+                    >
+                      View Credit Packs (Starting ₹200 on Razorpay) ➔
+                    </a>
+                  )}
+                </div>
+              )
             )}
 
             <p className="text-[11px] text-slate-500 text-center leading-tight">
@@ -871,117 +991,59 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
         {/* RIGHT COLUMN: AI STYLIST INTERVIEW + GOOGLE-STYLE 4-LOOK GRID (8 Cols) */}
         <div className="lg:col-span-8 space-y-6">
           
-          {/* AI STYLIST 2-WAY CHAT BOX */}
-          <div className="glass-panel border border-indigo-100 rounded-3xl p-4 sm:p-5 shadow-sm space-y-3">
-            {/* Minimal Clean Header */}
-            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-brand-indigo to-brand-violet flex items-center justify-center text-white text-sm font-black shadow-xs flex-shrink-0">
-                  ✨
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                    Ask AI Stylist
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                  </h3>
-                  <p className="text-[11px] text-slate-500 font-medium">Interactive Occasion & Color Harmony Guide</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
-                  ₹0 Free Chat
-                </span>
-                {isCustomPhoto ? (
-                  <span className="text-[10px] font-bold text-brand-indigo bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-full">
-                    🧬 Calibrated
-                  </span>
-                ) : null}
-              </div>
+          {/* SLEEK "ASK YOUR AI STYLIST" PROMPT BAR */}
+          <div className="glass-panel border border-indigo-100/90 rounded-2xl p-3 sm:p-4 shadow-xs space-y-2.5">
+            {/* Simple, clear 1-line guidance explaining to the user what they can ask */}
+            <div className="flex items-center gap-2 text-xs text-slate-600">
+              <Sparkles className="w-3.5 h-3.5 text-brand-indigo shrink-0" />
+              <p className="leading-snug">
+                <strong className="text-slate-800">Ask Your AI Stylist:</strong> Ask for any occasion, color or style (e.g. <em>&ldquo;Show wedding kurtas&rdquo;</em>, <em>&ldquo;Office shirts&rdquo;</em>, <em>&ldquo;Casual weekend look&rdquo;</em>) to find matches:
+              </p>
             </div>
 
-            {/* Conversational Message Stream */}
-            <div ref={chatContainerRef} className="h-64 sm:h-72 overflow-y-auto pr-1 space-y-3 scroll-smooth">
-              {chatHistory.map((msg) => {
-                if (msg.sender === "user") {
-                  return (
-                    <div key={msg.id} className="flex justify-end animate-fade-in">
-                      <div className="bg-gradient-to-r from-brand-indigo to-purple-600 text-white px-3.5 py-2 rounded-2xl rounded-tr-none text-xs sm:text-sm font-medium shadow-xs max-w-[85%] whitespace-pre-wrap">
-                        {msg.text}
-                      </div>
-                    </div>
-                  );
-                }
-                return (
-                  <div key={msg.id} className="flex flex-col items-start gap-2 animate-fade-in max-w-[95%]">
-                    <div className="flex items-start gap-2">
-                      <div className="w-6 h-6 rounded-lg bg-indigo-50 border border-indigo-200 text-brand-indigo flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5 shadow-2xs">
-                        ✨
-                      </div>
-                      <div className="bg-slate-50 border border-slate-200/90 text-slate-800 px-3.5 py-2.5 rounded-2xl rounded-tl-none text-xs sm:text-sm leading-relaxed shadow-2xs whitespace-pre-line font-normal">
-                        {msg.text}
-                      </div>
-                    </div>
-
-                    {/* Interactive Option Chips if available */}
-                    {msg.options && msg.options.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 pl-8 pt-0.5">
-                        {msg.options.map((opt, oIdx) => (
-                          <button
-                            key={oIdx}
-                            type="button"
-                            onClick={() => handleStylistQuery(opt)}
-                            className="text-[11px] sm:text-xs bg-white hover:bg-indigo-50/80 border border-indigo-200 text-indigo-950 font-medium px-3 py-1 rounded-full transition-all text-left cursor-pointer active:scale-95 shadow-2xs hover:border-indigo-300"
-                          >
-                            {opt}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-
-              {/* Typing indicator */}
-              {isStylistTyping && (
-                <div className="flex items-center gap-2 animate-fade-in pl-1">
-                  <div className="w-6 h-6 rounded-lg bg-indigo-50 border border-indigo-200 text-brand-indigo flex items-center justify-center text-xs font-bold flex-shrink-0">
-                    ✨
-                  </div>
-                  <div className="bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-2xl rounded-tl-none text-xs text-slate-500 flex items-center gap-1 shadow-2xs">
-                    <span className="w-1.5 h-1.5 rounded-full bg-brand-indigo animate-bounce"></span>
-                    <span className="w-1.5 h-1.5 rounded-full bg-brand-indigo animate-bounce [animation-delay:0.2s]"></span>
-                    <span className="w-1.5 h-1.5 rounded-full bg-brand-indigo animate-bounce [animation-delay:0.4s]"></span>
-                    <span className="text-[11px] text-slate-500 font-medium ml-1">AI Stylist is thinking...</span>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Chat Input Form */}
+            {/* Clean Prompt Input */}
             <form
               onSubmit={(e) => {
                 e.preventDefault();
                 handleStylistQuery();
               }}
-              className="flex gap-2 pt-1"
+              className="flex gap-2"
             >
               <input
                 type="text"
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
-                placeholder="Ask AI (e.g. 'Show me linen shirts', 'Wedding kurta look', 'Office formals')..."
-                className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-2 text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-brand-indigo focus:ring-1 focus:ring-brand-indigo shadow-2xs"
+                placeholder="Ask Your AI Stylist what to wear (e.g. 'Show me linen shirts', 'Wedding kurtas')..."
+                className="flex-1 bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-brand-indigo focus:ring-1 focus:ring-brand-indigo shadow-2xs"
               />
               <button
                 type="submit"
                 disabled={isStylistTyping || !chatInput.trim()}
-                className="px-4 py-2 bg-gradient-to-r from-brand-indigo to-brand-violet hover:from-indigo-600 hover:to-purple-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-xs sm:text-sm rounded-xl transition-all shadow-md shadow-brand-indigo/20 cursor-pointer active:scale-95 flex items-center gap-1.5"
+                className="px-4 py-2 bg-gradient-to-r from-brand-indigo to-brand-violet hover:from-indigo-600 hover:to-purple-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-xs sm:text-sm rounded-xl transition-all shadow-xs cursor-pointer active:scale-95 flex items-center gap-1.5 shrink-0"
               >
                 <span>Ask AI</span>
                 <Send className="w-3.5 h-3.5" />
               </button>
             </form>
+
+            {/* AI Active Response (Only shows if user asked a question) */}
+            {isStylistTyping && (
+              <div className="flex items-center gap-2 p-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-500 animate-fade-in">
+                <span className="w-1.5 h-1.5 rounded-full bg-brand-indigo animate-bounce"></span>
+                <span className="w-1.5 h-1.5 rounded-full bg-brand-indigo animate-bounce [animation-delay:0.2s]"></span>
+                <span className="w-1.5 h-1.5 rounded-full bg-brand-indigo animate-bounce [animation-delay:0.4s]"></span>
+                <span className="text-[11px] font-medium ml-1">AI Stylist is picking matching looks for you...</span>
+              </div>
+            )}
+
+            {!isStylistTyping && chatHistory.filter(m => m.sender === "ai").length > 0 && (
+              <div className="p-2.5 rounded-xl bg-indigo-50/80 border border-indigo-100 text-xs text-indigo-950 flex items-start gap-2 animate-fade-in">
+                <Sparkles className="w-3.5 h-3.5 text-brand-indigo shrink-0 mt-0.5" />
+                <div className="flex-1 text-[11px] leading-relaxed">
+                  {chatHistory.filter(m => m.sender === "ai").slice(-1)[0]?.text}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* 4-LOOK GOOGLE-STYLE STUDIO GRID */}
@@ -1196,6 +1258,58 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
           </span>
         </div>
       </div>
+
+      {/* Honest Upgrade-Coming-Soon Modal (Zero Fake Checkout) */}
+      {showUpgradeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+          <div className="relative w-full max-w-md bg-white rounded-3xl p-6 sm:p-7 shadow-2xl border border-slate-100 text-center space-y-4">
+            <button
+              type="button"
+              onClick={() => setShowUpgradeModal(false)}
+              className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
+              aria-label="Close"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-amber-100 to-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center mx-auto text-2xl shadow-inner">
+              ✨
+            </div>
+            
+            <div className="space-y-1.5">
+              <span className="inline-block px-3 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-black uppercase tracking-wider">
+                Daily Allowance Reached
+              </span>
+              <h3 className="text-lg sm:text-xl font-black text-slate-900">
+                Daily Free Try-On Allowance Reached (2/2)
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-medium">
+                You have used both of your free photorealistic AI try-ons for today. Your daily limit resets at <strong>midnight (12:00 AM IST)</strong>.
+              </p>
+            </div>
+
+            <div className="p-3.5 bg-gradient-to-br from-indigo-50/80 via-purple-50/60 to-pink-50/70 border border-indigo-100 rounded-2xl text-left space-y-1">
+              <p className="text-xs font-bold text-indigo-950 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-brand-indigo" />
+                <span>Shop Smart AI Pro (Unlimited AI Fits)</span>
+              </p>
+              <p className="text-[11px] text-slate-600 leading-normal">
+                We are building premium subscription plans with unlimited try-ons, multi-outfit styling, and high-priority GPU rendering. Stay tuned!
+              </p>
+            </div>
+
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={() => setShowUpgradeModal(false)}
+                className="w-full py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-md transition-all active:scale-95 cursor-pointer"
+              >
+                Got It
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

@@ -46,20 +46,6 @@ export default function SearchAiConciergeModal({
     scrollToBottom();
   }, [messages, activeChips, readySearchData, isLoading]);
 
-  // Initial trigger when modal opens
-  useEffect(() => {
-    if (isOpen) {
-      setMessages([]);
-      setActiveChips([]);
-      setReadySearchData(null);
-      setIsEditingQuery(false);
-      setInputText("");
-
-      const startTopic = initialQuery.trim();
-      sendInitialGreeting(startTopic);
-    }
-  }, [isOpen]);
-
   const sendInitialGreeting = async (topic) => {
     setIsLoading(true);
     const browsingCtx = {
@@ -110,6 +96,20 @@ export default function SearchAiConciergeModal({
       setTimeout(() => inputRef.current?.focus(), 150);
     }
   };
+
+  // Initial trigger when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setMessages([]);
+      setActiveChips([]);
+      setReadySearchData(null);
+      setIsEditingQuery(false);
+      setInputText("");
+
+      const startTopic = initialQuery.trim();
+      sendInitialGreeting(startTopic);
+    }
+  }, [isOpen]);
 
   const handleSendMessage = async (userTextToSend) => {
     const text = (userTextToSend || inputText).trim();

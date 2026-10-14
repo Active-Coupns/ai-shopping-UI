@@ -365,29 +365,73 @@ class EphemeralVtonCache {
 
 export const ephemeralVtonCache = new EphemeralVtonCache(15, 50);
 
-// 6. ORIGIN & CSRF VERIFICATION HELPER
+// Helper to extract and normalize host (including port) safely
+function getNormalizedHost(rawHostOrUrl) {
+  if (!rawHostOrUrl || typeof rawHostOrUrl !== 'string') return null;
+  const trimmed = rawHostOrUrl.trim();
+  if (!trimmed) return null;
+  try {
+    if (trimmed.includes('://')) {
+      return new URL(trimmed).host.toLowerCase();
+    }
+    // Parse host header (e.g. "example.com:3000" or "example.com")
+    return new URL(`http://${trimmed}`).host.toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
+// Development-only check: strictly localhost, 127.0.0.1, or IPv6 loopback [::1]
+function isDevLocalhost(normalizedHost) {
+  if (!normalizedHost) return false;
+  const hostname = normalizedHost.split(':')[0].toLowerCase();
+  return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]';
+}
+
+// 6. ORIGIN & CSRF VERIFICATION HELPER (HARDENED EXACT MATCHING)
 export function verifyRequestOrigin(request) {
   const origin = request.headers.get('origin');
-  const host = request.headers.get('host');
   const referer = request.headers.get('referer');
+  const hostHeader = request.headers.get('x-forwarded-host') || request.headers.get('host');
 
-  // In production / same-origin calls:
+  const expectedHost = getNormalizedHost(hostHeader);
+  if (!expectedHost) return false;
+
+  const isDev = process.env.NODE_ENV !== 'production';
+
+  // 1. Validate Origin header if present
   if (origin) {
-    const originHost = new URL(origin).host;
-    if (originHost !== host && !originHost.includes('localhost') && !originHost.includes('127.0.0.1')) {
-      return false;
+    const originHost = getNormalizedHost(origin);
+    if (!originHost) return false;
+
+    // Exact hostname + port match
+    if (originHost === expectedHost) return true;
+
+    // Development-only explicit loopback pairing
+    if (isDev && isDevLocalhost(originHost) && isDevLocalhost(expectedHost)) {
+      return true;
     }
-  } else if (referer) {
-    try {
-      const refererHost = new URL(referer).host;
-      if (refererHost !== host && !refererHost.includes('localhost') && !refererHost.includes('127.0.0.1')) {
-        return false;
-      }
-    } catch {
-      return false;
-    }
+
+    return false;
   }
 
+  // 2. Fall back to Referer header if Origin is absent
+  if (referer) {
+    const refererHost = getNormalizedHost(referer);
+    if (!refererHost) return false;
+
+    // Exact hostname + port match
+    if (refererHost === expectedHost) return true;
+
+    // Development-only explicit loopback pairing
+    if (isDev && isDevLocalhost(refererHost) && isDevLocalhost(expectedHost)) {
+      return true;
+    }
+
+    return false;
+  }
+
+  // Same-origin navigation or internal server-to-server request without origin/referer
   return true;
 }
 

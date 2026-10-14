@@ -8,7 +8,7 @@ import { redis } from "@/services/redis";
 
 let currentKeyIdx = 0;
 
-function getOpenWebNinjaKey() {
+export function getOpenWebNinjaKey() {
   const envVal = (process.env.OPENWEBNINJA_API_KEY || "").trim();
   if (envVal) return envVal;
   const rawKey = (process.env.RAPIDAPI_KEY || "").trim();

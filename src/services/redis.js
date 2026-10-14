@@ -111,6 +111,50 @@ class MultiTierRedisClient {
     }
     return 1;
   }
+
+  async lpush(key, ...elements) {
+    if (this.upstash && typeof this.upstash.lpush === "function") {
+      try {
+        return await this.upstash.lpush(key, ...elements);
+      } catch (e) {
+        return 0;
+      }
+    }
+    return 0;
+  }
+
+  async lrange(key, start, stop) {
+    if (this.upstash && typeof this.upstash.lrange === "function") {
+      try {
+        return await this.upstash.lrange(key, start, stop);
+      } catch (e) {
+        return [];
+      }
+    }
+    return [];
+  }
+
+  async ltrim(key, start, stop) {
+    if (this.upstash && typeof this.upstash.ltrim === "function") {
+      try {
+        return await this.upstash.ltrim(key, start, stop);
+      } catch (e) {
+        return "OK";
+      }
+    }
+    return "OK";
+  }
+
+  async expire(key, seconds) {
+    if (this.upstash && typeof this.upstash.expire === "function") {
+      try {
+        return await this.upstash.expire(key, seconds);
+      } catch (e) {
+        return 0;
+      }
+    }
+    return 1;
+  }
 }
 
 let redisClient;

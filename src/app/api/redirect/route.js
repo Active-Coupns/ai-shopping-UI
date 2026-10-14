@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getAuth } from "@clerk/nextjs/server";
 import { redis } from "@/services/redis";
 import { getAdminSettings } from "@/services/admin";
 import { monetizeUrl } from "@/services/affiliate";
@@ -313,11 +314,11 @@ export async function GET(request) {
       return NextResponse.redirect("https://www.google.com");
     }
     let cleanUrl = targetUrl;
-    if (cleanUrl.includes("gonoise.com") || cleanUrl.includes("/products/")) {
+    if (cleanUrl.includes("gonoise.com")) {
       try {
         const u = new URL(cleanUrl);
-        u.searchParams.delete("country");
-        u.searchParams.delete("currency");
+        u.searchParams.set("country", "IN");
+        u.searchParams.set("currency", "INR");
         cleanUrl = u.toString();
       } catch (e) {}
     }
@@ -402,6 +403,15 @@ export async function GET(request) {
     } catch (e) {
       console.warn("Failed to read redirect cache:", e);
     }
+
+    let userId = null;
+    try {
+      const authObj = getAuth(request);
+      userId = authObj?.userId || null;
+    } catch {
+      userId = null;
+    }
+
 
     try {
       const details = await executeProductDetailsRequest(productId, (region || "in").toLowerCase());

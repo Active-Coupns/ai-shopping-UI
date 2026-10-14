@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { getAuth } from "@clerk/nextjs/server";
+import { checkRateLimit, checkSharedIpQuota } from "@/services/rateLimiter";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
 const GROQ_API_KEY = process.env.GROQ_API_KEY || "";
@@ -10,14 +12,106 @@ const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || "";
  * and formulates a high-yield, clean search query with explicit user confirmation.
  */
 export async function POST(request) {
+  // 1. Server-Side Cryptographic Clerk Session Verification (Zero Trust in Client Headers)
+  let userId = null;
   try {
+    const authObj = getAuth(request);
+    userId = authObj?.userId || null;
+  } catch {
+    console.warn("[Concierge API] Authentication resolution error.");
+    userId = null;
+  }
+
+  if (!userId) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: "UNAUTHORIZED",
+        message: "Sign-in required to use AI Shopping Concierge."
+      },
+      { status: 401 }
+    );
+  }
+
+  // 2. Anti-spam protection (20 requests per minute)
+  try {
+    const minuteLimit = await checkRateLimit({
+      namespace: "ai_concierge_minute",
+      identifier: userId,
+      limit: 20,
+      windowSeconds: 60
+    });
+
+    if (minuteLimit.isBackendError) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "RATE_LIMITER_UNAVAILABLE",
+          message: "AI Shopping Concierge is temporarily busy. Please retry shortly.",
+          retryAfter: minuteLimit.retryAfter || 60
+        },
+        {
+          status: 503,
+          headers: { "Retry-After": String(minuteLimit.retryAfter || 60) }
+        }
+      );
+    }
+
+    if (!minuteLimit.allowed) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "RATE_LIMIT_EXCEEDED",
+          message: `Too many questions sent quickly. Please wait ${minuteLimit.retryAfter}s.`,
+          retryAfter: minuteLimit.retryAfter,
+          limit: minuteLimit.limit,
+          remaining: minuteLimit.remaining,
+          resetInSeconds: minuteLimit.resetInSeconds
+        },
+        {
+          status: 429,
+          headers: { "Retry-After": String(minuteLimit.retryAfter) }
+        }
+      );
+    }
+  } catch {
+    console.error("[Concierge API] Limiter exception occurred.");
+    return NextResponse.json(
+      {
+        success: false,
+        error: "RATE_LIMITER_UNAVAILABLE",
+        message: "AI Shopping Concierge is temporarily busy. Please retry shortly.",
+        retryAfter: 60
+      },
+      {
+        status: 503,
+        headers: { "Retry-After": "60" }
+      }
+    );
+  }
+
+  try {
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json({ success: false, error: "INVALID_JSON", message: "Invalid JSON request body." }, { status: 400 });
+    }
+
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return NextResponse.json({ success: false, error: "INVALID_PAYLOAD", message: "Request body must be a JSON object." }, { status: 400 });
+    }
+
     const {
-      userMessage = "",
+      userMessage: rawUserMessage = "",
       conversationHistory = [],
-      initialTopic = "",
+      initialTopic: rawInitialTopic = "",
       country = "IN",
       browsingContext = {}
-    } = await request.json();
+    } = body || {};
+
+    const userMessage = typeof rawUserMessage === "string" ? rawUserMessage.trim().slice(0, 500) : "";
+    const initialTopic = typeof rawInitialTopic === "string" ? rawInitialTopic.trim().slice(0, 150) : "";
 
     if (!userMessage && !initialTopic) {
       return NextResponse.json({ error: "userMessage or initialTopic is required" }, { status: 400 });
@@ -41,15 +135,39 @@ YOUR MISSION & PHILOSOPHY:
 1. ADVISOR FIRST, SEARCH SECOND: You are a friendly, knowledgeable consultant. Never rush the buyer to search. If they are confused (e.g. "PC vs Laptop", "battery vs GPU", "which brand is best"), explain clearly in simple, natural terms in 2-3 sentences.
 2. ANSWER THEIR QUESTIONS: If they ask why something is better or what they should pick, give clear, objective shopping guidance.
 3. STRICT 2-4 WORD SMART QUERY RULE:
-   - Formulate a clean, ultra-focused search query strictly 2 to 4 words (e.g. "RTX 3050 laptop", "ASUS TUF gaming", "Sony ANC headphones", "Cotton linen shirt").
-   - NEVER create a long sentence or bloated query! Never concatenate multiple sentences into the search terms. RapidAPI/Amazon/Flipkart search engines only work with 2-4 concise anchor words.
-4. SUGGESTED CHIPS:
-   - Provide 3-4 short, clickable chips.
-   - Mix advice questions (e.g. "Check Battery Life", "Compare Brands") and if a specific model or spec is discussed, you may include "🚀 Search: [query]".
+   - Formulate a clean, ultra-focused search query strictly 2 to 4 words (e.g. "White sneakers men", "Running shoes under 2500", "Front load washing machine", "Cotton linen shirt").
+   - NEVER create a long sentence or bloated query!
+   - BRAND NEUTRALITY RULE (IMPORTANT): 
+     Do NOT inject or assume specific brand names into "suggestedQuery" (e.g. do NOT force "Campus", "Sparx", "Samsung", "HP") UNLESS the user explicitly mentioned or asked for that specific brand. 
+     Keep the search query open to all market deals by focusing on: [Use-case/Feature] + [Category] + [Budget/Gender] (e.g. "White casual sneakers", "Running shoes under 2500").
+4. CATEGORY-SPECIFIC BEHAVIOR RULES (E-COMMERCE vs MEDICINE vs SUPPLEMENTS):
+   A) MEDICINES (Prescription & Generic Drugs, e.g. Dolo, Paracetamol, Telma, Pantocid):
+      - EDUCATIONAL & SALT-INFO ONLY: If asked what a medicine is used for, briefly explain its primary pharmacological indication/active salt based on medical facts (e.g., 'Dolo 650 mein Paracetamol hota hai jo bukhar aur sharir dard kam karne ke liye use hota hai').
+      - ZERO MEDICAL PRESCRIPTION / DOSAGE: Never prescribe dosages, never say 'take this 2 times a day', never diagnose illnesses.
+      - ALWAYS INCLUDE A DOCTOR DISCLAIMER: Remind them politely: 'Kripya koi bhi dawa lene se pehle apne doctor se salah zaroor lein.'
+      - QUERY GENERATION: Formulate clean salt/brand query strictly 2-3 words (e.g. 'Dolo 650mg tablets', 'Telma 40mg strip').
+   B) HEALTH SUPPLEMENTS (Whey Protein, Creatine, Multivitamins, Fish Oil):
+      - SAFE NUTRITIONAL GUIDANCE: You MAY guide the user based on objective facts (e.g., Whey Isolate vs Concentrate for lactose sensitivity, unflavored creatine monohydrate benefits, protein per scoop).
+      - SAFE RECOMMENDATIONS: Ask clarifying questions (e.g. beginner vs regular trainer, budget, digestion/lactose issues) before suggesting a category or spec.
+      - BRAND NEUTRALITY: Do not force a single brand unless asked; highlight clean ingredients, FSSAI/Labdoor testing, and price per serving.
+      - QUERY GENERATION: Formulate 2-4 words query (e.g. 'Whey protein isolate unflavored', 'Creatine monohydrate 250g').
+   C) GENERAL E-COMMERCE & TECH (Fashion, Electronics, Home):
+      - Standard buyer advocate behavior (features, budget, value for money, brand-neutral search query).
+
+5. SUGGESTED CHIPS:
+   - Provide 3-4 short, clickable interactive chips.
+   - Mix clarifying spec questions (e.g. "Under ₹2,000", "Canvas vs Leather", "Memory Foam Sole") and if ready to explore deals, offer "🚀 Search: [query]".
 5. SHARED USER CONTEXT (Preserved for downstream AI memory without polluting the search query):
-   - "userPersona": 2-4 words (e.g. "Budget College Gamer", "Casual Daily Wearer")
+   - "userPersona": 2-4 words (e.g. "College Daily Wearer", "Casual Jogger")
    - "userRequirement": 1 concise sentence summarizing primary use-case
    - "budgetLimit": integer number if known, or null
+
+ROLE & PURPOSE BOUNDARY:
+- Your role is strictly ShopSmart AI Pre-Search Shopping Guide.
+- You exist solely to help buyers discover products, clarify features/specs, compare options, and suggest search queries.
+- You do NOT generate essays, stories, blog articles, computer programs, or creative content.
+- If the user asks for non-shopping tasks (e.g. general essay writing, coding, bedtime stories), politely respond in 1-2 friendly sentences that your expertise is personal shopping guidance, and ask what product or category they would like to explore.
+- Keep responses short, warm, and structured (2-3 sentences max).
 
 LANGUAGE & TONE:
 - Speak in natural, friendly, warm Hinglish (conversational Hindi-English blend) if user writes in Hindi/Hinglish, or simple English if user writes in English.
@@ -226,7 +344,7 @@ Respond ONLY with a valid JSON object matching this schema:
     });
 
   } catch (err) {
-    console.error("[AI Concierge API Error]:", err);
-    return NextResponse.json({ error: "Failed to generate concierge guidance" }, { status: 500 });
+    console.error("[AI Concierge API Error]:", err?.message);
+    return NextResponse.json({ success: false, error: "Failed to generate concierge guidance" }, { status: 500 });
   }
 }

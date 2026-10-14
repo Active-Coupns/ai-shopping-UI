@@ -341,128 +341,107 @@ export async function consultFashionStylist({ userMessage = "", skinTone = "whea
   const isBroadQuery = !occasionMentioned && !styleFilter && !specificColorRequest && (
     /^(show|suggest|recommend|tell|dikhao|batao|chahiye|accha|achha|good|best|kuch|kuchh|kaisa|kya|mere liye|for me)/i.test(rawQ) ||
     /^(मुझे|कोई|एक|अच्छा|अच्छे|दिखाओ|बताओ|कपड़े|शर्ट)/i.test(rawQ) ||
-    /^(mujhe\s+(kuch\s+)?(acche|achhe|accha|achha)\s+(shirt|kapde|kapda))/i.test(rawQ)
+    /^(mujhe\s+(kuch\s+)?(acche|achhe|accha|achha)\s+(shirt|kapde|kapda))/i.test(rawQ) ||
+    /\b(mere\s*upar|kaun\s*si\s*shirt|konsi\s*shirt|kya\s*achha\s*lagega|kya\s*pehnu)\b/i.test(rawQ)
   ) && (!targetKeyword);
 
   let replyText = "";
   let followUpOptions = [];
 
-  // 1. PURE HINDI (Devanagari Script)
-  if (isPureHindi) {
-    if (isBroadQuery) {
-      replyText = "ज़रूर! आप किस फैब्रिक या ओकेजन के लिए शर्ट देखना पसंद करेंगे?";
+  // =============================================================
+  // TWO-TIER ARCHITECTURE DISPATCHER:
+  // TIER 1: isCustomPhoto is TRUE (User already uploaded their photo)
+  //   - NEVER ask for skin tone! We already know it or auto-detected it.
+  //   - Directly suggest colors & cuts that flatter their tone & frame.
+  //   - Only ask for the Occasion / Vibe if unknown.
+  // TIER 2: isCustomPhoto is FALSE (User chatting without photo)
+  //   - Normal consultative flow: ask occasion, budget, and skin tone / favorite colors.
+  // =============================================================
+
+  if (isCustomPhoto) {
+    // === TIER 1: PHOTO UPLOADED ===
+    if (isBroadQuery || (!occasionMentioned && !garmentMentioned)) {
+      replyText = `Aapki photo ke hisaab se aapke tone par ${colorListStr} jaise rich colors sabse zyada khilenge! Neeche maine 4 premium shirts select ki hain. Aap ise kis occasion (Office, Casual ya Party) ke liye pehnna chahte hain?`;
       followUpOptions = [
-        "🌴 लिनन शर्ट्स",
-        "👔 100% कॉटन फॉर्मल्स",
-        "💼 कैजुअल आउटिंग",
-        "🌙 नाइट पार्टी वियर"
-      ];
-    } else if (styleFilter && garmentMentioned) {
-      replyText = `ये रहे 4 स्टाइलिश ${garmentMentioned}। किसी पर भी क्लिक करके अपनी फोटो पर ट्राई करें!`;
-      followUpOptions = [
-        "✨ सॉलिड & मिनिमल",
-        "🌴 लिनन कट्स",
-        "👔 फॉर्मल लुक्स",
-        "🎨 दूसरे कलर्स दिखाओ"
-      ];
-    } else if (garmentMentioned && !occasionMentioned) {
-      replyText = `नीचे 4 बेस्ट ${garmentMentioned} तैयार हैं। आप यह किस ओकेजन के लिए ढूंढ रहे हैं?`;
-      followUpOptions = [
-        "🌴 कैजुअल / वीकेंड",
-        "👔 ऑफिस / फॉर्मल",
-        "✨ चेक्स & प्रिंट्स",
-        "🎨 डार्क कलर्स दिखाओ"
+        "🌴 Casual & Weekend Linen",
+        "👔 Office & Workwear",
+        "✨ Festive / Wedding",
+        "🌙 Night Party Look"
       ];
     } else if (detectedOccasion === "office") {
-      replyText = "ऑफिस और फॉर्मल मीटिंग्स के लिए ये 4 शार्प लुक्स तैयार हैं। आपको कैसा स्टाइल पसंद है?";
+      replyText = `Office aur formal meetings ke liye aapke frame par ye 4 crisp structured shirts bahut sharp aur professional lagenge. Kisi par bhi click karke apni photo par try karein!`;
       followUpOptions = [
-        "👔 क्लासिक फॉर्मल शर्ट्स",
-        "🤵 सेमी-फॉर्मल ब्लेज़र्स",
-        "🌴 लिनन वर्कवियर"
-      ];
-    } else if (detectedOccasion === "festive") {
-      replyText = "फेस्टिव और शादी के लिए ये रिच एथनिक लुक्स तैयार हैं। डे-फंक्शन के लिए चाहिए या रिसेप्शन?";
-      followUpOptions = [
-        "☀️ डे-फंक्शन / हल्दी",
-        "🌙 नाइट रिसेप्शन",
-        "✨ सिल्क कुर्ता सेट्स"
-      ];
-    } else if (detectedOccasion === "party") {
-      replyText = "पार्टी और नाइट-आउट के लिए ये ट्रेंडिंग लुक्स बिल्कुल परफेक्ट हैं। कौन-सा लुक ट्राई करना चाहेंगे?";
-      followUpOptions = [
-        "🔥 ड्रॉप-शोल्डर टीज",
-        "🌴 पार्टी शर्ट्स",
-        "🧥 बॉम्बर जैकेट्स"
-      ];
-    } else {
-      replyText = "नमस्ते! आप किस ओकेजन के लिए कपड़े देखना चाहेंगे?";
-      followUpOptions = [
-        "👔 ऑफिस & फॉर्मल वियर",
-        "✨ शादी & फेस्टिव कुर्ते",
-        "🌴 लिनन & कैजुअल शर्ट्स",
-        "🔥 नाइट पार्टी लुक्स"
-      ];
-    }
-  } 
-  // 2. HINGLISH (Roman Script Hindi)
-  else if (isHinglish) {
-    if (isBroadQuery) {
-      replyText = "Zaroor! Aap kis occasion ya fabric mein shirts dekhna chahenge?";
-      followUpOptions = [
-        "🌴 Breathable Linen Shirts",
-        "👔 100% Rich Cotton Formals",
-        "💼 Casual Weekend Outing",
-        "🌙 Party & Night Out"
-      ];
-    } else if (styleFilter && garmentMentioned) {
-      replyText = `Ye rahe 4 stylish ${garmentMentioned} jo aapke frame par sharp lagenge. Click karke try-on karein!`;
-      followUpOptions = [
-        "✨ Solid & Minimal",
-        "🌴 Textured Linen",
-        "👔 Office Formals",
-        "🎨 Show Darker Colors"
-      ];
-    } else if (garmentMentioned && !occasionMentioned) {
-      replyText = `Neeche 4 best ${garmentMentioned} load kar diye hain. Aap ye kis occasion ke liye dhoondh rahe hain?`;
-      followUpOptions = [
-        "🌴 Casual Weekend Outing",
-        "👔 Office / Semi-Formal",
-        "✨ Stylish Prints & Checks",
-        "🎨 Show Darker Colors"
-      ];
-    } else if (detectedOccasion === "office") {
-      replyText = "Office & formals ke liye ye 4 crisp structured looks best rahenge. Kaunsa style pasand aaya?";
-      followUpOptions = [
-        "👔 Classic Formal Shirts",
+        "👔 Classic Oxford Shirts",
         "🤵 Semi-Formal Blazers",
         "🌴 Breathable Linen Workwear"
       ];
     } else if (detectedOccasion === "festive") {
-      replyText = "Wedding & festive events ke liye ye traditional looks ready hain. Day ceremony ke liye chahiye ya evening reception?";
+      replyText = `Wedding aur festive celebrations ke liye ye rich traditional ethnic kurtas aapke tone par best khilenge. Day function ke liye chahiye ya evening reception?`;
       followUpOptions = [
         "☀️ Haldi / Daytime Kurta",
         "🌙 Night Reception Look",
         "✨ Silk Kurta Pajama Sets"
       ];
     } else if (detectedOccasion === "party") {
-      replyText = "Party & night-out ke liye ye trending fits ready hain. Oversized tees pasand hain ya party shirts?";
+      replyText = `Night party aur social evening ke liye ye trending bold fits ready hain. Oversized streetwear tees pasand hain ya cuban party shirts?`;
       followUpOptions = [
         "🔥 Oversized Streetwear Tees",
         "🌴 Cuban Collar Party Shirts",
         "🧥 Bomber & Layered Jackets"
       ];
     } else {
-      replyText = "Hello! Aap kis occasion ke liye outfits explore karna chahte hain?";
+      replyText = `Aapke frame aur skin tone ke hisaab se ye 4 stylish ${garmentMentioned || "shirts"} sabse flattering rahenge. Kisi par bhi tap karke apni photo par fit dekhein!`;
       followUpOptions = [
-        "👔 Office & Workwear",
-        "✨ Wedding & Festive Kurtas",
-        "🌴 Linen & Casual Shirts",
-        "🔥 Weekend Party Fits"
+        "🌴 Casual Weekend Outing",
+        "👔 Office / Semi-Formal",
+        "✨ Stylish Prints & Checks",
+        "🎨 Show Darker Colors"
       ];
     }
-  } 
-  // 3. ENGLISH (Default / Primary Language)
-  else {
+  } else {
+    // === TIER 2: NO PHOTO UPLOADED (PURE TEXT CHAT ADVICE) ===
+    if (isBroadQuery || (!occasionMentioned && !garmentMentioned)) {
+      replyText = "Main aapko best shirt suggest kar sakta hoon! Sahi choice ke liye: aap ise kis occasion ke liye le rahe hain, aur aapka budget ya skin tone (Fair, Wheatish ya Dusky) kya hai? (Tip: Aap upar apni photo upload karke seedhe live try-on bhi dekh sakte hain!)";
+      followUpOptions = [
+        "🌴 Casual Weekend Shirts",
+        "👔 Office Formal Shirts",
+        "🌾 Wheatish Tone - Best Colors",
+        "✨ Wedding Ethnic Kurtas"
+      ];
+    } else if (detectedOccasion === "office") {
+      replyText = "Office & workwear ke liye ye 4 crisp structured shirts best rahenge. Agar aap apna skin tone (Fair/Wheatish/Dusky) ya photo share karenge, toh main aur accurate match bata sakta hoon!";
+      followUpOptions = [
+        "👔 Classic Formal Shirts",
+        "🤵 Semi-Formal Blazers",
+        "🌴 Breathable Linen Workwear"
+      ];
+    } else if (detectedOccasion === "festive") {
+      replyText = "Wedding & festive events ke liye ye traditional looks ready hain. Day ceremony ke liye dekh rahe hain ya night reception?";
+      followUpOptions = [
+        "☀️ Haldi / Daytime Kurta",
+        "🌙 Night Reception Look",
+        "✨ Silk Kurta Pajama Sets"
+      ];
+    } else if (detectedOccasion === "party") {
+      replyText = "Party & night-out ke liye ye trending fits ready hain. Oversized streetwear tees pasand hain ya party shirts?";
+      followUpOptions = [
+        "🔥 Oversized Streetwear Tees",
+        "🌴 Cuban Collar Party Shirts",
+        "🧥 Bomber & Layered Jackets"
+      ];
+    } else {
+      replyText = `Neeche 4 best ${garmentMentioned || "shirts"} load kar diye hain. Aap ye kis occasion ke liye dhoondh rahe hain?`;
+      followUpOptions = [
+        "🌴 Casual Weekend Outing",
+        "👔 Office / Semi-Formal",
+        "✨ Stylish Prints & Checks",
+        "🎨 Show Darker Colors"
+      ];
+    }
+  }
+
+  // Fallback to English if replyText was not set
+  if (!replyText) {
     if (isBroadQuery) {
       replyText = "Sure! Which occasion or fabric are you looking for?";
       followUpOptions = [

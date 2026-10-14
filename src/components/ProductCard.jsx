@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useClerk } from "@clerk/nextjs";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   ArrowUpRight, Star, CheckCircle, Sparkles, ChevronDown, ChevronUp, 
@@ -133,12 +134,12 @@ export default function ProductCard({
 
       // If it's an exact PDP or specific merchant destination (and NOT a search page):
       if (!isSearchPage) {
-        // Strip Shopify geo/currency params to prevent regional modal popup & 404:
-        if (lower.includes("gonoise.com") || lower.includes("/products/")) {
+        // For Noise and Indian Shopify D2C stores, preserve or ensure country=IN to prevent Shopify Geolocation country-picker popups:
+        if (lower.includes("gonoise.com")) {
           try {
             const u = new URL(rawUrl);
-            u.searchParams.delete("country");
-            u.searchParams.delete("currency");
+            u.searchParams.set("country", "IN");
+            u.searchParams.set("currency", "INR");
             return u.toString();
           } catch (e) {}
         }
@@ -150,9 +151,12 @@ export default function ProductCard({
   };
 
   // On-Demand Price Comparison State (Min 3, Max 4 stores with Anchor Lowest)
+  const { openSignIn } = useClerk();
   const [isCompareOpen, setIsCompareOpen] = useState(false);
   const [isFetchingStores, setIsFetchingStores] = useState(false);
   const [liveStores, setLiveStores] = useState(null);
+  const [compareAuthRequired, setCompareAuthRequired] = useState(false);
+  const [compareQuotaExceeded, setCompareQuotaExceeded] = useState(false);
 
   const handleToggleCompare = async () => {
     const nextState = !isCompareOpen;
@@ -175,7 +179,13 @@ export default function ProductCard({
         });
         const data = await res.json();
         console.log("[ProductCard compare response]", data);
-        if (data.success && Array.isArray(data.stores)) {
+        if (res.status === 429 || data.error === "DAILY_QUOTA_EXHAUSTED" || data.error === "IP_QUOTA_EXHAUSTED") {
+          setCompareQuotaExceeded(true);
+        } else if (res.status === 401 || data.error === "UNAUTHORIZED") {
+          setCompareAuthRequired(true);
+        } else if (data.success && Array.isArray(data.stores)) {
+          setCompareQuotaExceeded(false);
+          setCompareAuthRequired(false);
           setLiveStores(data.stores);
           // If Store 1 (the lowest anchor) has an upgraded direct PDP link, update selectedStore!
           const lowestStore = data.stores.find(s => s.is_lowest) || data.stores[0];
@@ -656,6 +666,33 @@ export default function ProductCard({
                                 </div>
                               );
                             })}
+                          </div>
+                        )}
+
+                        {compareAuthRequired && !isFetchingStores && (
+                          <div className="mt-2.5 p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-[11px] font-medium flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-1.5">
+                              <span>🔒</span>
+                              <span>Sign in to unlock live comparisons across Amazon, Croma & Flipkart.</span>
+                            </div>
+                            {typeof openSignIn === "function" && (
+                              <button
+                                type="button"
+                                onClick={() => openSignIn()}
+                                className="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[10px] shrink-0 cursor-pointer shadow-xs transition-all"
+                              >
+                                Sign In
+                              </button>
+                            )}
+                          </div>
+                        )}
+
+                        {compareQuotaExceeded && !isFetchingStores && (
+                          <div className="mt-2.5 p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-[11px] font-medium flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-1.5">
+                              <span>⚡</span>
+                              <span>Daily API comparison limit reached (10/10). Resets at midnight.</span>
+                            </div>
                           </div>
                         )}
                       </motion.div>

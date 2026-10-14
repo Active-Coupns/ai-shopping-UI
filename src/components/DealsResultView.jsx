@@ -16,8 +16,10 @@ import {
   ShieldCheck,
   Tag,
   Clock,
-  AlertCircle
+  AlertCircle,
+  Lock
 } from "lucide-react";
+import { useClerk } from "@clerk/nextjs";
 import { DEAL_CATEGORIES } from "@/services/dealsService";
 
 export default function DealsResultView({
@@ -28,6 +30,7 @@ export default function DealsResultView({
   onBack,
   onCompareProduct
 }) {
+  const clerk = useClerk();
   const [selectedCatId, setSelectedCatId] = useState(activeCategoryId);
   const [isSwitching, setIsSwitching] = useState(false);
 
@@ -38,6 +41,7 @@ export default function DealsResultView({
     }
   }, [activeCategoryId]);
 
+  const isAuthRequired = dealsData?.error === "UNAUTHORIZED" || dealsData?.status === 401;
   const category = dealsData?.category || DEAL_CATEGORIES.find(c => c.id === selectedCatId) || DEAL_CATEGORIES[0];
   const deals = dealsData?.deals || [];
   const totalDeals = deals.length;
@@ -324,9 +328,33 @@ export default function DealsResultView({
           </div>
 
           {deals.length === 0 && (
-            <div className="text-center py-16 bg-white rounded-3xl border border-slate-200">
-              <p className="text-slate-500 text-sm font-medium">No live price drops detected for this category right now. Please explore another category.</p>
-            </div>
+            isAuthRequired ? (
+              <div className="text-center py-16 px-6 bg-gradient-to-b from-slate-50 to-indigo-50/30 rounded-3xl border border-indigo-100 shadow-sm max-w-xl mx-auto my-6">
+                <div className="w-12 h-12 rounded-2xl bg-indigo-100 border border-indigo-200 text-indigo-700 flex items-center justify-center mx-auto mb-4 shadow-xs">
+                  <Lock className="w-6 h-6" />
+                </div>
+                <h3 className="text-lg font-bold text-slate-900 mb-2">Sign In to Unlock Live Deals</h3>
+                <p className="text-slate-600 text-xs sm:text-sm font-medium mb-6 max-w-md mx-auto leading-relaxed">
+                  Live aggregator pricing and real-time deal alerts for <span className="font-semibold text-slate-800">{category?.name || "this category"}</span> require an active account. Please sign in to stream live price drops.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (clerk && typeof clerk.openSignIn === "function") {
+                      clerk.openSignIn();
+                    }
+                  }}
+                  className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white text-xs sm:text-sm font-bold shadow-md hover:shadow-lg transition-all active:scale-95 cursor-pointer inline-flex items-center gap-2"
+                >
+                  <Lock className="w-4 h-4" />
+                  <span>Sign In to Continue</span>
+                </button>
+              </div>
+            ) : (
+              <div className="text-center py-16 bg-white rounded-3xl border border-slate-200">
+                <p className="text-slate-500 text-sm font-medium">No live price drops detected for this category right now. Please explore another category.</p>
+              </div>
+            )
           )}
         </>
       )}

@@ -4,7 +4,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { useUser, useClerk, SignInButton } from "@clerk/nextjs";
 import { 
   User, LogOut, Globe, Sparkles, ShoppingBag, 
-  Pill, Shirt, Check, ChevronRight, X, ShieldCheck, Zap
+  Pill, Shirt, Check, ChevronRight, X, ShieldCheck, Zap,
+  Trash2, AlertTriangle, Loader2
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -19,6 +20,35 @@ export default function UnifiedAccountModal({
 }) {
   const { isSignedIn, user, isLoaded } = useUser();
   const { signOut, openSignIn } = useClerk();
+
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState(null);
+
+  const handleDeleteAccount = async () => {
+    setIsDeleting(true);
+    setDeleteError(null);
+    try {
+      const res = await fetch("/api/user/delete-account", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" }
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success) {
+        await signOut();
+        onClose();
+        if (typeof window !== "undefined") {
+          window.location.href = "/";
+        }
+      } else {
+        setDeleteError(data.message || "Failed to delete account. Please try again.");
+      }
+    } catch (err) {
+      setDeleteError("Network error. Please try again.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   // Close modal on Escape key
   useEffect(() => {
@@ -261,17 +291,79 @@ export default function UnifiedAccountModal({
 
             {/* 5. Sign Out Button if Signed In */}
             {isLoaded && isSignedIn && (
-              <button
-                type="button"
-                onClick={async () => {
-                  await signOut();
-                  onClose();
-                }}
-                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-rose-600 hover:bg-rose-50 border border-rose-200 text-xs font-bold transition-colors cursor-pointer"
-              >
-                <LogOut className="w-4 h-4" />
-                <span>Sign Out of Account</span>
-              </button>
+              <div className="space-y-2 pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await signOut();
+                    onClose();
+                  }}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-slate-700 hover:bg-slate-100 border border-slate-200 text-xs font-bold transition-colors cursor-pointer"
+                >
+                  <LogOut className="w-4 h-4 text-slate-500" />
+                  <span>Sign Out of Account</span>
+                </button>
+
+                {/* Account Deletion & Right to Erasure (DPDP / GDPR) */}
+                {!showDeleteConfirm ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowDeleteConfirm(true)}
+                    className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-rose-500 hover:text-rose-700 hover:bg-rose-50 text-[11px] font-semibold transition-colors cursor-pointer"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Delete Account & Wipe All Data</span>
+                  </button>
+                ) : (
+                  <div className="p-3.5 rounded-2xl bg-rose-50/90 border border-rose-200 space-y-3">
+                    <div className="flex items-start gap-2.5">
+                      <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                      <div>
+                        <h4 className="text-xs font-extrabold text-rose-900">Permanently Delete Account?</h4>
+                        <p className="text-[11px] text-rose-700 mt-0.5 leading-relaxed">
+                          This will immediately erase your profile, search logs, saved outfits, and all personal records under DPDP Act & GDPR rules. This cannot be undone.
+                        </p>
+                      </div>
+                    </div>
+
+                    {deleteError && (
+                      <p className="text-[11px] text-rose-800 bg-rose-100 p-2 rounded-lg font-medium">
+                        {deleteError}
+                      </p>
+                    )}
+
+                    <div className="flex items-center gap-2 pt-1">
+                      <button
+                        type="button"
+                        disabled={isDeleting}
+                        onClick={handleDeleteAccount}
+                        className="flex-1 py-2 px-3 rounded-xl bg-rose-600 hover:bg-rose-700 active:scale-98 text-white text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                      >
+                        {isDeleting ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            <span>Purging Data...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>Yes, Delete Everything</span>
+                          </>
+                        )}
+                      </button>
+
+                      <button
+                        type="button"
+                        disabled={isDeleting}
+                        onClick={() => setShowDeleteConfirm(false)}
+                        className="py-2 px-3 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
           </div>
         </motion.div>

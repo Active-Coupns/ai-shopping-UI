@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
+import { getAuth } from "@clerk/nextjs/server";
 import { redis } from "@/services/redis";
+import { checkRateLimit, checkSharedIpQuota } from "@/services/rateLimiter";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
 
@@ -7,19 +9,55 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
  * Honest AI Product Review & 90-Day Truth Sheet Generator
  */
 export async function POST(request) {
+  // 1. Server-Side Cryptographic Clerk Session Verification (Zero Trust in Client Headers)
+  let userId = null;
   try {
+    const authObj = getAuth(request);
+    userId = authObj?.userId || null;
+  } catch {
+    console.warn("[Review API] Authentication resolution error.");
+    userId = null;
+  }
+
+  if (!userId) {
+    return NextResponse.json(
+      {
+        error: "UNAUTHORIZED",
+        message: "Sign-in required to view AI product reviews."
+      },
+      { status: 401 }
+    );
+  }
+
+  try {
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json({ success: false, error: "INVALID_JSON", message: "Invalid JSON request body." }, { status: 400 });
+    }
+
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return NextResponse.json({ success: false, error: "INVALID_PAYLOAD", message: "Request body must be a JSON object." }, { status: 400 });
+    }
+
     const {
-      productTitle,
+      productTitle: rawProductTitle,
       productPrice,
       specs = [],
       productAttributes = {},
-      productDescription = "",
+      productDescription: rawProductDesc = "",
       storeName = "",
-      userPersona = "",
-      userRequirement = "",
+      userPersona: rawUserPersona = "",
+      userRequirement: rawUserReq = "",
       siblingProducts = [],
       previouslyViewed = []
-    } = await request.json();
+    } = body || {};
+
+    const productTitle = typeof rawProductTitle === "string" ? rawProductTitle.trim().slice(0, 200) : "";
+    const productDescription = typeof rawProductDesc === "string" ? rawProductDesc.trim().slice(0, 1000) : "";
+    const userPersona = typeof rawUserPersona === "string" ? rawUserPersona.trim().slice(0, 150) : "";
+    const userRequirement = typeof rawUserReq === "string" ? rawUserReq.trim().slice(0, 300) : "";
 
     if (!productTitle) {
       return NextResponse.json({ error: "Product title is required" }, { status: 400 });
@@ -39,6 +77,103 @@ export async function POST(request) {
       }
     } catch (cacheErr) {
       console.warn("[AI Review Cache Check Error]", cacheErr);
+    }
+
+    // 2. Distributed Rate Limiting on Cache Miss (Fail-Closed, 5/24 hours per account)
+    // Evaluated strictly before invoking Groq, OpenRouter, or Gemini LLM providers.
+    try {
+      const dailyLimit = await checkRateLimit({
+        namespace: "ai_review_daily",
+        identifier: userId,
+        limit: 5,
+        windowSeconds: 86400
+      });
+
+      if (!dailyLimit || typeof dailyLimit !== "object" || dailyLimit.isBackendError) {
+        const retrySec = Number.isInteger(dailyLimit?.retryAfter) && dailyLimit.retryAfter > 0 ? dailyLimit.retryAfter : 60;
+        return NextResponse.json(
+          {
+            error: "RATE_LIMITER_UNAVAILABLE",
+            message: "AI Product Review is temporarily busy. Please retry shortly.",
+            retryAfter: retrySec
+          },
+          {
+            status: 503,
+            headers: { "Retry-After": String(retrySec) }
+          }
+        );
+      }
+
+      if (!dailyLimit.allowed) {
+        const retrySec = Number.isInteger(dailyLimit.retryAfter) && dailyLimit.retryAfter > 0 ? dailyLimit.retryAfter : 60;
+        const hoursRemaining = Math.max(1, Math.ceil((dailyLimit.resetInSeconds || 86400) / 3600));
+        return NextResponse.json(
+          {
+            error: "RATE_LIMIT_EXCEEDED",
+            message: `Daily review generation limit reached (5/5 requests). Your quota resets in ${hoursRemaining} hours.`,
+            retryAfter: retrySec,
+            limit: dailyLimit.limit,
+            remaining: dailyLimit.remaining,
+            resetInSeconds: dailyLimit.resetInSeconds
+          },
+          {
+            status: 429,
+            headers: { "Retry-After": String(retrySec) }
+          }
+        );
+      }
+
+      // Shared IP Rolling 24-Hour Quota (10 requests per rolling 24h, Fail-Closed)
+      const ipQuotaResult = await checkSharedIpQuota({
+        request,
+        limit: 10,
+        windowSeconds: 86400
+      });
+
+      if (!ipQuotaResult || typeof ipQuotaResult !== "object" || ipQuotaResult.isBackendError) {
+        const retrySec = Number.isInteger(ipQuotaResult?.retryAfter) && ipQuotaResult.retryAfter > 0 ? ipQuotaResult.retryAfter : 60;
+        return NextResponse.json(
+          {
+            error: "RATE_LIMITER_UNAVAILABLE",
+            message: "AI Product Review is temporarily busy. Please retry shortly.",
+            retryAfter: retrySec
+          },
+          {
+            status: 503,
+            headers: { "Retry-After": String(retrySec) }
+          }
+        );
+      }
+
+      if (!ipQuotaResult.allowed) {
+        const retrySec = Number.isInteger(ipQuotaResult.retryAfter) && ipQuotaResult.retryAfter > 0 ? ipQuotaResult.retryAfter : 60;
+        return NextResponse.json(
+          {
+            error: "IP_QUOTA_EXHAUSTED",
+            message: "Daily limit reached for this network/device across free tools. Please try again later.",
+            retryAfter: retrySec,
+            limit: ipQuotaResult.limit,
+            remaining: ipQuotaResult.remaining
+          },
+          {
+            status: 429,
+            headers: { "Retry-After": String(retrySec) }
+          }
+        );
+      }
+    } catch {
+      console.error("[Review API] Limiter exception occurred.");
+      return NextResponse.json(
+        {
+          error: "RATE_LIMITER_UNAVAILABLE",
+          message: "AI Product Review is temporarily busy. Please retry shortly.",
+          retryAfter: 60
+        },
+        {
+          status: 503,
+          headers: { "Retry-After": "60" }
+        }
+      );
     }
 
     const priceNum = parseInt(String(productPrice).replace(/[^0-9]/g, ""), 10) || 45000;

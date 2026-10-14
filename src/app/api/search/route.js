@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 import { getAuth } from "@clerk/nextjs/server";
 import { redis } from "@/services/redis";
+import { checkUnifiedApiQuota, extractTrustedClientIp } from "@/services/rateLimiter";
 import { getAdminSettings } from "@/services/admin";
 import { monetizeUrl } from "@/services/affiliate";
 import { searchRapidApiProducts, isExactProductQuery, getStoreDirectSearchFallback } from "@/services/rapidapi";
 import { addToInventoryPool, consultAiShopkeeper } from "@/services/semanticCache";
+import { recordSearchMetric } from "@/services/adminMetrics";
 
 function getCacheKey(country, query) {
   const clean = query
@@ -143,6 +145,7 @@ function normalizeMultiLingualQuery(rawQuery) {
 }
 
 export async function POST(request) {
+  const searchStartTime = Date.now();
   try {
     // 1. Mandatory Clerk Session Token / Auth State Verification
     let userId = null;
@@ -173,57 +176,22 @@ export async function POST(request) {
         message: "Automated queries are blocked."
       }, { status: 403 });
     }
+    const clientIp = extractTrustedClientIp(request);
 
-    // 1c. IP-Level & User-Level Strict Quota (Max 3/User, Max 6/IP)
-    const clientIp = request.headers.get("cf-connecting-ip") || 
-                     request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || 
-                     request.headers.get("x-real-ip") || 
-                     "127.0.0.1";
-
-    const todayStr = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
-    const effectiveUserId = userId || "local-dev-user";
-    const userQuotaKey = `quota:user:${effectiveUserId}:${todayStr}`;
-    const ipQuotaKey = `quota:ip:${clientIp}:${todayStr}`;
-
-    const isProd = process.env.NODE_ENV === "production";
-    const MAX_USER_SEARCHES = isProd ? 3 : 100;
-    const MAX_IP_SEARCHES = isProd ? 6 : 200;
-
-    let userCount = 0;
-    let ipCount = 0;
-
+    let body;
     try {
-      const [uStr, iStr] = await Promise.all([
-        redis.get(userQuotaKey),
-        redis.get(ipQuotaKey)
-      ]);
-      userCount = parseInt(uStr || "0", 10);
-      ipCount = parseInt(iStr || "0", 10);
-    } catch (e) {}
-
-    if (isProd && userCount >= MAX_USER_SEARCHES) {
-      return NextResponse.json({
-        products: [],
-        coupons: [],
-        error: "QUOTA_EXHAUSTED",
-        message: "You have used all 3 free AI searches for today. Your quota resets tomorrow!",
-        searchesLeft: 0
-      }, { status: 429 });
+      body = await request.json();
+    } catch {
+      return NextResponse.json({ products: [], coupons: [], error: "INVALID_JSON", message: "Invalid JSON request body." }, { status: 400 });
     }
 
-    if (isProd && ipCount >= MAX_IP_SEARCHES) {
-      return NextResponse.json({
-        products: [],
-        coupons: [],
-        error: "IP_QUOTA_EXHAUSTED",
-        message: "Daily search limit reached for this network/device. Please try again tomorrow.",
-        searchesLeft: 0
-      }, { status: 429 });
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return NextResponse.json({ products: [], coupons: [], error: "INVALID_PAYLOAD", message: "Request body must be a JSON object." }, { status: 400 });
     }
 
-    const { query, country, isUrlLookup, sourceStore, sourceUrl, isExactLookup } = await request.json();
+    const { query, country, isUrlLookup, sourceStore, sourceUrl, isExactLookup } = body;
 
-    if (!query) {
+    if (!query || typeof query !== "string") {
       return NextResponse.json({ products: [], error: "Query is required" }, { status: 200 });
     }
 
@@ -242,17 +210,14 @@ export async function POST(request) {
         const isServiceCoupon = cachedPayload.intent === "SERVICE_COUPON";
         const hasFallbackProducts = hasProducts && cachedPayload.products.some(p => p.id?.startsWith("fallback-") || p.is_catalog_fallback);
 
-        // Only serve cache if it contains verified live deals, never serve fallback mock data
         if ((hasProducts && !hasFallbackProducts) || isServiceCoupon) {
-          // Increment quota on successful cache hit
-          try {
-            await Promise.all([
-              redis.set(userQuotaKey, String(userCount + 1), { ex: 86400 }),
-              redis.set(ipQuotaKey, String(ipCount + 1), { ex: 86400 })
-            ]);
-          } catch (e) {}
-
-          const remainingSearches = Math.max(0, MAX_USER_SEARCHES - (userCount + 1));
+          const quotaStatus = await checkUnifiedApiQuota({
+            userId,
+            clientIp,
+            isCacheHit: true,
+            limit: 10
+          });
+          const remainingSearches = quotaStatus.remaining;
           let finalCachedProducts = (isExactProduct && cachedPayload.products) 
             ? cachedPayload.products.slice(0, 1) 
             : (cachedPayload.products || []);
@@ -289,6 +254,17 @@ export async function POST(request) {
           // Asynchronously enrich Central Store Inventory Pool from direct cache
           addToInventoryPool(country, finalCachedProducts).catch(() => {});
 
+          // Non-blocking telemetry for Admin monitoring
+          recordSearchMetric({
+            query: cleanQuery,
+            clientIp,
+            isCacheHit: true,
+            country,
+            category: "ecommerce",
+            latencyMs: Date.now() - searchStartTime,
+            statusCode: 200
+          }).catch(() => {});
+
           return NextResponse.json({
             products: finalCachedProducts,
             coupons: cachedPayload.coupons || [],
@@ -301,60 +277,6 @@ export async function POST(request) {
       }
     } catch (cacheErr) {
       console.warn("Redis cache read error:", cacheErr);
-    }
-
-    // 3b. Smart AI Shopkeeper Brain (Intelligent Store Inventory Consultation)
-    if (!isExactProduct && !isUrlLookup) {
-      try {
-        const shopkeeperResult = await consultAiShopkeeper(country, cleanQuery);
-        if (shopkeeperResult && Array.isArray(shopkeeperResult.products) && shopkeeperResult.products.length >= 3) {
-          // Increment quota on successful shopkeeper cache hit
-          try {
-            await Promise.all([
-              redis.set(userQuotaKey, String(userCount + 1), { ex: 86400 }),
-              redis.set(ipQuotaKey, String(ipCount + 1), { ex: 86400 })
-            ]);
-          } catch (e) {}
-
-          const remainingSearches = Math.max(0, MAX_USER_SEARCHES - (userCount + 1));
-          const finalSemanticProducts = shopkeeperResult.products.map(p => {
-            const rawL = p.deal_link || p.link || p.affiliateUrl || "";
-            if (rawL.includes("google.com") || rawL.includes("ibp=")) {
-              const cleanL = getStoreDirectSearchFallback(p.store_name, p.title, country);
-              return {
-                ...p,
-                link: cleanL,
-                deal_link: cleanL,
-                affiliateUrl: cleanL,
-                direct_link: cleanL
-              };
-            }
-            return p;
-          });
-
-          // Cache the fulfilled shopkeeper payload so future identical searches hit direct L1/L2 cache in 0.1ms
-          try {
-            await redis.set(cacheKey, JSON.stringify({
-              products: finalSemanticProducts,
-              coupons: [],
-              intent: "E-COMMERCE"
-            }), { ex: 43200 });
-          } catch (e) {}
-
-          return NextResponse.json({
-            products: finalSemanticProducts,
-            coupons: [],
-            intent: "E-COMMERCE",
-            error: null,
-            searchesLeft: remainingSearches,
-            fromCache: true,
-            cacheStrategy: "AI_SHOPKEEPER_BRAIN",
-            shopkeeperReason: shopkeeperResult.reason
-          }, { status: 200 });
-        }
-      } catch (shopkeeperErr) {
-        console.warn("[Search Route] AI Shopkeeper consultation error:", shopkeeperErr.message);
-      }
     }
 
     // 4. Admin Settings & Coupons
@@ -416,7 +338,24 @@ export async function POST(request) {
       }, { status: 200 });
     }
 
-    // 6. Live Product Search via RapidAPI (Pool of up to 20 for broad queries, 1 Master Card for exact models)
+    // 6. Live Product Search via RapidAPI - Consumes 1 credit from Unified 10-Call API Quota
+    const quotaResult = await checkUnifiedApiQuota({
+      userId,
+      clientIp,
+      isCacheHit: false,
+      limit: 10
+    });
+
+    if (!quotaResult.allowed) {
+      return NextResponse.json({
+        products: [],
+        coupons: [],
+        error: "QUOTA_EXHAUSTED",
+        message: quotaResult.message || "Daily limit reached (10/10 AI operations). Your quota resets tomorrow at 12:00 AM IST!",
+        searchesLeft: 0
+      }, { status: 429 });
+    }
+
     let cleanProducts = [];
     const fetchLimit = isExactProduct ? 1 : 20;
 
@@ -472,15 +411,18 @@ export async function POST(request) {
       }
     }
 
-    // Increment user & IP quota counters
-    try {
-      await Promise.all([
-        redis.set(userQuotaKey, String(userCount + 1), { ex: 86400 }),
-        redis.set(ipQuotaKey, String(ipCount + 1), { ex: 86400 })
-      ]);
-    } catch (e) {}
+    const remainingSearches = quotaResult?.remaining ?? 9;
 
-    const remainingSearches = Math.max(0, MAX_USER_SEARCHES - (userCount + 1));
+    // Non-blocking telemetry for Admin monitoring
+    recordSearchMetric({
+      query: cleanQuery,
+      clientIp,
+      isCacheHit: false,
+      country,
+      category: "ecommerce",
+      latencyMs: Date.now() - searchStartTime,
+      statusCode: 200
+    }).catch(() => {});
 
     return NextResponse.json({
       products: cleanProducts,
@@ -491,6 +433,11 @@ export async function POST(request) {
 
   } catch (err) {
     console.error("Serverless Search API Route error:", err);
-    return NextResponse.json({ products: [], coupons: [], error: "Unable to fetch live deals at this moment" }, { status: 200 });
+    return NextResponse.json({
+      products: [],
+      coupons: [],
+      error: "SERVER_BUSY",
+      message: "Zippy servers are experiencing extraordinarily high shopping traffic right now. To ensure price accuracy, please wait a moment or try again in a few seconds."
+    }, { status: 200 });
   }
 }

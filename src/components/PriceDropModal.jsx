@@ -25,15 +25,28 @@ export default function PriceDropModal({
   product,
   onSaveAlert
 }) {
-  if (!isOpen || !product) return null;
-
-  const currentPrice = typeof product.price === "number" 
-    ? product.price 
-    : parseFloat(String(product.price || "").replace(/[^0-9.]/g, "")) || 0;
+  const currentPrice = product 
+    ? (typeof product.price === "number" 
+        ? product.price 
+        : parseFloat(String(product.price || "").replace(/[^0-9.]/g, "")) || 0)
+    : 0;
 
   const defaultTarget = Math.round(currentPrice * 0.95 / 50) * 50;
   const [targetPrice, setTargetPrice] = useState(defaultTarget || currentPrice);
   const [isSubmitted, setIsSubmitted] = useState(false);
+
+  React.useEffect(() => {
+    if (product) {
+      const p = typeof product.price === "number" 
+        ? product.price 
+        : parseFloat(String(product.price || "").replace(/[^0-9.]/g, "")) || 0;
+      const t = Math.round(p * 0.95 / 50) * 50;
+      setTargetPrice(t || p);
+      setIsSubmitted(false);
+    }
+  }, [product]);
+
+  if (!isOpen || !product) return null;
 
   const handleActivate = async () => {
     // Request Native Web Push permission if supported (No email needed!)

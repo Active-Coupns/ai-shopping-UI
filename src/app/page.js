@@ -2,26 +2,50 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, ShoppingBag, ArrowLeft, RefreshCw, Layers, ShieldAlert, Coins, Tag, AlertCircle, Shirt, User, Globe, Search, Pill, Heart, Scale, Bell, X } from "lucide-react";
+import { Sparkles, ShoppingBag, ArrowLeft, RefreshCw, Layers, ShieldAlert, Coins, Tag, AlertCircle, Shirt, User, Globe, Search, Pill, Heart, Scale, Bell, X, Zap } from "lucide-react";
 import { SignedIn, SignedOut, SignInButton, useUser, useClerk } from "@clerk/nextjs";
+import dynamic from "next/dynamic";
 import SearchHero from "@/components/SearchHero";
 import RocketLoader from "@/components/RocketLoader";
 import ProductCard from "@/components/ProductCard";
-import UnifiedAccountModal from "@/components/UnifiedAccountModal";
 import QuotaModal from "@/components/QuotaModal";
 import CouponCard from "@/components/CouponCard";
-import FashionTrialRoom from "@/components/FashionTrialRoom";
 import CouponResultView from "@/components/CouponResultView";
 import DealsResultView from "@/components/DealsResultView";
 import InChatShoppingAgent from "@/components/InChatShoppingAgent";
 import SmartFilterChips, { generateSmartChips } from "@/components/SmartFilterChips";
-import HeadToHeadModal from "@/components/HeadToHeadModal";
 import SavedDealsDrawer from "@/components/SavedDealsDrawer";
-import PriceDropModal from "@/components/PriceDropModal";
-import SearchAiConciergeModal from "@/components/SearchAiConciergeModal";
+import ProductNotFoundState from "@/components/ProductNotFoundState";
 import { isProductUrl, extractProductTitleFromUrl, extractProductInfoFromUrl } from "@/lib/urlProductParser";
 import { searchProducts } from "@/services/api";
 import { userJourneyTracker } from "@/services/userJourneyTracker";
+
+// Lazy-loaded components for optimal initial bundle footprint
+const FashionTrialRoom = dynamic(() => import("@/components/FashionTrialRoom"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex flex-col items-center justify-center min-h-[500px] w-full p-8 text-center">
+      <div className="w-12 h-12 border-4 border-purple-500/30 border-t-purple-600 rounded-full animate-spin mb-4" />
+      <p className="text-sm font-semibold text-slate-700">Loading AI Virtual Trial Studio...</p>
+      <p className="text-xs text-slate-400 mt-1">Preparing models and catalog</p>
+    </div>
+  )
+});
+
+const SmartPurchaseTerminal = dynamic(() => import("@/components/SmartPurchaseTerminal"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex flex-col items-center justify-center min-h-[400px] w-full p-8 text-center">
+      <div className="w-10 h-10 border-4 border-indigo-500/30 border-t-indigo-600 rounded-full animate-spin mb-4" />
+      <p className="text-sm font-semibold text-slate-700">Loading Smart Purchase Terminal...</p>
+    </div>
+  )
+});
+
+const HeadToHeadModal = dynamic(() => import("@/components/HeadToHeadModal"), { ssr: false });
+const PriceDropModal = dynamic(() => import("@/components/PriceDropModal"), { ssr: false });
+const SearchAiConciergeModal = dynamic(() => import("@/components/SearchAiConciergeModal"), { ssr: false });
+const UnifiedAccountModal = dynamic(() => import("@/components/UnifiedAccountModal"), { ssr: false });
 
 function detectCategory(query, title) {
   const text = (query + " " + title).toLowerCase();
@@ -131,6 +155,55 @@ export default function Home() {
       brand: product.store_name || product.store
     });
     setAppState("trial_room");
+  };
+
+  // 5. AI Smart Purchase Terminal State (Dedicated Single-Product Money Saver Dashboard)
+  const [terminalProductInfo, setTerminalProductInfo] = useState(null);
+  const [terminalRawUrl, setTerminalRawUrl] = useState("");
+  const [terminalStrategyData, setTerminalStrategyData] = useState(null);
+  const [isTerminalLoading, setIsTerminalLoading] = useState(false);
+
+  const handleLaunchPurchaseTerminal = async (urlOrQuery, explicitInfo = null) => {
+    const cleanInput = String(urlOrQuery || "").replace(/\s+\(.*?\)$/, "").trim();
+    const isUrl = isProductUrl(cleanInput);
+    const info = explicitInfo || (isUrl ? extractProductInfoFromUrl(cleanInput) : {
+      isUrl: false,
+      store: selectedCountry === "IN" ? "Amazon.in" : "Amazon.com",
+      title: cleanInput,
+      canonicalUrl: ""
+    });
+    setTerminalProductInfo(info);
+    setTerminalRawUrl(isUrl ? cleanInput : "");
+    setTerminalStrategyData(null);
+    setProducts([]); // Clear any previous search results (e.g. laptops) so they never bleed into the terminal
+    setIsTerminalLoading(true);
+    setSearchQuery(info.title);
+    setAppState("purchase_terminal");
+
+    try {
+      const res = await fetch("/api/terminal/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          url: isUrl ? cleanInput : "",
+          query: !isUrl ? cleanInput : info.title,
+          country: selectedCountry
+        })
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && json.data) {
+          setTerminalStrategyData(json.data);
+          if (json.data.allLiveOffers) {
+            setProducts(json.data.allLiveOffers);
+          }
+        }
+      }
+    } catch (err) {
+      console.warn("Terminal strategy fetch error:", err);
+    } finally {
+      setIsTerminalLoading(false);
+    }
   };
 
   // Load saved deals & price alerts from localStorage on client mount & record visit telemetry
@@ -347,7 +420,7 @@ export default function Home() {
     }
   };
 
-  const handleSearchSubmit = async (query, bypassGuide = false, isExactMatch = false) => {
+  const handleSearchSubmit = async (query, bypassGuide = false, isExactMatch = false, forceTerminal = false) => {
     if (!isSignedIn && process.env.NODE_ENV === "production") {
       openSignIn();
       return;
@@ -358,14 +431,10 @@ export default function Home() {
       return;
     }
 
-    if (isProductUrl(query)) {
-      const info = extractProductInfoFromUrl(query);
-      handleDirectSearch(info.title, true, info.store, info.canonicalUrl, true);
-      return;
-    }
+    const cleanQuery = String(query || "").replace(/\s+\(.*?\)$/, "").trim();
 
-    // Direct Instant Search: No more questionnaire delays, instant deals!
-    handleDirectSearch(query, false, null, null, isExactMatch);
+    // Direct Instant Search: Compares live across stores and renders deals
+    handleDirectSearch(cleanQuery, false, null, null, isExactMatch);
   };
 
   const handleDirectSearch = async (query, isUrlLookup = false, sourceStore = null, sourceUrl = null, isExactMatch = false) => {
@@ -409,7 +478,11 @@ export default function Home() {
       setCoupons(response.coupons || []);
       setCouponNotAvailable(response.error === "NotAvailable");
       setSearchesLeft(response.searchesLeft !== undefined ? response.searchesLeft : 10);
-      setApiError(null);
+      if (response.error === "SERVER_BUSY" || (fetchedProducts.length === 0 && response.message)) {
+        setApiError(response.message || "Zippy servers are experiencing extraordinarily high shopping traffic right now. To ensure price accuracy, please wait a moment or try again in a few seconds.");
+      } else {
+        setApiError(null);
+      }
     } catch (err) {
       console.error("Local search API request failed:", err);
       if (err.message?.includes("403") || err.message?.includes("QuotaReached")) {
@@ -419,7 +492,7 @@ export default function Home() {
         setApiError("Your session has expired. Please sign in again.");
         openSignIn();
       } else if (err.message?.includes("429") || err.message?.includes("busy") || err.message?.includes("Too Many Requests")) {
-        setApiError("The server is currently busy processing other searches. Please wait a moment and try again.");
+        setApiError("Zippy servers are experiencing extraordinarily high shopping traffic right now. To ensure price accuracy, please wait a moment or try again in a few seconds.");
       } else {
         setApiError("No live deals found for this query. Try adjusting your search terms.");
       }
@@ -546,7 +619,7 @@ export default function Home() {
               suppressHydrationWarning
               onClick={() => setAppState("idle")}
               className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                appState !== "trial_room"
+                appState !== "trial_room" && appState !== "purchase_terminal"
                   ? "bg-white text-slate-900 shadow-sm border border-slate-200/60"
                   : "text-slate-600 hover:text-slate-900"
               }`}
@@ -715,6 +788,38 @@ export default function Home() {
             </motion.div>
           )}
 
+          {/* AI SMART PURCHASE TERMINAL / MONEY SAVER DASHBOARD */}
+          {appState === "purchase_terminal" && (
+            <motion.div
+              key="purchase-terminal-state"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.3 }}
+              className="w-full"
+            >
+              <SmartPurchaseTerminal
+                productInfo={terminalProductInfo}
+                rawUrl={terminalRawUrl}
+                country={selectedCountry}
+                strategyData={terminalStrategyData}
+                isLoading={isTerminalLoading}
+                matchedProducts={products}
+                onBack={() => setAppState("idle")}
+                onOpenAlertModal={(alertProd) => {
+                  setSelectedAlertProduct({
+                    id: alertProd?.title || "terminal-product",
+                    title: alertProd?.title,
+                    price: alertProd?.price,
+                    currency: selectedCountry === "IN" ? "INR" : "USD"
+                  });
+                  setIsPriceAlertModalOpen(true);
+                }}
+                onViewAllComparisons={() => setAppState("results")}
+              />
+            </motion.div>
+          )}
+
           {/* IDLE SEARCH HERO */}
           {appState === "idle" && (
             <motion.div
@@ -727,7 +832,7 @@ export default function Home() {
             >
               <SearchHero
                 country={selectedCountry}
-                initialTab={searchIntent === "COUPONS" ? "coupons" : (searchIntent === "TODAY_DEALS" || searchIntent === "DEALS") ? "today_deals" : "ecommerce"}
+                initialTab={searchIntent === "SMART_TERMINAL" ? "smart_terminal" : searchIntent === "COUPONS" ? "coupons" : (searchIntent === "TODAY_DEALS" || searchIntent === "DEALS") ? "today_deals" : "ecommerce"}
                 onSubmit={handleSearchSubmit}
                 onCouponSearch={handleCouponSearch}
                 onAnalyzeCartScreenshot={handleAnalyzeCartScreenshot}
@@ -883,96 +988,15 @@ export default function Home() {
                 )
               ) : (
                 products.length === 0 ? (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="max-w-lg mx-auto text-center py-12 px-6 glass-panel rounded-3xl border border-indigo-100 shadow-xl mt-6 bg-white/90 backdrop-blur-md"
-                  >
-                    <div className="relative w-16 h-16 mx-auto mb-5">
-                      <div className="absolute inset-0 rounded-2xl bg-indigo-500/10 animate-ping" />
-                      <div className="relative w-16 h-16 bg-gradient-to-tr from-indigo-600 to-purple-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-indigo-500/25">
-                        <Sparkles className="w-8 h-8 animate-pulse" />
-                      </div>
-                    </div>
-
-                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] font-extrabold mb-3">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                      <span>Live Merchant Radar Active</span>
-                    </div>
-
-                    <h3 className="text-lg md:text-xl font-black text-slate-900 mb-2">
-                      Partner Stores are Restocking Deals
-                    </h3>
-                    
-                    <p className="text-xs md:text-sm text-slate-500 mb-6 leading-relaxed max-w-md mx-auto">
-                      {apiError ? (
-                        <span>Partner merchant networks are undergoing momentary sync. Our backup price crawler is active.</span>
-                      ) : (
-                        <span>
-                          Direct inventory for <span className="font-bold text-slate-800">&ldquo;{searchQuery}&rdquo;</span> is currently cycling prices across Amazon &amp; Flipkart.
-                        </span>
-                      )}
-                    </p>
-
-                    {/* Quick Recovery Options */}
-                    <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 mb-6 text-left space-y-3">
-                      <p className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">
-                        💡 Suggested Instant Alternatives:
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        <button
-                          type="button"
-                          onClick={() => handleSearchSubmit("Best laptop under ₹50,000")}
-                          className="px-3 py-1.5 rounded-xl bg-white hover:bg-indigo-50 border border-slate-200 hover:border-indigo-300 text-xs font-semibold text-slate-700 hover:text-indigo-600 transition-all cursor-pointer shadow-2xs"
-                        >
-                          💻 Laptops under ₹50K
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleSearchSubmit("Dolo 650 strip of 15 tabs")}
-                          className="px-3 py-1.5 rounded-xl bg-white hover:bg-emerald-50 border border-slate-200 hover:border-emerald-300 text-xs font-semibold text-slate-700 hover:text-emerald-700 transition-all cursor-pointer shadow-2xs"
-                        >
-                          💊 Dolo 650 &amp; Healthcare
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleSearchSubmit("ON Gold Standard Whey 2kg")}
-                          className="px-3 py-1.5 rounded-xl bg-white hover:bg-amber-50 border border-slate-200 hover:border-amber-300 text-xs font-semibold text-slate-700 hover:text-amber-700 transition-all cursor-pointer shadow-2xs"
-                        >
-                          💪 Whey Protein Deals
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleSearchSubmit("Pure cotton party shirt")}
-                          className="px-3 py-1.5 rounded-xl bg-white hover:bg-purple-50 border border-slate-200 hover:border-purple-300 text-xs font-semibold text-slate-700 hover:text-purple-700 transition-all cursor-pointer shadow-2xs"
-                        >
-                          👔 Casual Cotton Shirts
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSearchQuery(searchQuery);
-                          setIsAiConciergeOpen(true);
-                        }}
-                        className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs md:text-sm font-bold shadow-md shadow-indigo-600/20 transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-95"
-                      >
-                        <Sparkles className="w-4 h-4 text-amber-300" />
-                        <span>Consult AI Guide for Suggestions</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={handleReset}
-                        className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-xs md:text-sm font-bold text-slate-700 transition-all cursor-pointer shadow-2xs active:scale-95"
-                      >
-                        Reset Search
-                      </button>
-                    </div>
-                  </motion.div>
+                  <ProductNotFoundState
+                    searchQuery={searchQuery}
+                    apiError={apiError}
+                    onRetry={() => handleSearchSubmit(searchQuery)}
+                    onConsultAi={(q) => handleOpenConcierge(q || searchQuery)}
+                    onOpenTrialRoom={() => setAppState("trial_room")}
+                    onSearchCategory={(term) => handleSearchSubmit(term)}
+                    onReset={handleReset}
+                  />
                 ) : (
                   <div className="space-y-6">
                     {/* AI Smart Filter Chips (In-Memory 0ms Instant Client Filter) */}
@@ -1032,7 +1056,7 @@ export default function Home() {
                       <div className="pt-8 border-t border-slate-200">
                         <h3 className="text-lg md:text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
                           <Tag className="w-5 h-5 text-brand-violet animate-pulse" />
-                          <span>Today's Verified Store Vouchers</span>
+                          <span>Today&apos;s Verified Store Vouchers</span>
                         </h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                           {coupons.map((coupon, idx) => (
@@ -1099,13 +1123,29 @@ export default function Home() {
           type="button"
           onClick={() => setAppState("idle")}
           className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl transition-all cursor-pointer ${
-            appState !== "trial_room"
+            appState !== "trial_room" && appState !== "purchase_terminal"
               ? "text-brand-indigo font-bold"
               : "text-slate-500 hover:text-slate-900"
           }`}
         >
-          <Search className={`w-4.5 h-4.5 ${appState !== "trial_room" ? "stroke-[2.5]" : "stroke-[1.75]"}`} />
+          <Search className={`w-4.5 h-4.5 ${appState !== "trial_room" && appState !== "purchase_terminal" ? "stroke-[2.5]" : "stroke-[1.75]"}`} />
           <span className="text-[10px] tracking-tight">Deals</span>
+        </button>
+
+        {/* Tab 1.5: Smart Terminal */}
+        <button
+          type="button"
+          onClick={() => handleLaunchPurchaseTerminal("https://www.amazon.in/dp/B0CQ2889D7-Samsung-Galaxy-S24-5G")}
+          className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl transition-all cursor-pointer relative ${
+            appState === "purchase_terminal"
+              ? "text-emerald-700 font-bold"
+              : "text-slate-500 hover:text-slate-900"
+          }`}
+        >
+          <div className={`p-1 rounded-xl ${appState === "purchase_terminal" ? "bg-gradient-to-r from-emerald-600 to-indigo-600 text-white shadow-xs" : ""}`}>
+            <Zap className={`w-3.5 h-3.5 ${appState === "purchase_terminal" ? "text-amber-300 fill-amber-300" : "text-emerald-600"}`} />
+          </div>
+          <span className="text-[10px] tracking-tight">Smart Saver</span>
         </button>
 
         {/* Tab 2: AI Virtual Trial Room */}

@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
+import { useClerk, useUser } from "@clerk/nextjs";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Bot, 
@@ -31,9 +32,13 @@ export default function InChatShoppingAgent({
   aiSessionLedger = null,
   onExecuteSearch
 }) {
+  const { openSignIn } = useClerk();
+  const { isSignedIn, isLoaded } = useUser();
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const pendingAuthQueryRef = useRef(null);
+  const isRetryingAuthRef = useRef(false);
   const [isExpanded, setIsExpanded] = useState(true);
   const [dismissedConfirmations, setDismissedConfirmations] = useState({});
   const [activeFollowUps, setActiveFollowUps] = useState([
@@ -109,21 +114,53 @@ export default function InChatShoppingAgent({
     }
   };
 
-  // Initial welcome message from AI
+  // Initial welcome message from AI tailored dynamically by category
   useEffect(() => {
     if (products && products.length > 0) {
-      setMessages([
-        {
-          role: "assistant",
-          text: `I've analyzed all ${products.length} products found for "${searchQuery}". Ask me anything—I can compare the 3 on your screen, pull other hidden matches from our inventory, or advise on better alternatives!`,
-          quickFollowUps: [
-            "Which one is the best value for money?",
-            "Compare battery life & performance",
-            "Is the most expensive one worth the extra cost?",
-            "What if I need heavy gaming or 4K editing?"
-          ]
-        }
-      ]);
+      const qLower = (searchQuery || "").toLowerCase();
+      const isMedicine = /\b(tablet|capsule|syrup|mg|dolo|calpol|telma|pantocid|pan\s*40|paracetamol|azithromycin|amoxicillin|metformin|cetirizine|allegra|combiflam)\b/i.test(qLower);
+      const isSupplement = /\b(whey|protein|creatine|bcaa|isolate|casein|mass\s*gainer|multivitamin|fish\s*oil|omega\s*3)\b/i.test(qLower);
+
+      if (isMedicine) {
+        setMessages([
+          {
+            role: "assistant",
+            text: `I've found ${products.length} pharmacy results for "${searchQuery}". You can ask me what this medicine is typically prescribed for, compare store prices (1mg vs Apollo), or check generic alternatives. (Always consult a doctor before taking any medication).`,
+            quickFollowUps: [
+              "What is this medicine typically used for?",
+              "Compare pharmacy prices across stores",
+              "Are there generic salt alternatives?",
+              "What are the available pack sizes?"
+            ]
+          }
+        ]);
+      } else if (isSupplement) {
+        setMessages([
+          {
+            role: "assistant",
+            text: `I've analyzed all ${products.length} health supplements found for "${searchQuery}". Ask me about protein per scoop, unflavored vs flavored options, beginner recommendations, or lab test certifications!`,
+            quickFollowUps: [
+              "Which one has the highest protein per scoop?",
+              "Which one is best for beginners on a budget?",
+              "Is Isolate better for lactose sensitivity?",
+              "Compare authentic store prices"
+            ]
+          }
+        ]);
+      } else {
+        setMessages([
+          {
+            role: "assistant",
+            text: `I've analyzed all ${products.length} products found for "${searchQuery}". Ask me anything—I can compare the 3 on your screen, pull other hidden matches from our inventory, or advise on better alternatives!`,
+            quickFollowUps: [
+              "Which one is the best value for money?",
+              "Compare battery life & performance",
+              "Is the most expensive one worth the extra cost?",
+              "What if I need heavy gaming or 4K editing?"
+            ]
+          }
+        ]);
+      }
     }
   }, [searchQuery, products.length]);
 
@@ -175,7 +212,66 @@ export default function InChatShoppingAgent({
         })
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
+
+      if (res.status === 401 || data.error === "UNAUTHORIZED") {
+        pendingAuthQueryRef.current = queryText;
+        setMessages(prev => [
+          ...prev,
+          {
+            role: "assistant",
+            text: "🔒 Sign-in required: Please sign in to your ShopSmart account to chat with the AI shopping assistant and get personalized recommendations.",
+            isAuthPrompt: true
+          }
+        ]);
+        if (typeof openSignIn === "function") {
+          try { openSignIn(); } catch (e) {}
+        }
+        return;
+      }
+
+      // Clear pending auth query on non-401 response
+      pendingAuthQueryRef.current = null;
+
+      // Handle Rate Limit (429) or Service Busy (503) explicitly with server-provided message
+      if (res.status === 429 || res.status === 503 || data.error === "RATE_LIMIT_EXCEEDED" || data.error === "RATE_LIMITER_UNAVAILABLE") {
+        const fallbackMsg = res.status === 429
+          ? "Too many messages sent. Please wait a moment before sending another message."
+          : "AI Shopping Assistant is temporarily busy. Please retry shortly.";
+        const serverMsg = typeof data.message === "string" && data.message.trim().length > 0
+          ? data.message.trim()
+          : fallbackMsg;
+
+        setMessages(prev => [
+          ...prev.filter(m => !m.isAuthPrompt),
+          {
+            role: "assistant",
+            text: `⚠️ ${serverMsg}`,
+            isRateLimitNotice: true,
+            quickFollowUps: ["Which one is the best value for money?", "Compare battery life & performance"]
+          }
+        ]);
+        return;
+      }
+
+      // Handle other non-OK error responses (e.g. 400, 500)
+      if (!res.ok || data.success === false) {
+        const errorMsg = typeof data.message === "string" && data.message.trim().length > 0
+          ? data.message.trim()
+          : (typeof data.error === "string" && data.error.trim().length > 0 ? data.error.trim() : null);
+
+        if (errorMsg) {
+          setMessages(prev => [
+            ...prev.filter(m => !m.isAuthPrompt),
+            {
+              role: "assistant",
+              text: `⚠️ ${errorMsg}`,
+              quickFollowUps: ["Which one is the best value for money?", "Compare battery life & performance"]
+            }
+          ]);
+          return;
+        }
+      }
 
       // Find full product object if suggestedPoolProduct was returned
       let matchedPoolProduct = null;
@@ -187,7 +283,7 @@ export default function InChatShoppingAgent({
       }
 
       setMessages(prev => [
-        ...prev,
+        ...prev.filter(m => !m.isAuthPrompt),
         {
           role: "assistant",
           text: data.reply || "I analyzed your requirements against the current deals.",
@@ -219,6 +315,26 @@ export default function InChatShoppingAgent({
       setIsLoading(false);
     }
   };
+
+  // Auto-clear auth prompt and auto-retry pending query when user signs in
+  useEffect(() => {
+    if (!isLoaded) return;
+
+    if (isSignedIn) {
+      // 1. Remove stale auth prompt messages from chat history
+      setMessages(prev => prev.filter(m => !m.isAuthPrompt));
+
+      // 2. Retry pending query at most once without causing duplicate sends
+      if (pendingAuthQueryRef.current && !isLoading && !isRetryingAuthRef.current) {
+        const queryToRetry = pendingAuthQueryRef.current;
+        pendingAuthQueryRef.current = null;
+        isRetryingAuthRef.current = true;
+        handleSendMessage(queryToRetry).finally(() => {
+          isRetryingAuthRef.current = false;
+        });
+      }
+    }
+  }, [isSignedIn, isLoaded, isLoading]);
 
   const handleFormSubmit = (e) => {
     e.preventDefault();
@@ -334,21 +450,69 @@ export default function InChatShoppingAgent({
                           {msg.text}
                         </div>
 
-                        {/* 1. Winner Among Currently Displayed 3 Cards */}
+                        {msg.isAuthPrompt && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (typeof openSignIn === "function") openSignIn();
+                            }}
+                            className="mt-2.5 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs transition-all cursor-pointer"
+                          >
+                            <span>Sign In to Continue</span> &rarr;
+                          </button>
+                        )}
+
+                        {/* 1. Winner Among Currently Displayed 3 Cards (Full Visual Rich Card) */}
                         {recDisplayedProd && !isUser && (
-                          <div className="mt-3 p-3 rounded-xl bg-emerald-50 border border-emerald-200/80 text-emerald-950 flex items-center justify-between gap-3">
-                            <div className="flex items-center gap-2">
-                              <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
-                              <div className="text-left">
-                                <span className="text-[10px] uppercase font-extrabold text-emerald-700 tracking-wider block">
-                                  Top Pick From Screen Cards
-                                </span>
-                                <span className="font-bold text-xs line-clamp-1">{recDisplayedProd.title}</span>
+                          <div className="mt-3.5 p-3.5 rounded-2xl bg-gradient-to-br from-emerald-50/80 via-teal-50/40 to-white border border-emerald-300/80 shadow-xs text-left space-y-2.5">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-black tracking-wide">
+                                <CheckCircle className="w-3 h-3 text-white" />
+                                <span>Top Pick From Your Screen</span>
+                              </span>
+                              <span className="text-[11px] font-bold text-emerald-800">
+                                {recDisplayedProd.store_name || recDisplayedProd.store || "Verified Store"}
+                              </span>
+                            </div>
+
+                            <div className="flex items-start gap-3">
+                              {(recDisplayedProd.image || recDisplayedProd.thumbnail) && (
+                                <img 
+                                  src={recDisplayedProd.image || recDisplayedProd.thumbnail} 
+                                  alt={recDisplayedProd.title} 
+                                  className="w-14 h-14 object-contain rounded-xl bg-white border border-slate-200/80 p-1 shrink-0" 
+                                />
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-bold text-xs md:text-sm text-slate-900 line-clamp-2 leading-tight">
+                                  {recDisplayedProd.title}
+                                </h4>
+                                <div className="mt-1 flex items-baseline gap-2">
+                                  <span className="text-sm md:text-base font-black text-emerald-700">
+                                    {recDisplayedProd.price}
+                                  </span>
+                                  {recDisplayedProd.rating && (
+                                    <span className="text-[11px] text-slate-500 font-semibold">
+                                      ⭐ {recDisplayedProd.rating}
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                             </div>
-                            <span className="text-xs font-black shrink-0 px-2.5 py-1 rounded-lg bg-emerald-600 text-white">
-                              {recDisplayedProd.price}
-                            </span>
+
+                            {/* Direct View Deal Link */}
+                            {(recDisplayedProd.deal_link || recDisplayedProd.link || recDisplayedProd.affiliateUrl) && (
+                              <a
+                                href={recDisplayedProd.deal_link || recDisplayedProd.link || recDisplayedProd.affiliateUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center justify-center gap-1.5 w-full py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-all active:scale-98 cursor-pointer mt-1"
+                              >
+                                <ShoppingBag className="w-3.5 h-3.5" />
+                                <span>Buy Directly at {recDisplayedProd.store_name || recDisplayedProd.store || "Store"} ({recDisplayedProd.price})</span>
+                                <ExternalLink className="w-3 h-3 ml-0.5" />
+                              </a>
+                            )}
                           </div>
                         )}
 
@@ -448,7 +612,7 @@ export default function InChatShoppingAgent({
                                   className="flex-1 py-2.5 px-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 shadow-md transition-all cursor-pointer active:scale-98"
                                 >
                                   <Check className="w-3.5 h-3.5 stroke-[3]" />
-                                  <span>Yes, Search "{reconfirm.suggestedQuery}"</span>
+                                  <span>Yes, Search &quot;{reconfirm.suggestedQuery}&quot;</span>
                                 </button>
                                 <button
                                   type="button"

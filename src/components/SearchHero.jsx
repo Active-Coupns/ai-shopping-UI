@@ -55,12 +55,25 @@ const DEALS_QUERIES_IN = [
   "Whey protein supplement deals"
 ];
 
+const SMART_TERMINAL_QUERIES_IN = [
+  "https://www.amazon.in/dp/B0CQ2889D7 (Samsung Galaxy S24)",
+  "https://www.flipkart.com/apple-iphone-16-128-gb/p/itm43212abcd",
+  "https://www.croma.com/sony-wh-1000xm5-headphones/p/251234",
+  "Paste any Amazon or Flipkart product URL to calculate max savings"
+];
+
+const QUICK_TRENDING_TERMINAL_IN = [
+  { label: "📱 Samsung Galaxy S24", query: "https://www.amazon.in/dp/B0CQ2889D7-Samsung-Galaxy-S24-5G" },
+  { label: "🍎 iPhone 16 (128GB)", query: "https://www.amazon.in/dp/B0DJ2XYZ-Apple-iPhone-16-128GB" },
+  { label: "🎧 Sony WH-1000XM5", query: "https://www.amazon.in/dp/B09XS7JWHH-Sony-WH-1000XM5-Wireless" },
+  { label: "💻 MacBook Air M3", query: "https://www.amazon.in/dp/B0CX21C26G-Apple-MacBook-Air-M3" }
+];
+
 const QUICK_TRENDING_ECOM_IN = [
   { label: "⚡ Laptops under ₹50K", query: "Best laptop under ₹50,000 for coding & gaming" },
   { label: "🔥 Top 5G Phones", query: "Sabse sasta 5G mobile phone" },
   { label: "🎧 ANC Earbuds", query: "Noise-cancelling headphones for travel" },
-  { label: "👔 Party Shirts", query: "Party cotton shirt under ₹3,000" },
-  { label: "👟 Sneakers Deals", query: "Best white sneakers for men" }
+  { label: "👔 Party Shirts", query: "Party cotton shirt under ₹3,000" }
 ];
 
 const QUICK_TRENDING_HEALTH_IN = [
@@ -106,11 +119,10 @@ const COUPON_QUERIES_US = [
 ];
 
 const QUICK_TRENDING_ECOM_US = [
+  { label: "🎯 Demo: Smart Money Terminal", query: "https://www.amazon.com/dp/B0CQ2889D7-Samsung-Galaxy-S24-5G" },
   { label: "⚡ Laptops under $600", query: "Best laptop under $600 for work & gaming" },
   { label: "🔥 Unlocked 5G Phones", query: "Top 5G unlocked smartphone deals" },
-  { label: "🎧 Noise Cancelling Earbuds", query: "Sony noise cancelling headphones" },
-  { label: "👔 Oxford Shirts", query: "Men's slim fit oxford dress shirt" },
-  { label: "👟 Nike & Adidas Deals", query: "Men's running sneakers on sale" }
+  { label: "🎧 Noise Cancelling Earbuds", query: "Sony noise cancelling headphones" }
 ];
 
 const QUICK_TRENDING_HEALTH_US = [
@@ -137,6 +149,19 @@ const DEALS_QUERIES_US = [
   "Optimum Nutrition whey protein discount"
 ];
 
+const SMART_TERMINAL_QUERIES_US = [
+  "https://www.amazon.com/dp/B0CQ2889D7 (Samsung Galaxy S24)",
+  "https://www.amazon.com/dp/B0DJ2XYZ (Apple iPhone 16)",
+  "Paste any product link to calculate gift card & net savings"
+];
+
+const QUICK_TRENDING_TERMINAL_US = [
+  { label: "📱 Samsung Galaxy S24", query: "https://www.amazon.com/dp/B0CQ2889D7-Samsung-Galaxy-S24-5G" },
+  { label: "🍎 iPhone 16 (128GB)", query: "https://www.amazon.com/dp/B0DJ2XYZ-Apple-iPhone-16-128GB" },
+  { label: "🎧 Sony WH-1000XM5", query: "https://www.amazon.com/dp/B09XS7JWHH-Sony-WH-1000XM5-Wireless" },
+  { label: "💻 MacBook Air M3", query: "https://www.amazon.com/dp/B0CX21C26G-Apple-MacBook-Air-M3" }
+];
+
 export default function SearchHero({ 
   country = "IN", 
   initialTab = "ecommerce",
@@ -151,6 +176,8 @@ export default function SearchHero({
       ? "coupons"
       : initialTab === "TODAY_DEALS" || initialTab === "today_deals" || initialTab === "DEALS" || initialTab === "deals"
       ? "today_deals"
+      : initialTab === "smart_terminal" || initialTab === "terminal"
+      ? "smart_terminal"
       : initialTab || "ecommerce"
   );
 
@@ -160,11 +187,13 @@ export default function SearchHero({
         setActiveTab("coupons");
       } else if (initialTab === "TODAY_DEALS" || initialTab === "today_deals" || initialTab === "DEALS" || initialTab === "deals") {
         setActiveTab("today_deals");
+      } else if (initialTab === "smart_terminal" || initialTab === "terminal") {
+        setActiveTab("smart_terminal");
       } else {
         setActiveTab(initialTab);
       }
     }
-  }, [initialTab]); // "ecommerce" | "health" | "coupons" | "today_deals"
+  }, [initialTab]); // "ecommerce" | "health" | "coupons" | "today_deals" | "smart_terminal"
   const [query, setQuery] = useState("");
   const [placeholder, setPlaceholder] = useState("");
   const [queryIndex, setQueryIndex] = useState(0);
@@ -235,8 +264,11 @@ export default function SearchHero({
   const isHealth = activeTab === "health";
   const isCoupons = activeTab === "coupons";
   const isDeals = activeTab === "today_deals" || activeTab === "deals";
+  const isSmartTerminal = activeTab === "smart_terminal" || activeTab === "terminal";
 
-  const exampleQueries = isDeals
+  const exampleQueries = isSmartTerminal
+    ? (isUS ? SMART_TERMINAL_QUERIES_US : SMART_TERMINAL_QUERIES_IN)
+    : isDeals
     ? (isUS ? DEALS_QUERIES_US : DEALS_QUERIES_IN)
     : isCoupons
     ? (isUS ? COUPON_QUERIES_US : COUPON_QUERIES_IN)
@@ -244,7 +276,9 @@ export default function SearchHero({
     ? (isUS ? HEALTH_QUERIES_US : HEALTH_QUERIES_IN)
     : (isUS ? ECOM_QUERIES_US : ECOM_QUERIES_IN);
 
-  const trendingList = isCoupons
+  const trendingList = isSmartTerminal
+    ? (isUS ? QUICK_TRENDING_TERMINAL_US : QUICK_TRENDING_TERMINAL_IN)
+    : isCoupons
     ? (isUS ? QUICK_TRENDING_COUPONS_US : QUICK_TRENDING_COUPONS_IN)
     : isHealth
     ? (isUS ? QUICK_TRENDING_HEALTH_US : QUICK_TRENDING_HEALTH_IN)
@@ -287,15 +321,20 @@ export default function SearchHero({
     return () => clearTimeout(timer);
   }, [placeholder, charIndex, isDeleting, queryIndex, activeTab, country]);
 
-  const [lastSubmitTime, setLastSubmitTime] = useState(0);
+  const lastSubmitTimeRef = useRef(0);
 
   const handleSubmit = (e) => {
     e.preventDefault();
     const now = Date.now();
-    if (now - lastSubmitTime < 1500) return;
-    setLastSubmitTime(now);
+    if (now - lastSubmitTimeRef.current < 1500) return;
+    lastSubmitTimeRef.current = now;
 
-    const finalQuery = (query.trim() || exampleQueries[queryIndex]).trim();
+    const trimmedInput = query.trim();
+    if (!trimmedInput) {
+      // Don't accidentally submit an unwanted placeholder example
+      return;
+    }
+    const finalQuery = trimmedInput;
     const lower = finalQuery.toLowerCase();
 
     // Record non-intrusive search telemetry (Strict: never tampers with finalQuery)
@@ -312,6 +351,8 @@ export default function SearchHero({
 
     if (isCoupons && onCouponSearch) {
       onCouponSearch(finalQuery);
+    } else if (isSmartTerminal) {
+      onSubmit(finalQuery, false, false, true);
     } else {
       onSubmit(finalQuery);
     }
@@ -319,15 +360,17 @@ export default function SearchHero({
 
   const handlePromptClick = (promptQuery) => {
     const now = Date.now();
-    if (now - lastSubmitTime < 1500) return;
-    setLastSubmitTime(now);
+    if (now - lastSubmitTimeRef.current < 1500) return;
+    lastSubmitTimeRef.current = now;
 
     setQuery(promptQuery);
-    const activeSearchMode = isCoupons ? "coupons" : isHealth ? "medicine" : "shopping";
+    const activeSearchMode = isSmartTerminal ? "terminal" : isCoupons ? "coupons" : isHealth ? "medicine" : "shopping";
     userJourneyTracker.recordSearch(promptQuery, activeSearchMode);
 
     if (isCoupons && onCouponSearch) {
       onCouponSearch(promptQuery);
+    } else if (isSmartTerminal) {
+      onSubmit(promptQuery, false, false, true);
     } else {
       onSubmit(promptQuery);
     }
@@ -364,7 +407,6 @@ export default function SearchHero({
 
   return (
     <div className="w-full max-w-3xl mx-auto px-4 py-4 sm:py-8 text-center flex flex-col justify-center items-center">
-      
       {/* 1. Dynamic Catchy Brand Tag & Headline */}
       <AnimatePresence mode="wait">
         <motion.div
@@ -376,7 +418,12 @@ export default function SearchHero({
           className="mb-4 sm:mb-6 max-w-xl mx-auto"
         >
           {/* Top Badge with Dynamic Theme Coloring */}
-          {isDeals ? (
+          {isSmartTerminal ? (
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-300 text-[11px] font-bold text-emerald-800 mb-2.5 shadow-2xs">
+              <Zap className="w-3.5 h-3.5 text-emerald-600 animate-pulse fill-emerald-600" />
+              <span>AI Smart Purchase Terminal • Money-Saver Desk</span>
+            </div>
+          ) : isDeals ? (
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-50 border border-rose-200 text-[11px] font-bold text-rose-800 mb-2.5 shadow-2xs">
               <Flame className="w-3.5 h-3.5 text-rose-600 animate-pulse fill-rose-600" />
               <span>{isUS ? "US Today's Active Deals & Price Drops" : "100% Live Deals & Steep Price Drops Today"}</span>
@@ -400,7 +447,11 @@ export default function SearchHero({
 
           {/* Dynamic Catchy Title with Mode-Specific Gradients */}
           <h1 className="text-2xl sm:text-4xl md:text-5xl font-black tracking-tight text-slate-900 leading-tight">
-            {isDeals ? (
+            {isSmartTerminal ? (
+              <>
+                Paste Product Link, <span className="bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 via-teal-600 to-indigo-600">Save Max Cash.</span>
+              </>
+            ) : isDeals ? (
               <>
                 Today&apos;s Verified Deals, <span className="bg-clip-text text-transparent bg-gradient-to-r from-amber-500 via-rose-500 to-violet-600">Instantly.</span>
               </>
@@ -421,7 +472,9 @@ export default function SearchHero({
           
           {/* Dynamic Subtitle */}
           <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1.5 leading-relaxed">
-            {isDeals
+            {isSmartTerminal
+              ? "Paste any Amazon, Flipkart, or Croma product URL to calculate store arbitrage + 3.5% instant voucher savings + bank card perks."
+              : isDeals
               ? (isUS
                   ? "Live price drops and steep discounts across Amazon, Walmart, Best Buy & Target."
                   : "Live price drops and steep discounts across Amazon, Flipkart, Myntra & Croma.")
@@ -440,14 +493,14 @@ export default function SearchHero({
         </motion.div>
       </AnimatePresence>
 
-      {/* 2. Interactive 4-Vertical Segmented Toggle */}
-      <div className="flex items-center p-1 bg-slate-100/90 rounded-2xl border border-slate-200/80 mb-4 sm:mb-6 w-full max-w-md shadow-inner" suppressHydrationWarning>
+      {/* 2. Interactive Segmented Toggle: Smart Terminal is Prominently 4th, Deals is pushed to back */}
+      <div className="flex items-center p-1 bg-slate-100/90 rounded-2xl border border-slate-200/80 mb-4 sm:mb-6 w-full max-w-xl sm:max-w-2xl shadow-inner overflow-x-auto no-scrollbar gap-1" suppressHydrationWarning>
         {/* Shopping Tab */}
         <button
           type="button"
           suppressHydrationWarning
           onClick={() => setActiveTab("ecommerce")}
-          className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+          className={`flex-1 flex items-center justify-center gap-1 sm:gap-1.5 py-1.5 px-2 sm:px-2.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
             activeTab === "ecommerce"
               ? "bg-white text-slate-900 shadow-sm border border-slate-200/60"
               : "text-slate-500 hover:text-slate-900"
@@ -462,7 +515,7 @@ export default function SearchHero({
           type="button"
           suppressHydrationWarning
           onClick={() => setActiveTab("health")}
-          className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+          className={`flex-1 flex items-center justify-center gap-1 sm:gap-1.5 py-1.5 px-2 sm:px-2.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
             activeTab === "health"
               ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-sm shadow-emerald-500/20"
               : "text-slate-500 hover:text-emerald-700"
@@ -477,7 +530,7 @@ export default function SearchHero({
           type="button"
           suppressHydrationWarning
           onClick={() => setActiveTab("coupons")}
-          className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+          className={`flex-1 flex items-center justify-center gap-1 sm:gap-1.5 py-1.5 px-2 sm:px-2.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
             activeTab === "coupons"
               ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-sm shadow-violet-500/20"
               : "text-slate-500 hover:text-violet-700"
@@ -487,12 +540,12 @@ export default function SearchHero({
           <span>Coupons</span>
         </button>
 
-        {/* Today's Deals Tab */}
+        {/* 4. Today's Deals Tab */}
         <button
           type="button"
           suppressHydrationWarning
           onClick={() => setActiveTab("today_deals")}
-          className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+          className={`flex-1 flex items-center justify-center gap-1 sm:gap-1.5 py-1.5 px-2 sm:px-2.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
             activeTab === "today_deals" || activeTab === "deals"
               ? "bg-gradient-to-r from-amber-500 to-rose-500 text-white shadow-sm shadow-amber-500/20"
               : "text-slate-500 hover:text-rose-600"
@@ -642,7 +695,9 @@ export default function SearchHero({
           onSubmit={handleSubmit}
           suppressHydrationWarning
           className={`flex items-center gap-1.5 bg-white border rounded-2xl p-1.5 sm:p-2 shadow-lg shadow-slate-100/80 transition-all ${
-            isCoupons
+            isSmartTerminal
+              ? "border-emerald-300 hover:border-emerald-400 focus-within:border-emerald-500 focus-within:ring-4 focus-within:ring-emerald-500/15"
+              : isCoupons
               ? "border-violet-200 hover:border-violet-300 focus-within:border-violet-500 focus-within:ring-4 focus-within:ring-violet-500/15"
               : isHealth
               ? "border-emerald-200/90 hover:border-emerald-300 focus-within:border-emerald-500 focus-within:ring-4 focus-within:ring-emerald-500/15"
@@ -650,7 +705,9 @@ export default function SearchHero({
           }`}
         >
           <div className="pl-2.5 shrink-0">
-            {isCoupons ? (
+            {isSmartTerminal ? (
+              <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600 animate-pulse fill-emerald-600" />
+            ) : isCoupons ? (
               <Tag className="w-4 h-4 sm:w-5 sm:h-5 text-violet-600 animate-pulse" />
             ) : isHealth ? (
               <Pill className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600 animate-pulse" />
@@ -666,7 +723,9 @@ export default function SearchHero({
             onChange={(e) => setQuery(e.target.value)}
             placeholder={
               placeholder || 
-              (isDeals
+              (isSmartTerminal
+                ? "Paste product link (Amazon, Flipkart, Croma, Samsung)..."
+                : isDeals
                 ? "Search deals (e.g. 5G phones, sneakers, laptops)..."
                 : isCoupons 
                 ? "Search store (e.g. Zomato, Swiggy, Myntra)..." 
@@ -704,7 +763,7 @@ export default function SearchHero({
           </button>
 
           {/* AI Guide Me Button (Pre-Search Concierge) */}
-          {onOpenConcierge && !isCoupons && !isHealth && !isDeals && (
+          {onOpenConcierge && !isCoupons && !isHealth && !isDeals && !isSmartTerminal && (
             <button
               type="button"
               suppressHydrationWarning
@@ -722,7 +781,9 @@ export default function SearchHero({
             type="submit"
             suppressHydrationWarning
             className={`px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-xl text-white text-xs sm:text-sm font-bold shadow-md transition-all active:scale-95 cursor-pointer shrink-0 ${
-              isDeals
+              isSmartTerminal
+                ? "bg-gradient-to-r from-emerald-600 via-teal-600 to-indigo-600 hover:opacity-95 shadow-emerald-500/25 flex items-center gap-1.5"
+                : isDeals
                 ? "bg-gradient-to-r from-amber-500 to-rose-500 hover:opacity-95 shadow-amber-500/20"
                 : isCoupons
                 ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:opacity-95 shadow-violet-500/20"
@@ -731,12 +792,12 @@ export default function SearchHero({
                 : "bg-gradient-to-r from-brand-indigo to-brand-violet hover:opacity-95 shadow-indigo-500/20"
             }`}
           >
-            {isDeals ? "Find Deals" : isCoupons ? "Find Codes" : "Search"}
+            {isSmartTerminal ? "Calculate Savings" : isDeals ? "Find Deals" : isCoupons ? "Find Codes" : "Search"}
           </button>
         </form>
 
         {/* AI Guide Assistance Prompt */}
-        {onOpenConcierge && !isCoupons && !isHealth && (
+        {onOpenConcierge && !isCoupons && !isHealth && !isSmartTerminal && (
           <div className="mt-2.5 flex items-center justify-center">
             <button
               type="button"
@@ -753,7 +814,7 @@ export default function SearchHero({
         {/* Quick Trending Chips */}
         <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 mt-3 sm:mt-4" suppressHydrationWarning>
           <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mr-1">
-            Trending:
+            {isSmartTerminal ? "Sample Products:" : "Trending:"}
           </span>
           {trendingList.map((item, idx) => (
             <button
@@ -762,7 +823,9 @@ export default function SearchHero({
               suppressHydrationWarning
               onClick={() => handlePromptClick(item.query)}
               className={`px-2.5 py-1 rounded-xl text-[11px] sm:text-xs font-semibold border transition-all cursor-pointer active:scale-95 shadow-2xs ${
-                isCoupons
+                isSmartTerminal
+                  ? "bg-emerald-50/70 hover:bg-emerald-100/90 text-emerald-800 border-emerald-200/80"
+                  : isCoupons
                   ? "bg-violet-50/70 hover:bg-violet-100/90 text-violet-800 border-violet-200/70"
                   : isHealth
                   ? "bg-emerald-50/70 hover:bg-emerald-100/90 text-emerald-800 border-emerald-200/70"
