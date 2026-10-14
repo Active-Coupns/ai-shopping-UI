@@ -338,7 +338,7 @@ export async function POST(request) {
       }, { status: 200 });
     }
 
-    // 6. Live Product Search via RapidAPI - Consumes 1 credit from Unified 10-Call API Quota
+    // 6. Live Product Search via OpenWebNinja - Consumes 1 credit from Unified 10-Call API Quota
     const quotaResult = await checkUnifiedApiQuota({
       userId,
       clientIp,
@@ -360,12 +360,12 @@ export async function POST(request) {
     const fetchLimit = isExactProduct ? 1 : 20;
 
     try {
-      const rapidResults = await searchRapidApiProducts(cleanQuery, fetchLimit, userRegion, isExactProduct, sourceStore, sourceUrl);
-      if (Array.isArray(rapidResults) && rapidResults.length > 0) {
-        cleanProducts = rapidResults.slice(0, fetchLimit);
+      const openWebResults = await searchRapidApiProducts(cleanQuery, fetchLimit, userRegion, isExactProduct, sourceStore, sourceUrl);
+      if (Array.isArray(openWebResults) && openWebResults.length > 0) {
+        cleanProducts = openWebResults.slice(0, fetchLimit);
       }
-    } catch (rapidErr) {
-      console.warn("[Search Route] RapidAPI provider error:", rapidErr.message);
+    } catch (apiErr) {
+      console.warn("[Search Route] OpenWebNinja provider error:", apiErr.message);
     }
 
     // 7. Match Store Coupons from Admin Settings

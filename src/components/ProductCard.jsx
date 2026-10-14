@@ -608,9 +608,9 @@ export default function ProductCard({
                               <span>Verified Multi-Store Pricing:</span>
                               <span className="text-emerald-700 font-extrabold">Lowest Guaranteed</span>
                             </div>
-                            {(liveStores && liveStores.length > 0 ? liveStores : [
+                            {(liveStores && liveStores.length > 0 ? liveStores : (product.price_comparison && product.price_comparison.length > 0 ? product.price_comparison : [
                               { store_name: selectedStore.name || product.source || "Official Store", price: rawPriceNum, deal_link: product.affiliateUrl || product.deal_link || product.link, is_lowest: true, diff_text: "LOWEST GUARANTEED ✓" }
-                            ]).map((offer, idx) => {
+                            ])).map((offer, idx) => {
                               const sName = offer.store_name || offer.store || "Online Store";
                               const isLowest = offer.is_lowest || idx === 0;
                               const isSelected = selectedStore.name.toLowerCase() === sName.toLowerCase();
