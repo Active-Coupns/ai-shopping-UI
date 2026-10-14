@@ -587,8 +587,8 @@ export default function Home() {
 
   return (
     <div className="min-h-screen relative flex flex-col justify-between overflow-hidden">
-      {/* Background Interactive Glow Effects */}
-      <div className="absolute top-0 inset-x-0 h-[500px] flex justify-between pointer-events-none z-0">
+      {/* Background Interactive Glow Effects (Optimized for desktop GPU; lightweight on mobile) */}
+      <div className="absolute top-0 inset-x-0 h-[500px] hidden sm:flex justify-between pointer-events-none z-0">
         <div className="w-[35%] h-full bg-brand-indigo/10 rounded-full blur-3xl mix-blend-multiply -translate-x-[20%] -translate-y-[20%]"></div>
         <div className="w-[35%] h-full bg-brand-violet/10 rounded-full blur-3xl mix-blend-multiply translate-x-[20%] -translate-y-[10%]"></div>
       </div>
@@ -940,16 +940,16 @@ export default function Home() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center justify-between sm:justify-end gap-2 sm:gap-3">
                   {isSignedIn && (
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 border border-indigo-200 text-xs font-bold text-brand-indigo shadow-sm">
-                      <Coins className="w-4 h-4 text-brand-indigo animate-pulse" />
-                      <span>{searchesLeft} / 3 Searches Left Today</span>
+                    <div className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-indigo-50 border border-indigo-200 text-xs font-bold text-brand-indigo shadow-sm">
+                      <Coins className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-brand-indigo animate-pulse shrink-0" />
+                      <span>{searchesLeft} / 3 <span className="hidden sm:inline">Searches Left Today</span><span className="sm:hidden">Left</span></span>
                     </div>
                   )}
                   <button
                     onClick={() => handleSearchSubmit(searchQuery)}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 text-xs md:text-sm font-bold text-slate-700 hover:text-slate-900 transition-all cursor-pointer shadow-sm active:scale-95"
+                    className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 text-xs md:text-sm font-bold text-slate-700 hover:text-slate-900 transition-all cursor-pointer shadow-sm active:scale-95"
                   >
                     <RefreshCw className="w-3.5 h-3.5" />
                     <span>Re-analyze</span>
@@ -1072,21 +1072,21 @@ export default function Home() {
           )}
         </AnimatePresence>
 
-        {/* 🤖 Floating Quick-Jump to Deals AI Assistant (Mobile & Desktop) */}
+        {/* 🤖 Floating Quick-Jump to Deals AI Assistant (Desktop only - mobile uses dedicated bottom nav tab) */}
         <AnimatePresence>
           {appState === "results" && products && products.length > 0 && (
             <motion.div
               initial={{ opacity: 0, scale: 0.8, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.8, y: 20 }}
-              className="fixed bottom-20 sm:bottom-6 right-4 sm:right-6 z-[60]"
+              className="fixed bottom-6 right-6 z-[60] hidden sm:flex"
             >
               <button
                 type="button"
                 onClick={() => {
                   chatSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
                 }}
-                className="group flex items-center gap-2 px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-full bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-xs sm:text-sm shadow-2xl shadow-indigo-600/40 border border-indigo-400/40 backdrop-blur-md transition-all active:scale-95 cursor-pointer ring-2 ring-white/30 hover:shadow-indigo-600/60"
+                className="group flex items-center gap-2 px-4 py-3 rounded-full bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-sm shadow-2xl shadow-indigo-600/40 border border-indigo-400/40 backdrop-blur-md transition-all active:scale-95 cursor-pointer ring-2 ring-white/30 hover:shadow-indigo-600/60"
                 title="Jump to In-App AI Shopping Assistant"
               >
                 <div className="relative">
@@ -1130,22 +1130,6 @@ export default function Home() {
         >
           <Search className={`w-4.5 h-4.5 ${appState !== "trial_room" && appState !== "purchase_terminal" ? "stroke-[2.5]" : "stroke-[1.75]"}`} />
           <span className="text-[10px] tracking-tight">Deals</span>
-        </button>
-
-        {/* Tab 1.5: Smart Terminal */}
-        <button
-          type="button"
-          onClick={() => handleLaunchPurchaseTerminal("https://www.amazon.in/dp/B0CQ2889D7-Samsung-Galaxy-S24-5G")}
-          className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl transition-all cursor-pointer relative ${
-            appState === "purchase_terminal"
-              ? "text-emerald-700 font-bold"
-              : "text-slate-500 hover:text-slate-900"
-          }`}
-        >
-          <div className={`p-1 rounded-xl ${appState === "purchase_terminal" ? "bg-gradient-to-r from-emerald-600 to-indigo-600 text-white shadow-xs" : ""}`}>
-            <Zap className={`w-3.5 h-3.5 ${appState === "purchase_terminal" ? "text-amber-300 fill-amber-300" : "text-emerald-600"}`} />
-          </div>
-          <span className="text-[10px] tracking-tight">Smart Saver</span>
         </button>
 
         {/* Tab 2: AI Virtual Trial Room */}

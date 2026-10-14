@@ -165,18 +165,18 @@ export default function HeadToHeadModal({
                   {productA.title}
                 </h3>
               </div>
-              <div className="mt-2 pt-2 border-t border-slate-200/80 flex items-baseline justify-between">
-                <div>
-                  <span className="text-lg sm:text-2xl font-black text-slate-900">
+              <div className="mt-2 pt-2 border-t border-slate-200/80 flex items-baseline justify-between gap-1">
+                <div className="min-w-0">
+                  <span className="text-base sm:text-2xl font-black text-slate-900 truncate block">
                     {formatPrice(productA.price, productA.currency)}
                   </span>
                   {cheaperProduct === "A" && priceDiff > 0 && (
-                    <span className="block text-[10px] font-extrabold text-emerald-600">
+                    <span className="block text-[10px] font-extrabold text-emerald-600 truncate">
                       Save ₹{priceDiff.toLocaleString("en-IN")} vs Option B
                     </span>
                   )}
                 </div>
-                <div className="flex items-center gap-1 text-xs font-bold text-slate-700">
+                <div className="flex items-center gap-1 text-xs font-bold text-slate-700 shrink-0">
                   <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
                   <span>{ratingA}</span>
                 </div>
@@ -298,18 +298,18 @@ export default function HeadToHeadModal({
                 </h3>
               </div>
 
-              <div className="mt-2 pt-2 border-t border-purple-200/70 flex items-baseline justify-between">
-                <div>
-                  <span className="text-lg sm:text-2xl font-black text-slate-900">
+              <div className="mt-2 pt-2 border-t border-purple-200/70 flex items-baseline justify-between gap-1">
+                <div className="min-w-0">
+                  <span className="text-base sm:text-2xl font-black text-slate-900 truncate block">
                     {formatPrice(productB.price, productB.currency)}
                   </span>
                   {cheaperProduct === "B" && priceDiff > 0 && (
-                    <span className="block text-[10px] font-extrabold text-emerald-600">
+                    <span className="block text-[10px] font-extrabold text-emerald-600 truncate">
                       Save ₹{priceDiff.toLocaleString("en-IN")} vs Option A
                     </span>
                   )}
                 </div>
-                <div className="flex items-center gap-1 text-xs font-bold text-slate-700">
+                <div className="flex items-center gap-1 text-xs font-bold text-slate-700 shrink-0">
                   <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
                   <span>{ratingB}</span>
                 </div>
@@ -346,13 +346,13 @@ export default function HeadToHeadModal({
           </div>
 
           {/* 3. HARDWARE SPEC MATRIX */}
-          <div className="mb-6 overflow-hidden rounded-2xl border border-slate-200">
-            <table className="w-full text-xs text-left">
+          <div className="mb-6 overflow-x-auto rounded-2xl border border-slate-200 scrollbar-none touch-pan-x">
+            <table className="w-full min-w-[390px] sm:min-w-full text-xs text-left">
               <thead className="bg-slate-100/80 text-[10px] uppercase tracking-wider text-slate-600 font-extrabold">
                 <tr>
-                  <th className="p-3 w-1/3">Hardware Specification</th>
-                  <th className="p-3 w-1/3 text-indigo-900">Option A</th>
-                  <th className="p-3 w-1/3 text-purple-900">Option B</th>
+                  <th className="p-3 w-1/3 whitespace-nowrap">Hardware Specification</th>
+                  <th className="p-3 w-1/3 text-indigo-900 whitespace-nowrap">Option A</th>
+                  <th className="p-3 w-1/3 text-purple-900 whitespace-nowrap">Option B</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -391,7 +391,7 @@ export default function HeadToHeadModal({
           </div>
 
           {/* 4. DUAL DIRECT BUY BUTTONS */}
-          <div className="grid grid-cols-2 gap-3 sm:gap-6 pt-2">
+          <div className="flex flex-col sm:grid sm:grid-cols-2 gap-2.5 sm:gap-4 pt-2">
             <a
               href={productA.affiliateUrl || productA.deal_link || productA.link || "#"}
               target="_blank"
@@ -399,7 +399,7 @@ export default function HeadToHeadModal({
               className="py-3 px-4 rounded-xl text-center font-extrabold text-xs sm:text-sm text-white bg-indigo-600 hover:bg-indigo-700 shadow-md transition-all active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <span>Buy Option A ({formatPrice(productA.price, productA.currency)})</span>
-              <ArrowUpRight className="w-4 h-4" />
+              <ArrowUpRight className="w-4 h-4 shrink-0" />
             </a>
 
             <a
@@ -409,7 +409,7 @@ export default function HeadToHeadModal({
               className="py-3 px-4 rounded-xl text-center font-extrabold text-xs sm:text-sm text-white bg-purple-600 hover:bg-purple-700 shadow-md transition-all active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <span>Buy Option B ({formatPrice(productB.price, productB.currency)})</span>
-              <ArrowUpRight className="w-4 h-4" />
+              <ArrowUpRight className="w-4 h-4 shrink-0" />
             </a>
           </div>
         </motion.div>

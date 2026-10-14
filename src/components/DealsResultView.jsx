@@ -70,12 +70,12 @@ export default function DealsResultView({
           </button>
 
           <div>
-            <div className="flex items-center gap-2">
-              <span className="text-2xl">{category.icon}</span>
-              <h2 className="text-lg sm:text-2xl font-black text-slate-900 tracking-tight">
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+              <span className="text-xl sm:text-2xl">{category.icon}</span>
+              <h2 className="text-base sm:text-2xl font-black text-slate-900 tracking-tight">
                 {category.name} Deals Today
               </h2>
-              <span className="px-2 py-0.5 rounded-full bg-rose-50 border border-rose-200 text-[10px] font-black text-rose-700 flex items-center gap-1">
+              <span className="px-2 py-0.5 rounded-full bg-rose-50 border border-rose-200 text-[10px] font-black text-rose-700 flex items-center gap-1 shrink-0">
                 <Flame className="w-3 h-3 fill-rose-600 text-rose-600" />
                 <span>{totalDeals} Live Deals</span>
               </span>

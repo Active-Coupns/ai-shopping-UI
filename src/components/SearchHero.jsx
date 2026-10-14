@@ -792,7 +792,7 @@ export default function SearchHero({
                 : "bg-gradient-to-r from-brand-indigo to-brand-violet hover:opacity-95 shadow-indigo-500/20"
             }`}
           >
-            {isSmartTerminal ? "Calculate Savings" : isDeals ? "Find Deals" : isCoupons ? "Find Codes" : "Search"}
+            {isSmartTerminal ? (<><span className="hidden sm:inline">Calculate </span>Savings</>) : isDeals ? "Find Deals" : isCoupons ? "Find Codes" : "Search"}
           </button>
         </form>
 

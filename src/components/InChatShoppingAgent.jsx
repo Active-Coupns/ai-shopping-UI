@@ -393,18 +393,18 @@ export default function InChatShoppingAgent({
             >
               {/* Quick Prompts Bar */}
               {activeFollowUps.length > 0 && (
-                <div className="px-6 pt-4 pb-2 border-b border-indigo-100/60 bg-white/70">
+                <div className="px-4 sm:px-6 pt-3 sm:pt-4 pb-2 border-b border-indigo-100/60 bg-white/70">
                   <div className="flex items-center gap-1.5 mb-2 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                     <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
                     <span>Suggested Questions:</span>
                   </div>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex overflow-x-auto sm:flex-wrap gap-2 pb-1.5 scrollbar-none touch-pan-x -mx-1 px-1">
                     {activeFollowUps.map((q, qIdx) => (
                       <button
                         key={qIdx}
                         onClick={() => handleSendMessage(q)}
                         disabled={isLoading}
-                        className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-white hover:bg-indigo-50 text-slate-700 hover:text-indigo-800 border border-slate-200/90 shadow-2xs hover:border-indigo-300 transition-all cursor-pointer text-left active:scale-98 disabled:opacity-50"
+                        className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-white hover:bg-indigo-50 text-slate-700 hover:text-indigo-800 border border-slate-200/90 shadow-2xs hover:border-indigo-300 transition-all cursor-pointer whitespace-nowrap shrink-0 active:scale-98 disabled:opacity-50"
                       >
                         💬 {q}
                       </button>

@@ -93,7 +93,11 @@ export default function SearchAiConciergeModal({
       setActiveChips(["Under ₹20,000", "Under ₹50,000", "Best Value Deals", "Top Rated"]);
     } finally {
       setIsLoading(false);
-      setTimeout(() => inputRef.current?.focus(), 150);
+      setTimeout(() => {
+        if (typeof window !== "undefined" && window.innerWidth >= 768) {
+          inputRef.current?.focus();
+        }
+      }, 150);
     }
   };
 
@@ -167,7 +171,11 @@ export default function SearchAiConciergeModal({
       setCustomQueryInput(initialQuery || text);
     } finally {
       setIsLoading(false);
-      setTimeout(() => inputRef.current?.focus(), 150);
+      setTimeout(() => {
+        if (typeof window !== "undefined" && window.innerWidth >= 768) {
+          inputRef.current?.focus();
+        }
+      }, 150);
     }
   };
 
@@ -307,7 +315,7 @@ export default function SearchAiConciergeModal({
 
             {/* Quick Tap Chips */}
             {activeChips.length > 0 && !isLoading && (
-              <div className="pl-2 sm:pl-9 pt-1 flex flex-nowrap overflow-x-auto sm:flex-wrap gap-1.5 pb-1.5 -mx-1 px-1 sm:mx-0 sm:px-0">
+              <div className="pl-2 sm:pl-9 pt-1 flex flex-nowrap overflow-x-auto sm:flex-wrap gap-1.5 pb-1.5 -mx-1 px-1 sm:mx-0 sm:px-0 scrollbar-none touch-pan-x">
                 {activeChips.map((chip, cIdx) => {
                   const isSearchChip = chip.startsWith("🚀");
                   return (

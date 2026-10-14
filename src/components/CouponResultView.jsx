@@ -416,14 +416,14 @@ export default function CouponResultView({
 
       {/* ALL VERIFIED COUPONS GRID WITH IN-PAGE CLICK-TO-REVEAL */}
       <div className="mb-10">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <Tag className="w-4 h-4 text-violet-600" />
-            <h3 className="text-base sm:text-lg font-bold text-slate-900">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-4 mb-4">
+          <div className="flex items-center gap-2 min-w-0">
+            <Tag className="w-4 h-4 text-violet-600 shrink-0" />
+            <h3 className="text-base sm:text-lg font-bold text-slate-900 truncate">
               Active Promo Codes for {storeName} ({storeCoupons.length})
             </h3>
           </div>
-          <span className="text-xs text-slate-500">
+          <span className="text-xs text-slate-500 shrink-0">
             Click to reveal code & copy to clipboard
           </span>
         </div>

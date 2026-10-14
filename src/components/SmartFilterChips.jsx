@@ -24,14 +24,14 @@ export default function SmartFilterChips({
       <div className="flex items-center gap-2 mb-2.5">
         <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-50 border border-indigo-200/80 text-[11px] font-black text-indigo-700 uppercase tracking-wider">
           <Sparkles className="w-3.5 h-3.5 text-indigo-600 animate-pulse" />
-          <span>AI Smart Filter (In-Memory Instant 0ms)</span>
+          <span>AI Smart Filter<span className="hidden sm:inline"> (In-Memory Instant 0ms)</span></span>
         </div>
         <span className="text-xs text-slate-400 font-medium hidden sm:inline">
           Filter {products.length} live verified deals instantly
         </span>
       </div>
 
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none touch-pan-x">
         {chips.map(chip => {
           const isActive = activeChipId === chip.id;
           return (
