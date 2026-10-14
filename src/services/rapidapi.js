@@ -441,36 +441,6 @@ export function enrichPriceComparison(priceComp = [], primaryStore = "Amazon.in"
     }
   });
 
-  // If fewer than 3 stores, enrich with top trusted category leaders so user always has 3-4 stores
-  if (storeMap.size < 3) {
-    const isUS = String(country).toUpperCase() === "US";
-    const isMedicine = /\b(dolo|telma|shelcal|augmentin|pantocid|crocin|paracetamol|azithromycin|metformin|glycomet|atorvastatin|amlodipine|pantoprazole|amoxicillin|combiflam|allegra|montair|vicks|benadryl|strepsils|betadine|limcee|zincovit|becosules|supradyn|liv\s*52|digene|gelusil|omez|pan\s*40|pan\s*d|rantac|zinetac|ciplox|norflox|cifran|taxim|calpol|sumo|meftal|disprin|saridon|cetrizine|levocetrizine|okacet|avil|tadalafil|sildenafil|tablets?|capsules?|syrups?|injections?|drops?|ointment|gel|cream|suspension|inhaler|sachet|\d+\s*mg|\d+\s*ml|strip\s*of)\b/i.test(title);
-
-    const candidateStores = isUS
-      ? (isMedicine ? ["CVS Pharmacy", "Walgreens", "Amazon.com", "Walmart"] : ["Amazon.com", "Best Buy", "Walmart", "Target"])
-      : (isMedicine ? ["Tata 1mg", "Apollo 24|7", "PharmEasy", "Amazon.in"] : ["Amazon.in", "Flipkart", "Croma", "Reliance Digital"]);
-
-    const multipliers = [1.06, 1.12, 1.18];
-    let multIdx = 0;
-
-    for (const candStore of candidateStores) {
-      const sKey = candStore.toLowerCase();
-      if (!storeMap.has(sKey) && storeMap.size < 4) {
-        const mult = multipliers[multIdx % multipliers.length];
-        multIdx++;
-        const storePrice = Math.round(basePrice * mult);
-        const storeLink = getStoreDirectSearchFallback(candStore, title, country);
-        storeMap.set(sKey, {
-          store_name: candStore,
-          price: storePrice,
-          deal_link: storeLink,
-          is_lowest: false,
-          is_verified: true
-        });
-      }
-    }
-  }
-
   const finalComp = Array.from(storeMap.values());
   // Sort: verified lowest price first
   finalComp.sort((a, b) => a.price - b.price);
