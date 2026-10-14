@@ -6,21 +6,22 @@ import { Sparkles, ShoppingBag, ArrowLeft, RefreshCw, Layers, ShieldAlert, Coins
 import { SignedIn, SignedOut, SignInButton, useUser, useClerk } from "@clerk/nextjs";
 import dynamic from "next/dynamic";
 import SearchHero from "@/components/SearchHero";
-import RocketLoader from "@/components/RocketLoader";
 import ProductCard from "@/components/ProductCard";
-import QuotaModal from "@/components/QuotaModal";
 import CouponCard from "@/components/CouponCard";
-import CouponResultView from "@/components/CouponResultView";
-import DealsResultView from "@/components/DealsResultView";
-import InChatShoppingAgent from "@/components/InChatShoppingAgent";
 import SmartFilterChips, { generateSmartChips } from "@/components/SmartFilterChips";
-import SavedDealsDrawer from "@/components/SavedDealsDrawer";
-import ProductNotFoundState from "@/components/ProductNotFoundState";
 import { isProductUrl, extractProductTitleFromUrl, extractProductInfoFromUrl } from "@/lib/urlProductParser";
 import { searchProducts } from "@/services/api";
 import { userJourneyTracker } from "@/services/userJourneyTracker";
 
 // Lazy-loaded components for optimal initial bundle footprint
+const RocketLoader = dynamic(() => import("@/components/RocketLoader"), { ssr: false });
+const CouponResultView = dynamic(() => import("@/components/CouponResultView"), { ssr: false });
+const DealsResultView = dynamic(() => import("@/components/DealsResultView"), { ssr: false });
+const InChatShoppingAgent = dynamic(() => import("@/components/InChatShoppingAgent"), { ssr: false });
+const ProductNotFoundState = dynamic(() => import("@/components/ProductNotFoundState"), { ssr: false });
+const SavedDealsDrawer = dynamic(() => import("@/components/SavedDealsDrawer"), { ssr: false });
+const QuotaModal = dynamic(() => import("@/components/QuotaModal"), { ssr: false });
+
 const FashionTrialRoom = dynamic(() => import("@/components/FashionTrialRoom"), {
   ssr: false,
   loading: () => (
