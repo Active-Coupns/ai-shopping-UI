@@ -4,7 +4,7 @@ import { redis } from "@/services/redis";
 import { checkUnifiedApiQuota, extractTrustedClientIp } from "@/services/rateLimiter";
 import { getAdminSettings } from "@/services/admin";
 import { monetizeUrl } from "@/services/affiliate";
-import { searchRapidApiProducts, isExactProductQuery, getStoreDirectSearchFallback } from "@/services/rapidapi";
+import { searchOpenWebProducts, isExactProductQuery, getStoreDirectSearchFallback } from "@/services/openweb";
 import { addToInventoryPool, consultAiShopkeeper } from "@/services/semanticCache";
 import { recordSearchMetric } from "@/services/adminMetrics";
 
@@ -360,7 +360,7 @@ export async function POST(request) {
     const fetchLimit = isExactProduct ? 1 : 20;
 
     try {
-      const openWebResults = await searchRapidApiProducts(cleanQuery, fetchLimit, userRegion, isExactProduct, sourceStore, sourceUrl);
+      const openWebResults = await searchOpenWebProducts(cleanQuery, fetchLimit, userRegion, isExactProduct, sourceStore, sourceUrl);
       if (Array.isArray(openWebResults) && openWebResults.length > 0) {
         cleanProducts = openWebResults.slice(0, fetchLimit);
       }

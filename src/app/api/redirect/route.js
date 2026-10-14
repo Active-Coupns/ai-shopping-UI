@@ -3,7 +3,7 @@ import { getAuth } from "@clerk/nextjs/server";
 import { redis } from "@/services/redis";
 import { getAdminSettings } from "@/services/admin";
 import { monetizeUrl } from "@/services/affiliate";
-import { getStoreDirectSearchFallback, executeProductDetailsRequest } from "@/services/rapidapi";
+import { getStoreDirectSearchFallback, executeProductDetailsRequest } from "@/services/openweb";
 
 function isSearchUrl(url) {
   if (!url) return false;

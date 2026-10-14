@@ -4,7 +4,7 @@
  */
 
 import { redis } from "@/services/redis";
-import { executeSearchRequest, parsePriceNum, sanitizeOfferUrl, formatStoreName } from "@/services/rapidapi";
+import { executeSearchRequest, parsePriceNum, sanitizeOfferUrl, formatStoreName } from "@/services/openweb";
 
 export const DEAL_CATEGORIES = [
   {

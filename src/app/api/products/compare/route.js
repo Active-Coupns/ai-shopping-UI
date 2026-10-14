@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getAuth } from "@clerk/nextjs/server";
 import { redis } from "@/services/redis";
 import { checkUnifiedApiQuota, extractTrustedClientIp } from "@/services/rateLimiter";
-import { executeProductDetailsRequest, formatStoreName, isTrustedMerchant, sanitizeOfferUrl, isSearchPageUrl, parsePriceNum, getStoreDirectSearchFallback } from "@/services/rapidapi";
+import { executeProductDetailsRequest, executeSearchRequest, formatStoreName, isTrustedMerchant, sanitizeOfferUrl, isSearchPageUrl, parsePriceNum, getStoreDirectSearchFallback } from "@/services/openweb";
 
 export async function POST(request) {
   let userId = null;

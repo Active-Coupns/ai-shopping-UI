@@ -1,4 +1,4 @@
-import { getOpenWebNinjaKey, parsePriceNum, formatStoreName, isTrustedMerchant, sanitizeOfferUrl } from "./rapidapi.js";
+import { getOpenWebNinjaKey, parsePriceNum, formatStoreName, isTrustedMerchant, sanitizeOfferUrl } from "./openweb.js";
 import { fetchLiveProductDetails } from "./liveProductScraper.js";
 
 /**

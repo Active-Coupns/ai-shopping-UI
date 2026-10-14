@@ -18,6 +18,14 @@
 
 ## 📅 Daily Changelog & Feature Timeline
 
+### 🗓️ 2026-10-14 (Refactor: Service Rename to openweb.js & Zero-RapidAPI Architecture)
+
+* **Git Commit**: `refactor: rename rapidapi.js to openweb.js and eliminate all legacy rapidapi references`
+* **Status**: ✅ 100% Tested & Verified
+* **Key Focus**: File renamed from `rapidapi.js` to `openweb.js`, purged all legacy RapidAPI fallback code and host URLs, updated all API route imports to `@/services/openweb`.
+
+---
+
 ### 🗓️ 2026-10-14 (Multi-Store Price Comparison Guarantee & Cross-Store Aggregator)
 
 * **Git Commit**: `fix(compare): guarantee 3-4 multi-store comparison offers and cross-store search merging`

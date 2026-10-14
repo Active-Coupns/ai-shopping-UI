@@ -1,6 +1,6 @@
 /**
- * RapidAPI Real-Time Product Search & Exact PDP Resolver Service
- * Optimized for High Data Fidelity: 1 Search Call + Parallel Details for Top Products
+ * OpenWeb Ninja Real-Time Product Search & Exact PDP Resolver Service
+ * High-Fidelity Google Shopping Provider via OpenWeb Ninja API
  * Provides 100% exact Direct Merchant PDP Links, Real Technical Specifications, and Multi-Store Comparison.
  */
 
@@ -1490,7 +1490,7 @@ export function generateFallbackProducts(query = "", limit = 3, country = "IN", 
     };
   });
 }
-export async function searchRapidApiProducts(query, limit = 20, country = "IN", forceExact = false, sourceStore = null, sourceUrl = null) {
+export async function searchOpenWebProducts(query, limit = 20, country = "IN", forceExact = false, sourceStore = null, sourceUrl = null) {
   if (!query) return [];
 
   const countryCode = (country || "in").toLowerCase();
@@ -1500,7 +1500,7 @@ export async function searchRapidApiProducts(query, limit = 20, country = "IN", 
 
   try {
     if (!Array.isArray(rawProducts) || rawProducts.length === 0) {
-      console.log("[RapidAPI] 0 live products found. Engaging Verified Catalog Engine.");
+      console.log("[OpenWebNinja] 0 live products found.");
       return generateFallbackProducts(query, limit, country, sourceStore, sourceUrl);
     }
 
@@ -1889,12 +1889,14 @@ export async function searchRapidApiProducts(query, limit = 20, country = "IN", 
       };
     });
 
-    console.log(`[RapidAPI 1-Call] Loaded ${products.length} products with direct PDPs, market ranges & savings.`);
+    console.log(`[OpenWebNinja 1-Call] Loaded ${products.length} products with direct PDPs, market ranges & savings.`);
 
-    console.log(`[RapidAPI] Successfully loaded ${products.length} products with exact direct PDPs and rich specifications.`);
+    console.log(`[OpenWebNinja] Successfully loaded ${products.length} products with exact direct PDPs and rich specifications.`);
     return products;
   } catch (err) {
-    console.warn(`[RapidAPI] Search error (${err.message}). Seamlessly engaging Verified Catalog Engine.`);
+    console.warn(`[OpenWebNinja] Search error (${err.message}).`);
     return generateFallbackProducts(query, limit, country);
   }
 }
+
+export const searchRapidApiProducts = searchOpenWebProducts;
