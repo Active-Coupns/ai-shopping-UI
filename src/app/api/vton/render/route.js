@@ -41,6 +41,102 @@ function normalizeCategory(cat) {
   return "upperbody";
 }
 
+/**
+ * Smart VTON Error Classifier: Separates user photo/pose guidance from genuine server load
+ */
+function categorizeVtonError(rawError, httpStatus = 500) {
+  let errString = "";
+  if (typeof rawError === "string") {
+    errString = rawError;
+  } else if (rawError && typeof rawError === "object") {
+    if (typeof rawError.friendly_message === "string") {
+      errString = rawError.friendly_message;
+    } else if (typeof rawError.detail === "string") {
+      errString = rawError.detail;
+    } else if (Array.isArray(rawError.detail) && rawError.detail[0]?.msg) {
+      errString = rawError.detail[0].msg;
+    } else if (typeof rawError.message === "string") {
+      errString = rawError.message;
+    } else if (typeof rawError.error === "string") {
+      errString = rawError.error;
+    }
+  }
+
+  const lower = errString.toLowerCase();
+
+  // 1. Photo / Pose / Face / Alignment Guidance (Directly helps user take a better photo)
+  if (
+    lower.includes("person") ||
+    lower.includes("pose") ||
+    lower.includes("body") ||
+    lower.includes("human") ||
+    lower.includes("face") ||
+    lower.includes("shoulder") ||
+    lower.includes("angle") ||
+    lower.includes("blur") ||
+    lower.includes("dark") ||
+    lower.includes("resolution") ||
+    lower.includes("crop") ||
+    lower.includes("not detected") ||
+    lower.includes("unsupported photo")
+  ) {
+    return {
+      errorType: "PHOTO_QUALITY",
+      message: errString || "AI requires a clear, front-facing photo with shoulders and posture visible for authentic draping.",
+      guidance: "Please upload a straight front-facing portrait with good lighting and clear shoulders."
+    };
+  }
+
+  // 2. Garment / Outfit Image Issues
+  if (
+    lower.includes("garment") ||
+    lower.includes("cloth") ||
+    lower.includes("outfit") ||
+    lower.includes("template") ||
+    lower.includes("solid-color") ||
+    lower.includes("placeholder")
+  ) {
+    return {
+      errorType: "GARMENT_ISSUE",
+      message: errString || "This garment photo could not be mapped for draping. Please choose another look or upload a flat, unfolded garment shot.",
+      guidance: "Single unfolded garment photos with plain backgrounds work best."
+    };
+  }
+
+  // 3. Genuine Server Busy / Cluster Capacity (503, 504, 502, overloaded, timeout)
+  if (
+    httpStatus === 503 ||
+    httpStatus === 504 ||
+    httpStatus === 502 ||
+    lower.includes("capacity") ||
+    lower.includes("busy") ||
+    lower.includes("overloaded") ||
+    lower.includes("timeout") ||
+    lower.includes("wait")
+  ) {
+    return {
+      errorType: "SERVER_TRAFFIC",
+      message: "AI styling servers are momentarily handling peak traffic. Your try-on credit was preserved (NOT deducted).",
+      guidance: "Please tap 'Try Again' in a moment to resume."
+    };
+  }
+
+  // Default: Pass through friendly message if present, else fallback
+  if (errString && errString.length > 5) {
+    return {
+      errorType: "GENERAL",
+      message: errString,
+      guidance: "Please tap 'Try Again' or select another outfit."
+    };
+  }
+
+  return {
+    errorType: "SERVER_TRAFFIC",
+    message: "AI styling servers are momentarily handling peak traffic. Your try-on credit was preserved (NOT deducted).",
+    guidance: "Please tap 'Try Again' in a moment to resume."
+  };
+}
+
 export async function POST(request) {
   let releaseSlot = null;
   let attemptId = null;
@@ -404,10 +500,13 @@ export async function POST(request) {
                   finalOutputUrl = pollData.output_url || (pollData.result_image_b64 ? `data:image/png;base64,${pollData.result_image_b64}` : null);
                   break;
                 } else if (pollData.status === "failed") {
-                  safeLog('VTON Render', 'Worker reported failure', { err: pollData.error_message });
+                  const classified = categorizeVtonError(pollData.error_message || pollData.friendly_message || "Generation failed", 400);
+                  safeLog('VTON Render', 'Worker reported failure', { err: classified.message, errorType: classified.errorType });
                   return NextResponse.json({
                     success: false,
-                    error: pollData.error_message || pollData.friendly_message || "Try-on generation failed. Please try with a clearer photo.",
+                    error: classified.message,
+                    errorType: classified.errorType,
+                    guidance: classified.guidance,
                     processingTimeMs: Date.now() - startTime
                   });
                 }
@@ -442,27 +541,34 @@ export async function POST(request) {
             } else {
               return NextResponse.json({
                 success: false,
-                error: "High-resolution AI render is taking a little longer than usual due to high GPU demand. Please retry in a moment.",
+                error: "High-resolution AI render is taking a little longer than usual due to high GPU demand. Please tap 'Try Again' in a moment.",
+                errorType: "SERVER_TRAFFIC",
+                guidance: "Please tap 'Try Again' to resume without re-uploading.",
                 processingTimeMs: Date.now() - startTime
               });
             }
           }
         } else {
           const errData = await submitRes.json().catch(() => ({}));
-          const errMsg = errData?.detail?.message || errData?.detail?.error || errData?.friendly_message || "GPU Busy";
-          safeLog('VTON Render', 'Worker rejected request', { status: submitRes.status, errMsg });
+          const classified = categorizeVtonError(errData, submitRes.status);
+          safeLog('VTON Render', 'Worker rejected request', { status: submitRes.status, classified });
 
           return NextResponse.json({
             success: false,
-            error: "Virtual Dressing Room is at peak capacity right now! Our AI stylists are serving thousands of shoppers. Your try-on quota has NOT been deducted. Please try again in 1-2 minutes.",
+            error: classified.message,
+            errorType: classified.errorType,
+            guidance: classified.guidance,
             processingTimeMs: Date.now() - startTime
           });
         }
       } catch (workerErr) {
-        safeLog('VTON Render', 'Worker network error', { err: workerErr?.message || 'Unknown network error' });
+        const classified = categorizeVtonError(workerErr?.message, 503);
+        safeLog('VTON Render', 'Worker network error', { err: workerErr?.message || 'Unknown network error', classified });
         return NextResponse.json({
           success: false,
-          error: "Virtual Dressing Room is currently experiencing peak traffic rush. Your try-on credit was preserved. Please try again in a few moments.",
+          error: classified.message,
+          errorType: classified.errorType,
+          guidance: classified.guidance,
           processingTimeMs: Date.now() - startTime
         });
       }

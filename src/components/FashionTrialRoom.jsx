@@ -124,6 +124,7 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
   const garmentFileInputRef = useRef(null);
   const [photoQualityMsg, setPhotoQualityMsg] = useState("");
   const [tryonErrorMsg, setTryonErrorMsg] = useState("");
+  const [tryonErrorState, setTryonErrorState] = useState(null); // { type, message, guidance }
   const [renderElapsed, setRenderElapsed] = useState(0);
   const [isScanningBody, setIsScanningBody] = useState(false);
   const [bodyCalibration, setBodyCalibration] = useState(null);
@@ -154,6 +155,7 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
       setTryonResultImage(renderedCache[garment.id]);
       setViewMode("tryon");
       setTryonErrorMsg("");
+      setTryonErrorState(null);
       setPhotoQualityMsg("✨ Fitted look loaded from session cache (0 Credits).");
       return;
     }
@@ -161,6 +163,7 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
     setIsRendering(true);
     setRenderElapsed(0);
     setTryonErrorMsg("");
+    setTryonErrorState(null);
     setTryonResultImage(null);
 
     const timerInterval = setInterval(() => {
@@ -199,6 +202,7 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
           setRenderedCache(prev => ({ ...prev, [garment.id]: outputImg }));
           setViewMode("tryon");
           setTryonErrorMsg("");
+          setTryonErrorState(null);
           setIsRendering(false);
           if (data.freeTier) {
             setQuotaInfo(data.freeTier);
@@ -211,6 +215,8 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
           setTryonResultImage(outputImg);
           setRenderedCache(prev => ({ ...prev, [garment.id]: outputImg }));
           setViewMode("tryon");
+          setTryonErrorMsg("");
+          setTryonErrorState(null);
           setIsRendering(false);
         };
         preloader.src = outputImg;
@@ -220,16 +226,30 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
         if (data.upgradeRequired || data.error === "FREE_TIER_LIMIT_EXCEEDED" || data.error === "IP_FREE_TRIAL_EXHAUSTED") {
           setQuotaInfo(data.freeTier || null);
           setShowUpgradeModal(true);
-          setTryonErrorMsg(data.message || "Free limit reached (2/2 try-ons used). To continue, upgrade to Zippy Sachet pack (₹10 for 5 try-ons).");
+          const msg = data.message || "Free limit reached (2/2 try-ons used). To continue, upgrade to Zippy Sachet pack (₹10 for 5 try-ons).";
+          setTryonErrorMsg(msg);
+          setTryonErrorState({ type: "QUOTA", message: msg, guidance: "Upgrade to continue trying on outfits." });
         } else {
-          setTryonErrorMsg(data.error || "Virtual Dressing Room is at peak capacity right now! Our AI stylists are serving thousands of shoppers. Your try-on quota has NOT been deducted. Please try again in 1-2 minutes.");
+          const errMsg = data.error || "Virtual Dressing Room is at peak capacity right now! Our AI stylists are serving thousands of shoppers. Your try-on quota has NOT been deducted. Please try again in 1-2 minutes.";
+          setTryonErrorMsg(errMsg);
+          setTryonErrorState({
+            type: data.errorType || (errMsg.toLowerCase().includes("capacity") || errMsg.toLowerCase().includes("busy") || errMsg.toLowerCase().includes("rush") ? "SERVER_TRAFFIC" : (errMsg.toLowerCase().includes("photo") || errMsg.toLowerCase().includes("person") || errMsg.toLowerCase().includes("pose") ? "PHOTO_QUALITY" : "GENERAL")),
+            message: errMsg,
+            guidance: data.guidance || ""
+          });
         }
       }
     } catch (err) {
       clearInterval(timerInterval);
       setIsRendering(false);
       console.warn("Try-on render error:", err);
-      setTryonErrorMsg("Virtual Dressing Room is currently experiencing peak traffic rush. Your try-on credit was preserved. Please try again in a few moments.");
+      const networkMsg = "Virtual Dressing Room connection momentarily timed out. Your try-on credit was preserved.";
+      setTryonErrorMsg(networkMsg);
+      setTryonErrorState({
+        type: "SERVER_TRAFFIC",
+        message: networkMsg,
+        guidance: "Please tap 'Try Again' to re-connect."
+      });
     }
   };
 
@@ -264,7 +284,7 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
           const converted = await heic2any({
             blob: file,
             toType: 'image/jpeg',
-            quality: 0.88
+            quality: 0.90
           });
           processableBlob = Array.isArray(converted) ? converted[0] : converted;
         } catch (heicErr) {
@@ -272,27 +292,13 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
         }
       }
 
-      // Fast async reader
-      const reader = new FileReader();
-      reader.onerror = () => {
-        setIsScanningBody(false);
-        setPhotoQualityMsg("⚠️ Could not read photo. Please try uploading again.");
-      };
-
-      reader.onload = (uploadEvent) => {
-        const rawData = uploadEvent.target.result;
-        const img = new window.Image();
-        
-        img.onerror = () => {
-          setIsScanningBody(false);
-          setPhotoQualityMsg("⚠️ Unsupported photo format. Please upload JPG, PNG, or WebP.");
-        };
-
-        img.onload = () => {
+      // Fast processor function with HD bicubic clamp (1200x1600) and 90% quality
+      const processLoadedImage = (img, cleanupUrl) => {
+        try {
           const aspect = img.height / img.width;
 
-          // Client-side canvas resize for fast sub-second upload and low memory footprint
-          const maxDim = 1024;
+          // Client-side HD canvas resize: Max 1200px for crystal-clear texture without crashing mobile RAM
+          const maxDim = 1200;
           let targetW = img.width;
           let targetH = img.height;
 
@@ -310,13 +316,18 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
           canvas.width = targetW;
           canvas.height = targetH;
           const ctx = canvas.getContext("2d");
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = "high";
           ctx.drawImage(img, 0, 0, targetW, targetH);
-          const optimizedPhotoData = canvas.toDataURL("image/jpeg", 0.85);
+          const optimizedPhotoData = canvas.toDataURL("image/jpeg", 0.90);
+
+          if (cleanupUrl) {
+            try { URL.revokeObjectURL(cleanupUrl); } catch (_) {}
+          }
 
           // Client-side automatic skin tone detection from face/upper-torso region (Zero image leakage)
           let autoDetectedTone = "wheatish";
           try {
-            // Sample center-upper 20% area where face typically sits
             const sampleX = Math.round(targetW * 0.4);
             const sampleY = Math.round(targetH * 0.15);
             const sampleW = Math.round(targetW * 0.2);
@@ -325,7 +336,6 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
             let totalR = 0, totalG = 0, totalB = 0, count = 0;
             for (let i = 0; i < imgData.length; i += 16) {
               const r = imgData[i], g = imgData[i + 1], b = imgData[i + 2];
-              // Filter out extreme highlights (background) and dark hair
               const brightness = (r + g + b) / 3;
               if (brightness > 60 && brightness < 235 && r > g && g >= b) {
                 totalR += r; totalG += g; totalB += b; count++;
@@ -346,6 +356,8 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
           setUserImage(optimizedPhotoData);
           setIsCustomPhoto(true);
           setTryonResultImage(null);
+          setTryonErrorMsg("");
+          setTryonErrorState(null);
           setViewMode("original");
 
           setTimeout(() => {
@@ -356,12 +368,61 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
             });
             setPhotoQualityMsg("✅ Persona Calibrated: Body contours, skin tone & posture locked for AI drape.");
           }, 800);
-        };
-
-        img.src = rawData;
+        } catch (procErr) {
+          console.error("Canvas process error:", procErr);
+          setIsScanningBody(false);
+          setPhotoQualityMsg("⚠️ Failed to process photo. Please tap Change Photo to try again.");
+        }
       };
 
-      reader.readAsDataURL(processableBlob);
+      // Primary modern fast loader: zero-copy URL.createObjectURL
+      let objectUrl = null;
+      try {
+        objectUrl = URL.createObjectURL(processableBlob);
+      } catch (_) {}
+
+      if (objectUrl) {
+        const img = new window.Image();
+        img.onload = () => processLoadedImage(img, objectUrl);
+        img.onerror = () => {
+          if (objectUrl) {
+            try { URL.revokeObjectURL(objectUrl); } catch (_) {}
+          }
+          const reader = new FileReader();
+          reader.onload = (e2) => {
+            const fallbackImg = new window.Image();
+            fallbackImg.onload = () => processLoadedImage(fallbackImg, null);
+            fallbackImg.onerror = () => {
+              setIsScanningBody(false);
+              setPhotoQualityMsg("⚠️ Unsupported photo format. Please upload JPG, PNG, or WebP.");
+            };
+            fallbackImg.src = e2.target.result;
+          };
+          reader.onerror = () => {
+            setIsScanningBody(false);
+            setPhotoQualityMsg("⚠️ Could not read photo. Please tap Change Photo to try again.");
+          };
+          reader.readAsDataURL(processableBlob);
+        };
+        img.src = objectUrl;
+      } else {
+        const reader = new FileReader();
+        reader.onload = (uploadEvent) => {
+          const rawData = uploadEvent.target.result;
+          const img = new window.Image();
+          img.onload = () => processLoadedImage(img, null);
+          img.onerror = () => {
+            setIsScanningBody(false);
+            setPhotoQualityMsg("⚠️ Unsupported photo format. Please upload JPG, PNG, or WebP.");
+          };
+          img.src = rawData;
+        };
+        reader.onerror = () => {
+          setIsScanningBody(false);
+          setPhotoQualityMsg("⚠️ Could not read photo. Please tap Change Photo to try again.");
+        };
+        reader.readAsDataURL(processableBlob);
+      }
     } catch (err) {
       console.error("Photo upload error:", err);
       setIsScanningBody(false);
@@ -389,7 +450,7 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
           const converted = await heic2any({
             blob: file,
             toType: 'image/jpeg',
-            quality: 0.88
+            quality: 0.90
           });
           processableBlob = Array.isArray(converted) ? converted[0] : converted;
         } catch (heicErr) {
@@ -397,35 +458,93 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
         }
       }
 
-      const reader = new FileReader();
-      reader.onload = (uploadEvent) => {
-        const rawGarmentData = uploadEvent.target.result;
-        const customGarment = {
-          id: `custom-garment-${Date.now()}`,
-          title: "Custom Screenshot / Uploaded Outfit",
-          brand: "Custom Upload",
-          price: "Your Screenshot",
-          category: "upperbody",
-          image: rawGarmentData,
-          image_url: rawGarmentData,
-          fabric: "Custom Garment",
-          direct_link: "",
-          isCustomUpload: true
-        };
+      const processLoadedGarment = (img, cleanupUrl) => {
+        try {
+          const maxDim = 1200;
+          let targetW = img.width;
+          let targetH = img.height;
 
-        // Directly try-on without polluting the curated store lookbook grid
-        handleTryOnOutfit(customGarment);
-        setChatHistory(prev => [
-          ...prev,
-          {
-            id: `garment-${Date.now()}`,
-            sender: "ai",
-            text: "Garment screenshot detected! Fitting directly onto your photo...",
-            options: []
+          if (targetW > maxDim || targetH > maxDim) {
+            if (targetW > targetH) {
+              targetH = Math.round((targetH * maxDim) / targetW);
+              targetW = maxDim;
+            } else {
+              targetW = Math.round((targetW * maxDim) / targetH);
+              targetH = maxDim;
+            }
           }
-        ]);
+
+          const canvas = document.createElement("canvas");
+          canvas.width = targetW;
+          canvas.height = targetH;
+          const ctx = canvas.getContext("2d");
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = "high";
+          ctx.drawImage(img, 0, 0, targetW, targetH);
+          const optimizedGarmentData = canvas.toDataURL("image/jpeg", 0.90);
+
+          if (cleanupUrl) {
+            try { URL.revokeObjectURL(cleanupUrl); } catch (_) {}
+          }
+
+          const customGarment = {
+            id: `custom-garment-${Date.now()}`,
+            title: "Custom Screenshot / Uploaded Outfit",
+            brand: "Custom Upload",
+            price: "Your Screenshot",
+            category: "upperbody",
+            image: optimizedGarmentData,
+            image_url: optimizedGarmentData,
+            fabric: "Custom Garment",
+            direct_link: "",
+            isCustomUpload: true
+          };
+
+          handleTryOnOutfit(customGarment);
+          setChatHistory(prev => [
+            ...prev,
+            {
+              id: `garment-${Date.now()}`,
+              sender: "ai",
+              text: "Garment screenshot detected! Fitting directly onto your photo...",
+              options: []
+            }
+          ]);
+        } catch (procErr) {
+          console.error("Garment canvas process error:", procErr);
+        }
       };
-      reader.readAsDataURL(processableBlob);
+
+      let garmentObjectUrl = null;
+      try {
+        garmentObjectUrl = URL.createObjectURL(processableBlob);
+      } catch (_) {}
+
+      if (garmentObjectUrl) {
+        const img = new window.Image();
+        img.onload = () => processLoadedGarment(img, garmentObjectUrl);
+        img.onerror = () => {
+          if (garmentObjectUrl) {
+            try { URL.revokeObjectURL(garmentObjectUrl); } catch (_) {}
+          }
+          const reader = new FileReader();
+          reader.onload = (uploadEvent) => {
+            const fallbackImg = new window.Image();
+            fallbackImg.onload = () => processLoadedGarment(fallbackImg, null);
+            fallbackImg.src = uploadEvent.target.result;
+          };
+          reader.readAsDataURL(processableBlob);
+        };
+        img.src = garmentObjectUrl;
+      } else {
+        const reader = new FileReader();
+        reader.onload = (uploadEvent) => {
+          const img = new window.Image();
+          img.onload = () => processLoadedGarment(img, null);
+          img.src = uploadEvent.target.result;
+        };
+        reader.readAsDataURL(processableBlob);
+      }
     } catch (err) {
       console.error("Garment upload error:", err);
       setTryonErrorMsg("Failed to process garment photo. Please try a standard JPG/PNG image.");
@@ -680,12 +799,12 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
                   
                   <div className="space-y-1 max-w-[260px]">
                     <span className="text-xs font-bold text-white tracking-wide block">
-                      {renderElapsed < 10
-                        ? "🔍 Analyzing body posture & contours..."
-                        : renderElapsed < 30
+                      {renderElapsed < 15
+                        ? "🔍 Analyzing body posture & shoulders..."
+                        : renderElapsed < 40
                         ? "🧵 Draping fabric & aligning natural folds..."
-                        : renderElapsed < 65
-                        ? "✨ Refining lighting, shadows & texture..."
+                        : renderElapsed < 70
+                        ? "✨ Refining fabric texture, lighting & shadows..."
                         : "⚡ Finalizing high-resolution neural render..."}
                     </span>
                     <span className="text-[10px] font-medium text-slate-300 block">
@@ -697,7 +816,7 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
                   <div className="w-44 h-1.5 bg-white/15 rounded-full overflow-hidden">
                     <div
                       className="h-full bg-gradient-to-r from-brand-indigo via-purple-400 to-pink-400 rounded-full transition-all duration-300"
-                      style={{ width: `${Math.min(96, (renderElapsed / 85) * 100)}%` }}
+                      style={{ width: `${Math.min(96, (renderElapsed / 90) * 100)}%` }}
                     ></div>
                   </div>
                 </div>
@@ -943,14 +1062,14 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
                     <span>Sign In to Try On Outfits</span>
                   </button>
                 </div>
-              ) : tryonErrorMsg.includes("Daily free limit") ? (
+              ) : tryonErrorMsg.includes("Daily free limit") || tryonErrorState?.type === "QUOTA" ? (
                 <div className="p-3.5 rounded-2xl text-[11px] font-medium bg-amber-50/95 text-amber-950 border border-amber-200/90 shadow-sm space-y-2 animate-fade-in text-center">
                   <div className="flex items-center justify-center gap-1.5 font-bold text-amber-900">
                     <span>✨</span>
                     <span>Daily Free Limit Reached (2/2)</span>
                   </div>
                   <p className="leading-snug text-amber-800 text-[11px]">
-                    You have used your 2 free AI try-ons for today. Daily limit resets at midnight (12:00 AM IST).
+                    {tryonErrorMsg}
                   </p>
                   <button
                     type="button"
@@ -961,23 +1080,81 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
                     <span>View Upgrade Info</span>
                   </button>
                 </div>
-              ) : (
-                <div className="p-3 rounded-2xl text-[11px] font-medium bg-amber-50 text-amber-900 border border-amber-200/90 shadow-sm space-y-1.5 animate-fade-in">
-                  <div className="flex items-center gap-1.5 font-bold text-amber-950">
-                    <span>⚠️</span>
-                    <span>Try-On Notice:</span>
+              ) : tryonErrorState?.type === "PHOTO_QUALITY" ? (
+                <div className="p-3.5 rounded-2xl text-[11px] font-medium bg-purple-50 text-purple-950 border border-purple-200 shadow-sm space-y-2.5 animate-fade-in">
+                  <div className="flex items-center gap-1.5 font-bold text-purple-900 text-xs">
+                    <Camera className="w-4 h-4 text-purple-600 shrink-0" />
+                    <span>Photo Guidance:</span>
                   </div>
-                  <p className="leading-snug">{tryonErrorMsg}</p>
-                  {tryonErrorMsg.includes("PixelAPI") && (
-                    <a
-                      href="https://pixelapi.dev/pricing"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-[10px] font-bold text-brand-indigo underline hover:text-indigo-800"
-                    >
-                      View Credit Packs (Starting ₹200 on Razorpay) ➔
-                    </a>
+                  <p className="leading-snug text-slate-700 text-xs">{tryonErrorMsg}</p>
+                  {tryonErrorState?.guidance && (
+                    <p className="leading-snug text-purple-800 text-[11px] font-semibold bg-white/80 p-2 rounded-xl border border-purple-100">
+                      💡 {tryonErrorState.guidance}
+                    </p>
                   )}
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-full py-2 px-3 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-xs active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    <Camera className="w-3.5 h-3.5" />
+                    <span>Change Photo</span>
+                  </button>
+                </div>
+              ) : tryonErrorState?.type === "GARMENT_ISSUE" ? (
+                <div className="p-3.5 rounded-2xl text-[11px] font-medium bg-amber-50 text-amber-950 border border-amber-200 shadow-sm space-y-2.5 animate-fade-in">
+                  <div className="flex items-center gap-1.5 font-bold text-amber-900 text-xs">
+                    <Shirt className="w-4 h-4 text-amber-600 shrink-0" />
+                    <span>Outfit Notice:</span>
+                  </div>
+                  <p className="leading-snug text-slate-700 text-xs">{tryonErrorMsg}</p>
+                  {tryonErrorState?.guidance && (
+                    <p className="leading-snug text-amber-800 text-[11px] font-semibold bg-white/80 p-2 rounded-xl border border-amber-100">
+                      💡 {tryonErrorState.guidance}
+                    </p>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTryonErrorMsg("");
+                      setTryonErrorState(null);
+                    }}
+                    className="w-full py-2 px-3 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-xs active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    <Shirt className="w-3.5 h-3.5" />
+                    <span>Choose Another Look Below</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="p-3.5 rounded-2xl text-[11px] font-medium bg-amber-50 text-amber-900 border border-amber-200/90 shadow-sm space-y-2.5 animate-fade-in">
+                  <div className="flex items-center gap-1.5 font-bold text-amber-950 text-xs">
+                    <span>⚡</span>
+                    <span>High Traffic Notice:</span>
+                  </div>
+                  <p className="leading-snug text-slate-800 text-xs">{tryonErrorMsg}</p>
+                  {tryonErrorState?.guidance && (
+                    <p className="leading-snug text-amber-800 text-[11px] font-semibold bg-white/80 p-2 rounded-xl border border-amber-100">
+                      💡 {tryonErrorState.guidance}
+                    </p>
+                  )}
+                  <div className="flex items-center gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => handleTryOnOutfit(currentTryonGarment)}
+                      className="flex-1 py-2 px-3 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-xs active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      <span>Try Again</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="py-2 px-3 rounded-xl bg-white hover:bg-amber-100/70 text-slate-700 border border-amber-200 font-bold text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                    >
+                      <Camera className="w-3.5 h-3.5 text-slate-600" />
+                      <span>Change Photo</span>
+                    </button>
+                  </div>
                 </div>
               )
             )}

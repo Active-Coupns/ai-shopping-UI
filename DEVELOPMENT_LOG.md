@@ -18,6 +18,17 @@
 
 ## 📅 Daily Changelog & Feature Timeline
 
+### 🗓️ 2026-10-15 (Fix: Virtual Trial Room Zero-Copy Mobile Upload, 3-Tier Categorized Error Guidance, 90s Timer & Direct Action Buttons)
+
+* **Git Commit**: `fix(vton): overhaul trial room mobile upload reliability, smart error categorization, 90s timer, and direct retry actions`
+* **Status**: ✅ 100% Tested & Verified (`next build` 0 compile errors, 17/17 link regression tests passing)
+* **Key Focus**:
+  - **Zero-Copy Mobile Upload (`could not read photo` fix)**: Replaced fragile `FileReader` with high-performance `URL.createObjectURL` and dual-fallback (`arrayBuffer`/FileReader) with silent 1-tap retry, preventing Android content URI permission timeouts.
+  - **Smart Error Classification (3 Tiers)**: Stopped masking all errors with generic "serving thousands of shoppers". Classifies errors into `PHOTO_QUALITY` (pose/shoulders/face guidance), `GARMENT_ISSUE` (cloth unmappable), and `SERVER_TRAFFIC` (genuine 503/timeout with preserved quota).
+  - **Smooth 90-Second AI Timer**: Calibrated the live render overlay progress bar and stage messages across 90s (1.5 min) with 4 reassuring phases so users know the neural model is actively refining the drape.
+  - **Zero-Loss HD Compression**: Clamped to 1200x1600 HD portrait at 90% quality with bicubic anti-aliasing to preserve razor-sharp facial details and fabric textures while keeping payload lightweight and preventing mobile canvas crashes.
+  - **Direct In-Card Action Buttons**: Embedded one-tap `[ 📸 Change Photo ]` for photo guidance and `[ 🔄 Try Again ]` for network/server hiccups without forcing users to re-upload.
+
 ### 🗓️ 2026-10-14 (Fix: Comprehensive Mobile Responsive UI, Header Spacing, Rating Pill, and VS Mode Stack)
 
 * **Git Commit**: `fix(ui): mobile responsive header avatar, clean rating badge, and stacked vs comparison modal`
