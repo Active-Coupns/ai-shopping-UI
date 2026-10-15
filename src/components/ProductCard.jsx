@@ -346,9 +346,9 @@ export default function ProductCard({
     }
 
     return (
-      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-bold tracking-wide capitalize shadow-inner ${bgClass}`}>
-        <span className={`w-2 h-2 rounded-full animate-pulse ${dotColor}`} />
-        {storeName}
+      <span className={`inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full border text-xs font-bold tracking-wide capitalize shadow-inner min-w-0 ${bgClass}`}>
+        <span className={`w-2 h-2 rounded-full animate-pulse shrink-0 ${dotColor}`} />
+        <span className="truncate max-w-[150px] sm:max-w-[210px]">{storeName}</span>
       </span>
     );
   };
@@ -374,13 +374,12 @@ export default function ProductCard({
         {/* Top Info Section */}
         <div>
           {/* Store Badge & Rating */}
-          <div className="flex items-center justify-between gap-3 mb-3">
+          <div className="flex items-center justify-between gap-2 sm:gap-3 mb-3">
             {getStoreBadge()}
             
-            <div className="flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-800 shadow-xs">
-              <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+            <div className="flex items-center gap-1 text-xs font-black px-2.5 py-1 rounded-full bg-slate-50/90 border border-slate-200 text-slate-800 shadow-2xs shrink-0">
+              <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400 shrink-0" />
               <span>{product.rating || "4.3"}</span>
-              <span className="text-slate-500 font-normal">({product.reviewsCount || 450})</span>
             </div>
           </div>
 

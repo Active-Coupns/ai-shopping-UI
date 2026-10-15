@@ -230,27 +230,27 @@ export default function SearchAiConciergeModal({
           <div className="w-12 h-1 bg-slate-700/80 rounded-full mx-auto mt-2.5 mb-1 sm:hidden" />
 
           {/* Header */}
-          <div className="px-5 py-3 sm:py-4 border-b border-slate-800/80 bg-slate-900/90 flex items-center justify-between shrink-0">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-white shadow-md shadow-indigo-500/25">
-                <Sparkles className="w-4 h-4 animate-pulse" />
+          <div className="px-4 sm:px-5 py-3 sm:py-4 border-b border-slate-800/80 bg-slate-900/95 flex items-center justify-between shrink-0">
+            <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+              <div className="w-8 h-8 rounded-xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-indigo-300 shrink-0 shadow-inner">
+                <Sparkles className="w-4 h-4 text-indigo-300 animate-pulse" />
               </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-black text-white tracking-wide">
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <h3 className="text-xs sm:text-sm font-black text-white tracking-tight truncate">
                     ShopSmart AI Guide
                   </h3>
-                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                  <span className="text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 whitespace-nowrap shrink-0">
                     Personal Advisor
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-400">
+                <p className="text-[10px] sm:text-[11px] text-slate-400 truncate">
                   Ask advice freely &bull; We&rsquo;ll craft a clean 2-4 word query when you&rsquo;re ready
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               {/* Skip to direct search button */}
               <button
                 type="button"
@@ -315,7 +315,7 @@ export default function SearchAiConciergeModal({
 
             {/* Quick Tap Chips */}
             {activeChips.length > 0 && !isLoading && (
-              <div className="pl-2 sm:pl-9 pt-1 flex flex-nowrap overflow-x-auto sm:flex-wrap gap-1.5 pb-1.5 -mx-1 px-1 sm:mx-0 sm:px-0 scrollbar-none touch-pan-x">
+              <div className="px-1 sm:pl-9 pt-1 flex flex-nowrap overflow-x-auto sm:flex-wrap gap-1.5 pb-1.5 scrollbar-none touch-pan-x">
                 {activeChips.map((chip, cIdx) => {
                   const isSearchChip = chip.startsWith("🚀");
                   return (
@@ -345,9 +345,9 @@ export default function SearchAiConciergeModal({
             {/* Sleek Smart Query Pill Indicator (Non-intrusive) */}
             {readySearchData?.suggestedQuery && (
               <div className="mb-2.5 px-3 py-1.5 rounded-xl bg-slate-800/80 border border-indigo-500/30 flex items-center justify-between gap-2 shadow-xs">
-                <div className="flex items-center gap-1.5 text-xs overflow-hidden">
+                <div className="flex items-center gap-1.5 text-xs overflow-hidden min-w-0 flex-1">
                   <Sparkles className="w-3.5 h-3.5 text-amber-300 shrink-0" />
-                  <span className="text-slate-400 text-[11px] shrink-0 font-medium">Smart Query:</span>
+                  <span className="text-slate-400 text-[11px] shrink-0 font-medium hidden sm:inline">Smart Query:</span>
                   <span className="font-bold text-amber-300 text-xs truncate">
                     &ldquo;{customQueryInput || readySearchData.suggestedQuery}&rdquo;
                   </span>

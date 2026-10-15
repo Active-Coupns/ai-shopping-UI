@@ -141,33 +141,41 @@ export default function HeadToHeadModal({
             </div>
           </div>
 
-          {/* 1. TOP CARDS SIDE-BY-SIDE */}
-          <div className="grid grid-cols-2 gap-3 sm:gap-6 mb-6 relative">
-            {/* VS Badge in Center */}
+          {/* 1. TOP CARDS: Mobile Vertical Stack (Top-to-Bottom) & Desktop Side-by-Side */}
+          <div className="flex flex-col sm:grid sm:grid-cols-2 gap-3 sm:gap-6 mb-6 relative">
+            {/* Desktop VS Badge in Center */}
             <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 hidden sm:flex items-center justify-center w-10 h-10 rounded-full bg-slate-900 text-white font-black text-xs shadow-xl border-2 border-white">
               VS
             </div>
 
             {/* Product A Card */}
-            <div className="p-3.5 sm:p-5 rounded-2xl bg-slate-50/80 border border-slate-200 flex flex-col justify-between">
+            <div className="p-4 sm:p-5 rounded-2xl bg-slate-50/90 border border-slate-200 flex flex-col justify-between">
               <div>
-                <div className="w-full h-32 sm:h-40 rounded-xl bg-white p-2 border border-slate-100 mb-3 flex items-center justify-center overflow-hidden">
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-indigo-700 bg-indigo-100/90 px-2 py-0.5 rounded-md">
+                    Option A (Reference)
+                  </span>
+                  <span className="text-[11px] text-slate-500 font-bold truncate max-w-[140px]">
+                    {productA.store_name || productA.store || "Online Store"}
+                  </span>
+                </div>
+
+                <div className="w-full h-36 sm:h-40 rounded-xl bg-white p-2 border border-slate-100 mb-3 flex items-center justify-center overflow-hidden">
                   <img
                     src={productA.image || "/laptop.jpg"}
                     alt={productA.title}
                     className="object-contain max-h-full max-w-full"
                   />
                 </div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 mb-1 block">
-                  Option A • {productA.store_name || productA.store || "Online Store"}
-                </span>
+
                 <h3 className="text-xs sm:text-sm font-bold text-slate-900 line-clamp-2 mb-2">
                   {productA.title}
                 </h3>
               </div>
+
               <div className="mt-2 pt-2 border-t border-slate-200/80 flex items-baseline justify-between gap-1">
                 <div className="min-w-0">
-                  <span className="text-base sm:text-2xl font-black text-slate-900 truncate block">
+                  <span className="text-lg sm:text-2xl font-black text-slate-900 truncate block">
                     {formatPrice(productA.price, productA.currency)}
                   </span>
                   {cheaperProduct === "A" && priceDiff > 0 && (
@@ -183,37 +191,45 @@ export default function HeadToHeadModal({
               </div>
             </div>
 
+            {/* Mobile Horizontal VS Divider */}
+            <div className="flex sm:hidden items-center justify-center my-0.5 relative py-1">
+              <div className="w-full border-t border-slate-200/80" />
+              <div className="absolute px-3 py-0.5 rounded-full bg-slate-900 text-white font-black text-[10px] shadow-sm border border-white flex items-center gap-1">
+                <span>⚡ VS</span>
+              </div>
+            </div>
+
             {/* Product B Card (Interactive Carousel Slider) */}
-            <div className="p-3.5 sm:p-5 rounded-2xl bg-gradient-to-b from-purple-50/40 via-slate-50/80 to-slate-50/80 border-2 border-purple-200/90 flex flex-col justify-between relative shadow-sm">
+            <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-b from-purple-50/40 via-slate-50/80 to-slate-50/80 border-2 border-purple-200/90 flex flex-col justify-between relative shadow-sm">
               <div>
                 {/* Header with Counter and Option Tag */}
                 <div className="flex items-center justify-between gap-2 mb-2">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-purple-700 bg-purple-100/90 px-2 py-0.5 rounded-md">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-purple-700 bg-purple-100/90 px-2 py-0.5 rounded-md shrink-0">
                       Option B
                     </span>
-                    <span className="text-[10px] text-slate-500 font-bold truncate max-w-[85px] sm:max-w-[130px]">
+                    <span className="text-[11px] text-slate-500 font-bold truncate max-w-[130px] sm:max-w-[140px]">
                       {productB.store_name || productB.store || "Online Store"}
                     </span>
                   </div>
 
                   {candidateList.length > 1 && (
-                    <div className="flex items-center gap-1 bg-white border border-purple-200 px-2 py-0.5 rounded-full shadow-2xs">
-                      <span className="text-[10px] font-extrabold text-purple-700">
-                        {currentIndex + 1} / {candidateList.length}
+                    <div className="flex items-center gap-1 bg-white border border-purple-200 px-2.5 py-0.5 rounded-full shadow-2xs shrink-0">
+                      <span className="text-[10px] font-extrabold text-purple-700 whitespace-nowrap">
+                        {currentIndex + 1} of {candidateList.length}
                       </span>
                     </div>
                   )}
                 </div>
 
                 {/* Carousel Image Stage with Left & Right Floating Controls */}
-                <div className="relative w-full h-32 sm:h-40 rounded-xl bg-white p-2 border border-slate-200/80 mb-2.5 flex items-center justify-center overflow-hidden group/carousel">
+                <div className="relative w-full h-36 sm:h-40 rounded-xl bg-white p-2 border border-slate-200/80 mb-2.5 flex items-center justify-center overflow-hidden group/carousel">
                   {/* Left Carousel Arrow Button */}
                   {candidateList.length > 1 && (
                     <button
                       type="button"
                       onClick={handlePrev}
-                      className="absolute left-1.5 top-1/2 -translate-y-1/2 z-20 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/95 hover:bg-white text-slate-700 hover:text-purple-700 shadow-md border border-slate-200 flex items-center justify-center transition-all hover:scale-110 active:scale-95 cursor-pointer"
+                      className="absolute left-2 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-white/95 hover:bg-white text-slate-700 hover:text-purple-700 shadow-md border border-slate-200 flex items-center justify-center transition-all hover:scale-110 active:scale-95 cursor-pointer"
                       title="Previous Product"
                     >
                       <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.5]" />
@@ -225,7 +241,7 @@ export default function HeadToHeadModal({
                     <button
                       type="button"
                       onClick={handleNext}
-                      className="absolute right-1.5 top-1/2 -translate-y-1/2 z-20 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/95 hover:bg-white text-slate-700 hover:text-purple-700 shadow-md border border-slate-200 flex items-center justify-center transition-all hover:scale-110 active:scale-95 cursor-pointer"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-white/95 hover:bg-white text-slate-700 hover:text-purple-700 shadow-md border border-slate-200 flex items-center justify-center transition-all hover:scale-110 active:scale-95 cursor-pointer"
                       title="Next Product"
                     >
                       <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.5]" />
@@ -253,17 +269,17 @@ export default function HeadToHeadModal({
 
                 {/* Quick Slider Dots & Navigation Buttons */}
                 {candidateList.length > 1 && (
-                  <div className="flex items-center justify-between gap-1.5 mb-2 px-0.5">
+                  <div className="flex items-center justify-between gap-2 mb-2 px-1">
                     <button
                       type="button"
                       onClick={handlePrev}
-                      className="px-2 py-0.5 rounded-lg bg-white hover:bg-purple-50 text-purple-700 text-[10px] font-bold border border-purple-200 transition-all cursor-pointer flex items-center gap-0.5 active:scale-95 shadow-2xs"
+                      className="px-2.5 py-1 rounded-lg bg-white hover:bg-purple-50 text-purple-700 text-xs font-bold border border-purple-200 transition-all cursor-pointer flex items-center gap-1 active:scale-95 shadow-2xs"
                     >
-                      <ChevronLeft className="w-3 h-3" />
+                      <ChevronLeft className="w-3.5 h-3.5" />
                       <span>Prev</span>
                     </button>
 
-                    <div className="flex items-center gap-1 overflow-hidden justify-center px-1">
+                    <div className="flex items-center gap-1.5 overflow-hidden justify-center px-1">
                       {candidateList.slice(0, Math.min(6, candidateList.length)).map((_, dotIdx) => (
                         <button
                           key={dotIdx}
@@ -271,24 +287,24 @@ export default function HeadToHeadModal({
                           onClick={() => setCurrentIndex(dotIdx)}
                           className={`rounded-full transition-all cursor-pointer ${
                             currentIndex === dotIdx
-                              ? "w-3.5 h-1.5 bg-purple-600"
+                              ? "w-4 h-1.5 bg-purple-600"
                               : "w-1.5 h-1.5 bg-purple-200 hover:bg-purple-300"
                           }`}
                           title={`Product ${dotIdx + 1}`}
                         />
                       ))}
                       {candidateList.length > 6 && (
-                        <span className="text-[9px] font-bold text-purple-500">+{candidateList.length - 6}</span>
+                        <span className="text-[10px] font-bold text-purple-600">+{candidateList.length - 6}</span>
                       )}
                     </div>
 
                     <button
                       type="button"
                       onClick={handleNext}
-                      className="px-2 py-0.5 rounded-lg bg-white hover:bg-purple-50 text-purple-700 text-[10px] font-bold border border-purple-200 transition-all cursor-pointer flex items-center gap-0.5 active:scale-95 shadow-2xs"
+                      className="px-2.5 py-1 rounded-lg bg-white hover:bg-purple-50 text-purple-700 text-xs font-bold border border-purple-200 transition-all cursor-pointer flex items-center gap-1 active:scale-95 shadow-2xs"
                     >
                       <span>Next</span>
-                      <ChevronRight className="w-3 h-3" />
+                      <ChevronRight className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 )}
@@ -300,7 +316,7 @@ export default function HeadToHeadModal({
 
               <div className="mt-2 pt-2 border-t border-purple-200/70 flex items-baseline justify-between gap-1">
                 <div className="min-w-0">
-                  <span className="text-base sm:text-2xl font-black text-slate-900 truncate block">
+                  <span className="text-lg sm:text-2xl font-black text-slate-900 truncate block">
                     {formatPrice(productB.price, productB.currency)}
                   </span>
                   {cheaperProduct === "B" && priceDiff > 0 && (

@@ -683,35 +683,12 @@ export default function Home() {
               </span>
             )}
 
-            {/* Mobile Top Mode Toggle Button */}
-            <div className="md:hidden flex items-center">
-              {appState === "trial_room" ? (
-                <button
-                  type="button"
-                  onClick={() => setAppState("idle")}
-                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold border border-slate-200 shadow-xs cursor-pointer"
-                >
-                  <Search className="w-3.5 h-3.5 text-indigo-600" />
-                  <span>Search</span>
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setAppState("trial_room")}
-                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-xs font-bold shadow-sm shadow-purple-500/20 cursor-pointer"
-                >
-                  <Shirt className="w-3.5 h-3.5 text-pink-300 animate-pulse" />
-                  <span>Trial Room</span>
-                </button>
-              )}
-            </div>
-
             {/* Saved Deals Button (Bookmarks Drawer Trigger) */}
             <button
               type="button"
               suppressHydrationWarning
               onClick={() => setIsSavedDrawerOpen(true)}
-              className="relative flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl sm:rounded-2xl bg-white hover:bg-rose-50 text-slate-700 hover:text-rose-600 border border-slate-200/90 shadow-2xs transition-all cursor-pointer active:scale-95 text-xs font-bold"
+              className="relative flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-xl sm:rounded-2xl bg-white hover:bg-rose-50 text-slate-700 hover:text-rose-600 border border-slate-200/90 shadow-2xs transition-all cursor-pointer active:scale-95 text-xs font-bold shrink-0"
               title="View Saved Bookmarks"
             >
               <Heart className={`w-3.5 h-3.5 ${savedDeals.length > 0 ? "fill-rose-500 text-rose-500" : ""}`} />
@@ -728,7 +705,7 @@ export default function Home() {
               type="button"
               suppressHydrationWarning
               onClick={() => setIsAccountModalOpen(true)}
-              className="flex items-center gap-1.5 p-1 sm:px-2.5 sm:py-1.5 rounded-xl sm:rounded-2xl bg-slate-100/90 hover:bg-slate-200/80 border border-slate-200 transition-all cursor-pointer active:scale-95 shadow-xs"
+              className="flex items-center gap-1.5 p-1 sm:px-2.5 sm:py-1.5 rounded-xl sm:rounded-2xl bg-slate-100/90 hover:bg-slate-200/80 border border-slate-200 transition-all cursor-pointer active:scale-95 shadow-xs shrink-0"
             >
               {isLoaded && isSignedIn ? (
                 <div className="relative">

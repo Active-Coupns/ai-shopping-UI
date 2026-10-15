@@ -18,6 +18,18 @@
 
 ## 📅 Daily Changelog & Feature Timeline
 
+### 🗓️ 2026-10-14 (Fix: Comprehensive Mobile Responsive UI, Header Spacing, Rating Pill, and VS Mode Stack)
+
+* **Git Commit**: `fix(ui): mobile responsive header avatar, clean rating badge, and stacked vs comparison modal`
+* **Status**: ✅ 100% Tested & Verified (`next build` 0 compile errors, 17/17 link regression tests passing)
+* **Key Focus**:
+  - **Mobile Header Avatar Overflow (`src/app/page.js`)**: Removed duplicate mobile `Trial Room` button from top header (already permanently in the bottom navigation bar). User profile avatar is now 100% visible, padded, and tappable without horizontal overflow.
+  - **Chat Concierge Header & Badges (`src/components/SearchAiConciergeModal.jsx`)**: Fixed "Personal Advisor" badge with `whitespace-nowrap` so text never breaks into 2 lines. Sleek minimal star sparkle icon, clean font sizes, and unclipped bottom suggestion chips.
+  - **Rating Badge (`src/components/ProductCard.jsx`)**: Removed noisy bracket review count `({product.reviewsCount})` completely as requested. Styled into a clean amber star rating pill (`⭐ 4.7`) with store badge truncation to prevent card overflows.
+  - **Head-to-Head VS Comparison Modal (`src/components/HeadToHeadModal.jsx`)**: Transformed cramped `grid-cols-2` into a responsive mobile vertical stack (Option A on top, central VS divider, Option B carousel below). Carousel navigation buttons (`< Prev`, `Next >`, `3 of 9`) now have full width and never jitter or jump. Side-by-side comparison preserved on desktop (`sm:grid-cols-2`).
+
+---
+
 ### 🗓️ 2026-10-14 (Fix: Compare Store Direct Merchant Redirection & Over-smart Hijacking Elimination)
 
 * **Git Commit**: `fix(redirect): prevent primary store hijacking on compare store clicks and preserve direct merchant URLs`
