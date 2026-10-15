@@ -42,7 +42,8 @@ export default function ProductCard({
   isBookmarked = false,
   onToggleBookmark,
   onOpenPriceAlert,
-  onTryInStudio
+  onTryInStudio,
+  country = "IN"
 }) {
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -184,7 +185,7 @@ export default function ProductCard({
             basePrice: selectedStore.price || product.price || product.rawPrice,
             baseStore: selectedStore.name || product.store_name,
             baseLink: selectedStore.url || product.deal_link || product.link,
-            country: product.currency === "USD" ? "US" : "IN"
+            country: country || (product.currency === "USD" ? "US" : "IN")
           })
         });
         const data = await res.json();

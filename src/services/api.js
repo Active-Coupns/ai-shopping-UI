@@ -186,12 +186,15 @@ export async function searchProducts(query, country = "IN", isUrlLookup = false,
             ? p.price 
             : (parseFloat(String(p.price || '').replace(/[^0-9.]/g, '')) || 0));
 
-      const basePrice = numericPrice || (isUSD 
-        ? 29 + (idx * 20) + Math.floor(Math.random() * 10) 
-        : 1999 + (idx * 1500) + Math.floor(Math.random() * 200));
+      const basePrice = numericPrice || 0;
       
-      const discount = typeof p.discountPercent === 'number' ? p.discountPercent : Math.floor(15 + (idx * 5) + Math.random() * 5);
-      const calculatedOriginal = typeof p.originalPrice === 'number' ? p.originalPrice : (parseFloat(String(p.originalPrice || '').replace(/[^0-9.]/g, '')) || Math.round(basePrice * 1.18));
+      const calculatedOriginal = typeof p.originalPrice === 'number' 
+        ? p.originalPrice 
+        : (parseFloat(String(p.originalPrice || '').replace(/[^0-9.]/g, '')) || (basePrice > 0 ? Math.round(basePrice * 1.18) : 0));
+
+      const discount = typeof p.discountPercent === 'number' 
+        ? p.discountPercent 
+        : (calculatedOriginal > basePrice && basePrice > 0 ? Math.round(((calculatedOriginal - basePrice) / calculatedOriginal) * 100) : 0);
 
       const formattedPrice = (typeof p.price === 'string' && p.price.includes(isUSD ? '$' : '₹'))
         ? p.price
@@ -258,7 +261,7 @@ export async function searchProducts(query, country = "IN", isUrlLookup = false,
         originalPrice: formattedOriginal,
         discountPercent: discount,
         rating: p.rating || "4.5",
-        reviewsCount: p.review_count || p.reviewsCount || Math.floor(150 + Math.random() * 850),
+        reviewsCount: p.review_count || p.reviewsCount || 0,
         image: p.image_url || p.image || "/laptop.jpg",
         image_url: p.image_url || p.image || "/laptop.jpg",
         tag: idx === 0 ? "AI Recommended" : idx === 1 ? "Best Value" : "Top Pick",

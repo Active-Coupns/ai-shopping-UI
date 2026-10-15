@@ -4,6 +4,8 @@ import { redis } from "@/services/redis";
 import { checkUnifiedApiQuota, extractTrustedClientIp } from "@/services/rateLimiter";
 import { executeProductDetailsRequest, executeSearchRequest, formatStoreName, isTrustedMerchant, sanitizeOfferUrl, isSearchPageUrl, parsePriceNum, getStoreDirectSearchFallback } from "@/services/openweb";
 
+export const maxDuration = 30;
+
 export async function POST(request) {
   let userId = null;
   try {
@@ -87,7 +89,7 @@ export async function POST(request) {
     if (productId) {
       try {
         const detailsPromise = executeProductDetailsRequest(productId, cleanCountry);
-        const timeoutPromise = new Promise(resolve => setTimeout(() => resolve({ offers: [] }), 25000));
+        const timeoutPromise = new Promise(resolve => setTimeout(() => resolve({ offers: [] }), 12000));
         const details = await Promise.race([detailsPromise, timeoutPromise]);
         rawOffers = details?.offers || [];
       } catch (err) {
@@ -157,7 +159,9 @@ export async function POST(request) {
     // If Google Shopping details returned no competitors, check real Google Shopping search results for this title
     if (storeMap.size < 2 && cleanTitle && cleanTitle !== "product") {
       try {
-        const searchProds = await executeSearchRequest(cleanTitle, cleanCountry);
+        const fallbackSearchPromise = executeSearchRequest(cleanTitle, cleanCountry);
+        const fallbackTimeout = new Promise(resolve => setTimeout(() => resolve([]), 4000));
+        const searchProds = await Promise.race([fallbackSearchPromise, fallbackTimeout]);
         (searchProds || []).forEach(p => {
           const rawStore = p.store_name || "";
           const formattedStore = formatStoreName(rawStore, country);

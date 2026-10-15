@@ -117,7 +117,7 @@ export default function Home() {
   const [isApiLoading, setIsApiLoading] = useState(false);
 
   const [selectedCountry, setSelectedCountry] = useState("IN");
-  const [searchesLeft, setSearchesLeft] = useState(3);
+  const [searchesLeft, setSearchesLeft] = useState(10);
   const [isQuotaOpen, setIsQuotaOpen] = useState(false);
   const [searchIntent, setSearchIntent] = useState("E-COMMERCE");
   const [coupons, setCoupons] = useState([]);
@@ -412,7 +412,7 @@ export default function Home() {
       setSearchIntent(response.intent || "E-COMMERCE");
       setCoupons(response.coupons || []);
       setCouponNotAvailable(response.error === "NotAvailable");
-      setSearchesLeft(response.searchesLeft !== undefined ? response.searchesLeft : 3);
+      setSearchesLeft(response.searchesLeft !== undefined ? response.searchesLeft : 10);
       setApiError(null);
     } catch (err) {
       console.error("Local search API request failed:", err);
@@ -494,6 +494,8 @@ export default function Home() {
         openSignIn();
       } else if (err.message?.includes("429") || err.message?.includes("busy") || err.message?.includes("Too Many Requests")) {
         setApiError("Zippy servers are experiencing extraordinarily high shopping traffic right now. To ensure price accuracy, please wait a moment or try again in a few seconds.");
+      } else if (err.name === "AbortError" || err.message?.includes("abort") || err.message?.includes("timeout")) {
+        setApiError("Search timed out. Please check your network connection and try again.");
       } else {
         setApiError("No live deals found for this query. Try adjusting your search terms.");
       }
@@ -679,7 +681,7 @@ export default function Home() {
             {/* Desktop Quota badge */}
             {isSignedIn && (
               <span className="hidden md:inline-flex text-xs font-semibold text-brand-emerald bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
-                {searchesLeft} / 3 Left
+                {searchesLeft} / 10 Left
               </span>
             )}
 
@@ -922,7 +924,7 @@ export default function Home() {
                   {isSignedIn && (
                     <div className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-indigo-50 border border-indigo-200 text-xs font-bold text-brand-indigo shadow-sm">
                       <Coins className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-brand-indigo animate-pulse shrink-0" />
-                      <span>{searchesLeft} / 3 <span className="hidden sm:inline">Searches Left Today</span><span className="sm:hidden">Left</span></span>
+                      <span>{searchesLeft} / 10 <span className="hidden sm:inline">Searches Left Today</span><span className="sm:hidden">Left</span></span>
                     </div>
                   )}
                   <button
@@ -1012,6 +1014,7 @@ export default function Home() {
                                 setIsPriceAlertModalOpen(true);
                               }}
                               onTryInStudio={handleTryInStudio}
+                              country={selectedCountry}
                             />
                           );
                         })}

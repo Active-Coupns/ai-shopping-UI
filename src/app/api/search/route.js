@@ -8,6 +8,8 @@ import { searchOpenWebProducts, isExactProductQuery, getStoreDirectSearchFallbac
 import { addToInventoryPool, consultAiShopkeeper } from "@/services/semanticCache";
 import { recordSearchMetric } from "@/services/adminMetrics";
 
+export const maxDuration = 30;
+
 function getCacheKey(country, query) {
   const clean = query
     .toLowerCase()
@@ -218,7 +220,7 @@ export async function POST(request) {
             limit: 10
           });
           const remainingSearches = quotaStatus.remaining;
-          let finalCachedProducts = (isExactProduct && cachedPayload.products) 
+          let finalCachedProducts = (isUrlLookup && cachedPayload.products) 
             ? cachedPayload.products.slice(0, 1) 
             : (cachedPayload.products || []);
 
@@ -357,10 +359,10 @@ export async function POST(request) {
     }
 
     let cleanProducts = [];
-    const fetchLimit = isExactProduct ? 1 : 20;
+    const fetchLimit = isUrlLookup ? 1 : 20;
 
     try {
-      const openWebResults = await searchOpenWebProducts(cleanQuery, fetchLimit, userRegion, isExactProduct, sourceStore, sourceUrl);
+      const openWebResults = await searchOpenWebProducts(cleanQuery, fetchLimit, userRegion, false, sourceStore, sourceUrl);
       if (Array.isArray(openWebResults) && openWebResults.length > 0) {
         cleanProducts = openWebResults.slice(0, fetchLimit);
       }

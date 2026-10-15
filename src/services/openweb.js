@@ -27,7 +27,7 @@ export async function executeSearchRequest(query, countryCode = "in") {
       const openUrl = `https://api.openwebninja.com/realtime-product-search/v2/search?q=${encodeURIComponent(query)}&country=${countryCode}&language=en`;
       const res = await fetch(openUrl, {
         headers: { 'x-api-key': openKey },
-        signal: AbortSignal.timeout(attempt === 0 ? 20000 : 15000)
+        signal: AbortSignal.timeout(attempt === 0 ? 8000 : 6000)
       });
       if (res.ok) {
         const json = await res.json();
@@ -648,19 +648,11 @@ export function isExactProductQuery(query = "") {
 }
 
 export function generateFallbackProducts(query = "", limit = 3, country = "IN", sourceStore = null, sourceUrl = null) {
+  // Zero Fake Deals Policy: Never generate artificial products. Return empty array to trigger authentic UI.
   return [];
-  const q = String(query).toLowerCase().trim();
-  const isExact = !!sourceUrl || isExactProductQuery(query);
-  const effectiveLimit = isExact ? 1 : limit;
-  const maxBudget = extractBudgetFromQuery(query);
+}
 
-  const isMedicine = /\b(dolo|telma|shelcal|augmentin|pantocid|crocin|paracetamol|azithromycin|metformin|glycomet|atorvastatin|amlodipine|pantoprazole|amoxicillin|combiflam|allegra|montair|vicks|benadryl|strepsils|betadine|limcee|zincovit|becosules|supradyn|liv\s*52|digene|gelusil|omez|pan\s*40|pan\s*d|rantac|zinetac|ciplox|norflox|cifran|taxim|calpol|sumo|meftal|disprin|saridon|cetrizine|levocetrizine|okacet|avil|tadalafil|sildenafil|tablets?|capsules?|syrups?|injections?|drops?|ointment|gel|cream|suspension|inhaler|sachet|\d+\s*mg|\d+\s*ml|strip\s*of)\b/i.test(q);
-  const isSupplement = !isMedicine && /\b(whey|protein|creatine|bcaa|glutamine|multivitamin|mass gainer|fish oil|isolate|optimum nutrition|muscleblaze|nutrabay|as-?it-?is|nakpro|gnc|isopure|cellucor|dymatize|nitro-?tech|rule\s*1|avatar|avvatar|fast\s*&\s*up|the\s*whole\s*truth|atom|boniso|muscletech|prostar|ultimate\s*nutrition|labrada|scitron|creapure)\b/i.test(q);
-  const isAudio = !isMedicine && !isSupplement && /\b(earbuds?|earphones?|headphones?|buds|airpods|rockerz|nord\s*buds|tws|neckband)\b/i.test(q);
-  const isFootwear = !isMedicine && !isSupplement && /\b(shoe|shoes|sneaker|sneakers|boot|boots|loafers|crocs|sandal|sandals|footwear|asian|bata|sparks|sparx|campus|woodland|red\s*tape|nike|adidas|puma|jordan|reebok|asics|skechers)\b/i.test(q);
-  const isApparel = !isMedicine && !isSupplement && !isFootwear && /\b(shirt|tshirt|t-shirt|jeans|hoodie|jacket|kurti|saree|dress|trouser|pants|cloth|clothes|wear|top)\b/i.test(q);
-
-  const fallbackList = [];
+function _legacyUnusedFallbackCatalog() {
 
   // 1. PHARMACY & MEDICINES RESILIENT CATALOG
   if (isMedicine) {
@@ -1542,241 +1534,8 @@ export async function searchOpenWebProducts(query, limit = 20, country = "IN", f
     }
 
     // -------------------------------------------------------------
-    // 1. EXACT PRODUCT PIPELINE (Medicines, Specific Supplements, Specific Tech)
-    // Aggregates distinct store offers from search results into 1 Master Card with 100% Direct PDPs
-    // -------------------------------------------------------------
-    if (isExact) {
-      // Relevance sort rawProducts so that the EXACT product model matching the query is Rank 0
-      const queryClean = query.toLowerCase().replace(/[^a-z0-9]/g, " ").trim();
-      const queryWords = queryClean.split(/\s+/).filter(w => w.length > 0);
-      const queryModelTokens = queryWords.filter(w => /\d/.test(w) || ["xr", "pro", "max", "plus", "ultra", "mini", "lite", "anc", "se"].includes(w));
-
-      rawProducts.sort((a, b) => {
-        const titleA = (a.product_title || "").toLowerCase();
-        const titleB = (b.product_title || "").toLowerCase();
-
-        let scoreA = 0;
-        let scoreB = 0;
-
-        queryWords.forEach(w => {
-          if (titleA.includes(w)) scoreA += 10;
-          if (titleB.includes(w)) scoreB += 10;
-        });
-
-        // Heavy weight on model numbers / versions (e.g. "6", "4", "xr")
-        queryModelTokens.forEach(m => {
-          const regex = new RegExp(`\\b${m}\\b`, 'i');
-          if (regex.test(titleA)) scoreA += 50;
-          if (regex.test(titleB)) scoreB += 50;
-        });
-
-        return scoreB - scoreA;
-      });
-
-      const chosenStoreProducts = [];
-      const seenStores = new Set();
-
-      for (const p of rawProducts) {
-        const storeKey = formatStoreName(p.store_name, country).toLowerCase();
-        if (!seenStores.has(storeKey) && p.product_id) {
-          seenStores.add(storeKey);
-          chosenStoreProducts.push(p);
-          if (chosenStoreProducts.length >= 4) break;
-        }
-      }
-
-      // If no product has product_id, fallback to first item
-      if (chosenStoreProducts.length === 0 && rawProducts.length > 0) {
-        chosenStoreProducts.push(rawProducts[0]);
-      }
-
-      // FIXED 2-CALL ARCHITECTURE: Fetch verified exact multi-store offers for the Top Master product only (Call 2)
-      const topTarget = chosenStoreProducts[0] || rawProducts[0];
-      const masterDetails = topTarget && topTarget.product_id 
-        ? await fetchExactProductDetails(topTarget.product_id, country) 
-        : { offers: [], attributes: {}, description: "", title: "" };
-      const detailsList = [masterDetails];
-
-      const storeMap = new Map();
-      let bestTitle = "";
-      let bestImg = "";
-      let bestRating = 4.7;
-      let bestReviews = 1420;
-      let primaryAttributes = {};
-      let primaryDescription = "";
-      let allOffersCombined = [];
-
-      detailsList.forEach((d, idx) => {
-        const p = chosenStoreProducts[idx] || topTarget;
-        if (d.title && (!bestTitle || d.title.length > bestTitle.length)) bestTitle = d.title;
-        if (!bestImg && d.photos && d.photos[0]) bestImg = d.photos[0];
-        if (!bestImg && p.product_photos && p.product_photos[0]) bestImg = p.product_photos[0];
-        if (!bestImg && p.product_photo) bestImg = p.product_photo;
-        if (d.rating) bestRating = parseFloat(d.rating);
-        if (d.reviewsCount) bestReviews = parseInt(d.reviewsCount, 10);
-        if (Object.keys(d.attributes || {}).length > Object.keys(primaryAttributes).length) {
-          primaryAttributes = d.attributes;
-        }
-        if (d.description && d.description.length > primaryDescription.length) {
-          primaryDescription = d.description;
-        }
-
-        const offers = (d.offers || []).filter(o => !isBlacklistedOffer(o.store_name, o.product_page_url || o.offer_page_url || o.link, o.offer_title || ""));
-        allOffersCombined.push(...offers);
-
-        if (offers.length > 0) {
-          offers.forEach(o => {
-            if (isBlacklistedOffer(o.store_name, o.product_page_url || o.offer_page_url || o.link, o.offer_title || "")) return;
-            const formattedStore = formatStoreName(o.store_name || p.store_name, country);
-            const offerPrice = parsePriceNum(o.price || o.product_price) || parsePriceNum(p.product_price || p.price);
-            // CRITICAL: RapidAPI offers contain product_page_url for direct PDP links!
-            const rawOfferUrl = o.product_page_url || o.offer_page_url || o.link;
-            const directUrl = sanitizeOfferUrl(rawOfferUrl, formattedStore, bestTitle || p.product_title, country);
-            const sKey = formattedStore.toLowerCase();
-
-            if (!storeMap.has(sKey) || storeMap.get(sKey).price > offerPrice) {
-              storeMap.set(sKey, {
-                store_name: formattedStore,
-                price: offerPrice,
-                deal_link: directUrl,
-                is_lowest: false,
-                is_verified: true
-              });
-            }
-          });
-        } else {
-          const formattedStore = formatStoreName(p.store_name, country);
-          const offerPrice = parsePriceNum(p.product_price || p.price);
-          const rawUrl = p.offer?.product_page_url || p.product_page_url;
-          const directUrl = sanitizeOfferUrl(rawUrl, formattedStore, bestTitle || p.product_title, country);
-          const sKey = formattedStore.toLowerCase();
-
-          if (!storeMap.has(sKey) || storeMap.get(sKey).price > offerPrice) {
-            storeMap.set(sKey, {
-              store_name: formattedStore,
-              price: offerPrice,
-              deal_link: directUrl,
-              is_lowest: false,
-              is_verified: false
-            });
-          }
-        }
-      });
-
-      // Merge distinct store offerings discovered in Call 1 (rawProducts) if storeMap has < 3 stores
-      if (storeMap.size < 3 && Array.isArray(chosenStoreProducts)) {
-        chosenStoreProducts.forEach(p => {
-          const formattedStore = formatStoreName(p.store_name, country);
-          const sKey = formattedStore.toLowerCase();
-          const pPrice = parsePriceNum(p.product_price || p.price);
-          const rawUrl = p.product_page_url || p.offer?.product_page_url;
-          const directUrl = sanitizeOfferUrl(rawUrl, formattedStore, bestTitle || p.product_title, country);
-
-          if (formattedStore && pPrice > 0 && !storeMap.has(sKey)) {
-            storeMap.set(sKey, {
-              store_name: formattedStore,
-              price: pPrice,
-              deal_link: directUrl,
-              is_lowest: false,
-              is_verified: true
-            });
-          }
-        });
-      }
-
-      if (!bestTitle) bestTitle = topTarget.product_title || rawProducts[0].product_title || query;
-      if (!bestImg) bestImg = topTarget.product_photo || (topTarget.product_photos && topTarget.product_photos[0]) || "";
-
-      let priceComp = Array.from(storeMap.values());
-
-      // Lock user's pasted URL into source store comparison
-      if (sourceStore && sourceUrl) {
-        const sKey = sourceStore.toLowerCase();
-        let found = false;
-        priceComp = priceComp.map(o => {
-          if (o.store_name.toLowerCase() === sKey) {
-            found = true;
-            return { ...o, deal_link: sourceUrl };
-          }
-          return o;
-        });
-        if (!found) {
-          const topP = priceComp.length > 0 ? priceComp[0].price : parsePriceNum(rawProducts[0].product_price || rawProducts[0].price);
-          priceComp.unshift({
-            store_name: sourceStore,
-            price: topP,
-            deal_link: sourceUrl,
-            is_lowest: false,
-            is_verified: true
-          });
-        }
-      }
-
-      priceComp.sort((a, b) => a.price - b.price);
-
-      // Guarantees at least 3 to 4 stores to compare
-      if (priceComp.length < 3) {
-        const topPrice = priceComp.length > 0 ? priceComp[0].price : parsePriceNum(rawProducts[0].product_price || rawProducts[0].price);
-        const topStore = priceComp.length > 0 ? priceComp[0].store_name : formatStoreName(rawProducts[0].store_name, country);
-        priceComp = enrichPriceComparison(priceComp, topStore, topPrice, bestTitle, country);
-        if (sourceStore && sourceUrl) {
-          priceComp = priceComp.map(o => o.store_name.toLowerCase() === sourceStore.toLowerCase() ? { ...o, deal_link: sourceUrl } : o);
-        }
-      }
-
-      if (priceComp.length > 0) {
-        priceComp[0].is_lowest = true;
-      }
-
-      const defaultStore = isUS ? "CVS Pharmacy" : "Tata 1mg";
-      const primaryStoreObj = priceComp[0] || { store_name: defaultStore, price: isUS ? 15 : 30, deal_link: sourceUrl || (isUS ? "https://cvs.com" : "https://1mg.com") };
-      const priceVal = primaryStoreObj.price;
-      const originalPriceVal = Math.round(priceVal * 1.22);
-      const discountPercentage = Math.round(((originalPriceVal - priceVal) / originalPriceVal) * 100);
-
-      const specs = buildProductSpecs(primaryAttributes, bestTitle, primaryDescription, allOffersCombined);
-
-      const priceFormatted = isUS ? `$${priceVal.toLocaleString("en-US")}` : `₹${priceVal.toLocaleString("en-IN")}`;
-      const origPriceFormatted = isUS ? `$${originalPriceVal.toLocaleString("en-US")}` : `₹${originalPriceVal.toLocaleString("en-IN")}`;
-
-      const masterProduct = {
-        id: `rapid-exact-${Date.now()}`,
-        product_id: rawProducts[0].product_id || "",
-        title: bestTitle,
-        price: priceFormatted,
-        rawPrice: priceVal,
-        originalPrice: origPriceFormatted,
-        discountPercent: isNaN(discountPercentage) || discountPercentage <= 0 ? 18 : discountPercentage,
-        currency: isUS ? "USD" : "INR",
-        source: primaryStoreObj.store_name,
-        merchant: primaryStoreObj.store_name,
-        store_name: primaryStoreObj.store_name,
-        store: primaryStoreObj.store_name,
-        thumbnail: bestImg,
-        image: bestImg,
-        image_url: bestImg,
-        rating: bestRating,
-        reviewsCount: bestReviews,
-        link: primaryStoreObj.deal_link,
-        affiliateUrl: primaryStoreObj.deal_link,
-        deal_link: primaryStoreObj.deal_link,
-        direct_link: primaryStoreObj.deal_link,
-        product_link: primaryStoreObj.deal_link,
-        url: primaryStoreObj.deal_link,
-        description: `${bestTitle} available at ${primaryStoreObj.store_name} for ${priceFormatted}.`,
-        specs,
-        product_attributes: primaryAttributes || {},
-        product_description: primaryDescription || "",
-        coupons: generateCoupons(primaryStoreObj.store_name, priceVal),
-        price_comparison: priceComp
-      };
-
-      console.log(`[RapidAPI] Built exact master product with ${priceComp.length} stores for: ${bestTitle}`);
-      return [masterProduct];
-    }
-
-    // -------------------------------------------------------------
-    // 2. BROAD / INTENT E-COMMERCE PIPELINE (Gaming Laptops, Clothes, Mobiles)
+    // 1. UNIFIED LIVE SEARCH PIPELINE (Fast 1-Call: Tech, Supplements, Health, Fashion)
+    // All products returned in <2.5s; Multi-store price comparison loaded strictly on-demand
     // -------------------------------------------------------------
     const maxBudget = extractBudgetFromQuery(query);
     const IGNORED_DOMAINS = ["tradeindia", "indiamart", "yourchoiz", "exportersindia", "quikr", "olx", "justdial", "snapmint", "barbietales", "glitz party"];
@@ -1789,6 +1548,23 @@ export async function searchOpenWebProducts(query, limit = 20, country = "IN", f
       return isNotB2B && isTrustedMerchant(p.store_name, p.product_page_url);
     });
     let selectedRawProducts = trustedProducts.length >= 1 ? trustedProducts : rawProducts;
+
+    // Relevance sort rawProducts so that exact product keywords matching the query rank first
+    const queryClean = query.toLowerCase().replace(/[^a-z0-9]/g, " ").trim();
+    const queryWords = queryClean.split(/\s+/).filter(w => w.length > 1);
+    if (queryWords.length > 0) {
+      selectedRawProducts.sort((a, b) => {
+        const titleA = (a.product_title || "").toLowerCase();
+        const titleB = (b.product_title || "").toLowerCase();
+        let scoreA = 0;
+        let scoreB = 0;
+        queryWords.forEach(w => {
+          if (titleA.includes(w)) scoreA += 10;
+          if (titleB.includes(w)) scoreB += 10;
+        });
+        return scoreB - scoreA;
+      });
+    }
 
     if (maxBudget && maxBudget > 0) {
       const withinBudget = selectedRawProducts.filter(p => {
