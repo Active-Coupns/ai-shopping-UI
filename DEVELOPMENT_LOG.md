@@ -27,6 +27,7 @@
   - **Chat Concierge Header & Badges (`src/components/SearchAiConciergeModal.jsx`)**: Fixed "Personal Advisor" badge with `whitespace-nowrap` so text never breaks into 2 lines. Sleek minimal star sparkle icon, clean font sizes, and unclipped bottom suggestion chips.
   - **Rating Badge (`src/components/ProductCard.jsx`)**: Removed noisy bracket review count `({product.reviewsCount})` completely as requested. Styled into a clean amber star rating pill (`⭐ 4.7`) with store badge truncation to prevent card overflows.
   - **Head-to-Head VS Comparison Modal (`src/components/HeadToHeadModal.jsx`)**: Transformed cramped `grid-cols-2` into a responsive mobile vertical stack (Option A on top, central VS divider, Option B carousel below). Carousel navigation buttons (`< Prev`, `Next >`, `3 of 9`) now have full width and never jitter or jump. Side-by-side comparison preserved on desktop (`sm:grid-cols-2`).
+  - **In-Chat Product Recommendation Card (`src/components/InChatShoppingAgent.jsx`)**: Completely overhauled recommended product cards inside chat messages. Replaced the giant multi-line circular green blob with a sleek, single-line `Top Pick` badge with `whitespace-nowrap`, expanded message bubble width to `max-w-[94%]`, increased product thumbnail size to `w-16 h-16 sm:w-18 sm:h-18`, eliminated truncated titles and floating ratings, and styled full-width action buttons with `ArrowUpRight`. Same clean design applied to discovered pool product cards (`Best Alternative`).
 
 ---
 

@@ -22,7 +22,8 @@ import {
   X,
   ShoppingBag,
   Mic,
-  MicOff
+  MicOff,
+  ArrowUpRight
 } from "lucide-react";
 
 export default function InChatShoppingAgent({
@@ -350,23 +351,23 @@ export default function InChatShoppingAgent({
         {/* Agent Header */}
         <div 
           onClick={() => setIsExpanded(!isExpanded)}
-          className="px-6 py-4.5 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white flex items-center justify-between cursor-pointer select-none transition-all hover:bg-slate-900/95"
+          className="px-4 sm:px-6 py-3.5 sm:py-4.5 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white flex items-center justify-between cursor-pointer select-none transition-all hover:bg-slate-900/95"
         >
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center shadow-inner">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center shadow-inner shrink-0">
               <Bot className="w-5 h-5 text-indigo-300" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="font-extrabold text-sm md:text-base text-white tracking-tight">
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <h3 className="font-extrabold text-xs sm:text-base text-white tracking-tight truncate">
                   Ask AI About These Products
                 </h3>
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-[10px] font-extrabold text-emerald-300">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-[9px] sm:text-[10px] font-extrabold text-emerald-300 whitespace-nowrap shrink-0">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                   Live Advisor
                 </span>
               </div>
-              <p className="text-[11px] text-slate-300 font-medium">
+              <p className="text-[10px] sm:text-[11px] text-slate-300 font-medium truncate">
                 Compare these {products.length} options, test use-cases, or discover better alternatives
               </p>
             </div>
@@ -414,7 +415,7 @@ export default function InChatShoppingAgent({
               )}
 
               {/* Chat Stream */}
-              <div ref={chatScrollRef} className="p-6 max-h-[480px] overflow-y-auto space-y-4 bg-slate-50/50">
+              <div ref={chatScrollRef} className="p-3 sm:p-5 md:p-6 max-h-[480px] overflow-y-auto space-y-3.5 sm:space-y-4 bg-slate-50/50">
                 {messages.map((msg, mIdx) => {
                   const isUser = msg.role === "user";
                   const recDisplayedProd = (msg.recommendedDisplayedIndex !== undefined && msg.recommendedDisplayedIndex !== null)
@@ -429,10 +430,10 @@ export default function InChatShoppingAgent({
                       key={mIdx}
                       initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className={`flex items-start gap-3 ${isUser ? "flex-row-reverse" : "flex-row"}`}
+                      className={`flex items-start gap-2.5 sm:gap-3 ${isUser ? "flex-row-reverse" : "flex-row"}`}
                     >
                       {/* Avatar */}
-                      <div className={`w-8 h-8 rounded-xl shrink-0 flex items-center justify-center text-xs shadow-xs ${
+                      <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-xl shrink-0 flex items-center justify-center text-xs shadow-xs ${
                         isUser
                           ? "bg-indigo-600 text-white"
                           : "bg-slate-900 text-white"
@@ -441,7 +442,7 @@ export default function InChatShoppingAgent({
                       </div>
 
                       {/* Message Bubble */}
-                      <div className={`max-w-[85%] rounded-2xl p-4 text-xs md:text-sm leading-relaxed shadow-xs ${
+                      <div className={`w-full max-w-[94%] sm:max-w-[85%] rounded-2xl p-3.5 sm:p-4 text-xs md:text-sm leading-relaxed shadow-xs ${
                         isUser
                           ? "bg-indigo-600 text-white rounded-tr-none font-medium"
                           : "bg-white border border-slate-200/90 text-slate-800 rounded-tl-none font-normal"
@@ -464,13 +465,13 @@ export default function InChatShoppingAgent({
 
                         {/* 1. Winner Among Currently Displayed 3 Cards (Full Visual Rich Card) */}
                         {recDisplayedProd && !isUser && (
-                          <div className="mt-3.5 p-3.5 rounded-2xl bg-gradient-to-br from-emerald-50/80 via-teal-50/40 to-white border border-emerald-300/80 shadow-xs text-left space-y-2.5">
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-black tracking-wide">
-                                <CheckCircle className="w-3 h-3 text-white" />
-                                <span>Top Pick From Your Screen</span>
+                          <div className="mt-3 p-3 sm:p-3.5 rounded-2xl bg-white border border-emerald-300 shadow-sm text-left space-y-2.5">
+                            <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-100">
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase tracking-wider shrink-0 whitespace-nowrap">
+                                <CheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                                <span>Top Pick</span>
                               </span>
-                              <span className="text-[11px] font-bold text-emerald-800">
+                              <span className="text-[11px] font-bold text-slate-500 truncate max-w-[140px] shrink-0">
                                 {recDisplayedProd.store_name || recDisplayedProd.store || "Verified Store"}
                               </span>
                             </div>
@@ -480,19 +481,19 @@ export default function InChatShoppingAgent({
                                 <img 
                                   src={recDisplayedProd.image || recDisplayedProd.thumbnail} 
                                   alt={recDisplayedProd.title} 
-                                  className="w-14 h-14 object-contain rounded-xl bg-white border border-slate-200/80 p-1 shrink-0" 
+                                  className="w-16 h-16 sm:w-18 sm:h-18 object-contain rounded-xl bg-slate-50 border border-slate-200/80 p-1.5 shrink-0" 
                                 />
                               )}
                               <div className="flex-1 min-w-0">
-                                <h4 className="font-bold text-xs md:text-sm text-slate-900 line-clamp-2 leading-tight">
+                                <h4 className="font-extrabold text-xs sm:text-sm text-slate-900 line-clamp-2 leading-snug">
                                   {recDisplayedProd.title}
                                 </h4>
-                                <div className="mt-1 flex items-baseline gap-2">
-                                  <span className="text-sm md:text-base font-black text-emerald-700">
+                                <div className="mt-1.5 flex items-baseline gap-2 flex-wrap">
+                                  <span className="text-sm sm:text-base font-black text-emerald-700">
                                     {recDisplayedProd.price}
                                   </span>
                                   {recDisplayedProd.rating && (
-                                    <span className="text-[11px] text-slate-500 font-semibold">
+                                    <span className="text-[10px] font-bold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded-md shrink-0">
                                       ⭐ {recDisplayedProd.rating}
                                     </span>
                                   )}
@@ -506,11 +507,12 @@ export default function InChatShoppingAgent({
                                 href={recDisplayedProd.deal_link || recDisplayedProd.link || recDisplayedProd.affiliateUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center justify-center gap-1.5 w-full py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-all active:scale-98 cursor-pointer mt-1"
+                                className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold text-xs shadow-xs transition-all active:scale-98 flex items-center justify-center gap-1.5 cursor-pointer mt-1 text-center"
                               >
-                                <ShoppingBag className="w-3.5 h-3.5" />
-                                <span>Buy Directly at {recDisplayedProd.store_name || recDisplayedProd.store || "Store"} ({recDisplayedProd.price})</span>
-                                <ExternalLink className="w-3 h-3 ml-0.5" />
+                                <ShoppingBag className="w-3.5 h-3.5 shrink-0" />
+                                <span className="truncate">Buy Directly at {recDisplayedProd.store_name || recDisplayedProd.store || "Store"}</span>
+                                <span className="shrink-0 font-black">({recDisplayedProd.price})</span>
+                                <ArrowUpRight className="w-3.5 h-3.5 shrink-0 ml-0.5" />
                               </a>
                             )}
                           </div>
@@ -518,13 +520,13 @@ export default function InChatShoppingAgent({
 
                         {/* 2. In-Chat Suggested Product (Discovered from 15-20 Inventory Pool) */}
                         {poolProd && !isUser && (
-                          <div className="mt-3.5 p-3.5 rounded-2xl bg-gradient-to-br from-indigo-50/70 via-purple-50/40 to-white border border-indigo-200 shadow-sm text-left space-y-2.5">
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-indigo-600 text-white text-[10px] font-black tracking-wide">
-                                <Sparkles className="w-3 h-3 text-amber-300 animate-pulse" />
-                                <span>Discovered in Search Inventory</span>
+                          <div className="mt-3 p-3 sm:p-3.5 rounded-2xl bg-white border border-indigo-200 shadow-sm text-left space-y-2.5">
+                            <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-100">
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-800 text-[10px] font-black uppercase tracking-wider shrink-0 whitespace-nowrap">
+                                <Sparkles className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                                <span>Best Alternative</span>
                               </span>
-                              <span className="text-[11px] font-bold text-indigo-700">
+                              <span className="text-[11px] font-bold text-slate-500 truncate max-w-[140px] shrink-0">
                                 {poolProd.store_name || poolProd.store || "Online Store"}
                               </span>
                             </div>
@@ -534,19 +536,19 @@ export default function InChatShoppingAgent({
                                 <img 
                                   src={poolProd.image} 
                                   alt={poolProd.title} 
-                                  className="w-14 h-14 object-contain rounded-xl bg-white border border-slate-200/70 p-1 shrink-0" 
+                                  className="w-16 h-16 sm:w-18 sm:h-18 object-contain rounded-xl bg-slate-50 border border-slate-200/70 p-1.5 shrink-0" 
                                 />
                               )}
                               <div className="flex-1 min-w-0">
-                                <h4 className="font-bold text-xs md:text-sm text-slate-900 line-clamp-2 leading-tight">
+                                <h4 className="font-extrabold text-xs sm:text-sm text-slate-900 line-clamp-2 leading-snug">
                                   {poolProd.title}
                                 </h4>
-                                <div className="mt-1 flex items-baseline gap-2">
-                                  <span className="text-sm md:text-base font-black text-emerald-700">
+                                <div className="mt-1.5 flex items-baseline gap-2 flex-wrap">
+                                  <span className="text-sm sm:text-base font-black text-emerald-700">
                                     {poolProd.price}
                                   </span>
                                   {poolProd.rating && (
-                                    <span className="text-[11px] text-slate-500 font-semibold">
+                                    <span className="text-[10px] font-bold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded-md shrink-0">
                                       ⭐ {poolProd.rating}
                                     </span>
                                   )}
@@ -556,8 +558,8 @@ export default function InChatShoppingAgent({
 
                             {/* Why AI Recommended This Product */}
                             {poolProd.whyRecommended && (
-                              <p className="text-[11px] text-slate-600 bg-white/80 p-2 rounded-lg border border-indigo-100/60 leading-snug">
-                                <strong className="text-indigo-900">Why this fits you better:</strong> {poolProd.whyRecommended}
+                              <p className="text-[11px] text-slate-600 bg-slate-50 p-2.5 rounded-xl border border-slate-200/60 leading-relaxed">
+                                <strong className="text-indigo-950 font-bold">Why this fits you better:</strong> {poolProd.whyRecommended}
                               </p>
                             )}
 
@@ -565,24 +567,25 @@ export default function InChatShoppingAgent({
                             {Array.isArray(poolProd.specs) && poolProd.specs.length > 0 && (
                               <div className="flex flex-wrap gap-1">
                                 {poolProd.specs.slice(0, 3).map((s, sIdx) => (
-                                  <span key={sIdx} className="px-2 py-0.5 rounded-md bg-white border border-slate-200 text-[10px] font-medium text-slate-700">
+                                  <span key={sIdx} className="px-2 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-[10px] font-medium text-slate-700">
                                     {s}
                                   </span>
                                 ))}
                               </div>
                             )}
 
-                            {/* Direct View Deal Link (Pure in-chat experience) */}
+                            {/* Direct View Deal Link */}
                             {(poolProd.deal_link || poolProd.link || poolProd.affiliateUrl) && (
                               <a
                                 href={poolProd.deal_link || poolProd.link || poolProd.affiliateUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center justify-center gap-1.5 w-full py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs transition-all active:scale-98 cursor-pointer mt-1"
+                                className="w-full py-2.5 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs shadow-xs transition-all active:scale-98 flex items-center justify-center gap-1.5 cursor-pointer mt-1 text-center"
                               >
-                                <ShoppingBag className="w-3.5 h-3.5" />
-                                <span>View Deal at {poolProd.store_name || poolProd.store || "Store"}</span>
-                                <ExternalLink className="w-3 h-3 ml-0.5" />
+                                <ShoppingBag className="w-3.5 h-3.5 shrink-0" />
+                                <span className="truncate">View Deal at {poolProd.store_name || poolProd.store || "Store"}</span>
+                                <span className="shrink-0 font-black">({poolProd.price})</span>
+                                <ArrowUpRight className="w-3.5 h-3.5 shrink-0 ml-0.5" />
                               </a>
                             )}
                           </div>
