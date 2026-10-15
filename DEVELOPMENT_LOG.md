@@ -11,12 +11,25 @@
 | **Active Branch** | `main` |
 | **Remote Repository** | `https://github.com/Active-Coupns/ai-shopping-UI.git` |
 | **Framework & Engine** | Next.js 16 (App Router + Turbopack), React 19, Tailwind CSS |
-| **AI Models & Backend** | Google Gemini 2.5 Flash / Flash-Lite, Upstash Redis, RapidAPI / OpenWebNinja |
-| **Last Verified Build** | `next build` Passing (20/20 routes static/dynamic, 0 compile errors) |
+| **AI Models & Backend** | Google Gemini 2.5 Flash / Flash-Lite, Upstash Redis, OpenWeb Ninja |
+| **Last Verified Build** | `next build` Passing (24/24 routes static/dynamic, 0 compile errors) |
 
 ---
 
 ## 📅 Daily Changelog & Feature Timeline
+
+### 🗓️ 2026-10-14 (Fix: Compare Store Direct Merchant Redirection & Over-smart Hijacking Elimination)
+
+* **Git Commit**: `fix(redirect): prevent primary store hijacking on compare store clicks and preserve direct merchant URLs`
+* **Status**: ✅ 100% Tested & Verified (`next build` 0 compile errors, 17/17 link regression tests passing)
+* **Key Focus**: 
+  - **Eliminated `offers[0]` Fallback Hijacking in `/api/redirect`**: Removed the destructive `offers[0]` fallback that redirected alternative store clicks (Flipkart, MuscleBlaze, 1mg, Apollo Pharmacy) to the primary card's initial seller (e.g. Pahalwan Supplements).
+  - **Direct Client Navigation for Clean Merchant Links**: In `ProductCard.jsx` (`getSafeDirectPdpLink`), all clean merchant links (PDPs or merchant search destinations) now open directly without detour or server hops.
+  - **Unwrapped Google Redirects on Client**: Embedded destination URLs inside Google redirect parameters are unwrapped immediately.
+  - **Primary Product ID Scoping**: Stopped leaking the primary card's `productId` into competitor store links, ensuring each store's destination URL is strictly preserved.
+  - **Redirect Cache Key Versioning**: Bumped cache keys to `v5` to flush stale/misdirected redirect cache entries in Redis.
+
+---
 
 ### 🗓️ 2026-10-14 (Refactor: Service Rename to openweb.js & Zero-RapidAPI Architecture)
 

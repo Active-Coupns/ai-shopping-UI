@@ -121,33 +121,43 @@ export default function ProductCard({
 
   const getSafeDirectPdpLink = (rawUrl, storeName, productTitle, productId) => {
     if (!rawUrl || rawUrl === "#") return "#";
-    const pId = productId || product?.product_id || "";
-    // If it's already a direct merchant link (not google.com or ibp=):
-    if (
-      (rawUrl.startsWith("http://") || rawUrl.startsWith("https://")) &&
-      !rawUrl.includes("google.com") &&
-      !rawUrl.includes("google.co.in") &&
-      !rawUrl.includes("ibp=")
-    ) {
-      const lower = rawUrl.toLowerCase();
-      const isSearchPage = lower.includes("/search") || lower.includes("/s?k=") || lower.includes("/search/?text=") || lower.includes("searchterm=");
 
-      // If it's an exact PDP or specific merchant destination (and NOT a search page):
-      if (!isSearchPage) {
-        // For Noise and Indian Shopify D2C stores, preserve or ensure country=IN to prevent Shopify Geolocation country-picker popups:
-        if (lower.includes("gonoise.com")) {
-          try {
-            const u = new URL(rawUrl);
-            u.searchParams.set("country", "IN");
-            u.searchParams.set("currency", "INR");
-            return u.toString();
-          } catch (e) {}
+    // 1. If it's a Google redirect link, attempt to unwrap embedded destination URL:
+    let targetUrl = rawUrl;
+    try {
+      if (rawUrl.includes("google.com") || rawUrl.includes("google.co.in")) {
+        const u = new URL(rawUrl);
+        const embedded = u.searchParams.get("url") || u.searchParams.get("dest") || u.searchParams.get("q") || u.searchParams.get("adurl");
+        if (embedded && (embedded.startsWith("http://") || embedded.startsWith("https://")) && !embedded.includes("google.com") && !embedded.includes("google.co.in") && !embedded.includes("ibp=")) {
+          targetUrl = embedded;
         }
-        return rawUrl;
       }
+    } catch (e) {}
+
+    // 2. Direct clean merchant link (NOT a Google aggregator or internal link):
+    if (
+      (targetUrl.startsWith("http://") || targetUrl.startsWith("https://")) &&
+      !targetUrl.includes("google.com") &&
+      !targetUrl.includes("google.co.in") &&
+      !targetUrl.includes("ibp=")
+    ) {
+      // For Noise and Indian Shopify D2C stores, preserve or ensure country=IN:
+      if (targetUrl.toLowerCase().includes("gonoise.com")) {
+        try {
+          const u = new URL(targetUrl);
+          u.searchParams.set("country", "IN");
+          u.searchParams.set("currency", "INR");
+          return u.toString();
+        } catch (e) {}
+      }
+      return targetUrl;
     }
-    // Route through /api/redirect with product_id only when necessary (e.g. google redirect links):
-    return `/api/redirect?product_id=${encodeURIComponent(pId)}&store=${encodeURIComponent(storeName || "Online Store")}&title=${encodeURIComponent(productTitle || "")}&fallback=${encodeURIComponent(rawUrl)}`;
+
+    // 3. Fallback: Route through /api/redirect only for Google aggregator links that could not be unwrapped
+    // Only pass productId if this store actually matches the primary product's store:
+    const isPrimaryStore = storeName && product?.store_name && (storeName.toLowerCase() === product.store_name.toLowerCase());
+    const pId = isPrimaryStore ? (productId || product?.product_id || "") : "";
+    return `/api/redirect?product_id=${encodeURIComponent(pId)}&store=${encodeURIComponent(storeName || "Online Store")}&title=${encodeURIComponent(productTitle || "")}&fallback=${encodeURIComponent(targetUrl)}`;
   };
 
   // On-Demand Price Comparison State (Min 3, Max 4 stores with Anchor Lowest)
@@ -649,7 +659,7 @@ export default function ProductCard({
                                     )}
                                     {offer.deal_link && (
                                       <a
-                                        href={getSafeDirectPdpLink(offer.deal_link, sName, product.title, product.product_id)}
+                                        href={getSafeDirectPdpLink(offer.deal_link, sName, product.title, (sName?.toLowerCase() === (product.store_name || product.source || "").toLowerCase()) ? product.product_id : "")}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         onClick={(e) => {
@@ -750,7 +760,7 @@ export default function ProductCard({
 
           {/* Bottom Direct Store Buy CTA */}
           <a
-            href={getSafeDirectPdpLink(selectedStore.url || product.affiliateUrl || product.deal_link, selectedStore.name, product.title, product.product_id)}
+            href={getSafeDirectPdpLink(selectedStore.url || product.affiliateUrl || product.deal_link, selectedStore.name, product.title, (selectedStore.name?.toLowerCase() === (product.store_name || product.source || "").toLowerCase()) ? product.product_id : "")}
             target="_blank"
             rel="noopener noreferrer"
             onClick={handleBuyNow}

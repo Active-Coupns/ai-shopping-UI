@@ -377,9 +377,9 @@ export async function GET(request) {
         const storeSearch = getStoreDirectSearchFallback(store, title, region);
         return safeRedirect(storeSearch);
       }
-      // If store is a specific brand/retailer (e.g. Puma, Nike, Tata CLiQ, Croma) but fallback points to an unrelated store:
+      // If user clicked a non-Amazon brand/store but fallback points to Amazon:
       const cleanStore = storeLower.replace(/[^a-z0-9]/g, "");
-      if (cleanStore && !cleanFallback.toLowerCase().includes(cleanStore) && !cleanStore.includes("online") && !cleanStore.includes("store")) {
+      if (cleanStore && !cleanStore.includes("amazon") && !cleanStore.includes("online") && !cleanStore.includes("store") && cleanFallback.includes("amazon.in")) {
         const storeSearch = getStoreDirectSearchFallback(store, title, region);
         if (storeSearch && !storeSearch.includes("amazon.in")) {
           return safeRedirect(storeSearch);
@@ -393,10 +393,10 @@ export async function GET(request) {
 
   if (productId) {
     const cleanStoreKey = storeName.toLowerCase().replace(/[^a-z0-9]/g, "");
-    const cacheKey = `cache:pdp:direct:v4:${productId.slice(-50)}:${cleanStoreKey}`;
+    const cacheKey = `cache:pdp:direct:v5:${productId.slice(-50)}:${cleanStoreKey}`;
     try {
       const cached = await redis.get(cacheKey);
-      if (cached && (cached.startsWith("http://") || cached.startsWith("https://"))) {
+      if (cached && (cached.startsWith("http://") || cached.startsWith("https://")) && !cached.includes("google.com") && !cached.includes("ibp=")) {
         console.log(`Dynamic Redirect: Cache HIT for key: ${cacheKey} -> ${cached}`);
         return safeRedirect(cached);
       }
@@ -411,7 +411,6 @@ export async function GET(request) {
     } catch {
       userId = null;
     }
-
 
     try {
       const details = await executeProductDetailsRequest(productId, (region || "in").toLowerCase());
@@ -434,6 +433,14 @@ export async function GET(request) {
         if (a.includes("nike") && b.includes("nike")) return true;
         if (a.includes("adidas") && b.includes("adidas")) return true;
         if (a.includes("tatacliq") && b.includes("tatacliq")) return true;
+        if (a.includes("muscleblaze") && b.includes("muscleblaze")) return true;
+        if (a.includes("healthkart") && b.includes("healthkart")) return true;
+        if (a.includes("nutrabay") && b.includes("nutrabay")) return true;
+        if (a.includes("1mg") && b.includes("1mg")) return true;
+        if (a.includes("apollo") && b.includes("apollo")) return true;
+        if (a.includes("pharmeasy") && b.includes("pharmeasy")) return true;
+        if (a.includes("netmeds") && b.includes("netmeds")) return true;
+        if (a.includes("truemeds") && b.includes("truemeds")) return true;
         return false;
       };
 
@@ -456,13 +463,30 @@ export async function GET(request) {
       if (!match && storeName.toLowerCase().includes("adidas")) {
         match = offers.find(o => (o.store_name || "").toLowerCase().includes("adidas") || (o.offer_page_url || "").includes("adidas"));
       }
+      if (!match && (storeName.toLowerCase().includes("muscleblaze") || storeName.toLowerCase().includes("healthkart"))) {
+        match = offers.find(o => (o.store_name || "").toLowerCase().includes("muscleblaze") || (o.store_name || "").toLowerCase().includes("healthkart") || (o.offer_page_url || "").includes("muscleblaze"));
+      }
+      if (!match && storeName.toLowerCase().includes("1mg")) {
+        match = offers.find(o => (o.store_name || "").toLowerCase().includes("1mg") || (o.offer_page_url || "").includes("1mg"));
+      }
+      if (!match && storeName.toLowerCase().includes("apollo")) {
+        match = offers.find(o => (o.store_name || "").toLowerCase().includes("apollo") || (o.offer_page_url || "").includes("apollo"));
+      }
+      if (!match && storeName.toLowerCase().includes("pharmeasy")) {
+        match = offers.find(o => (o.store_name || "").toLowerCase().includes("pharmeasy") || (o.offer_page_url || "").includes("pharmeasy"));
+      }
+      if (!match && storeName.toLowerCase().includes("netmeds")) {
+        match = offers.find(o => (o.store_name || "").toLowerCase().includes("netmeds") || (o.offer_page_url || "").includes("netmeds"));
+      }
 
-      // If specific store name didn't match, fall back to best available merchant PDP in offers
-      if (!match && offers.length > 0) {
+      // Only fall back to best available merchant PDP if storeName is generic (e.g. "Online Store")
+      // NEVER hijack a specific merchant request (e.g. MuscleBlaze, Flipkart, 1mg) to an unrelated merchant!
+      const isGenericStore = !storeName || storeName === "Online Store" || storeName === "Official Store";
+      if (!match && isGenericStore && offers.length > 0) {
         match = offers.find(o => {
           const u = o.offer_page_url || o.product_page_url;
           return u && (u.startsWith("http://") || u.startsWith("https://")) && !u.includes("google.com") && !u.includes("ibp=");
-        }) || offers[0];
+        });
       }
 
       if (match) {
@@ -474,6 +498,8 @@ export async function GET(request) {
           console.log(`Dynamic Redirect: Resolved 100% EXACT PDP for ${storeName} -> ${exactPdp}`);
           return safeRedirect(exactPdp);
         }
+      } else {
+        console.log(`Dynamic Redirect: No offers in catalog ID matched store "${storeName}". Falling back to destination fallback.`);
       }
     } catch (err) {
       console.error("Dynamic Redirect error resolving exact PDP via details:", err);
