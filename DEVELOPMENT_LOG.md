@@ -18,6 +18,14 @@
 
 ## 📅 Daily Changelog & Feature Timeline
 
+### 🗓️ 2026-10-15 (Infra: Configured Vercel Serverless Function Region to Mumbai `bom1`)
+
+* **Git Commit**: Pending (`chore(infra): configure Vercel serverless function region to Mumbai (bom1)`)
+* **Status**: ✅ Configured & Pushed to Git
+* **Key Focus**:
+  - **Single Region Deployment (`vercel.json`)**: Configured `"regions": ["bom1"]` (AWS Mumbai `ap-south-1`) for all Vercel serverless API routes (`/api/search`, `/api/products/compare`, `/api/chat`, etc.).
+  - **Latency Optimization**: Reduced round-trip API latency for Indian mobile users from ~250ms (default Washington D.C. `iad1`) to ~20-30ms, while keeping global CDN edge routing active for static assets.
+
 ### 🗓️ 2026-10-15 (Fix: Decoupled 2-Call Architecture, Eliminated Timeouts, Synced 10-Search Quota & 11-Point Overhaul)
 
 * **Git Commit**: `b234e5d`
