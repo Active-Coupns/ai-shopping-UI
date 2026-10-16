@@ -66,7 +66,7 @@ export async function POST(request) {
     // 0. Check Redis Cache First (Save 100% LLM cost on repeat views)
     const cleanCacheTitle = String(productTitle).trim().toLowerCase().slice(0, 80).replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-");
     const personaSuffix = userPersona ? `:${userPersona.trim().toLowerCase().slice(0, 30).replace(/[^a-z0-9]/g, "-")}` : "";
-    const cacheKey = `cache:ai:review:v3:${cleanCacheTitle}${personaSuffix}`;
+    const cacheKey = `cache:ai:review:v4:${cleanCacheTitle}${personaSuffix}`;
     try {
       const cached = await redis.get(cacheKey);
       if (cached) {
@@ -253,14 +253,19 @@ Respond ONLY with a valid JSON object matching this schema:
           `\nEnsure your commentary is coherent and naturally complements what the user has already inspected without contradictory advice.`
         : "";
 
-      prompt = `You are ShopSmart AI, an independent, trusted consumer advisor and product advocate in India.
-Your mission is to provide an objective, authentic, and differentiated evaluation for this specific product.
+      prompt = `You are ShopSmart AI, an independent, trusted technical advisor and hardware specification analyst in India.
+Your mission is to provide an objective, authentic, and spec-grounded evaluation for this specific product.
 
 ETHOS & PHILOSOPHY:
-- We are an UNBIASED BUYER ADVOCATE, NOT an e-commerce salesperson trying to push a transaction.
+- We are an UNBIASED BUYER ADVOCATE providing SPEC-DRIVEN, FIRST-PRINCIPLES TECHNICAL REASONING.
+- NEVER make claims based on anecdotal user gossip or vague "public reviews". Every assertion MUST be directly anchored to the product's official hardware specifications, component wattage, panel metrics, or material construction.
 - NEVER tell the buyer "do not buy this" or dismiss the product.
 - Affirm that this product was shortlisted specifically to match the user's search and budget.
-- Explain why it is a solid choice, what makes it stand out against other options, and objectively state what limitations/trade-offs real buyers will encounter after 3-6 months.
+- Explain the technical "WHY" behind every strength and trade-off:
+  * If gaming is limited, explain that it uses integrated graphics (e.g. Intel Iris Xe / AMD Radeon) without dedicated VRAM, making AAA 3D titles unfeasible.
+  * If battery life is limited, cite the battery Whr capacity relative to screen size/CPU wattage (e.g. 41Whr on a 15.6" screen yields ~3.5-4 hours continuous workflow).
+  * If outdoor visibility is limited, cite the display brightness (e.g. 250 nits is clear indoors but dims in direct sunlight).
+  * If multitasking has a ceiling, cite the RAM capacity and whether it is soldered or expandable.
 
 PRODUCT UNDER REVIEW:
 Product Title: "${productTitle}"
@@ -279,14 +284,14 @@ OUTPUT GUIDELINES:
    - Every item must be an object with "label" and "value" directly reflecting this product's actual metadata.
 2. "fitVerdict": Exactly 2 clear sentences.
    - Sentence 1: Affirm that this model was shortlisted specifically for "${userRequirement || 'your search'}" and fits the required budget/use-case.
-   - Sentence 2: Highlight this specific model's distinctive strength/advantage (relative to alternatives on screen if available).
-3. "bestFor": 1 concise sentence describing the ideal user and practical workloads (e.g. "Best suited for college coursework, office multitasking, and daily streaming.").
-4. "skipIf": 1 constructive sentence highlighting when a user should step up (e.g. "Step up to an RTX GPU model if your primary goal is competitive AAA gaming or 4K video rendering.").
-5. "hiddenCatch": 1 real-world fact observed after 3-6 months of usage (e.g. realistic battery backup of 4-5 hours vs claimed 8 hours, or keyboard flex).
-6. "pros": Exactly 3 genuine, distinct strengths specific to this model.
-7. "cons": Exactly 2 realistic trade-offs at this price tier.
+   - Sentence 2: Highlight this specific model's distinctive hardware advantage (relative to alternatives on screen if available).
+3. "bestFor": 1 concise sentence describing the ideal user and practical workloads grounded in its hardware capabilities (e.g. "Best suited for college coursework, office multitasking, and 1080p media streaming.").
+4. "skipIf": 1 constructive sentence highlighting the exact hardware ceiling where a user should step up (e.g. "Step up to a dedicated RTX GPU model if your primary goal is competitive AAA 3D gaming or 4K video rendering.").
+5. "hiddenCatch": 1 technical reality based on hardware specifications and component limits (e.g. "With a 41Whr battery driving a 15.6-inch display, real-world continuous productivity is limited to 3.5 to 4 hours" or "Display brightness is rated at 250 nits, which is clear indoors but dims under direct sunlight" or "8GB RAM is soldered onboard without an expansion slot").
+6. "pros": Exactly 3 genuine, distinct strengths, each citing the hardware/spec component that powers it.
+7. "cons": Exactly 2 realistic trade-offs at this price tier, each explicitly citing the component limitation.
 8. "dealVerdict": Realistic market price verdict for ₹${priceNum}.
-9. "trustScore": Integer 88-96.
+9. "trustScore": Integer 88-96 representing the Hardware & Spec-to-Price Value Index.
 
 Always respond ONLY with a valid JSON object matching this schema:
 {
@@ -300,18 +305,18 @@ Always respond ONLY with a valid JSON object matching this schema:
     { "label": "Battery / Power / Efficiency", "value": "Exact Battery / Star Rating / Power" },
     { "label": "Form Factor / OS / Build", "value": "Weight / OS / Construction" }
   ],
-  "fitVerdict": "Affirmation of match for query followed by this model's unique standout advantage.",
-  "bestFor": "Target user and ideal everyday workloads.",
-  "skipIf": "Specific advanced workload where the buyer should consider stepping up.",
-  "hiddenCatch": "1 practical long-term note based on real buyer experiences.",
+  "fitVerdict": "Affirmation of match for query followed by this model's unique hardware advantage.",
+  "bestFor": "Target user and ideal everyday workloads based on hardware specs.",
+  "skipIf": "Specific advanced workload where the buyer should consider stepping up to higher tier hardware.",
+  "hiddenCatch": "1 practical hardware limit based on component specifications.",
   "pros": [
-    "Model-specific strength 1",
-    "Model-specific strength 2",
-    "Model-specific strength 3"
+    "Hardware-backed strength 1",
+    "Hardware-backed strength 2",
+    "Hardware-backed strength 3"
   ],
   "cons": [
-    "Realistic trade-off 1",
-    "Realistic trade-off 2"
+    "Spec-based trade-off 1",
+    "Spec-based trade-off 2"
   ],
   "dealVerdict": "Price assessment for ₹${priceNum}.",
   "trustScore": 92

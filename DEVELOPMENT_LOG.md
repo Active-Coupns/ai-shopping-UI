@@ -18,6 +18,26 @@
 
 ## 📅 Daily Changelog & Feature Timeline
 
+### 🗓️ 2026-10-16 (AI Upgrade: Spec-Grounded Technical Reality Engine & Legal Safe Harbor Refactor)
+
+* **Status**: ✅ 100% Tested & Verified (`next build` 24/24 routes passing, live search & Groq spec extraction verified)
+* **Rationale & Why This Was Done**:
+  1. **Eliminate Legal Liability & Brand Defamation Risk**: Replaced vague "analyzed from public reviews" claims with objective, unchallengeable first-principles hardware reasoning directly anchored to official merchant and manufacturer specifications (GPU type, RAM architecture, display panel nits, battery Whr capacity).
+  2. **Elevate Authority from 'Review Aggregator' to 'Hardware Technical Advisor'**: When the AI explains the exact technical "WHY" (e.g. why AAA 3D gaming is unfeasible due to integrated Iris Xe lacking dedicated VRAM, or why battery life is limited due to a 41Whr capacity on a 15.6" screen), users receive genuine, indisputable technical engineering insights.
+  3. **UI Modernization & Bulletproof Nomenclature**:
+     - Upgraded card CTA from generic `✨ Ask AI About This Product` to high-intent **`⚡ AI Spec & Reality Check`**.
+     - Modal header updated to **`AI Hardware & Specification Reality Sheet`** with `🔬 Spec-Grounded AI Analysis` badge.
+     - Section `What Brands Don't Tell You` refactored to **`Hardware Reality & Component Limits`**.
+     - Replaced `Review Authenticity Score` with **`Hardware & Value Index: XX/100 (Spec-to-Price Score)`**.
+* **Key Implementations**:
+  - `src/app/api/ai/review/route.js`:
+    - Updated prompt to mandate first-principles hardware justification for all strengths, trade-offs, and ceilings.
+    - Purged anecdotal user gossip references in favor of manufacturer component specifications.
+    - Upgraded Redis cache key namespace to `cache:ai:review:v4:...` for fresh spec-grounded responses.
+  - `src/components/ProductCard.jsx`:
+    - Updated button labels, modal titles, loading status messages, and section headers.
+    - Updated trust badge to Hardware & Value Index (`/100 Spec-to-Price Score`).
+
 ### 🗓️ 2026-10-16 (Refactor: Purged Legacy Product HTML Scraper, Integrated Zyte API PAYG for Brand Promos & Enriched boAt/Noise Registry)
 
 * **Status**: ✅ 100% Tested & Verified (`next build` 24/24 routes passing, 0 compile errors)

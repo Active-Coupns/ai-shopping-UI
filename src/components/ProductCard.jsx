@@ -753,7 +753,7 @@ export default function ProductCard({
                 className="w-full py-3 px-4 rounded-2xl font-extrabold text-xs md:text-sm flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer border bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 hover:from-slate-800 hover:to-indigo-900 text-white border-indigo-500/30 hover:shadow-indigo-500/25 group/ai"
               >
                 <Sparkles className="w-4 h-4 text-amber-300 animate-pulse group-hover/ai:rotate-12 transition-transform" />
-                <span>✨ Ask AI About This Product</span>
+                <span>⚡ AI Spec & Reality Check</span>
               </button>
             );
           })()}
@@ -831,7 +831,7 @@ export default function ProductCard({
                             ? "Clinical Medicine Factsheet"
                             : isSupp
                             ? "Supplement Nutrition & Trust Sheet"
-                            : "AI Product Analysis & Buyer Insights"}
+                            : "AI Hardware & Specification Reality Sheet"}
                         </h3>
                         <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
                           isMed
@@ -840,7 +840,7 @@ export default function ProductCard({
                             ? "bg-amber-100 text-amber-900"
                             : "bg-indigo-100 text-indigo-800"
                         }`}>
-                          {isMed ? "🌿 100% IP Grade Verified" : isSupp ? "🛡️ Lab Tested & Authentic" : "✨ Unbiased AI Analysis"}
+                          {isMed ? "🌿 100% IP Grade Verified" : isSupp ? "🛡️ Lab Tested & Authentic" : "🔬 Spec-Grounded AI Analysis"}
                         </span>
                       </div>
                       <p className="text-xs text-slate-600 font-medium line-clamp-2 max-w-md mt-0.5 leading-snug">
@@ -874,14 +874,14 @@ export default function ProductCard({
                       ? "Compiling Verified Pharmaceutical Facts..."
                       : isSupplementCard
                       ? "Verifying Nutritional Data & Buyer Trust..."
-                      : "Generating Honest Review & 90-Day History..."}
+                      : "Generating Hardware & Spec Reality Report..."}
                   </h4>
                   <p className="text-xs text-slate-500 max-w-xs">
                     {isMedicineCard
                       ? "Extracting real chemical composition, storage instructions, and clinical precautions."
                       : isSupplementCard
                       ? "Analyzing per-scoop protein content, allergen/lactose warnings, and authentic importer seals."
-                      : "Gemini AI is analyzing 500+ real buyer experiences and multi-store pricing trends."}
+                      : "ShopSmart AI is analyzing hardware architecture, component limits & price value."}
                   </p>
                 </div>
               ) : aiAnalysis ? (
@@ -1113,12 +1113,12 @@ export default function ProductCard({
                         );
                       })()}
 
-                      {/* What Brands Hide */}
+                      {/* Hardware Reality & Component Limits */}
                       {aiAnalysis.hiddenCatch && (
                         <div className="p-4 rounded-2xl bg-amber-50/80 border border-amber-200">
                           <div className="flex items-center gap-1.5 text-xs font-extrabold text-amber-900 uppercase tracking-wider mb-1">
                             <AlertTriangle className="w-4 h-4 text-amber-600" />
-                            <span>What Brands Don&apos;t Tell You (Hidden Catch)</span>
+                            <span>Hardware Reality & Component Limits</span>
                           </div>
                           <p className="text-xs text-amber-950 font-medium leading-relaxed">
                             {aiAnalysis.hiddenCatch}
@@ -1191,15 +1191,15 @@ export default function ProductCard({
                         </div>
                       )}
 
-                      {/* Review Trust Score & Price Alert Form */}
+                      {/* Hardware & Spec Value Score & Price Alert Form */}
                       <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                            <span className="text-xs font-bold text-slate-800">Review Authenticity Score</span>
+                            <span className="text-xs font-bold text-slate-800">Hardware & Value Index</span>
                           </div>
-                          <span className="text-xs font-black text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
-                            {aiAnalysis.trustScore || 91}% Verified Genuine
+                          <span className="text-xs font-black text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full">
+                            {aiAnalysis.trustScore || 92}/100 Spec-to-Price Score
                           </span>
                         </div>
 
