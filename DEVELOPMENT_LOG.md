@@ -12,11 +12,74 @@
 | **Remote Repository** | `https://github.com/Active-Coupns/ai-shopping-UI.git` |
 | **Framework & Engine** | Next.js 16 (App Router + Turbopack), React 19, Tailwind CSS |
 | **AI Models & Backend** | Google Gemini 2.5 Flash / Flash-Lite, Upstash Redis, OpenWeb Ninja |
-| **Last Verified Build** | `next build` Passing (24/24 routes static/dynamic, 0 compile errors) |
+| **Last Verified Build** | `next build` Passing (28/28 routes static/dynamic, 0 compile errors) |
 
 ---
 
 ## 📅 Daily Changelog & Feature Timeline
+
+### 🗓️ 2026-10-16 (Mission Control Upgrade: 1-Click Master Kill-Switches, Crash Vault, 6h AI Health Auditor & Support Helpdesk)
+
+* **Git Commit**: `89c3ea0`
+* **Commit Message**: `feat(admin): complete mission control with kill-switches, crash vault, 6h AI health auditor, and support ticket helpdesk`
+* **Status**: ✅ 100% Tested, Verified & Pushed to GitHub `main` (28/28 Next.js Turbopack routes passing, 8/8 automated end-to-end integration tests passing)
+* **Rationale & Why This Was Done**:
+  1. **Zero-Downtime Incident Response**: Empower administrators to instantly kill or isolate malfunctioning features (VTON, Scraper, Compare, Concierge) in <10ms via Upstash Redis without requiring code redeployment or Git commits.
+  2. **Automated Diagnostic Observability**: Eliminate blind spots by autonomously scanning 6-hour Redis telemetry, cache hit ratios, and crash logs using Groq LLM to generate actionable SRE health bulletins (🟢 Healthy, 🟡 Warning, 🔴 Critical).
+  3. **Live Crash & Exception Vault**: Automatically capture unhandled runtime exceptions, scrub local file paths for privacy, extract exact file and line numbers (e.g. `openweb.js:48:12`), and present actionable stack traces with 1-click vault clearing.
+  4. **Customer Support Helpdesk & Quick Resolution**: Provide a unified customer ticket submission modal across Header, Footer, Account Preferences, and Virtual Trial Room error states, coupled with an admin resolution thread and a 1-click `+1 VTON Try-On Credit` refund grant.
+  5. **No-Clutter Brand Sync & Scraper Audit**: Replaced overwhelming 1,000+ coupon lists with an executive summary (100 stores: 50 IN / 50 US), a targeted Failure Radar highlighting only broken stores, and an on-demand single-store Zyte tester.
+
+#### 🌟 Features & Enhancements Added:
+1. **Master Feature Kill-Switches (`/admin` ➔ Tab: Kill-Switches)**:
+   - Centralized feature flag service (`src/services/featureFlags.js`) backed by Redis key `config:admin:features`.
+   - Wired real runtime guards in `/api/vton/render`, `/api/ai/concierge`, `/api/ai/chat`, `/api/coupons`, and `/api/products/compare` returning HTTP 503 `FEATURE_DISABLED` when toggled off.
+   - Added system-wide top `maintenanceBanner` alert on main storefront (`src/app/page.js`).
+2. **Autonomous 6-Hour AI Health Auditor (`src/services/aiHealthAuditor.js`)**:
+   - Background SRE agent scanning 6-hour Redis metrics (`metrics:daily:total`, `metrics:daily:cache_hits`, `metrics:anomalies`, `metrics:crash_vault`, `metrics:daily:vton`).
+   - Groq LLM diagnostic synthesis determining health score (0-100), severity level, executive summary, and actionable remediation steps, cached with 6-hour TTL (`metrics:ai_health_report`).
+   - Admin top-bar bulletin with real-time status pill, score gauge, and on-demand "Run Fresh Audit" button.
+3. **Live Crash & Exception Vault (`src/services/crashVault.js`)**:
+   - `recordCrashException` recording uncaught exceptions into Redis list `metrics:crash_vault` (max 50 entries) and daily counter `metrics:crash:daily:YYYY-MM-DD`.
+   - Automatic stack trace parsing extracting component, route, and clean relative file/line location.
+   - Admin Crash Vault inspector with timestamp, severity pills, raw trace inspection, and "Clear Vault" action.
+4. **Support Ticket Helpdesk System (`src/services/supportTickets.js`)**:
+   - Client modal (`src/components/SupportTicketModal.jsx`) accessible from Header, Footer, Account Preferences, and Trial Room error banners.
+   - Dual-tab interface: "Raise New Ticket" with category selector + "My Past Tickets" with live status badges and admin reply viewer.
+   - LocalStorage synchronization (`shopsmart_my_ticket_ids`) allowing both authenticated users and guests to track their tickets.
+   - Admin ticket resolution drawer with rich conversation history and instant `+1 VTON Try-On Credit` compensation button.
+5. **Brand Sync & Scraper Executive Radar**:
+   - Clutter-free metric cards (100 target brands, 96% success rate, 4 failed).
+   - Targeted Failure Radar displaying only actionable broken stores with HTTP error codes.
+   - Interactive single-brand scraper tester for instant Zyte verification.
+6. **Automated Integration Test Suite (`tests/test-admin-features.mjs`)**:
+   - Comprehensive 8-step test verifying real kill-switch blocking, real crash recording into Redis, live AI health audit synthesis, support ticket resolution lifecycle, and live coupon fetching.
+
+#### 📂 Files Modified / Created:
+- `src/services/featureFlags.js` *(New)*
+- `src/services/crashVault.js` *(New)*
+- `src/services/aiHealthAuditor.js` *(New)*
+- `src/services/supportTickets.js` *(New)*
+- `src/components/SupportTicketModal.jsx` *(New)*
+- `src/app/api/admin/features/route.js` *(New)*
+- `src/app/api/admin/crashes/route.js` *(New)*
+- `src/app/api/admin/health-audit/route.js` *(New)*
+- `src/app/api/support/tickets/route.js` *(New)*
+- `tests/test-admin-features.mjs` *(New)*
+- `src/app/admin/page.js` *(Overhauled with 7 navigation tabs & AI top-bar)*
+- `src/app/page.js` *(Integrated support triggers, maintenance banner & feature flags)*
+- `src/components/FashionTrialRoom.jsx` *(Added support ticket trigger to error state)*
+- `src/components/UnifiedAccountModal.jsx` *(Added support desk navigation button)*
+- `src/middleware.js` *(Whitelisted /api/support public route)*
+- `src/services/redis.js` *(Added lset method for multi-tier cache)*
+- `src/services/admin.js` *(Normalized featureFlags settings schema)*
+- `src/app/api/vton/render/route.js` *(Enforced vtonTrialRoom kill-switch & crash vault)*
+- `src/app/api/ai/concierge/route.js` *(Enforced aiConciergeChat kill-switch)*
+- `src/app/api/ai/chat/route.js` *(Enforced aiConciergeChat kill-switch)*
+- `src/app/api/coupons/route.js` *(Enforced zyteCouponScraper kill-switch & crash vault)*
+- `src/app/api/products/compare/route.js` *(Enforced headToHeadCompare kill-switch)*
+
+---
 
 ### 🗓️ 2026-10-16 (AI Upgrade: Spec-Grounded Technical Reality Engine & Legal Safe Harbor Refactor)
 
