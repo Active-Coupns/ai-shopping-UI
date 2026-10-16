@@ -4,9 +4,22 @@ import { redis } from "@/services/redis";
 import { checkUnifiedApiQuota, extractTrustedClientIp } from "@/services/rateLimiter";
 import { executeProductDetailsRequest, executeSearchRequest, formatStoreName, isTrustedMerchant, sanitizeOfferUrl, isSearchPageUrl, parsePriceNum, getStoreDirectSearchFallback } from "@/services/openweb";
 
+import { isFeatureEnabled } from "@/services/featureFlags";
+import { recordCrashException } from "@/services/crashVault";
+
 export const maxDuration = 30;
 
 export async function POST(request) {
+  // 0. Master Feature Kill-Switch Check
+  const isEnabled = await isFeatureEnabled("headToHeadCompare");
+  if (!isEnabled) {
+    return NextResponse.json({
+      success: false,
+      error: "FEATURE_DISABLED",
+      message: "Price comparison engine is temporarily paused by the administrator."
+    }, { status: 503 });
+  }
+
   let userId = null;
   try {
     const authObj = getAuth(request);

@@ -16,7 +16,16 @@ const defaultSettings = {
     { id: "c2", code: "UBERFREE", store: "Uber", description: "Get a free cab ride up to $15", link: "https://uber.com", region: "US" },
     { id: "c3", code: "SWIGGYIT", store: "Swiggy", description: "Free delivery on food orders above Rs.199", link: "https://swiggy.com", region: "IN" },
     { id: "c4", code: "AMZ100", store: "Amazon", description: "Flat Rs. 100 cashback on electronics purchase", link: "https://amazon.in", region: "IN" }
-  ]
+  ],
+  featureFlags: {
+    vtonTrialRoom: true,
+    aiConciergeChat: true,
+    aiSpecRealityCheck: true,
+    zyteCouponScraper: true,
+    headToHeadCompare: true,
+    priceAlerts: true,
+    maintenanceBanner: false
+  }
 };
 
 function normalizeSettings(raw) {
@@ -25,7 +34,8 @@ function normalizeSettings(raw) {
   const normalized = {
     personalTags: Array.isArray(raw.personalTags) ? raw.personalTags : [],
     aggregators: Array.isArray(raw.aggregators) ? raw.aggregators : [],
-    coupons: Array.isArray(raw.coupons) ? raw.coupons : []
+    coupons: Array.isArray(raw.coupons) ? raw.coupons : [],
+    featureFlags: { ...defaultSettings.featureFlags, ...(raw.featureFlags || {}) }
   };
 
   if (Array.isArray(raw.apiKeys)) {

@@ -2,11 +2,24 @@ import { NextResponse } from "next/server";
 import { getAuth } from "@clerk/nextjs/server";
 import { checkRateLimit, checkSharedIpQuota } from "@/services/rateLimiter";
 
+import { isFeatureEnabled } from "@/services/featureFlags";
+import { recordCrashException } from "@/services/crashVault";
+
 /**
  * In-Chat Shopping Agent Endpoint
  * Handles live Q&A, multi-product comparison, and autonomous intent shift detection.
  */
 export async function POST(request) {
+  // 0. Master Feature Kill-Switch Check
+  const isEnabled = await isFeatureEnabled("aiConciergeChat");
+  if (!isEnabled) {
+    return NextResponse.json({
+      success: false,
+      error: "FEATURE_DISABLED",
+      message: "AI In-Chat Shopping Assistant is temporarily paused by the administrator."
+    }, { status: 503 });
+  }
+
   // 1. Server-Side Cryptographic Clerk Session Verification (Zero Trust in Client Headers)
   let userId = null;
   try {

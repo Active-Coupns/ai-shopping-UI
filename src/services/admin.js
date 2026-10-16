@@ -5,6 +5,16 @@ const SETTINGS_REDIS_KEY = "config:admin:settings";
 const envCuelinksKey = typeof process !== "undefined" && process.env ? (process.env.CUELINKS_CID || process.env.CUELINKS_KEY || process.env.CUELINKS_TOKEN || "") : "";
 const envEarnkaroKey = typeof process !== "undefined" && process.env ? (process.env.EARNKARO_KEY || process.env.EARNKARO_TOKEN || "") : "";
 
+export const defaultFeatureFlags = {
+  vtonTrialRoom: true,       // AI Virtual Trial Room (VTON)
+  aiConciergeChat: true,     // Pre-Search AI Shopping Concierge
+  aiSpecRealityCheck: true,  // AI Spec & Reality Check Engine
+  zyteCouponScraper: true,   // Zyte Brand Coupon Scraper
+  headToHeadCompare: true,   // Head-to-Head VS Comparison Mode
+  priceAlerts: true,         // Price Drop Tracker & Alerts
+  maintenanceBanner: false   // System Maintenance Notice Banner
+};
+
 const defaultSettings = {
   personalTags: [],
   aggregators: envCuelinksKey ? [
@@ -19,7 +29,8 @@ const defaultSettings = {
     { id: "c2", code: "UBERFREE", store: "Uber", description: "Get a free cab ride up to $15", link: "https://uber.com", region: "US" },
     { id: "c3", code: "SWIGGYIT", store: "Swiggy", description: "Free delivery on food orders above Rs.199", link: "https://swiggy.com", region: "IN" },
     { id: "c4", code: "AMZ100", store: "Amazon", description: "Flat Rs. 100 cashback on electronics purchase", link: "https://amazon.in", region: "IN" }
-  ]
+  ],
+  featureFlags: { ...defaultFeatureFlags }
 };
 
 function normalizeSettings(raw) {
@@ -28,7 +39,8 @@ function normalizeSettings(raw) {
   const normalized = {
     personalTags: Array.isArray(raw.personalTags) ? raw.personalTags : [],
     aggregators: Array.isArray(raw.aggregators) ? raw.aggregators : [],
-    coupons: Array.isArray(raw.coupons) ? raw.coupons : []
+    coupons: Array.isArray(raw.coupons) ? raw.coupons : [],
+    featureFlags: { ...defaultFeatureFlags, ...(raw.featureFlags || {}) }
   };
 
   if (Array.isArray(raw.apiKeys)) {

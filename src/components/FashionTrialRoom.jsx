@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import Image from "next/image";
-import { Sparkles, Shirt, Camera, RefreshCw, ExternalLink, Check, ChevronRight, Send, ArrowLeft, Lock, X } from "lucide-react";
+import { Sparkles, Shirt, Camera, RefreshCw, ExternalLink, Check, ChevronRight, Send, ArrowLeft, Lock, X, LifeBuoy } from "lucide-react";
 import { useClerk } from "@clerk/nextjs";
 import { FASHION_CATALOG } from "@/data/fashionCatalog";
 import { getDeviceFingerprint } from "@/lib/deviceFingerprint";
@@ -61,7 +61,7 @@ const CATEGORY_TABS = [
   { key: "girls_casuals", label: "🌸 Girls Tops & Co-Ords", gender: "kids" }
 ];
 
-export default function FashionTrialRoom({ initialGarment = null, onBackToSearch }) {
+export default function FashionTrialRoom({ initialGarment = null, onBackToSearch, onOpenSupportTicket }) {
   const clerk = useClerk();
   const [gender, setGender] = useState("men");
   const [skinTone, setSkinTone] = useState("wheatish");
@@ -1162,6 +1162,17 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
                       <Camera className="w-3.5 h-3.5 text-slate-600" />
                       <span>Change Photo</span>
                     </button>
+                    {onOpenSupportTicket && (
+                      <button
+                        type="button"
+                        onClick={onOpenSupportTicket}
+                        className="py-2 px-3 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 font-bold text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                        title="Report issue or claim credit restoration"
+                      >
+                        <LifeBuoy className="w-3.5 h-3.5 text-blue-600" />
+                        <span>Support</span>
+                      </button>
+                    )}
                   </div>
                 </div>
               )

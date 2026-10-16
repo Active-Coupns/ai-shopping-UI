@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, ShoppingBag, ArrowLeft, RefreshCw, Layers, ShieldAlert, Coins, Tag, AlertCircle, Shirt, User, Globe, Search, Pill, Heart, Scale, Bell, X, Zap } from "lucide-react";
+import { Sparkles, ShoppingBag, ArrowLeft, RefreshCw, Layers, ShieldAlert, Coins, Tag, AlertCircle, Shirt, User, Globe, Search, Pill, Heart, Scale, Bell, X, Zap, LifeBuoy } from "lucide-react";
 import { SignedIn, SignedOut, SignInButton, useUser, useClerk } from "@clerk/nextjs";
 import dynamic from "next/dynamic";
 import SearchHero from "@/components/SearchHero";
@@ -47,6 +47,7 @@ const HeadToHeadModal = dynamic(() => import("@/components/HeadToHeadModal"), { 
 const PriceDropModal = dynamic(() => import("@/components/PriceDropModal"), { ssr: false });
 const SearchAiConciergeModal = dynamic(() => import("@/components/SearchAiConciergeModal"), { ssr: false });
 const UnifiedAccountModal = dynamic(() => import("@/components/UnifiedAccountModal"), { ssr: false });
+const SupportTicketModal = dynamic(() => import("@/components/SupportTicketModal"), { ssr: false });
 
 function detectCategory(query, title) {
   const text = (query + " " + title).toLowerCase();
@@ -127,6 +128,7 @@ export default function Home() {
   const [categoryDealsData, setCategoryDealsData] = useState(null);
   const [selectedDealCategory, setSelectedDealCategory] = useState("smartphones");
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
+  const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
   const [activeFilterChipId, setActiveFilterChipId] = useState("all");
 
   // 1. Saved Deals / Bookmarks (LocalStorage persistence)
@@ -207,6 +209,16 @@ export default function Home() {
     }
   };
 
+  const [featureFlags, setFeatureFlags] = useState({
+    vtonTrialRoom: true,
+    aiConciergeChat: true,
+    aiSpecRealityCheck: true,
+    zyteCouponScraper: true,
+    headToHeadCompare: true,
+    priceAlerts: true,
+    maintenanceBanner: false
+  });
+
   // Load saved deals & price alerts from localStorage on client mount & record visit telemetry
   useEffect(() => {
     try {
@@ -215,6 +227,14 @@ export default function Home() {
       if (saved) setSavedDeals(JSON.parse(saved));
       const alerts = localStorage.getItem("shopsmart_price_alerts");
       if (alerts) setSavedAlerts(JSON.parse(alerts));
+
+      // Fetch live kill-switch status
+      fetch("/api/admin/features")
+        .then(res => res.json())
+        .then(d => {
+          if (d.success && d.features) setFeatureFlags(d.features);
+        })
+        .catch(() => {});
     } catch (e) {}
   }, []);
 
@@ -599,6 +619,14 @@ export default function Home() {
       {/* Grid Pattern Overlay */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(99,102,241,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(99,102,241,0.03)_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none z-0"></div>
 
+      {/* Maintenance Mode Banner (Controlled by Master Kill-Switch) */}
+      {featureFlags.maintenanceBanner && (
+        <div className="relative z-50 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 text-slate-950 font-bold px-4 py-2 text-xs flex items-center justify-center gap-2 shadow-sm text-center">
+          <span className="bg-white/90 text-amber-900 text-[10px] uppercase font-black px-1.5 py-0.5 rounded shadow-xs">Maintenance Notice</span>
+          <span>Our platform is undergoing scheduled optimizations. Some live services may be temporarily paused.</span>
+        </div>
+      )}
+
       {/* Header / Navbar */}
       <header className="sticky top-0 z-50 w-full glass-panel border-x-0 border-t-0 bg-white/85 backdrop-blur-xl shadow-xs">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-15 sm:h-16 md:h-20 flex items-center justify-between gap-2">
@@ -702,6 +730,18 @@ export default function Home() {
               )}
             </button>
 
+            {/* Support Desk Trigger */}
+            <button
+              type="button"
+              suppressHydrationWarning
+              onClick={() => setIsSupportModalOpen(true)}
+              className="relative flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-xl sm:rounded-2xl bg-white hover:bg-blue-50 text-slate-700 hover:text-blue-600 border border-slate-200/90 shadow-2xs transition-all cursor-pointer active:scale-95 text-xs font-bold shrink-0"
+              title="Need Help? Raise Support Ticket"
+            >
+              <LifeBuoy className="w-3.5 h-3.5 text-blue-600" />
+              <span className="hidden sm:inline">Support</span>
+            </button>
+
             {/* Unified Account & Region Trigger (Desktop & Mobile) */}
             <button
               type="button"
@@ -764,6 +804,7 @@ export default function Home() {
                 onBackToSearch={() => {
                   setAppState(products && products.length > 0 ? "results" : "idle");
                 }}
+                onOpenSupportTicket={() => setIsSupportModalOpen(true)}
               />
             </motion.div>
           )}
@@ -1091,7 +1132,16 @@ export default function Home() {
             <Sparkles className="w-3 h-3 text-brand-indigo" />
             <span>AI powered shopping & virtual trial engine</span>
           </div>
-          <div>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setIsSupportModalOpen(true)}
+              className="text-indigo-600 hover:text-indigo-800 font-semibold hover:underline cursor-pointer flex items-center gap-1"
+            >
+              <LifeBuoy className="w-3 h-3" />
+              <span>Help & Support Tickets</span>
+            </button>
+            <span>•</span>
             <span>&copy; 2026 ShopSmart AI. Live Deals & Studio.</span>
           </div>
         </div>
@@ -1171,6 +1221,7 @@ export default function Home() {
         searchesLeft={searchesLeft}
         appState={appState}
         onNavigate={(newState) => setAppState(newState)}
+        onOpenSupportTicket={() => setIsSupportModalOpen(true)}
       />
 
       <QuotaModal
@@ -1215,6 +1266,12 @@ export default function Home() {
           setIsConciergeOpen(false);
           handleDirectSearch(directQ);
         }}
+      />
+
+      {/* Customer Support & Helpdesk Ticket Modal */}
+      <SupportTicketModal
+        isOpen={isSupportModalOpen}
+        onClose={() => setIsSupportModalOpen(false)}
       />
     </div>
   );

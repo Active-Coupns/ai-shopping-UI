@@ -6,12 +6,25 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
 const GROQ_API_KEY = process.env.GROQ_API_KEY || "";
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || "";
 
+import { isFeatureEnabled } from "@/services/featureFlags";
+import { recordCrashException } from "@/services/crashVault";
+
 /**
  * Pre-Search AI Shopping Concierge API
  * Guides the user before search, answers buyer questions, clarifies requirements,
  * and formulates a high-yield, clean search query with explicit user confirmation.
  */
 export async function POST(request) {
+  // 0. Master Feature Kill-Switch Check
+  const isEnabled = await isFeatureEnabled("aiConciergeChat");
+  if (!isEnabled) {
+    return NextResponse.json({
+      success: false,
+      error: "FEATURE_DISABLED",
+      message: "AI Shopping Concierge is temporarily paused by the administrator."
+    }, { status: 503 });
+  }
+
   // 1. Server-Side Cryptographic Clerk Session Verification (Zero Trust in Client Headers)
   let userId = null;
   try {

@@ -5,7 +5,7 @@ import { useUser, useClerk, SignInButton } from "@clerk/nextjs";
 import { 
   User, LogOut, Globe, Sparkles, ShoppingBag, 
   Pill, Shirt, Check, ChevronRight, X, ShieldCheck, Zap,
-  Trash2, AlertTriangle, Loader2
+  Trash2, AlertTriangle, Loader2, LifeBuoy
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -16,7 +16,8 @@ export default function UnifiedAccountModal({
   onCountryChange,
   searchesLeft = 10,
   appState = "idle",
-  onNavigate
+  onNavigate,
+  onOpenSupportTicket
 }) {
   const { isSignedIn, user, isLoaded } = useUser();
   const { signOut, openSignIn } = useClerk();
@@ -287,6 +288,27 @@ export default function UnifiedAccountModal({
                   <ChevronRight className="w-4 h-4 opacity-70" />
                 </button>
               </div>
+            </div>
+
+            {/* Customer Support & Helpdesk */}
+            <div className="pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  if (onOpenSupportTicket) onOpenSupportTicket();
+                }}
+                className="w-full flex items-center justify-between p-3 rounded-xl bg-blue-50/70 hover:bg-blue-100/70 text-blue-900 border border-blue-200/80 transition-all cursor-pointer"
+              >
+                <div className="flex items-center gap-2.5">
+                  <LifeBuoy className="w-4 h-4 text-blue-600" />
+                  <div className="text-left">
+                    <p className="text-xs font-bold">💬 Need Help? Support & Tickets</p>
+                    <p className="text-[10px] text-blue-700">Report an issue, request features or claim VTON credits</p>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 opacity-70" />
+              </button>
             </div>
 
             {/* 5. Sign Out Button if Signed In */}

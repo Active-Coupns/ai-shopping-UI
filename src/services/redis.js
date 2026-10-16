@@ -145,6 +145,18 @@ class MultiTierRedisClient {
     return "OK";
   }
 
+  async lset(key, index, value) {
+    if (this.upstash && typeof this.upstash.lset === "function") {
+      try {
+        return await this.upstash.lset(key, index, value);
+      } catch (e) {
+        console.warn(`[Redis L2] lset failed:`, e.message);
+        return "OK";
+      }
+    }
+    return "OK";
+  }
+
   async expire(key, seconds) {
     if (this.upstash && typeof this.upstash.expire === "function") {
       try {

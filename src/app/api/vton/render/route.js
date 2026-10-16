@@ -139,6 +139,9 @@ function categorizeVtonError(rawError, httpStatus = 500) {
   };
 }
 
+import { isFeatureEnabled } from "@/services/featureFlags";
+import { recordCrashException } from "@/services/crashVault";
+
 export async function POST(request) {
   let releaseSlot = null;
   let attemptId = null;
@@ -148,6 +151,17 @@ export async function POST(request) {
   const startTime = Date.now();
 
   try {
+    // 0. Master Feature Kill-Switch Check (Admin Controlled)
+    const isVtonEnabled = await isFeatureEnabled("vtonTrialRoom");
+    if (!isVtonEnabled) {
+      return NextResponse.json({
+        success: false,
+        error: "FEATURE_DISABLED",
+        friendly_message: "Virtual Trial Room is temporarily paused by the administrator for maintenance. No try-on credits were deducted.",
+        errorType: "FEATURE_DISABLED"
+      }, { status: 503 });
+    }
+
     // 1. Origin & CSRF Guard
     if (!verifyRequestOrigin(request)) {
       safeLog('VTON Render', 'Blocked unauthorized origin request');
@@ -624,6 +638,13 @@ export async function POST(request) {
 
   } catch (err) {
     safeLog('VTON Render API Error', err?.message || 'Unexpected exception');
+    recordCrashException({
+      error: err,
+      message: err?.message || "Unexpected VTON render failure",
+      component: "vton_render",
+      route: "/api/vton/render",
+      severity: "critical"
+    }).catch(() => {});
     return NextResponse.json({
       success: false,
       error: "An unexpected error occurred while processing the virtual try-on. Please try again."
