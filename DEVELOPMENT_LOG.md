@@ -18,6 +18,40 @@
 
 ## 📅 Daily Changelog & Feature Timeline
 
+### 🗓️ 2026-10-15 (Security: Hardware Footprint Sybil Shield, Stealth Bot Tarpitting & 3 Free Try-On Quota)
+
+* **Git Commit**: `e4ee3d5`
+* **Commit Message**: `feat(security): implement hardware device footprint, stealth bot tarpitting & increase free try-on limit to 3`
+* **Status**: ✅ 100% Tested, Verified & Pushed to GitHub `main` (All 24/24 routes passing, 6/6 regression tests passing, 6/6 architecture tests passing)
+* **Rationale & Why This Was Built**:
+  1. **Prevent Multi-Account Sybil Exploitation**: Users were repeatedly exhausting free AI try-ons and creating new Google/Apple accounts on the exact same mobile phone/laptop to get unlimited free GPU compute.
+  2. **Neutralize Indian Cellular CGNAT (Jio/Airtel) IP Hopping**: Dynamic IP reallocation on mobile networks caused IP-only rate limits to fail when users toggled mobile data or airplane mode. Binding quotas to persistent physical device footprints closes this loophole across Incognito sessions and account switches.
+  3. **Generous User Onboarding**: Increased the platform-wide free Virtual Try-On allowance from 2 to 3 photorealistic AI try-ons.
+  4. **Eliminate Bot False-Positives**: Replaced harsh `403 BOT_DETECTED` blocks with stealth 2.0s–2.5s tarpit throttling and friendly peak server traffic messages, ensuring genuine users with software drivers or privacy extensions never face accusatory error screens.
+* **Key Implementations & Architecture**:
+  1. **Client-Side Hardware Footprint Engine (`src/lib/deviceFingerprint.js`)**:
+     - Lightweight (<3KB), zero-dependency client-side engine combining Canvas 2D micro-rasterization, WebGL GPU unmasked chipset info, AudioContext oscillator buffer, and screen metrics.
+     - SHA-256 1-way cryptographic hash (`hw_<32hex>`). Collects zero PII / files / system names, remaining 100% compliant with GDPR and the Indian DPDP Act 2023.
+     - Built-in heuristic bot detection for SwiftShader, llvmpipe, VirtualBox, and `navigator.webdriver`.
+  2. **Rate Limiting & Abuse Prevention (`src/services/rateLimiter.js`)**:
+     - `checkVtonDeviceAbuse(fingerprint, limit=3)`: Enforces hard limit of 3 free try-ons per physical device in Redis (`vton:device_lifetime:<hash>`).
+     - `incrementVtonDeviceUsage(fingerprint)`: Persists device usage with a 30-day (2,592,000s) rolling TTL.
+     - Updated default VTON free quota limits (`reserveVtonFreeQuota`, `commitVtonFreeQuota`, `checkVtonIpAbuse`) to 3.
+     - Linked `deviceFingerprint` into `checkUnifiedApiQuota` to prevent proxy-hopping search scrapers.
+  3. **VTON Route Architecture (`src/app/api/vton/render/route.js`)**:
+     - Checks `checkVtonDeviceAbuse(rawFingerprint, 3)` returning `403 DEVICE_FREE_TRIAL_EXHAUSTED` for multi-account abuse.
+     - Stealth Bot Defense: Gated before auth with 2500ms tarpit throttling and friendly `503 SERVER_TRAFFIC` notice with preserved try-on credit.
+     - Increments physical device usage on successful render commit.
+     - Updated GET inspection endpoint to report live device quotas.
+  4. **Search Route & API Client (`src/app/api/search/route.js`, `src/services/api.js`)**:
+     - Automatically passes `x-device-fingerprint` and `x-bot-detected` headers.
+     - Reordered bot shield before auth: 2000ms tarpit delay with friendly high traffic response.
+  5. **Fashion Trial Room UI (`src/components/FashionTrialRoom.jsx`)**:
+     - Automatically requests hardware fingerprint and sends it in render requests.
+     - Updated all UI copy, badges, and upgrade modal headings from `2/2` to `Daily Free Limit Reached (3/3)`.
+  6. **Admin Panel Exemption**:
+     - Admin routes (`/admin`) explicitly excluded from hardware locking per requirements, allowing unrestricted multi-device admin operations.
+
 ### 🗓️ 2026-10-15 (Infra: Configured Vercel Serverless Function Region to Mumbai `bom1`)
 
 * **Git Commit**: Pending (`chore(infra): configure Vercel serverless function region to Mumbai (bom1)`)
