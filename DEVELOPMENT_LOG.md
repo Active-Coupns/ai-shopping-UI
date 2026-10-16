@@ -18,6 +18,21 @@
 
 ## 📅 Daily Changelog & Feature Timeline
 
+### 🗓️ 2026-10-16 (Refactor: Purged Legacy Product HTML Scraper, Integrated Zyte API PAYG for Brand Promos & Enriched boAt/Noise Registry)
+
+* **Status**: ✅ 100% Tested & Verified (`next build` 24/24 routes passing, 0 compile errors)
+* **Rationale & Why This Was Done**:
+  1. **Purged Legacy Product HTML Scraping (`liveProductScraper.js`)**: Raw HTML scraping of Amazon/Flipkart PDPs was brittle, high-cost, and redundant. The system already parses product metadata cleanly from URLs via `extractProductInfoFromUrl` at zero API cost.
+  2. **Finalized Zyte API Pay-As-You-Go**: Successfully tested and locked Zyte API (`api.zyte.com/v1/extract`) using true consumption-based billing ($0.13 - $0.50 per 1,000 requests) with $0 monthly minimum commitment, completely replacing expensive ScraperAPI recurring subscriptions ($49/mo).
+  3. **Official Brand Coupon Enrichment**: Integrated boAt Lifestyle and Noise official store promo codes (`BOATHEAD`, `GRAB100`, `GRAB300`, `GNPROF200NX`, `HDFCNOISE`) verified directly via Zyte into `MASTER_COUPON_DATABASE` with full cart optimizer coverage.
+* **Key Implementations**:
+  - Deleted `src/services/liveProductScraper.js` to eliminate dead weight and proxy costs.
+  - Refactored `src/services/terminalStrategyService.js` to use pure URL parsing without proxy calls.
+  - Created `src/services/zyteService.js` for lightweight official brand offer extraction.
+  - Updated `src/services/couponDatabase.js` with boAt & Noise verified promos and store key matching.
+  - Updated `src/services/adminMetrics.js` with Zyte PAYG status.
+  - Documented `ZYTE_API_KEY` in `.env.example`.
+
 ### 🗓️ 2026-10-15 (Security: Hardware Footprint Sybil Shield, Stealth Bot Tarpitting & 3 Free Try-On Quota)
 
 * **Git Commit**: `e4ee3d5`

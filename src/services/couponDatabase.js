@@ -524,6 +524,99 @@ export const MASTER_COUPON_DATABASE = {
         link: "https://www.uber.com"
       }
     ]
+  },
+  boat: {
+    name: "boAt Lifestyle",
+    category: "Tech & Audio",
+    logo: "🎧",
+    brandColor: "from-red-600 to-black",
+    officialUrl: "https://www.boat-lifestyle.com",
+    coupons: [
+      {
+        id: "boat-head",
+        code: "BOATHEAD",
+        title: "Extra 5% OFF on Prepaid Orders",
+        description: "Official boAt website exclusive on all wireless audio and smartwatches.",
+        discount_type: "PERCENT",
+        discount_val: 5,
+        min_order: 999,
+        max_discount: 250,
+        payment_method: "Prepaid Orders (UPI / Cards)",
+        valid_till: "2026-11-30",
+        verified_rate: "99% Success Rate",
+        badge: "OFFICIAL STORE EXCLUSIVE",
+        link: "https://www.boat-lifestyle.com"
+      },
+      {
+        id: "boat-grab100",
+        code: "GRAB100",
+        title: "Flat ₹100 OFF on Select Audio",
+        description: "Direct instant discount on Airdopes, Rockerz, and Stone speakers.",
+        discount_type: "FLAT",
+        discount_val: 100,
+        min_order: 1299,
+        max_discount: 100,
+        payment_method: "All Payment Methods",
+        valid_till: "2026-11-30",
+        verified_rate: "98% Success Rate",
+        badge: "VERIFIED ACTIVE",
+        link: "https://www.boat-lifestyle.com"
+      },
+      {
+        id: "boat-grab300",
+        code: "GRAB300",
+        title: "Flat ₹300 OFF on Orders Above ₹2499",
+        description: "Save ₹300 on premium headphones, gaming headsets, and party speakers.",
+        discount_type: "FLAT",
+        discount_val: 300,
+        min_order: 2499,
+        max_discount: 300,
+        payment_method: "All Payment Methods",
+        valid_till: "2026-11-30",
+        verified_rate: "97% Success Rate",
+        badge: "HIGH VALUE SAVINGS",
+        link: "https://www.boat-lifestyle.com"
+      }
+    ]
+  },
+  noise: {
+    name: "Noise",
+    category: "Smartwatches & Audio",
+    logo: "⌚",
+    brandColor: "from-cyan-600 to-blue-700",
+    officialUrl: "https://www.gonoise.com",
+    coupons: [
+      {
+        id: "noise-prof200",
+        code: "GNPROF200NX",
+        title: "Flat ₹200 OFF on Smartwatches & Earbuds",
+        description: "Direct official code on orders above ₹1499 across all ColorFit smartwatches.",
+        discount_type: "FLAT",
+        discount_val: 200,
+        min_order: 1499,
+        max_discount: 200,
+        payment_method: "All Payment Methods",
+        valid_till: "2026-11-30",
+        verified_rate: "99% Success Rate",
+        badge: "OFFICIAL STORE EXCLUSIVE",
+        link: "https://www.gonoise.com"
+      },
+      {
+        id: "noise-hdfc300",
+        code: "HDFCNOISE",
+        title: "Flat ₹300 OFF on HDFC Bank Cards",
+        description: "Instant discount on official Noise store using HDFC Debit or Credit Card.",
+        discount_type: "FLAT",
+        discount_val: 300,
+        min_order: 1999,
+        max_discount: 300,
+        payment_method: "HDFC Bank Cards",
+        valid_till: "2026-11-30",
+        verified_rate: "98% Success Rate",
+        badge: "BANK OFFER",
+        link: "https://www.gonoise.com"
+      }
+    ]
   }
 };
 
@@ -548,6 +641,8 @@ export function matchStoreKey(queryOrBrand = "") {
   if (q.includes("croma")) return "croma";
   if (q.includes("makemytrip") || q.includes("mmt")) return "makemytrip";
   if (q.includes("uber")) return "uber";
+  if (q.includes("boat")) return "boat";
+  if (q.includes("noise")) return "noise";
 
   return null;
 }

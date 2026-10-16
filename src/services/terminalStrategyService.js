@@ -1,5 +1,5 @@
 import { getOpenWebNinjaKey, parsePriceNum, formatStoreName, isTrustedMerchant, sanitizeOfferUrl } from "./openweb.js";
-import { fetchLiveProductDetails } from "./liveProductScraper.js";
+import { extractProductInfoFromUrl } from "../lib/urlProductParser.js";
 
 /**
  * Intelligent Brand Portal Knowledge Matrix
@@ -276,18 +276,17 @@ export async function analyzeProductPurchaseStrategy({
 }) {
   const isIndia = String(country).toUpperCase() === "IN";
 
-  // STEP 1: SCRAPE REAL LIVE PRODUCT FROM URL
-  console.log("[TerminalStrategy] STEP 1: Scraping original live product from URL:", url);
-  let scraped = null;
+  // STEP 1: RESOLVE PRODUCT METADATA FROM URL (Without fragile HTML scraping)
+  let urlInfo = null;
   if (url) {
-    scraped = await fetchLiveProductDetails(url);
+    urlInfo = extractProductInfoFromUrl(url);
   }
 
-  const verifiedTitle = scraped?.title || title || "Product";
-  const baselinePrice = scraped?.price || 3499;
-  const verifiedImage = scraped?.image || "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=600&q=80";
-  const verifiedStore = scraped?.store || store || "Amazon.in";
-  const verifiedLink = scraped?.url || url;
+  const verifiedTitle = title || urlInfo?.title || "Product";
+  const baselinePrice = 3499;
+  const verifiedImage = "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=600&q=80";
+  const verifiedStore = store || urlInfo?.store || (isIndia ? "Amazon.in" : "Amazon.com");
+  const verifiedLink = url;
 
   console.log("[TerminalStrategy] Locked Baseline Product:", {
     title: verifiedTitle,

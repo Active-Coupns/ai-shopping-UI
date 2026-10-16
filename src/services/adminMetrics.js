@@ -193,7 +193,7 @@ export async function getAdminDashboardMetrics() {
         redisStatus: "Operational (PONG)",
         groqStatus: "Active",
         vtonStatus: "Active",
-        scraperStatus: "Active (4,820 Credits Available)",
+        scraperStatus: "Active (Zyte API PAYG Engine)",
         turnstileProtection: "Enabled (Cloudflare)"
       }
     };
