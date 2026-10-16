@@ -5,6 +5,7 @@ import Image from "next/image";
 import { Sparkles, Shirt, Camera, RefreshCw, ExternalLink, Check, ChevronRight, Send, ArrowLeft, Lock, X } from "lucide-react";
 import { useClerk } from "@clerk/nextjs";
 import { FASHION_CATALOG } from "@/data/fashionCatalog";
+import { getDeviceFingerprint } from "@/lib/deviceFingerprint";
 
 const SAMPLE_MODELS = {
   men: {
@@ -175,15 +176,22 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
       : ('att_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9));
 
     try {
+      const { fingerprint: deviceFingerprint, isBot } = await getDeviceFingerprint().catch(() => ({ fingerprint: null, isBot: false }));
+
       const res = await fetch('/api/vton/render', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-device-fingerprint': deviceFingerprint || '',
+          'x-bot-detected': String(!!isBot)
+        },
         body: JSON.stringify({
           attemptId,
           userImageBase64: userImage,
           garmentImageUrl: garment.image || garment.image_url,
           garmentCategory: garment.category,
-          garmentTitle: garment.title
+          garmentTitle: garment.title,
+          deviceFingerprint
         })
       });
 
@@ -223,10 +231,10 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
       } else {
         clearInterval(timerInterval);
         setIsRendering(false);
-        if (data.upgradeRequired || data.error === "FREE_TIER_LIMIT_EXCEEDED" || data.error === "IP_FREE_TRIAL_EXHAUSTED") {
+        if (data.upgradeRequired || data.error === "FREE_TIER_LIMIT_EXCEEDED" || data.error === "IP_FREE_TRIAL_EXHAUSTED" || data.error === "DEVICE_FREE_TRIAL_EXHAUSTED") {
           setQuotaInfo(data.freeTier || null);
           setShowUpgradeModal(true);
-          const msg = data.message || "Free limit reached (2/2 try-ons used). To continue, upgrade to Zippy Sachet pack (₹10 for 5 try-ons).";
+          const msg = data.message || "Free limit reached (3/3 try-ons used). To continue, upgrade to Zippy Sachet pack (₹10 for 5 try-ons).";
           setTryonErrorMsg(msg);
           setTryonErrorState({ type: "QUOTA", message: msg, guidance: "Upgrade to continue trying on outfits." });
         } else {
@@ -1066,7 +1074,7 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
                 <div className="p-3.5 rounded-2xl text-[11px] font-medium bg-amber-50/95 text-amber-950 border border-amber-200/90 shadow-sm space-y-2 animate-fade-in text-center">
                   <div className="flex items-center justify-center gap-1.5 font-bold text-amber-900">
                     <span>✨</span>
-                    <span>Daily Free Limit Reached (2/2)</span>
+                    <span>Daily Free Limit Reached (3/3)</span>
                   </div>
                   <p className="leading-snug text-amber-800 text-[11px]">
                     {tryonErrorMsg}
@@ -1458,10 +1466,10 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
                 Daily Allowance Reached
               </span>
               <h3 className="text-lg sm:text-xl font-black text-slate-900">
-                Daily Free Try-On Allowance Reached (2/2)
+                Daily Free Try-On Allowance Reached (3/3)
               </h3>
               <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-medium">
-                You have used both of your free photorealistic AI try-ons for today. Your daily limit resets at <strong>midnight (12:00 AM IST)</strong>.
+                You have used your 3 free photorealistic AI try-ons for today. Your daily limit resets at <strong>midnight (12:00 AM IST)</strong>.
               </p>
             </div>
 

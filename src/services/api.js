@@ -1,3 +1,5 @@
+import { getDeviceFingerprint } from "@/lib/deviceFingerprint";
+
 function parseRichSpecsFromTitle(title = "", store = "Online Store", priceVal = 0) {
   const t = title.toLowerCase();
   const specs = [];
@@ -159,12 +161,30 @@ function generateBenchmarkOffers(primaryPrice, primaryStore, title, isUSD = fals
 
 export async function searchProducts(query, country = "IN", isUrlLookup = false, sourceStore = null, sourceUrl = null, isExactLookup = false) {
   try {
+    let fp = null;
+    let isBot = false;
+    try {
+      const fpRes = await getDeviceFingerprint();
+      fp = fpRes?.fingerprint || null;
+      isBot = !!fpRes?.isBot;
+    } catch (_) {}
+
     const response = await fetch("/api/search", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        ...(fp ? { "x-device-fingerprint": fp } : {}),
+        "x-bot-detected": String(isBot),
       },
-      body: JSON.stringify({ query, country, isUrlLookup, sourceStore, sourceUrl, isExactLookup }),
+      body: JSON.stringify({
+        query,
+        country,
+        isUrlLookup,
+        sourceStore,
+        sourceUrl,
+        isExactLookup,
+        deviceFingerprint: fp
+      }),
     });
 
     if (!response.ok) {

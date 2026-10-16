@@ -12,6 +12,8 @@ import {
   releaseVtonFreeQuota,
   acquireDistributedVtonSlot,
   releaseDistributedVtonSlot,
+  checkVtonDeviceAbuse,
+  incrementVtonDeviceUsage,
   checkVtonIpAbuse,
   incrementVtonIpUsage,
   extractTrustedClientIp
@@ -152,6 +154,22 @@ export async function POST(request) {
       return NextResponse.json({ success: false, error: "Access denied: Unauthorized cross-origin request." }, { status: 403 });
     }
 
+    // 1b. Bot & Automated Headless Scraping Defense (Stealth Tarpit & Friendly Peak Traffic Response)
+    const isBotHeader = request.headers.get("x-bot-detected") === "true";
+    if (isBotHeader) {
+      safeLog('VTON Security', 'Stealth tarpitting potential automated request');
+      await new Promise(resolve => setTimeout(resolve, 2500));
+      return NextResponse.json(
+        {
+          success: false,
+          error: "AI styling servers are momentarily handling peak traffic. Your try-on credit was preserved (NOT deducted).",
+          errorType: "SERVER_TRAFFIC",
+          guidance: "Please tap 'Try Again' in a moment to resume."
+        },
+        { status: 503 }
+      );
+    }
+
     // 2. Server-Side Cryptographic Clerk Session Verification (Zero Trust in Client Headers)
     let userId = null;
     try {
@@ -260,28 +278,49 @@ export async function POST(request) {
       ? candidateAttemptId
       : crypto.randomUUID();
 
-    // 5. Anti-Sybil Multi-Account Check (Max 2 free try-ons from same IP across all accounts)
+    // 5. Hardware / Device Footprint Sybil Abuse Check (Strict 3 free try-ons per physical device across all accounts)
+    const rawFingerprint = request.headers.get("x-device-fingerprint") || body?.deviceFingerprint || null;
+
+    // 5a. Hardware / Device Footprint Sybil Abuse Check (Strict 3 free try-ons per physical device across all accounts)
+    if (rawFingerprint && typeof rawFingerprint === "string" && rawFingerprint.startsWith("hw_")) {
+      const deviceCheck = await checkVtonDeviceAbuse(rawFingerprint, 3);
+      if (!deviceCheck.allowed) {
+        safeLog('VTON Limiter', 'Blocked multi-account abuse from physical device', { rawFingerprint, userId });
+        return NextResponse.json(
+          {
+            success: false,
+            error: "DEVICE_FREE_TRIAL_EXHAUSTED",
+            message: "This device has reached the limit of 3 free AI Try-Ons across accounts. To continue trying outfits with high GPU speed, please get a Sachet pack for just ₹10 (5 Try-Ons).",
+            upgradeRequired: true,
+            freeTier: { limit: 3, used: 3, remaining: 0 }
+          },
+          { status: 403 }
+        );
+      }
+    }
+
+    // 5b. Anti-Sybil Multi-Account IP Check (Max 3 free try-ons from same network/IP across accounts)
     const clientIp = extractTrustedClientIp(request);
-    const ipCheck = await checkVtonIpAbuse(clientIp, 2);
+    const ipCheck = await checkVtonIpAbuse(clientIp, 3);
     if (!ipCheck.allowed) {
       safeLog('VTON Limiter', 'Blocked multi-account abuse from IP', { clientIp, userId });
       return NextResponse.json(
         {
           success: false,
           error: "IP_FREE_TRIAL_EXHAUSTED",
-          message: "This network/device has reached the limit of 2 free AI Try-Ons. Heavy GPU computing demand is currently high. Please upgrade to a Zippy Sachet pack (₹10 for 5 try-ons) to continue.",
+          message: "This network has reached the limit of 3 free AI Try-Ons. Heavy GPU computing demand is currently high. Please upgrade to a Sachet pack (₹10 for 5 try-ons) to continue.",
           upgradeRequired: true,
-          freeTier: { limit: 2, used: 2, remaining: 0 }
+          freeTier: { limit: 3, used: 3, remaining: 0 }
         },
         { status: 403 }
       );
     }
 
-    // 5b. Account Lifetime Free Try-On Quota Reservation (2 free try-ons per account)
+    // 5c. Account Lifetime Free Try-On Quota Reservation (3 free try-ons per account)
     const quotaRes = await reserveVtonFreeQuota({
       identifier: userId,
       attemptId,
-      limit: 2,
+      limit: 3,
       windowId: "account_lifetime"
     });
 
@@ -291,11 +330,11 @@ export async function POST(request) {
         {
           success: false,
           error: "FREE_TIER_LIMIT_EXCEEDED",
-          message: "You have used both of your 2 free AI Try-Ons for this account.",
+          message: "You have used all 3 of your free AI Try-Ons for this account.",
           upgradeRequired: true,
           freeTier: {
-            limit: 2,
-            used: quotaRes.confirmedCount || 2,
+            limit: 3,
+            used: quotaRes.confirmedCount || 3,
             remaining: 0
           }
         },
@@ -517,12 +556,15 @@ export async function POST(request) {
               const commitRes = await commitVtonFreeQuota({
                 identifier: userId,
                 attemptId,
-                limit: 2
+                limit: 3
               });
               if (commitRes.success) {
                 quotaCommitted = true;
               }
               incrementVtonIpUsage(clientIp).catch(() => {});
+              if (rawFingerprint && typeof rawFingerprint === "string" && rawFingerprint.startsWith("hw_")) {
+                incrementVtonDeviceUsage(rawFingerprint).catch(() => {});
+              }
               ephemeralVtonCache.set(cacheKey, finalOutputUrl);
               safeLog('VTON Render', 'Job completed successfully', { processingTimeMs: Date.now() - startTime, quotaCommitted });
               const currentUsage = commitRes.confirmedCount || (quotaRes.confirmedCount + 1);
@@ -533,9 +575,9 @@ export async function POST(request) {
                 engine: "PixelAPI-Neural-VTON",
                 garmentTitle: garmentTitle || "Tailored Fit",
                 freeTier: {
-                  limit: 2,
+                  limit: 3,
                   used: currentUsage,
-                  remaining: Math.max(0, 2 - currentUsage)
+                  remaining: Math.max(0, 3 - currentUsage)
                 }
               });
             } else {
@@ -612,14 +654,23 @@ export async function POST(request) {
 export async function GET(request) {
   try {
     const clientIp = extractTrustedClientIp(request);
+    const rawFingerprint = request.headers.get("x-device-fingerprint") || null;
     let userId = null;
     try {
       const authObj = getAuth(request);
       userId = authObj?.userId || null;
     } catch {}
 
-    const ipCheck = await checkVtonIpAbuse(clientIp, 2);
+    const ipCheck = await checkVtonIpAbuse(clientIp, 3);
     const ipUsed = ipCheck.count || 0;
+
+    let deviceUsed = 0;
+    let isDeviceExhausted = false;
+    if (rawFingerprint && rawFingerprint.startsWith("hw_")) {
+      const deviceCheck = await checkVtonDeviceAbuse(rawFingerprint, 3);
+      deviceUsed = deviceCheck.count || 0;
+      isDeviceExhausted = !deviceCheck.allowed;
+    }
 
     let userUsed = 0;
     if (userId) {
@@ -627,23 +678,24 @@ export async function GET(request) {
       userUsed = parseInt(userQuotaRaw || "0", 10);
     }
 
-    const effectiveUsed = Math.min(2, Math.max(ipUsed, userUsed));
-    const remaining = Math.max(0, 2 - effectiveUsed);
+    const effectiveUsed = Math.min(3, Math.max(ipUsed, deviceUsed, userUsed));
+    const remaining = Math.max(0, 3 - effectiveUsed);
 
     return NextResponse.json({
       success: true,
       freeTier: {
-        limit: 2,
+        limit: 3,
         used: effectiveUsed,
         remaining,
         isIpExhausted: !ipCheck.allowed,
-        isUserExhausted: userUsed >= 2
+        isDeviceExhausted,
+        isUserExhausted: userUsed >= 3
       }
     }, { status: 200 });
   } catch (err) {
     return NextResponse.json({
       success: true,
-      freeTier: { limit: 2, used: 0, remaining: 2 }
+      freeTier: { limit: 3, used: 0, remaining: 3 }
     }, { status: 200 });
   }
 }

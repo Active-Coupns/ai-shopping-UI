@@ -465,7 +465,7 @@ return 1
 export async function reserveVtonFreeQuota({
   identifier,
   attemptId,
-  limit = 2,
+  limit = 3,
   leaseDurationMs = 240000,
   hardDeadlineOffsetMs = 240000,
   timeoutMs = 2500,
@@ -548,7 +548,7 @@ export async function reserveVtonFreeQuota({
 export async function commitVtonFreeQuota({
   identifier,
   attemptId,
-  limit = 2,
+  limit = 3,
   timeoutMs = 2500,
   _client = null
 }) {
@@ -1027,6 +1027,7 @@ const inMemoryUnifiedQuota = new Map();
 export async function checkUnifiedApiQuota({
   userId = null,
   clientIp = "127.0.0.1",
+  deviceFingerprint = null,
   isCacheHit = false,
   limit = 10,
   ipDailyLimit = 30
@@ -1038,6 +1039,13 @@ export async function checkUnifiedApiQuota({
 
   const userKey = `quota:unified_api:${userHash}:${today}`;
   const ipKey = `quota:ip_abuse:${ipHash}:${today}`;
+
+  // Device-level abuse protection against rotating proxy / VPN abuse
+  let deviceKey = null;
+  if (deviceFingerprint && typeof deviceFingerprint === "string" && deviceFingerprint.startsWith("hw_")) {
+    const deviceHash = crypto.createHash("sha256").update(deviceFingerprint).digest("hex").slice(0, 32);
+    deviceKey = `quota:device_abuse:${deviceHash}:${today}`;
+  }
 
   // If cache hit, do not increment quota - just return current remaining
   if (isCacheHit) {
@@ -1072,6 +1080,25 @@ export async function checkUnifiedApiQuota({
     console.warn("[Unified Quota] IP check warning:", err.message);
   }
 
+  // 1b. Device Hardware Footprint Abuse Protection (Max limit across accounts on this device)
+  if (deviceKey) {
+    try {
+      const rawDevice = await redis.get(deviceKey);
+      const deviceCount = parseInt(rawDevice || "0", 10);
+      if (deviceCount >= limit) {
+        return {
+          allowed: false,
+          error: "DEVICE_QUOTA_EXHAUSTED",
+          message: `Daily search limit reached (${limit}/${limit}) for this device. Your quota resets tomorrow at 12:00 AM IST!`,
+          remaining: 0,
+          current: deviceCount
+        };
+      }
+    } catch (err) {
+      console.warn("[Unified Quota] Device check warning:", err.message);
+    }
+  }
+
   // 2. User 10-Call Quota Meter
   try {
     const clientToUse = redis?.upstash;
@@ -1094,6 +1121,9 @@ export async function checkUnifiedApiQuota({
         }
         // Increment IP counter non-blocking
         redis.set(ipKey, String((parseInt(await redis.get(ipKey) || "0", 10)) + 1), { ex: 86400 }).catch(() => {});
+        if (deviceKey) {
+          redis.set(deviceKey, String((parseInt(await redis.get(deviceKey) || "0", 10)) + 1), { ex: 86400 }).catch(() => {});
+        }
         return {
           allowed: true,
           remaining: Math.max(0, limit - currentCount),
@@ -1128,10 +1158,49 @@ export async function checkUnifiedApiQuota({
 }
 
 /**
- * IP Sybil Abuse Check for VTON (Strict 2 free try-ons per IP across accounts)
+ * Hardware / Device Footprint Abuse Check for VTON
+ * Enforces a strict 3 free try-ons ceiling per physical device across all accounts.
  */
-export async function checkVtonIpAbuse(clientIp, ipLimit = 2) {
-  if (!clientIp || clientIp === "127.0.0.1" || clientIp === "::1") return { allowed: true };
+export async function checkVtonDeviceAbuse(deviceFingerprint, limit = 3) {
+  if (!deviceFingerprint || typeof deviceFingerprint !== "string" || !deviceFingerprint.startsWith("hw_")) {
+    return { allowed: true, count: 0, limit };
+  }
+  const deviceHash = crypto.createHash("sha256").update(deviceFingerprint).digest("hex").slice(0, 32);
+  const deviceKey = `vton:device_lifetime:${deviceHash}`;
+  try {
+    const raw = await redis.get(deviceKey);
+    const count = parseInt(raw || "0", 10);
+    if (count >= limit) {
+      return {
+        allowed: false,
+        error: "DEVICE_FREE_TRIAL_EXHAUSTED",
+        message: `This device has reached the limit of ${limit} free AI Try-Ons. Heavy GPU compute is reserved for registered shoppers. To continue trying outfits with high GPU speed, get a Sachet pack for just ₹10 (5 Try-Ons).`,
+        count,
+        limit
+      };
+    }
+    return { allowed: true, count, limit };
+  } catch {
+    return { allowed: true, count: 0, limit };
+  }
+}
+
+export async function incrementVtonDeviceUsage(deviceFingerprint) {
+  if (!deviceFingerprint || typeof deviceFingerprint !== "string" || !deviceFingerprint.startsWith("hw_")) return;
+  const deviceHash = crypto.createHash("sha256").update(deviceFingerprint).digest("hex").slice(0, 32);
+  const deviceKey = `vton:device_lifetime:${deviceHash}`;
+  try {
+    const raw = await redis.get(deviceKey);
+    const count = parseInt(raw || "0", 10) + 1;
+    await redis.set(deviceKey, String(count), { ex: 2592000 }); // 30-day rolling window
+  } catch {}
+}
+
+/**
+ * IP Sybil Abuse Check for VTON (Strict 3 free try-ons per IP across accounts)
+ */
+export async function checkVtonIpAbuse(clientIp, ipLimit = 3) {
+  if (!clientIp || clientIp === "127.0.0.1" || clientIp === "::1") return { allowed: true, count: 0 };
   const ipHash = crypto.createHash("sha256").update(clientIp).digest("hex").slice(0, 32);
   const ipKey = `vton:ip_lifetime:${ipHash}`;
   try {
@@ -1141,13 +1210,14 @@ export async function checkVtonIpAbuse(clientIp, ipLimit = 2) {
       return {
         allowed: false,
         error: "IP_FREE_TRIAL_EXHAUSTED",
-        message: "This network/device has reached the limit of 2 free AI Try-Ons. To continue trying outfits with high GPU speed, get a Zippy Sachet pack for just ₹10 (5 Try-Ons).",
-        count
+        message: `This network has reached the limit of ${ipLimit} free AI Try-Ons. To continue trying outfits with high GPU speed, get a Sachet pack for just ₹10 (5 Try-Ons).`,
+        count,
+        limit: ipLimit
       };
     }
-    return { allowed: true, count };
+    return { allowed: true, count, limit: ipLimit };
   } catch {
-    return { allowed: true, count: 0 };
+    return { allowed: true, count: 0, limit: ipLimit };
   }
 }
 
