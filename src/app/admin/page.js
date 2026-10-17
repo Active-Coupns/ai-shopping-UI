@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
@@ -9,7 +9,7 @@ import {
   Users, Search, MousePointerClick, RefreshCw, Layers, Database, Link2, Lock,
   DollarSign, Activity, Zap, Cpu, Server, Clock, AlertTriangle, ShieldCheck,
   ArrowUpRight, Sparkles, LifeBuoy, Bug, MessageSquare, Send, Check, Eye,
-  ToggleLeft, ToggleRight, Radio, ExternalLink, HelpCircle
+  ToggleLeft, ToggleRight, Radio, ExternalLink, HelpCircle, Snail, ShieldOff
 } from "lucide-react";
 import { useUser, SignInButton, UserButton } from "@clerk/nextjs";
 import { getAdminSettings, saveAdminSettings } from "@/services/admin";
@@ -65,6 +65,15 @@ export default function AdminPage() {
   const [testBrandInput, setTestBrandInput] = useState("boat-lifestyle.com");
   const [testBrandLoading, setTestBrandLoading] = useState(false);
   const [testBrandResult, setTestBrandResult] = useState(null);
+
+  // 7. Security Radar & Bad Actor Tarpit State
+  const [securityData, setSecurityData] = useState({ incidents: [], throttledCount: 0, monitoredCount: 0, bannedCount: 0 });
+  const [securityLoading, setSecurityLoading] = useState(false);
+  const [securityFilter, setSecurityFilter] = useState("all");
+  const [securityActionMsg, setSecurityActionMsg] = useState(null);
+  const [selectedIncident, setSelectedIncident] = useState(null);
+  const [liveSecurityAlert, setLiveSecurityAlert] = useState(null);
+  const lastSeenIncidentIdRef = useRef(null);
 
   // Affiliate & Coupon States
   const [personalTags, setPersonalTags] = useState([]);
@@ -160,6 +169,47 @@ export default function AdminPage() {
     }
   }, [ticketFilterStatus]);
 
+  // Fetch Security Radar Incidents
+  const fetchSecurity = useCallback(async (isBackground = false) => {
+    if (!isBackground) setSecurityLoading(true);
+    try {
+      const res = await fetch("/api/admin/security");
+      if (res.ok) {
+        const data = await res.json();
+        setSecurityData(data);
+
+        // Real-Time Notification Detection: trigger alert banner if brand new incident is detected
+        const newest = data.incidents?.[0];
+        if (newest && lastSeenIncidentIdRef.current && newest.id !== lastSeenIncidentIdRef.current) {
+          setLiveSecurityAlert({
+            id: newest.id,
+            ip: newest.ip,
+            activityType: newest.activityType,
+            severity: newest.severity,
+            actionTaken: newest.actionTaken,
+            payload: newest.payload,
+            timestamp: newest.timestamp
+          });
+        }
+        if (newest) {
+          lastSeenIncidentIdRef.current = newest.id;
+        }
+      }
+    } catch (e) {
+      console.warn("Security fetch failed:", e);
+    } finally {
+      if (!isBackground) setSecurityLoading(false);
+    }
+  }, []);
+
+  // Rapid 2.5s real-time live scanner when Security Radar tab is active
+  useEffect(() => {
+    if (activeTab !== "security") return;
+    fetchSecurity(false);
+    const secInterval = setInterval(() => fetchSecurity(true), 2500);
+    return () => clearInterval(secInterval);
+  }, [activeTab, fetchSecurity]);
+
   // Polling for live telemetry every 15 seconds
   useEffect(() => {
     if (!autoRefresh) return;
@@ -175,7 +225,8 @@ export default function AdminPage() {
     if (activeTab === "crashes") fetchCrashes();
     if (activeTab === "tickets") fetchTickets();
     if (activeTab === "killswitches") fetchFeatures();
-  }, [activeTab, fetchCrashes, fetchTickets, fetchFeatures]);
+    if (activeTab === "security") fetchSecurity(false);
+  }, [activeTab, fetchCrashes, fetchTickets, fetchFeatures, fetchSecurity]);
 
   useEffect(() => {
     async function initAdmin() {
@@ -349,6 +400,105 @@ export default function AdminPage() {
       }
     } catch (err) {
       console.error("Clear crashes error:", err);
+    }
+  };
+
+  // Security Radar Action Handlers
+  const handleReleaseThrottle = async (ip) => {
+    try {
+      const res = await fetch("/api/admin/security", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "release_throttle", ip })
+      });
+      if (res.ok) {
+        setSecurityActionMsg(`Normal speed restored for ${ip} ✓`);
+        setTimeout(() => setSecurityActionMsg(null), 3500);
+        fetchSecurity();
+      }
+    } catch (err) {
+      console.error("Release throttle error:", err);
+    }
+  };
+
+  const handleThrottleIp = async (ip) => {
+    try {
+      const res = await fetch("/api/admin/security", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "throttle_ip", ip, delayMs: 6000 })
+      });
+      if (res.ok) {
+        setSecurityActionMsg(`Adaptive 6s delay applied to ${ip} 🐌`);
+        setTimeout(() => setSecurityActionMsg(null), 3500);
+        fetchSecurity();
+      }
+    } catch (err) {
+      console.error("Throttle IP error:", err);
+    }
+  };
+
+  const handleBanIp = async (ip, reason) => {
+    if (!confirm(`Ban IP ${ip}? Any search requests from this IP will be blocked immediately.`)) return;
+    try {
+      const res = await fetch("/api/admin/security", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "ban_ip", ip, reason: reason || "Manual Admin Action" })
+      });
+      if (res.ok) {
+        setSecurityActionMsg(`IP ${ip} permanently banned.`);
+        setTimeout(() => setSecurityActionMsg(null), 3500);
+        fetchSecurity();
+      }
+    } catch (err) {
+      console.error("Ban IP error:", err);
+    }
+  };
+
+  const handleUnbanIp = async (ip) => {
+    try {
+      const res = await fetch("/api/admin/security", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "unban_ip", ip })
+      });
+      if (res.ok) {
+        setSecurityActionMsg(`Unbanned IP ${ip} ✓`);
+        setTimeout(() => setSecurityActionMsg(null), 3500);
+        fetchSecurity();
+      }
+    } catch (err) {
+      console.error("Unban IP error:", err);
+    }
+  };
+
+  const handleSimulateIncident = async (threatType = "RAPID_FIRE_FLOOD") => {
+    try {
+      const res = await fetch("/api/admin/security", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "simulate_incident", threatType })
+      });
+      if (res.ok) {
+        setSecurityActionMsg(`Simulated ${threatType} incident recorded into Threat Vault!`);
+        setTimeout(() => setSecurityActionMsg(null), 3500);
+        fetchSecurity();
+      }
+    } catch (err) {
+      console.error("Simulate incident error:", err);
+    }
+  };
+
+  const handleClearSecurityVault = async () => {
+    if (!confirm("Are you sure you want to clear all Security Radar incidents?")) return;
+    try {
+      const res = await fetch("/api/admin/security", { method: "DELETE" });
+      if (res.ok) {
+        fetchSecurity();
+      }
+    } catch (err) {
+      console.error("Clear security vault error:", err);
     }
   };
 
@@ -647,6 +797,25 @@ export default function AdminPage() {
           >
             <Key className="w-3.5 h-3.5 text-amber-300" />
             <span>Affiliate Keys</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => { setActiveTab("security"); fetchSecurity(); }}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer relative ${
+              activeTab === "security"
+                ? "bg-indigo-600 text-white shadow-sm"
+                : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
+            }`}
+          >
+            <ShieldAlert className="w-3.5 h-3.5 text-rose-400" />
+            <span>Security & Bad Actors</span>
+            {securityData.throttledCount > 0 && (
+              <span className="px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-mono border border-amber-500/30 flex items-center gap-1">
+                <Snail className="w-2.5 h-2.5" />
+                {securityData.throttledCount}
+              </span>
+            )}
           </button>
         </div>
       </div>
@@ -1461,6 +1630,441 @@ export default function AdminPage() {
           </div>
         )}
 
+        {/* ========================================================================= */}
+        {/* 8. TAB 8: SILENT WATCHMAN & BAD ACTORS TARPIT DEFENSE                    */}
+        {/* ========================================================================= */}
+        {activeTab === "security" && (
+          <div className="space-y-6">
+            
+            {/* Action feedback toast */}
+            {securityActionMsg && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="p-3.5 rounded-xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs font-bold flex items-center justify-between"
+              >
+                <div className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-emerald-400" />
+                  <span>{securityActionMsg}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSecurityActionMsg(null)}
+                  className="text-slate-400 hover:text-white text-xs"
+                >
+                  ✕
+                </button>
+              </motion.div>
+            )}
+
+            {/* LIVE REAL-TIME RADAR ALERT NOTIFICATION */}
+            <AnimatePresence>
+              {liveSecurityAlert && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  className="p-4 rounded-2xl bg-gradient-to-r from-rose-950 via-amber-950/80 to-rose-950 border-2 border-rose-500/80 text-rose-100 shadow-2xl relative overflow-hidden"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-start sm:items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-rose-500/30 border border-rose-400 flex items-center justify-center text-rose-300 shrink-0">
+                        <ShieldAlert className="w-6 h-6 animate-bounce" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="px-2 py-0.5 rounded-full bg-rose-500 text-white font-black text-[10px] tracking-wider uppercase animate-pulse">
+                            ⚡ LIVE TRIPWIRE INTERCEPTED
+                          </span>
+                          <span className="text-xs font-mono font-bold text-amber-300">
+                            IP: {liveSecurityAlert.ip}
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-mono">
+                            {new Date(liveSecurityAlert.timestamp || Date.now()).toLocaleTimeString()}
+                          </span>
+                        </div>
+                        <p className="text-xs font-bold text-white mt-1">
+                          {liveSecurityAlert.activityType}: {liveSecurityAlert.payload || "Rapid requests detected in 2.5s"}
+                        </p>
+                        <p className="text-[11px] text-slate-300 mt-0.5">
+                          Autonomous Action: <strong className="text-amber-300">{liveSecurityAlert.actionTaken === "SILENT_SLOWDOWN_ACTIVE" ? "Adaptive 6s Delay Engaged (Tarpit Active 🐌)" : "Level 1 Monitored 👁️"}</strong> • Genuine Shoppers: 100% Unaffected (0ms)
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleReleaseThrottle(liveSecurityAlert.ip);
+                          setLiveSecurityAlert(null);
+                        }}
+                        className="px-3 py-1.5 rounded-xl bg-emerald-500/30 hover:bg-emerald-500/40 text-emerald-200 border border-emerald-400 text-xs font-bold transition-all cursor-pointer"
+                      >
+                        Release Speed
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setLiveSecurityAlert(null)}
+                        className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold cursor-pointer"
+                      >
+                        Dismiss
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Top Security Banner & Controls */}
+            <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-md">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-rose-500/20 to-amber-500/20 border border-rose-500/30 flex items-center justify-center text-rose-400 shrink-0">
+                    <ShieldAlert className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-base font-bold text-white tracking-tight">
+                        Silent Watchman & Adaptive Tarpit Radar
+                      </h2>
+                      <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold">
+                        0ms User Latency
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-400 mt-1 max-w-2xl leading-relaxed">
+                      Zero-penalty observer. Genuine shoppers experience zero overhead. Bots and rapid flooders triggering tripwires are safely choked with an adaptive 6s delay (tarpit) rather than hard 403 blocks, saving server CPU while preventing proxy rotation.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Control Action Buttons */}
+                <div className="flex flex-wrap items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => handleSimulateIncident("RAPID_FIRE_FLOOD")}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-amber-300 border border-amber-500/30 transition-all cursor-pointer active:scale-95"
+                    title="Simulate a 30 req/min API flood incident"
+                  >
+                    <Zap className="w-3.5 h-3.5" />
+                    <span>Test Flood Attack</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleSimulateIncident("BOT_SCRAPING")}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-rose-300 border border-rose-500/30 transition-all cursor-pointer active:scale-95"
+                    title="Simulate automated bot scraping probe"
+                  >
+                    <Snail className="w-3.5 h-3.5" />
+                    <span>Test Bot Probe</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={fetchSecurity}
+                    disabled={securityLoading}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 border border-slate-700 transition-all cursor-pointer"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${securityLoading ? "animate-spin" : ""}`} />
+                    <span>Refresh</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleClearSecurityVault}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-xs font-semibold text-rose-300 border border-rose-500/20 transition-all cursor-pointer"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Clear Vault</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* 4 KPI Security Metrics Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 shadow-xs">
+                <div className="flex items-center justify-between text-slate-400 mb-2">
+                  <span className="text-xs font-semibold">Total Threat Incidents</span>
+                  <Activity className="w-4 h-4 text-indigo-400" />
+                </div>
+                <div className="text-2xl font-black text-white font-mono">
+                  {securityData.incidents?.length || 0}
+                </div>
+                <div className="text-[11px] text-slate-400 mt-1">
+                  Passive Tripwire Records
+                </div>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 shadow-xs">
+                <div className="flex items-center justify-between text-slate-400 mb-2">
+                  <span className="text-xs font-semibold">Level 1: Passive Watch</span>
+                  <Eye className="w-4 h-4 text-cyan-400" />
+                </div>
+                <div className="text-2xl font-black text-cyan-400 font-mono">
+                  {securityData.monitoredCount || 0}
+                </div>
+                <div className="text-[11px] text-cyan-300/80 mt-1">
+                  Zero Action • Normal Speed
+                </div>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 shadow-xs">
+                <div className="flex items-center justify-between text-slate-400 mb-2">
+                  <span className="text-xs font-semibold">Level 2: Active Tarpit Delay</span>
+                  <Snail className="w-4 h-4 text-amber-400" />
+                </div>
+                <div className="text-2xl font-black text-amber-400 font-mono">
+                  {securityData.throttledCount || 0}
+                </div>
+                <div className="text-[11px] text-amber-300/80 mt-1">
+                  6-8s Delay Injected on Abuser
+                </div>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 shadow-xs">
+                <div className="flex items-center justify-between text-slate-400 mb-2">
+                  <span className="text-xs font-semibold">Permanently Banned</span>
+                  <ShieldAlert className="w-4 h-4 text-rose-400" />
+                </div>
+                <div className="text-2xl font-black text-rose-400 font-mono">
+                  {securityData.bannedCount || 0}
+                </div>
+                <div className="text-[11px] text-rose-300/80 mt-1">
+                  403 Forbidden Block
+                </div>
+              </div>
+            </div>
+
+            {/* Strategy Info Box */}
+            <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800/80 flex items-start gap-3">
+              <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-400 shrink-0 mt-0.5">
+                <ShieldCheck className="w-4 h-4" />
+              </div>
+              <div className="text-xs space-y-1">
+                <p className="font-bold text-white">How The Silent Watchman Operates:</p>
+                <p className="text-slate-400 leading-relaxed">
+                  1. <strong className="text-slate-200">Normal Shopper:</strong> Requests bypass tripwires instantly with 0ms overhead.<br />
+                  2. <strong className="text-amber-300">Level 1 (Suspicious Query / Rate Anomaly):</strong> Quietly takes a snapshot dossier of the IP, headers, and query, alerting Admin with zero disruption to the user.<br />
+                  3. <strong className="text-rose-400">Level 2 (Severe Bot Flooding):</strong> Offending IP is automatically placed in an artificial tarpit (6,000ms delay). The bot&apos;s parallel scraper threads choke on timeouts, starving their throughput while preserving your server memory.
+                </p>
+              </div>
+            </div>
+
+            {/* Filter Tabs & Incident Feed */}
+            <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-md space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-indigo-400" />
+                  <h3 className="text-sm font-bold text-white">Threat Evidence Vault & Incident Log</h3>
+                </div>
+
+                <div className="flex items-center gap-1.5 overflow-x-auto">
+                  <button
+                    type="button"
+                    onClick={() => setSecurityFilter("all")}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                      securityFilter === "all" ? "bg-indigo-600 text-white" : "bg-slate-800 text-slate-400 hover:text-white"
+                    }`}
+                  >
+                    All ({securityData.incidents?.length || 0})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSecurityFilter("throttled")}
+                    className={`flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                      securityFilter === "throttled" ? "bg-amber-600 text-white" : "bg-slate-800 text-slate-400 hover:text-white"
+                    }`}
+                  >
+                    <Snail className="w-3 h-3 text-amber-300" />
+                    <span>Slowed Down ({securityData.throttledCount || 0})</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSecurityFilter("monitored")}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                      securityFilter === "monitored" ? "bg-cyan-600 text-white" : "bg-slate-800 text-slate-400 hover:text-white"
+                    }`}
+                  >
+                    Passive Monitored ({securityData.monitoredCount || 0})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSecurityFilter("banned")}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                      securityFilter === "banned" ? "bg-rose-600 text-white" : "bg-slate-800 text-slate-400 hover:text-white"
+                    }`}
+                  >
+                    Banned ({securityData.bannedCount || 0})
+                  </button>
+                </div>
+              </div>
+
+              {/* Incidents Table / List */}
+              {securityLoading ? (
+                <div className="py-12 flex flex-col items-center justify-center text-slate-400">
+                  <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mb-2" />
+                  <span className="text-xs">Scanning Threat Radar...</span>
+                </div>
+              ) : securityData.incidents?.length === 0 ? (
+                <div className="py-12 text-center text-slate-400 bg-slate-950/40 rounded-xl border border-slate-800/80">
+                  <ShieldCheck className="w-10 h-10 mx-auto mb-2 text-emerald-400 opacity-80" />
+                  <p className="text-sm font-bold text-white">All Clear — No Malicious Probes Detected</p>
+                  <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto">
+                    The silent radar is active. If any bot scrapers or rapid flooders probe your endpoints, their snapshots will appear here.
+                  </p>
+                  <div className="mt-4 flex justify-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleSimulateIncident("RAPID_FIRE_FLOOD")}
+                      className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-amber-300 border border-slate-700"
+                    >
+                      Simulate Test Attack
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2.5">
+                  {securityData.incidents
+                    .filter(inc => {
+                      if (securityFilter === "throttled") return inc.isThrottled;
+                      if (securityFilter === "monitored") return !inc.isThrottled && !inc.isBanned;
+                      if (securityFilter === "banned") return inc.isBanned;
+                      return true;
+                    })
+                    .map((inc) => (
+                      <div
+                        key={inc.id}
+                        className={`p-3.5 rounded-xl border transition-all flex flex-col md:flex-row md:items-center justify-between gap-3 ${
+                          inc.isBanned
+                            ? "bg-rose-950/20 border-rose-500/30"
+                            : inc.isThrottled
+                            ? "bg-amber-950/20 border-amber-500/30"
+                            : "bg-slate-950 border-slate-800 hover:border-slate-700"
+                        }`}
+                      >
+                        <div className="space-y-1.5 flex-1 min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            {/* Threat Type Badge */}
+                            <span className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wide border ${
+                              inc.severity === "CRITICAL"
+                                ? "bg-rose-500/20 text-rose-300 border-rose-500/30"
+                                : inc.severity === "HIGH"
+                                ? "bg-amber-500/20 text-amber-300 border-amber-500/30"
+                                : "bg-cyan-500/20 text-cyan-300 border-cyan-500/30"
+                            }`}>
+                              {inc.threatType}
+                            </span>
+
+                            {/* Status State Badge */}
+                            {inc.isBanned ? (
+                              <span className="px-2 py-0.5 rounded-md bg-rose-600/30 text-rose-200 border border-rose-500/40 text-[10px] font-bold">
+                                BANNED (403)
+                              </span>
+                            ) : inc.isThrottled ? (
+                              <span className="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-bold flex items-center gap-1">
+                                <Snail className="w-3 h-3" />
+                                <span>SLOW-DOWN ACTIVE (6s DELAY)</span>
+                              </span>
+                            ) : (
+                              <span className="px-2 py-0.5 rounded-md bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 text-[10px] font-bold flex items-center gap-1">
+                                <Eye className="w-3 h-3" />
+                                <span>LEVEL 1: MONITORED ONLY</span>
+                              </span>
+                            )}
+
+                            <span className="text-[11px] font-mono text-slate-400">
+                              {inc.timestamp ? new Date(inc.timestamp).toLocaleTimeString() : "Just now"}
+                            </span>
+                          </div>
+
+                          {/* IP and Target info */}
+                          <div className="flex flex-wrap items-center gap-2 text-xs">
+                            <span className="font-mono font-bold text-white bg-slate-900 px-2 py-0.5 rounded-md border border-slate-800">
+                              IP: {inc.ip}
+                            </span>
+                            {inc.endpoint && (
+                              <span className="text-slate-400 font-mono text-[11px]">
+                                Target: {inc.endpoint}
+                              </span>
+                            )}
+                            {inc.count && (
+                              <span className="text-amber-400 font-mono text-[11px] font-bold">
+                                Burst: {inc.count} reqs
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Payload Snippet */}
+                          {inc.evidence && (
+                            <p className="text-xs text-slate-300 font-sans line-clamp-1 italic bg-slate-900/50 px-2.5 py-1 rounded-md border border-slate-800/60">
+                              &ldquo;{typeof inc.evidence === "string" ? inc.evidence : JSON.stringify(inc.evidence)}&rdquo;
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Interactive Admin Controls for this IP */}
+                        <div className="flex flex-wrap items-center gap-2 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-slate-800">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedIncident(inc)}
+                            className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 border border-slate-700 flex items-center gap-1 cursor-pointer"
+                            title="Inspect complete snapshot payload"
+                          >
+                            <Eye className="w-3 h-3" />
+                            <span>Inspect</span>
+                          </button>
+
+                          {inc.isThrottled ? (
+                            <button
+                              type="button"
+                              onClick={() => handleReleaseThrottle(inc.ip)}
+                              className="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
+                              title="Restore full speed for this IP"
+                            >
+                              <Zap className="w-3 h-3" />
+                              <span>Release Slow-Down</span>
+                            </button>
+                          ) : !inc.isBanned ? (
+                            <button
+                              type="button"
+                              onClick={() => handleThrottleIp(inc.ip)}
+                              className="px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
+                              title="Apply 6s artificial delay to choke bot"
+                            >
+                              <Snail className="w-3 h-3" />
+                              <span>Slow Down (6s)</span>
+                            </button>
+                          ) : null}
+
+                          {inc.isBanned ? (
+                            <button
+                              type="button"
+                              onClick={() => handleUnbanIp(inc.ip)}
+                              className="px-2.5 py-1 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 border border-indigo-500/30 text-xs font-bold transition-all cursor-pointer"
+                            >
+                              Unban IP
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleBanIp(inc.ip, inc.threatType)}
+                              className="px-2.5 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 text-xs font-bold transition-all cursor-pointer"
+                              title="Permanently reject requests with 403 Forbidden"
+                            >
+                              Ban IP
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              )}
+            </div>
+
+          </div>
+        )}
+
       </main>
 
       {/* MODAL: CRASH STACK TRACE INSPECTOR */}
@@ -1588,6 +2192,141 @@ export default function AdminPage() {
                   className="px-4 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-white"
                 >
                   Close Log
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* MODAL: SECURITY INCIDENT EVIDENCE SNAPSHOT */}
+      <AnimatePresence>
+        {selectedIncident && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedIncident(null)}
+              className="fixed inset-0 bg-black/80 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="relative z-10 w-full max-w-2xl p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-2xl space-y-4"
+            >
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div className="flex items-center gap-2">
+                  <ShieldAlert className="w-5 h-5 text-rose-400" />
+                  <h3 className="text-sm font-bold text-white font-mono">
+                    Security Incident Evidence Dossier
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedIncident(null)}
+                  className="p-1 rounded-md text-slate-400 hover:text-white"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="space-y-3 font-mono text-xs">
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
+                    <span className="text-[10px] text-slate-500 block uppercase font-bold">Threat Classification</span>
+                    <span className="text-amber-400 font-bold text-sm">{selectedIncident.threatType}</span>
+                  </div>
+                  <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
+                    <span className="text-[10px] text-slate-500 block uppercase font-bold">Attacker IP</span>
+                    <span className="text-indigo-400 font-bold text-sm">{selectedIncident.ip}</span>
+                  </div>
+                  <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
+                    <span className="text-[10px] text-slate-500 block uppercase font-bold">Current Status</span>
+                    <span className={selectedIncident.isBanned ? "text-rose-400 font-bold" : selectedIncident.isThrottled ? "text-amber-400 font-bold" : "text-cyan-400 font-bold"}>
+                      {selectedIncident.isBanned ? "PERMANENTLY BANNED" : selectedIncident.isThrottled ? "6s TARPIT ACTIVE 🐌" : "MONITORED ONLY 👁️"}
+                    </span>
+                  </div>
+                  <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
+                    <span className="text-[10px] text-slate-500 block uppercase font-bold">Incident Timestamp</span>
+                    <span className="text-slate-300">{new Date(selectedIncident.timestamp).toLocaleString()}</span>
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
+                  <span className="text-[10px] text-slate-500 block uppercase font-bold">Captured Evidence Payload</span>
+                  <div className="text-slate-300 font-mono text-[11px] max-h-48 overflow-y-auto whitespace-pre-wrap bg-slate-900/80 p-2.5 rounded-lg border border-slate-800">
+                    {typeof selectedIncident.evidence === "object" 
+                      ? JSON.stringify(selectedIncident.evidence, null, 2)
+                      : selectedIncident.evidence || "No payload string recorded."}
+                  </div>
+                </div>
+
+                {selectedIncident.userAgent && (
+                  <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
+                    <span className="text-[10px] text-slate-500 block uppercase font-bold mb-1">User-Agent Signature</span>
+                    <span className="text-slate-400 text-[11px] break-all">{selectedIncident.userAgent}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between pt-2 border-t border-slate-800">
+                <div className="flex gap-2">
+                  {selectedIncident.isThrottled ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleReleaseThrottle(selectedIncident.ip);
+                        setSelectedIncident(null);
+                      }}
+                      className="px-3 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 text-xs font-bold border border-emerald-500/30 cursor-pointer"
+                    >
+                      Release Slow-Down
+                    </button>
+                  ) : !selectedIncident.isBanned ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleThrottleIp(selectedIncident.ip);
+                        setSelectedIncident(null);
+                      }}
+                      className="px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-xs font-bold border border-amber-500/30 cursor-pointer"
+                    >
+                      Apply 6s Delay
+                    </button>
+                  ) : null}
+                  {selectedIncident.isBanned ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleUnbanIp(selectedIncident.ip);
+                        setSelectedIncident(null);
+                      }}
+                      className="px-3 py-1.5 rounded-xl bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 text-xs font-bold border border-indigo-500/30 cursor-pointer"
+                    >
+                      Unban IP
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleBanIp(selectedIncident.ip, selectedIncident.threatType);
+                        setSelectedIncident(null);
+                      }}
+                      className="px-3 py-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 text-xs font-bold border border-rose-500/30 cursor-pointer"
+                    >
+                      Ban IP
+                    </button>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setSelectedIncident(null)}
+                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-white cursor-pointer"
+                >
+                  Close Dossier
                 </button>
               </div>
             </motion.div>

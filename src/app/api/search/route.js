@@ -7,6 +7,7 @@ import { monetizeUrl } from "@/services/affiliate";
 import { searchOpenWebProducts, isExactProductQuery, getStoreDirectSearchFallback } from "@/services/openweb";
 import { addToInventoryPool, consultAiShopkeeper } from "@/services/semanticCache";
 import { recordSearchMetric } from "@/services/adminMetrics";
+import { applyAdaptiveSlowdown, recordSecurityIncident, checkBurstTripwire } from "@/services/securityRadar";
 
 export const maxDuration = 30;
 
@@ -149,11 +150,27 @@ function normalizeMultiLingualQuery(rawQuery) {
 export async function POST(request) {
   const searchStartTime = Date.now();
   try {
-    // 1. Bot & Automated Scraper Defense Shield (Stealth Tarpit & Peak Traffic Mitigation)
+    const clientIp = extractTrustedClientIp(request);
+    // Silent Watchman: 0ms overhead for normal users; only slows down flagged abusive IPs
+    await applyAdaptiveSlowdown(clientIp, 6000);
+
+    // Passive Burst Tripwire: catches rapid scraping bursts (> 4 queries in 2.5s)
     const userAgent = (request.headers.get("user-agent") || "").toLowerCase();
+    checkBurstTripwire(clientIp, { route: "/api/search", userAgent }).catch(() => {});
+
+    // 1. Bot & Automated Scraper Defense Shield (Stealth Tarpit & Peak Traffic Mitigation)
     const isBotHeader = request.headers.get("x-bot-detected") === "true";
     const isBot = isBotHeader || /\b(bot|crawler|spider|scraper|headless|python-requests|postman|insomnia|curl|wget)\b/i.test(userAgent);
     if (isBot) {
+      // Record incident snapshot in security vault for admin visibility
+      recordSecurityIncident({
+        ip: clientIp,
+        activityType: "BOT_SCRAPER",
+        severity: "critical",
+        route: "/api/search",
+        userAgent
+      }).catch(() => {});
+
       // Tarpit delay: slow down scrapers without harsh blocking
       await new Promise(resolve => setTimeout(resolve, 2000));
       return NextResponse.json({
@@ -182,7 +199,6 @@ export async function POST(request) {
       }, { status: 401 });
     }
 
-    const clientIp = extractTrustedClientIp(request);
     const deviceFingerprint = request.headers.get("x-device-fingerprint") || null;
 
     let body;

@@ -58,3 +58,4 @@ scripts/scan_secrets.mjs
 AGENTS.md
 CLAUDE.md
 LOCAL_WORK_AND_NEXT_STEPS_CHECKPOINT.md
+data/*.jsonl
