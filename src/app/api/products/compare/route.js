@@ -97,11 +97,26 @@ export async function POST(request) {
       }, { status: 429 });
     }
 
-    // 3. Fetch Live Multi-Store Offers (25-second healthy timeout for OpenWebNinja)
-    let rawOffers = [];
-    if (productId) {
+    // 3. Fetch Live Multi-Store Offers (Exact merchant PDPs via OpenWebNinja)
+    let resolvedProductId = productId;
+    const rawTitle = typeof title === "string" ? title.trim() : "";
+    const cleanTitle = (rawTitle && rawTitle !== "null" && rawTitle !== "undefined") ? rawTitle : "product";
+
+    if (!resolvedProductId && cleanTitle && cleanTitle !== "product") {
       try {
-        const detailsPromise = executeProductDetailsRequest(productId, cleanCountry);
+        const searchProds = await executeSearchRequest(cleanTitle, cleanCountry);
+        if (Array.isArray(searchProds) && searchProds.length > 0 && searchProds[0]?.product_id) {
+          resolvedProductId = searchProds[0].product_id;
+        }
+      } catch (e) {
+        console.warn("[Compare API] Product ID resolution search failed:", e.message);
+      }
+    }
+
+    let rawOffers = [];
+    if (resolvedProductId) {
+      try {
+        const detailsPromise = executeProductDetailsRequest(resolvedProductId, cleanCountry);
         const timeoutPromise = new Promise(resolve => setTimeout(() => resolve({ offers: [] }), 12000));
         const details = await Promise.race([detailsPromise, timeoutPromise]);
         rawOffers = details?.offers || [];
@@ -111,9 +126,6 @@ export async function POST(request) {
     }
 
     const parsedBasePrice = parsePriceNum(basePrice) || 1000;
-    const rawTitle = typeof title === "string" ? title.trim() : "";
-    const cleanTitle = (rawTitle && rawTitle !== "null" && rawTitle !== "undefined") ? rawTitle : "product";
-
     const storeMap = new Map();
     const cleanBaseStore = formatStoreName(baseStore, country);
     const baseStoreKey = cleanBaseStore.toLowerCase();

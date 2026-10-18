@@ -8,6 +8,7 @@ import { searchOpenWebProducts, isExactProductQuery, getStoreDirectSearchFallbac
 import { addToInventoryPool, consultAiShopkeeper } from "@/services/semanticCache";
 import { recordSearchMetric } from "@/services/adminMetrics";
 import { applyAdaptiveSlowdown, recordSecurityIncident, checkBurstTripwire } from "@/services/securityRadar";
+import { clampString, checkSearchContentSafety } from "@/services/securityShield";
 
 export const maxDuration = 30;
 
@@ -112,8 +113,7 @@ function normalizeMultiLingualQuery(rawQuery) {
       /\bprice\s+in\s+india\b|\bprices\s+in\s+india\b|\bprice\s+list\b|\bprice\b|\bprices\b|\bcost\b|\brate\b/gi,
       /\bbest\s+deal\b|\bbest\s+deals\b|\bdeal\b|\bdeals\b|\boffers\b|\boffer\b|\bdiscount\b|\bdiscounts\b/gi,
       /\bin\s+india\b|\bindia\b/gi,
-      /\bshow\s+me\b|\bfind\s+me\b|\bgive\s+me\b|\blooking\s+for\b|\bwant\s+to\b/gi,
-      /\bcellphone\b|\bcell\s+phone\b|\bsmartphone\b/gi
+      /\bshow\s+me\b|\bfind\s+me\b|\bgive\s+me\b|\blooking\s+for\b|\bwant\s+to\b/gi
     ];
 
     noisePatterns.forEach(pattern => {
@@ -122,6 +122,7 @@ function normalizeMultiLingualQuery(rawQuery) {
 
     // Standardize synonyms
     cleaned = cleaned
+      .replace(/\b(cellphone|cell\s+phone|smartphone)\b/gi, "phone")
       .replace(/\bphone\b/gi, "mobile")
       .replace(/\bearphones\b|\bearbuds\b|\bairpods\b|\bheadphone\b/gi, "headphones");
   }
@@ -219,9 +220,30 @@ export async function POST(request) {
       return NextResponse.json({ products: [], error: "Query is required" }, { status: 200 });
     }
 
+    // Zero-Latency Content Moderation & Buffer Clamping
+    const clampedQuery = clampString(query, 200);
+    const contentCheck = checkSearchContentSafety(clampedQuery);
+    if (!contentCheck.safe) {
+      recordSecurityIncident({
+        ip: clientIp,
+        userId: userId || "anonymous",
+        activityType: "INAPPROPRIATE_CONTENT_FILTERED",
+        severity: "suspicious",
+        route: "/api/search",
+        payload: clampedQuery
+      }).catch(() => {});
+
+      return NextResponse.json({
+        products: [],
+        coupons: [],
+        error: "CONTENT_FILTERED",
+        message: contentCheck.reason
+      }, { status: 400 });
+    }
+
     // 2. Zero-Latency Multi-Lingual Query Normalization (Hindi, Marathi, Hinglish, English)
-    const { normalizedQuery } = normalizeMultiLingualQuery(query);
-    const cleanQuery = normalizedQuery || query.replace(/[₹$€£,]/g, "").replace(/\s+/g, " ").trim();
+    const { normalizedQuery } = normalizeMultiLingualQuery(clampedQuery);
+    const cleanQuery = normalizedQuery || clampedQuery.replace(/[₹$€£,]/g, "").replace(/\s+/g, " ").trim();
     const isExactProduct = !!isUrlLookup || !!isExactLookup || !!sourceUrl || isExactProductQuery(cleanQuery);
 
     // 3. Check Redis Cache First

@@ -1032,6 +1032,16 @@ export async function checkUnifiedApiQuota({
   limit = 10,
   ipDailyLimit = 30
 }) {
+  // Allow seamless testing in local development environment
+  if (process.env.NODE_ENV === "development" && (clientIp === "127.0.0.1" || clientIp === "::1" || clientIp === "localhost")) {
+    return {
+      allowed: true,
+      remaining: 999,
+      current: 0,
+      totalLimit: 1000
+    };
+  }
+
   const today = getIstCalendarDay();
   const effectiveId = userId ? `user:${userId}` : `ip:${clientIp}`;
   const userHash = crypto.createHash("sha256").update(effectiveId).digest("hex").slice(0, 32);

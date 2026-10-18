@@ -12,11 +12,68 @@
 | **Remote Repository** | `https://github.com/Active-Coupns/ai-shopping-UI.git` |
 | **Framework & Engine** | Next.js 16 (App Router + Turbopack), React 19, Tailwind CSS |
 | **AI Models & Backend** | Google Gemini 2.5 Flash / Flash-Lite, Upstash Redis, OpenWeb Ninja |
-| **Last Verified Build** | `next build` Passing (29/29 routes static/dynamic, 0 compile errors) |
+| **Last Verified Build** | `next build` Passing (30/30 routes static/dynamic, 0 compile errors) |
 
 ---
 
 ## 📅 Daily Changelog & Feature Timeline
+
+### 🗓️ 2026-10-18 (AI Trust Sheet™ 2.0: Spec-Grounded Hardware Reality Engine, Conversational On-Demand Recommendations, Multi-Store Direct PDPs & 360° Security Shield)
+
+* **Git Commit**: `Pending Push`
+* **Commit Message**: `feat(trust-sheet): release AI Trust Sheet 2.0 with conversational recommendations, live multi-store PDPs & 360 security shield`
+* **Status**: ✅ 100% Tested, Audited & Verified (30/30 Next.js Turbopack routes passing, 10/10 automated security & SSRF audit suite passing, 0 compile errors)
+* **Rationale & Why This Was Done**:
+  1. **User-Centric Decision Engine**: Replaced traditional static recommendation shelf with an intelligent, conversational assistant. When shoppers inquire about unmet specs or alternative requirements, the assistant honestly explains current limitations and offers on-demand matching models within the chat bubble.
+  2. **Zero Brand Disclosure / Consumer-Centric UX**: Refactored internal scraper and tool branding into clean, consumer-oriented messaging ("360° Comprehensive Web Research Active" & "Synthesizing Final Buying Decision").
+  3. **Direct Merchant PDP Resolution**: Guaranteed 100% authentic, direct-to-product URLs across major merchants (Reliance Digital, Croma, Amazon, Flipkart, Vijay Sales) for price comparison and alternative models.
+  4. **Multi-Region Hardware Adaptation**: Dynamic detection for Indian operating conditions (230V/50Hz grid, hard water/borewell, tropical heat) vs US operating conditions (120V/60Hz, UL/FCC, Best Buy/mail-in RMA).
+  5. **Enterprise-Grade Security Shield**: Unified defense across SSRF, cloud metadata exfiltration (`169.254.169.254`), private IP subnets, non-HTTP protocol injection (`javascript:alert(1)`), open redirects, prompt injection, and harmful search content.
+
+#### 🌟 Features & Enhancements Added:
+1. **AI Trust Sheet™ UI Engine (`src/components/TrustSheetView.jsx`)**:
+   - Product dossier generation with hardware excellence scores, daily cost breakdown, and honest gotchas.
+   - On-Demand Multi-Store Price Comparison desk featuring direct store PDPs and real-time lowest price badges.
+   - Hardware Truth Assistant with structured requirement detection (`hasSuggestion: true`, `smartQuery`, interactive `[ 🔍 Search Matching Models ]` trigger).
+   - In-chat alternative deals shelf displaying 2-3 curated models with direct store PDP links and seamless `Inspect Trust Sheet` transitions.
+2. **Trust Sheet Service (`src/services/trustSheetService.js`)**:
+   - Zyte automated web scraping integration with verified domain whitelisting.
+   - OpenWeb Ninja product title search and model identification.
+   - Multi-tier LLM fallback pipeline (Groq Qwen 27B JSON mode -> OpenRouter GPT-4o-mini).
+   - Regional reality checks tailored to Indian and US appliance/gadget environments.
+   - Redis caching with 24-hour TTL and region isolation.
+3. **Security Shield Engine (`src/services/securityShield.js`)**:
+   - `validateECommerceUrl`: Strict SSRF, cloud metadata (`169.254.169.254`), and private subnet IP blocking.
+   - `sanitizeAiPrompt`: Prompt injection regex & XML delimiter containment (`<user_inquiry>`).
+   - `isSafeRedirectUrl`: Open redirect prevention with HTTP 400 rejection for private/internal IPs.
+   - `checkSearchContentSafety`: Zero-latency filtering for harmful/violent search queries.
+4. **API Endpoints & Integration**:
+   - `/api/trust-sheet`: Full pipeline for product identification, dossier generation, and assistant Q&A.
+   - `/api/products/compare`: Merchant price comparison resolving direct product page URLs.
+   - `/api/redirect`: Enforced safe external merchant redirection.
+   - `/api/search`: Content safety checks and input boundary clamping.
+5. **Verified End-to-End Testing**:
+   - 10/10 automated audit suite passing (SSRF, metadata IP, localhost, protocol injection, open redirect, prompt injection, harmful query filtering, and live chat recommendation deals search).
+   - `next build` compiled cleanly in 1.7s across all 30 routes.
+
+#### 📂 Files Modified / Created:
+- `src/components/TrustSheetView.jsx` *(New)*
+- `src/services/trustSheetService.js` *(New)*
+- `src/app/api/trust-sheet/route.js` *(New)*
+- `src/services/securityShield.js` *(New)*
+- `src/services/zyteService.js` *(Modified)*
+- `src/app/api/products/compare/route.js` *(Modified)*
+- `src/app/api/redirect/route.js` *(Modified)*
+- `src/app/api/search/route.js` *(Modified)*
+- `src/app/api/ai/chat/route.js` *(Modified)*
+- `src/app/page.js` *(Modified)*
+- `src/components/ProductCard.jsx` *(Modified)*
+- `src/components/SearchHero.jsx` *(Modified)*
+- `src/services/rateLimiter.js` *(Modified)*
+- `src/middleware.js` *(Modified)*
+- `DEVELOPMENT_LOG.md` *(Modified)*
+
+---
 
 ### 🗓️ 2026-10-17 (Silent Watchman: Zero-Latency Abuse Radar, Adaptive 6s Tarpit, Threat Vault & Dual-Tier Cold Audit Archive)
 

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, ShoppingBag, ArrowLeft, RefreshCw, Layers, ShieldAlert, Coins, Tag, AlertCircle, Shirt, User, Globe, Search, Pill, Heart, Scale, Bell, X, Zap, LifeBuoy } from "lucide-react";
+import { Sparkles, ShoppingBag, ArrowLeft, RefreshCw, Layers, ShieldAlert, Coins, Tag, AlertCircle, Shirt, User, Globe, Search, Pill, Heart, Scale, Bell, X, Zap, LifeBuoy, ShieldCheck } from "lucide-react";
 import { SignedIn, SignedOut, SignInButton, useUser, useClerk } from "@clerk/nextjs";
 import dynamic from "next/dynamic";
 import SearchHero from "@/components/SearchHero";
@@ -48,6 +48,15 @@ const PriceDropModal = dynamic(() => import("@/components/PriceDropModal"), { ss
 const SearchAiConciergeModal = dynamic(() => import("@/components/SearchAiConciergeModal"), { ssr: false });
 const UnifiedAccountModal = dynamic(() => import("@/components/UnifiedAccountModal"), { ssr: false });
 const SupportTicketModal = dynamic(() => import("@/components/SupportTicketModal"), { ssr: false });
+const TrustSheetView = dynamic(() => import("@/components/TrustSheetView"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex flex-col items-center justify-center min-h-[400px] w-full p-8 text-center">
+      <div className="w-10 h-10 border-4 border-indigo-500/30 border-t-indigo-600 rounded-full animate-spin mb-4" />
+      <p className="text-sm font-semibold text-slate-700">Loading AI Trust Sheet Reality Engine...</p>
+    </div>
+  )
+});
 
 function detectCategory(query, title) {
   const text = (query + " " + title).toLowerCase();
@@ -318,6 +327,14 @@ export default function Home() {
   const handleOpenConcierge = (topic = "") => {
     setConciergeTopic(topic || "");
     setIsConciergeOpen(true);
+  };
+
+  // AI Trust Sheet State (Pre-Flight Hardware Reality Check)
+  const [trustSheetQuery, setTrustSheetQuery] = useState("");
+
+  const handleOpenTrustSheet = (productNameOrUrl = "") => {
+    setTrustSheetQuery(productNameOrUrl || "");
+    setAppState("trust_sheet");
   };
 
   // Unified AI Session Journey Ledger (Connects Concierge -> Product AI Reviews -> In-Chat Shopping Agent)
@@ -650,13 +667,31 @@ export default function Home() {
               suppressHydrationWarning
               onClick={() => setAppState("idle")}
               className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                appState !== "trial_room" && appState !== "purchase_terminal"
+                appState !== "trial_room" && appState !== "purchase_terminal" && appState !== "trust_sheet"
                   ? "bg-white text-slate-900 shadow-sm border border-slate-200/60"
                   : "text-slate-600 hover:text-slate-900"
               }`}
             >
               <span>🔍</span>
               <span>Search Deals</span>
+            </button>
+            <button
+              type="button"
+              suppressHydrationWarning
+              onClick={() => handleOpenTrustSheet("")}
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer relative ${
+                appState === "trust_sheet"
+                  ? "bg-gradient-to-r from-brand-indigo to-brand-violet text-white shadow-md shadow-indigo-500/20"
+                  : "text-indigo-700 hover:text-indigo-900 hover:bg-white/60"
+              }`}
+            >
+              <ShieldCheck className={`w-3.5 h-3.5 ${appState === "trust_sheet" ? "text-white" : "text-indigo-600"}`} />
+              <span>AI Trust Sheet</span>
+              <span className={`px-1.5 py-0.2 rounded-full text-[9px] font-black border ${
+                appState === "trust_sheet"
+                  ? "bg-white/20 text-white border-white/30"
+                  : "bg-indigo-100 text-indigo-700 border-indigo-200"
+              }`}>NEW</span>
             </button>
             <button
               type="button"
@@ -841,6 +876,27 @@ export default function Home() {
             </motion.div>
           )}
 
+          {/* AI TRUST SHEET FULL-PAGE REALITY VIEW */}
+          {appState === "trust_sheet" && (
+            <motion.div
+              key="trust-sheet-state"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.3 }}
+              className="w-full"
+            >
+              <TrustSheetView
+                initialQuery={trustSheetQuery}
+                country={selectedCountry}
+                onBack={() => setAppState("idle")}
+                onTriggerSearch={(q) => {
+                  handleDirectSearch(q);
+                }}
+              />
+            </motion.div>
+          )}
+
           {/* IDLE SEARCH HERO */}
           {appState === "idle" && (
             <motion.div
@@ -858,6 +914,7 @@ export default function Home() {
                 onCouponSearch={handleCouponSearch}
                 onAnalyzeCartScreenshot={handleAnalyzeCartScreenshot}
                 onOpenConcierge={handleOpenConcierge}
+                onOpenTrustSheet={handleOpenTrustSheet}
                 onSelectCategoryDeal={handleSelectCategoryDeal}
               />
             </motion.div>
@@ -1055,6 +1112,7 @@ export default function Home() {
                                 setIsPriceAlertModalOpen(true);
                               }}
                               onTryInStudio={handleTryInStudio}
+                              onOpenTrustSheet={handleOpenTrustSheet}
                               country={selectedCountry}
                             />
                           );
@@ -1154,12 +1212,12 @@ export default function Home() {
           type="button"
           onClick={() => setAppState("idle")}
           className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl transition-all cursor-pointer ${
-            appState !== "trial_room" && appState !== "purchase_terminal"
+            appState !== "trial_room" && appState !== "purchase_terminal" && appState !== "trust_sheet"
               ? "text-brand-indigo font-bold"
               : "text-slate-500 hover:text-slate-900"
           }`}
         >
-          <Search className={`w-4.5 h-4.5 ${appState !== "trial_room" && appState !== "purchase_terminal" ? "stroke-[2.5]" : "stroke-[1.75]"}`} />
+          <Search className={`w-4.5 h-4.5 ${appState !== "trial_room" && appState !== "purchase_terminal" && appState !== "trust_sheet" ? "stroke-[2.5]" : "stroke-[1.75]"}`} />
           <span className="text-[10px] tracking-tight">Deals</span>
         </button>
 
@@ -1177,6 +1235,22 @@ export default function Home() {
             <Shirt className={`w-3.5 h-3.5 ${appState === "trial_room" ? "text-white" : "text-pink-500 animate-pulse"}`} />
           </div>
           <span className="text-[10px] tracking-tight">Trial Room</span>
+        </button>
+
+        {/* Tab 2.5: AI Trust Sheet */}
+        <button
+          type="button"
+          onClick={() => handleOpenTrustSheet("")}
+          className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl transition-all cursor-pointer relative ${
+            appState === "trust_sheet"
+              ? "text-brand-indigo font-bold"
+              : "text-slate-500 hover:text-indigo-600"
+          }`}
+        >
+          <div className={`p-1 rounded-xl ${appState === "trust_sheet" ? "bg-gradient-to-r from-brand-indigo to-brand-violet text-white shadow-xs" : ""}`}>
+            <ShieldCheck className={`w-4 h-4 ${appState === "trust_sheet" ? "text-white" : "text-indigo-600"}`} />
+          </div>
+          <span className="text-[10px] tracking-tight">Trust Sheet</span>
         </button>
 
         {/* Tab 3: Quick Jump to AI Shopping Assistant (when on results page) */}

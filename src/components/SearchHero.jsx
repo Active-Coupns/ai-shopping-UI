@@ -16,7 +16,8 @@ import {
   Loader2,
   Mic,
   Camera,
-  Flame
+  Flame,
+  ShieldCheck
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { userJourneyTracker } from "@/services/userJourneyTracker";
@@ -169,6 +170,7 @@ export default function SearchHero({
   onCouponSearch,
   onAnalyzeCartScreenshot,
   onOpenConcierge,
+  onOpenTrustSheet,
   onSelectCategoryDeal
 }) {
   const [activeTab, setActiveTab] = useState(
@@ -796,18 +798,32 @@ export default function SearchHero({
           </button>
         </form>
 
-        {/* AI Guide Assistance Prompt */}
-        {onOpenConcierge && !isCoupons && !isHealth && !isSmartTerminal && (
-          <div className="mt-2.5 flex items-center justify-center">
-            <button
-              type="button"
-              onClick={() => onOpenConcierge(query.trim())}
-              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50/80 hover:bg-indigo-100 border border-indigo-200/70 text-[11px] sm:text-xs font-semibold text-brand-indigo hover:text-indigo-800 transition-all cursor-pointer shadow-2xs group"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-indigo-600 group-hover:rotate-12 transition-transform" />
-              <span>Not sure which specs to pick? <strong className="underline">Ask AI Guide</strong></span>
-              <ArrowRight className="w-3 h-3 text-indigo-600 group-hover:translate-x-0.5 transition-transform" />
-            </button>
+        {/* AI Guide Assistance & Trust Sheet Prompts */}
+        {!isCoupons && !isHealth && !isSmartTerminal && (
+          <div className="mt-2.5 flex flex-wrap items-center justify-center gap-2">
+            {onOpenConcierge && (
+              <button
+                type="button"
+                onClick={() => onOpenConcierge(query.trim())}
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50/80 hover:bg-indigo-100 border border-indigo-200/70 text-[11px] sm:text-xs font-semibold text-brand-indigo hover:text-indigo-800 transition-all cursor-pointer shadow-2xs group"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-indigo-600 group-hover:rotate-12 transition-transform" />
+                <span>Confused? <strong className="underline">Ask AI Guide</strong></span>
+                <ArrowRight className="w-3 h-3 text-indigo-600 group-hover:translate-x-0.5 transition-transform" />
+              </button>
+            )}
+
+            {onOpenTrustSheet && (
+              <button
+                type="button"
+                onClick={() => onOpenTrustSheet(query.trim())}
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50/90 hover:bg-emerald-100 border border-emerald-300/80 text-[11px] sm:text-xs font-semibold text-emerald-800 hover:text-emerald-950 transition-all cursor-pointer shadow-2xs group"
+              >
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 group-hover:scale-110 transition-transform" />
+                <span>Shortlisted a Model? <strong className="underline">AI Trust Sheet</strong></span>
+                <ArrowRight className="w-3 h-3 text-emerald-600 group-hover:translate-x-0.5 transition-transform" />
+              </button>
+            )}
           </div>
         )}
 

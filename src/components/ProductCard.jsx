@@ -43,6 +43,7 @@ export default function ProductCard({
   onToggleBookmark,
   onOpenPriceAlert,
   onTryInStudio,
+  onOpenTrustSheet,
   country = "IN"
 }) {
   const [isRedirecting, setIsRedirecting] = useState(false);
@@ -1228,6 +1229,33 @@ export default function ProductCard({
                             <span>Set Price Drop Alert</span>
                           </button>
                         </div>
+
+                        {/* Pre-Flight Reality Check & AI Trust Sheet CTA */}
+                        {onOpenTrustSheet && (
+                          <div className="p-3 rounded-2xl bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200/80 flex items-center justify-between gap-2 shadow-2xs">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <ShieldCheck className="w-4 h-4 text-indigo-600 shrink-0" />
+                              <div className="min-w-0">
+                                <span className="text-xs font-bold text-indigo-950 block truncate">
+                                  Pre-Flight AI Trust Sheet
+                                </span>
+                                <span className="text-[10px] text-indigo-700 block truncate">
+                                  Test this product against your exact daily workload & battery needs
+                                </span>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIsAskAiOpen(false);
+                                onOpenTrustSheet(product.title);
+                              }}
+                              className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-xs active:scale-95 shrink-0"
+                            >
+                              <span>Run Trust Sheet</span>
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </>
                   )}

@@ -4,6 +4,7 @@ import { redis } from "@/services/redis";
 import { getAdminSettings } from "@/services/admin";
 import { monetizeUrl } from "@/services/affiliate";
 import { getStoreDirectSearchFallback, executeProductDetailsRequest } from "@/services/openweb";
+import { isSafeRedirectUrl } from "@/services/securityShield";
 
 function isSearchUrl(url) {
   if (!url) return false;
@@ -313,7 +314,15 @@ export async function GET(request) {
     if (!targetUrl || targetUrl === "https://www.google.com") {
       return NextResponse.redirect("https://www.google.com");
     }
-    let cleanUrl = targetUrl;
+
+    // SSRF & Open-Redirect Defense Shield
+    const safetyCheck = isSafeRedirectUrl(targetUrl);
+    if (!safetyCheck.safe) {
+      console.warn(`[Redirect Security] Blocked unsafe redirect to "${targetUrl}": ${safetyCheck.reason}`);
+      return NextResponse.json({ success: false, error: "BLOCKED_UNSAFE_REDIRECT", reason: safetyCheck.reason }, { status: 400 });
+    }
+
+    let cleanUrl = safetyCheck.cleanUrl || targetUrl;
     if (cleanUrl.includes("gonoise.com")) {
       try {
         const u = new URL(cleanUrl);
