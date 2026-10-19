@@ -13,14 +13,16 @@ const inter = Inter({
   subsets: ["latin"],
 });
 
+const defaultBaseUrl = process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://shopsmart-ai.com");
+
 export const metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://shopsmart-ai.com"),
+  metadataBase: new URL(defaultBaseUrl),
   title: "ShopSmart AI - Intelligent Shopping Assistant & Lowest Price Deals",
   description: "Experience smart shopping. AI specifications analysis, verified discount coupons, and real-time lowest price comparison across Amazon, Flipkart, 1mg & more.",
   openGraph: {
     title: "ShopSmart AI — Smarter Shopping, Instant Price Comparison & Deals",
     description: "Compare lowest prices across Amazon, Flipkart, & top stores with Instant AI Review and Virtual Try-On.",
-    url: "https://shopsmart-ai.com",
+    url: defaultBaseUrl,
     siteName: "ShopSmart AI",
     images: [
       {

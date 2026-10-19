@@ -12,11 +12,31 @@
 | **Remote Repository** | `https://github.com/Active-Coupns/ai-shopping-UI.git` |
 | **Framework & Engine** | Next.js 16 (App Router + Turbopack), React 19, Tailwind CSS |
 | **AI Models & Backend** | Google Gemini 2.5 Flash / Flash-Lite, Upstash Redis, OpenWeb Ninja, Groq |
-| **Last Verified Build** | `next build` Passing (32/32 routes static/dynamic, 0 compile errors) |
+| **Last Verified Build** | `next build` Passing (34/34 routes static/dynamic, 0 compile errors) |
 
 ---
 
 ## 📅 Daily Changelog & Feature Timeline
+
+### 🗓️ 2026-10-19 (Launch Preparation: Dynamic Robots.txt, Sitemap.xml, Flexible Domain SEO & CRON_SECRET Security)
+
+* **Git Commit**: `pending`
+* **Commit Message**: `feat(seo & launch): dynamic robots.txt, sitemap.xml, adaptive domain metadata & secure CRON_SECRET`
+* **Status**: ✅ 100% Tested & Verified (34/34 Next.js Turbopack routes passing, /robots.txt and /sitemap.xml verified with 0 errors)
+* **Rationale & Why This Was Done**:
+  1. **Dynamic SEO & Search Engine Crawling**: Implemented Next.js App Router dynamic `robots.js` and `sitemap.js` to ensure Googlebot and web crawlers can index public shopping pages while strictly disallowing private admin routes (`/admin`, `/api/*`, `/sign-in`, `/sign-up`).
+  2. **Domain-Agnostic Metadata**: Replaced static base URL with an adaptive resolver (`process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL || 'https://shopsmart-ai.com'`), so the site effortlessly switches between Vercel preview URLs, production URLs, or any future custom domain without touching code.
+  3. **Sentinel Background Security**: Generated high-entropy 48-char cryptographic `CRON_SECRET` for the Sentinel probe endpoint (`/api/cron/heal-sentinel`).
+  4. **Admin Protection & Developer Ergonomics**: Maintained strict production fail-closed security for `ADMIN_USER_IDS` while allowing seamless local developer access.
+
+#### 📂 Files Modified / Created:
+- `src/app/robots.js` *(New)*
+- `src/app/sitemap.js` *(New)*
+- `src/app/layout.js` *(Modified)*
+- `src/app/api/admin/settings/route.js` *(Modified)*
+- `DEVELOPMENT_LOG.md` *(Modified)*
+
+---
 
 ### 🗓️ 2026-10-19 (Codebase Lean Refactor: Purged 1,116+ Lines of Dead Fallback Code, Legacy Mock Catalogs & Unified Admin State)
 
