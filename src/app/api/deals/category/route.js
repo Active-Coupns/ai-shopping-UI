@@ -3,6 +3,8 @@ import { getAuth } from "@clerk/nextjs/server";
 import { redis } from "@/services/redis";
 import { checkRateLimit, checkSharedIpQuota } from "@/services/rateLimiter";
 import { getDealsForCategory, DEAL_CATEGORIES } from "@/services/dealsService";
+import { recordCrashException } from "@/services/crashVault";
+import { safeClientError } from "@/lib/errorShield";
 
 function getCategoryCacheKey(categoryId = "smartphones", country = "IN") {
   const normCatId = (categoryId || "smartphones").toLowerCase().trim();
@@ -37,7 +39,11 @@ export async function GET(request) {
     }
 
     if (cachedResult) {
-      return NextResponse.json(cachedResult);
+      return NextResponse.json(cachedResult, {
+        headers: {
+          "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400"
+        }
+      });
     }
 
     // 2. Cache Miss: Require Server-Side Verified Clerk Authentication
@@ -203,10 +209,22 @@ export async function GET(request) {
 
     // 4. Authenticated Cache Miss: Fetch live deals via provider
     const result = await getDealsForCategory(category, country);
-    return NextResponse.json(result);
+    return NextResponse.json(result, {
+      headers: {
+        "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400"
+      }
+    });
   } catch (error) {
     console.error("[API Deals Error]:", error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    recordCrashException({
+      error,
+      message: error.message,
+      component: "api/deals/category",
+      route: "/api/deals/category"
+    }).catch(() => {});
+
+    const safeErr = safeClientError(error, "Category deals are temporarily unavailable.");
+    return NextResponse.json({ success: false, error: safeErr.message }, { status: 500 });
   }
 }
 
@@ -241,6 +259,14 @@ export async function POST(request) {
     return NextResponse.json(result);
   } catch (error) {
     console.error("[API Deals Error]:", error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    recordCrashException({
+      error,
+      message: error.message,
+      component: "api/deals/category[POST]",
+      route: "/api/deals/category"
+    }).catch(() => {});
+
+    const safeErr = safeClientError(error, "Category deals are temporarily unavailable.");
+    return NextResponse.json({ success: false, error: safeErr.message }, { status: 500 });
   }
 }

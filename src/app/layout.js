@@ -1,6 +1,7 @@
 import { ClerkProvider } from "@clerk/nextjs";
 import { Outfit, Inter } from "next/font/google";
 import "./globals.css";
+import { GlobalClientTelemetry } from "@/components/ZeroCostTelemetry";
 
 const outfit = Outfit({
   variable: "--font-outfit",
@@ -54,6 +55,7 @@ export default function RootLayout({ children }) {
           className="min-h-full flex flex-col bg-slate-50 text-slate-900 selection:bg-brand-indigo/20 selection:text-brand-indigo-600"
           suppressHydrationWarning
         >
+          <GlobalClientTelemetry />
           {children}
         </body>
       </html>

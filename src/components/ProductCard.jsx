@@ -155,10 +155,8 @@ export default function ProductCard({
       return targetUrl;
     }
 
-    // 3. Fallback: Route through /api/redirect only for Google aggregator links that could not be unwrapped
-    // Only pass productId if this store actually matches the primary product's store:
-    const isPrimaryStore = storeName && product?.store_name && (storeName.toLowerCase() === product.store_name.toLowerCase());
-    const pId = isPrimaryStore ? (productId || product?.product_id || "") : "";
+    // 3. Route through /api/redirect with product_id for 100% exact on-demand PDP resolution
+    const pId = productId || product?.product_id || "";
     return `/api/redirect?product_id=${encodeURIComponent(pId)}&store=${encodeURIComponent(storeName || "Online Store")}&title=${encodeURIComponent(productTitle || "")}&fallback=${encodeURIComponent(targetUrl)}`;
   };
 

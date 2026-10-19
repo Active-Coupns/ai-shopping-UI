@@ -1,4 +1,5 @@
 import { redis } from "@/services/redis";
+import { maskSecretTokens } from "@/lib/errorShield";
 
 const CRASH_VAULT_KEY = "metrics:crash_vault";
 const CRASH_DAILY_PREFIX = "metrics:crash:daily:";
@@ -24,8 +25,10 @@ export async function recordCrashException({
 }) {
   try {
     const today = getTodayKey();
-    const errMsg = (error?.message || message || "Unknown runtime exception").slice(0, 300);
-    const errStack = (error?.stack || "").slice(0, 800);
+    const rawErrMsg = (error?.message || message || "Unknown runtime exception").slice(0, 300);
+    const rawErrStack = (error?.stack || "").slice(0, 800);
+    const errMsg = maskSecretTokens(rawErrMsg);
+    const errStack = maskSecretTokens(rawErrStack);
     
     // Extract file and line from stack trace if available
     let location = "Unknown file";

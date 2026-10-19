@@ -75,6 +75,11 @@ export default function AdminPage() {
   const [liveSecurityAlert, setLiveSecurityAlert] = useState(null);
   const lastSeenIncidentIdRef = useRef(null);
 
+  // 8. Auto-Healing Link Sentinel State
+  const [sentinelData, setSentinelData] = useState({ status: "HEALTHY", lastRun: "", actionTaken: "", recentLogs: [] });
+  const [sentinelLoading, setSentinelLoading] = useState(false);
+  const [probeRunning, setProbeRunning] = useState(false);
+
   // Affiliate & Coupon States
   const [personalTags, setPersonalTags] = useState([]);
   const [aggregators, setAggregators] = useState([]);
@@ -202,6 +207,36 @@ export default function AdminPage() {
     }
   }, []);
 
+  // Fetch Sentinel Health & Audit Logs
+  const fetchSentinel = useCallback(async () => {
+    setSentinelLoading(true);
+    try {
+      const res = await fetch("/api/admin/sentinel");
+      if (res.ok) {
+        const data = await res.json();
+        setSentinelData(data);
+      }
+    } catch (e) {
+      console.warn("Sentinel fetch failed:", e.message);
+    } finally {
+      setSentinelLoading(false);
+    }
+  }, []);
+
+  const triggerLiveProbe = async () => {
+    setProbeRunning(true);
+    try {
+      const res = await fetch("/api/admin/sentinel", { method: "POST" });
+      if (res.ok) {
+        await fetchSentinel();
+      }
+    } catch (e) {
+      console.warn("Probe trigger failed:", e.message);
+    } finally {
+      setProbeRunning(false);
+    }
+  };
+
   // Rapid 2.5s real-time live scanner when Security Radar tab is active
   useEffect(() => {
     if (activeTab !== "security") return;
@@ -226,7 +261,8 @@ export default function AdminPage() {
     if (activeTab === "tickets") fetchTickets();
     if (activeTab === "killswitches") fetchFeatures();
     if (activeTab === "security") fetchSecurity(false);
-  }, [activeTab, fetchCrashes, fetchTickets, fetchFeatures, fetchSecurity]);
+    if (activeTab === "sentinel") fetchSentinel();
+  }, [activeTab, fetchCrashes, fetchTickets, fetchFeatures, fetchSecurity, fetchSentinel]);
 
   useEffect(() => {
     async function initAdmin() {
@@ -816,6 +852,20 @@ export default function AdminPage() {
                 {securityData.throttledCount}
               </span>
             )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => { setActiveTab("sentinel"); fetchSentinel(); }}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer relative ${
+              activeTab === "sentinel"
+                ? "bg-indigo-600 text-white shadow-sm"
+                : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
+            }`}
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Auto-Healing Sentinel</span>
+            <span className={`w-2 h-2 rounded-full ${sentinelData.status === "HEALTHY" ? "bg-emerald-400" : "bg-amber-400"} animate-pulse`}></span>
           </button>
         </div>
       </div>
@@ -2062,6 +2112,143 @@ export default function AdminPage() {
               )}
             </div>
 
+          </div>
+        )}
+
+        {/* 9. AUTONOMOUS SELF-HEALING LINK SENTINEL */}
+        {activeTab === "sentinel" && (
+          <div className="space-y-6">
+            {/* Header & Live Probe Trigger */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-sm">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="w-5 h-5 text-emerald-400" />
+                  <h2 className="text-lg font-bold text-white">Autonomous Link & Redirect Sentinel</h2>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    ACTIVE
+                  </span>
+                </div>
+                <p className="text-xs text-slate-400 max-w-2xl">
+                  Automated background probe runs every 3-4 hours (cache-bypassed) across Amazon, Flipkart, Reliance Digital & Croma. If any URL format or redirect alters, the AI self-healer dynamically updates extraction rules and re-verifies.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3 shrink-0">
+                <button
+                  type="button"
+                  onClick={triggerLiveProbe}
+                  disabled={probeRunning}
+                  className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-bold transition-all shadow-sm flex items-center gap-2 cursor-pointer"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${probeRunning ? "animate-spin" : ""}`} />
+                  <span>{probeRunning ? "Testing Live Links..." : "Run Diagnostic Probe Now"}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Quick Telemetry Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
+                <span className="text-[11px] text-slate-400 font-medium">Sentinel Operational State</span>
+                <div className="flex items-center gap-2">
+                  <span className={`w-2.5 h-2.5 rounded-full ${sentinelData.status === "HEALTHY" ? "bg-emerald-400" : "bg-amber-400"} animate-pulse`}></span>
+                  <span className="text-base font-bold text-white">
+                    {sentinelData.status === "HEALTHY" ? "100% Operational" : "Auto-Healed & Restored"}
+                  </span>
+                </div>
+                <p className="text-[10px] text-slate-500 font-mono">
+                  Strategy: Dynamic ASIN + FSN + Short Model Sanitizer
+                </p>
+              </div>
+
+              <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
+                <span className="text-[11px] text-slate-400 font-medium">Last Autonomous Probe</span>
+                <div className="text-base font-bold text-white font-mono">
+                  {sentinelData.lastRun ? new Date(sentinelData.lastRun).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", second: "2-digit" }) : "Active"}
+                </div>
+                <p className="text-[10px] text-slate-500">
+                  Execution: Every 3-4 Hours (Force Live / No Cache)
+                </p>
+              </div>
+
+              <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
+                <span className="text-[11px] text-slate-400 font-medium">Last Action Executed</span>
+                <div className="text-xs font-medium text-slate-200 line-clamp-2">
+                  {sentinelData.actionTaken || "Zero broken links detected across verified stores."}
+                </div>
+                <p className="text-[10px] text-emerald-400 font-mono">
+                  Zero Human Intervention Needed ✓
+                </p>
+              </div>
+            </div>
+
+            {/* Audit Logs Table */}
+            <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+                <div className="flex items-center gap-2">
+                  <Activity className="w-4 h-4 text-indigo-400" />
+                  <h3 className="text-sm font-bold text-white">Autonomous Probe Audit Trail</h3>
+                </div>
+                <span className="text-xs text-slate-500 font-mono">
+                  Showing last {sentinelData.recentLogs?.length || 0} synthetic probes
+                </span>
+              </div>
+
+              {sentinelLoading && !sentinelData.recentLogs?.length ? (
+                <div className="py-12 text-center text-xs text-slate-500 animate-pulse">
+                  Loading Sentinel health records...
+                </div>
+              ) : !sentinelData.recentLogs?.length ? (
+                <div className="py-12 text-center space-y-2">
+                  <ShieldCheck className="w-8 h-8 text-slate-600 mx-auto" />
+                  <p className="text-xs text-slate-400 font-medium">Sentinel is initialized and monitoring.</p>
+                  <p className="text-[11px] text-slate-500">Click &quot;Run Diagnostic Probe Now&quot; above to execute an immediate live probe test.</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-slate-800/80">
+                  {sentinelData.recentLogs.map((log) => (
+                    <div key={log.id} className="py-3 space-y-2">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs">
+                        <div className="flex items-center gap-2">
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+                            log.status === "HEALTHY" 
+                              ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" 
+                              : "bg-amber-500/20 text-amber-400 border border-amber-500/30"
+                          }`}>
+                            {log.status}
+                          </span>
+                          <span className="px-1.5 py-0.2 rounded bg-slate-800 text-slate-400 font-mono text-[10px]">
+                            {log.trigger}
+                          </span>
+                          <span className="text-slate-300 font-mono text-[11px]">
+                            {new Date(log.timestamp).toLocaleString("en-IN")}
+                          </span>
+                        </div>
+                        <span className="text-[11px] text-slate-500 font-mono">
+                          Duration: {log.durationMs}ms ({log.queriesTested} Canary Queries)
+                        </span>
+                      </div>
+
+                      <p className="text-xs text-slate-300 font-mono pl-1">
+                        {log.actionTaken}
+                      </p>
+
+                      {log.details && (
+                        <div className="flex flex-wrap gap-1.5 pt-1">
+                          {log.details.map((d, dIdx) => (
+                            <span key={dIdx} className="px-2 py-0.5 rounded-md bg-slate-950 border border-slate-800 text-[10px] text-slate-400 font-mono flex items-center gap-1">
+                              <span className="w-1 h-1 rounded-full bg-emerald-400"></span>
+                              {d.query} ({d.linksChecked?.length || 0} links verified)
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
 

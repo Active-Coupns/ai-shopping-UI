@@ -4,11 +4,14 @@ import { redis } from "@/services/redis";
 import { checkUnifiedApiQuota, extractTrustedClientIp } from "@/services/rateLimiter";
 import { getAdminSettings } from "@/services/admin";
 import { monetizeUrl } from "@/services/affiliate";
-import { searchOpenWebProducts, isExactProductQuery, getStoreDirectSearchFallback } from "@/services/openweb";
+import { searchOpenWebProducts, isExactProductQuery, getStoreDirectSearchFallback, enrichProductsWithDirectPdps, isAuthenticPDP } from "@/services/openweb";
 import { addToInventoryPool, consultAiShopkeeper } from "@/services/semanticCache";
 import { recordSearchMetric } from "@/services/adminMetrics";
 import { applyAdaptiveSlowdown, recordSecurityIncident, checkBurstTripwire } from "@/services/securityRadar";
 import { clampString, checkSearchContentSafety } from "@/services/securityShield";
+import { recordCrashException } from "@/services/crashVault";
+import { safeClientError } from "@/lib/errorShield";
+import { curateProductsWithAi } from "@/services/aiProductCurator";
 
 export const maxDuration = 30;
 
@@ -255,8 +258,18 @@ export async function POST(request) {
         const hasProducts = Array.isArray(cachedPayload.products) && cachedPayload.products.length > 0;
         const isServiceCoupon = cachedPayload.intent === "SERVICE_COUPON";
         const hasFallbackProducts = hasProducts && cachedPayload.products.some(p => p.id?.startsWith("fallback-") || p.is_catalog_fallback);
+        const hasPoisonedMismatch = hasProducts && cachedPayload.products.some(p => {
+          const s = (p.store_name || "").toLowerCase();
+          const l = (p.link || p.deal_link || "").toLowerCase();
+          return !s.includes("amazon") && l.includes("amazon.in/s?k=");
+        });
+        const hasSearchLink = hasProducts && cachedPayload.products.some(p => !isAuthenticPDP(p.link || p.deal_link));
 
-        if ((hasProducts && !hasFallbackProducts) || isServiceCoupon) {
+        if (hasPoisonedMismatch || hasSearchLink) {
+          redis.del(cacheKey).catch(() => {});
+        }
+
+        if ((hasProducts && !hasFallbackProducts && !hasPoisonedMismatch && !hasSearchLink) || isServiceCoupon) {
           const quotaStatus = await checkUnifiedApiQuota({
             userId,
             clientIp,
@@ -319,7 +332,12 @@ export async function POST(request) {
             error: cachedPayload.error || null,
             searchesLeft: remainingSearches,
             fromCache: true
-          }, { status: 200 });
+          }, { 
+            status: 200,
+            headers: {
+              "Cache-Control": "public, s-maxage=1800, stale-while-revalidate=86400"
+            }
+          });
         }
       }
     } catch (cacheErr) {
@@ -416,6 +434,16 @@ export async function POST(request) {
       console.warn("[Search Route] OpenWebNinja provider error:", apiErr.message);
     }
 
+    // Curate products with Groq AI to eliminate spam, misleading accessories, and ensure high-fidelity top 3
+    if (cleanProducts.length > 1 && !isUrlLookup) {
+      try {
+        cleanProducts = await curateProductsWithAi(cleanQuery, cleanProducts, userRegion);
+      } catch (curateErr) {
+        console.warn("[Search Route] AI Curation non-critical error:", curateErr.message);
+      }
+    }
+
+
     // 7. Match Store Coupons from Admin Settings
     const matchedStoreCoupons = [];
     try {
@@ -477,15 +505,31 @@ export async function POST(request) {
       coupons: matchedStoreCoupons,
       intent: "E-COMMERCE",
       searchesLeft: remainingSearches
-    }, { status: 200 });
+    }, { 
+      status: 200,
+      headers: {
+        "Cache-Control": "public, s-maxage=1800, stale-while-revalidate=86400"
+      }
+    });
 
   } catch (err) {
     console.error("Serverless Search API Route error:", err);
+    recordCrashException({
+      error: err,
+      message: err.message,
+      component: "api/search",
+      route: "/api/search",
+      clientIp: typeof clientIp !== "undefined" ? clientIp : "127.0.0.1",
+      userId: typeof userId !== "undefined" && userId ? userId : "anonymous"
+    }).catch(() => {});
+
+    const safeErr = safeClientError(err, "Zippy servers are experiencing extraordinarily high shopping traffic right now. To ensure price accuracy, please wait a moment or try again in a few seconds.");
+
     return NextResponse.json({
       products: [],
       coupons: [],
       error: "SERVER_BUSY",
-      message: "Zippy servers are experiencing extraordinarily high shopping traffic right now. To ensure price accuracy, please wait a moment or try again in a few seconds."
+      message: safeErr.message
     }, { status: 200 });
   }
 }

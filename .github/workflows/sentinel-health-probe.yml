@@ -1,0 +1,31 @@
+name: Auto-Healing Sentinel Health Probe
+
+on:
+  schedule:
+    # Runs every 6 hours (00:00, 06:00, 12:00, 18:00 UTC)
+    - cron: '0 */6 * * *'
+  workflow_dispatch: # Allows manual trigger from GitHub Actions tab anytime
+
+jobs:
+  run-probe:
+    name: Run Synthetic Link Health Probe
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Sentinel Health Probe Endpoint
+        run: |
+          PROBE_URL="${{ secrets.APP_BASE_URL || 'https://zippy-ai.vercel.app' }}/api/cron/heal-sentinel"
+          echo "Executing Sentinel Health Probe against: $PROBE_URL"
+          
+          # Ping the heal-sentinel cron endpoint with optional CRON_SECRET authorization
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X GET "$PROBE_URL?secret=${{ secrets.CRON_SECRET }}")
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+          
+          echo "HTTP Status Code: $HTTP_CODE"
+          echo "Sentinel Probe Result: $BODY"
+          
+          if [ "$HTTP_CODE" -ne 200 ]; then
+            echo "::warning::Sentinel health probe returned HTTP $HTTP_CODE"
+          else
+            echo "Sentinel health probe completed successfully."
+          fi
