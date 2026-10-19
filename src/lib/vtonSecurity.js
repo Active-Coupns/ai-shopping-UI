@@ -239,8 +239,8 @@ export async function validateAndSanitizeImage(imageInput) {
     // Re-encode to clean JPEG, stripping all EXIF, GPS, and metadata
     const sanitizedBuffer = await pipeline
       .rotate() // Auto-orient based on EXIF before stripping
-      .resize(1024, 1536, { fit: 'inside', withoutEnlargement: true }) // Normalize for optimal VTON
-      .jpeg({ quality: 90, mozjpeg: true })
+      .resize(768, 1024, { fit: 'inside', withoutEnlargement: true }) // Fast & optimal for PixelAPI neural VTON grid
+      .jpeg({ quality: 85, mozjpeg: true })
       .toBuffer();
 
     return {

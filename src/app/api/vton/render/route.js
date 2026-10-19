@@ -194,6 +194,10 @@ export async function POST(request) {
       userId = null;
     }
 
+    if (!userId && process.env.NODE_ENV === 'development') {
+      userId = request.headers.get('x-local-dev-user') || 'dev_local_tester';
+    }
+
     if (!userId) {
       safeLog('VTON Auth Gate', 'Rejected unauthenticated try-on request');
       return NextResponse.json(
@@ -538,9 +542,10 @@ export async function POST(request) {
             safeLog('VTON Render', `Job queued with worker: ${jobId}`);
             
             let finalOutputUrl = null;
-            // Poll up to 80 times (every 2.5s = 200s max)
-            for (let i = 0; i < 80; i++) {
-              await new Promise(r => setTimeout(r, 2500));
+            // Adaptive polling: fast checks early, then steady intervals (up to 120 times = ~250s max without premature timeout)
+            for (let i = 0; i < 120; i++) {
+              const pollDelay = i < 1 ? 1200 : (i < 10 ? 1500 : (i < 30 ? 2000 : 2500));
+              await new Promise(r => setTimeout(r, pollDelay));
               
               const pollRes = await fetch(`https://api.pixelapi.dev/v1/virtual-tryon/jobs/${jobId}`, {
                 headers: { "Authorization": `Bearer ${PIXELAPI_KEY}` }

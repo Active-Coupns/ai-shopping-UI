@@ -305,8 +305,8 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
         try {
           const aspect = img.height / img.width;
 
-          // Client-side HD canvas resize: Max 1200px for crystal-clear texture without crashing mobile RAM
-          const maxDim = 1200;
+          // Client-side smart canvas resize: 800px max dimension matching neural VTON native grid, reducing upload size by 75%
+          const maxDim = 800;
           let targetW = img.width;
           let targetH = img.height;
 
@@ -327,7 +327,7 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
           ctx.imageSmoothingEnabled = true;
           ctx.imageSmoothingQuality = "high";
           ctx.drawImage(img, 0, 0, targetW, targetH);
-          const optimizedPhotoData = canvas.toDataURL("image/jpeg", 0.90);
+          const optimizedPhotoData = canvas.toDataURL("image/jpeg", 0.85);
 
           if (cleanupUrl) {
             try { URL.revokeObjectURL(cleanupUrl); } catch (_) {}
@@ -468,7 +468,7 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
 
       const processLoadedGarment = (img, cleanupUrl) => {
         try {
-          const maxDim = 1200;
+          const maxDim = 800;
           let targetW = img.width;
           let targetH = img.height;
 
@@ -489,7 +489,7 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
           ctx.imageSmoothingEnabled = true;
           ctx.imageSmoothingQuality = "high";
           ctx.drawImage(img, 0, 0, targetW, targetH);
-          const optimizedGarmentData = canvas.toDataURL("image/jpeg", 0.90);
+          const optimizedGarmentData = canvas.toDataURL("image/jpeg", 0.85);
 
           if (cleanupUrl) {
             try { URL.revokeObjectURL(cleanupUrl); } catch (_) {}
@@ -807,11 +807,11 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
                   
                   <div className="space-y-1 max-w-[260px]">
                     <span className="text-xs font-bold text-white tracking-wide block">
-                      {renderElapsed < 15
+                      {renderElapsed < 6
                         ? "🔍 Analyzing body posture & shoulders..."
-                        : renderElapsed < 40
+                        : renderElapsed < 16
                         ? "🧵 Draping fabric & aligning natural folds..."
-                        : renderElapsed < 70
+                        : renderElapsed < 26
                         ? "✨ Refining fabric texture, lighting & shadows..."
                         : "⚡ Finalizing high-resolution neural render..."}
                     </span>
@@ -824,7 +824,7 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
                   <div className="w-44 h-1.5 bg-white/15 rounded-full overflow-hidden">
                     <div
                       className="h-full bg-gradient-to-r from-brand-indigo via-purple-400 to-pink-400 rounded-full transition-all duration-300"
-                      style={{ width: `${Math.min(96, (renderElapsed / 90) * 100)}%` }}
+                      style={{ width: `${Math.min(96, renderElapsed < 25 ? (renderElapsed / 25) * 88 : 88 + Math.min(8, (renderElapsed - 25) * 0.2))}%` }}
                     ></div>
                   </div>
                 </div>
