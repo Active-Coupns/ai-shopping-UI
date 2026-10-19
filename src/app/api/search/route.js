@@ -4,7 +4,7 @@ import { redis } from "@/services/redis";
 import { checkUnifiedApiQuota, extractTrustedClientIp } from "@/services/rateLimiter";
 import { getAdminSettings } from "@/services/admin";
 import { monetizeUrl } from "@/services/affiliate";
-import { searchOpenWebProducts, isExactProductQuery, getStoreDirectSearchFallback, enrichProductsWithDirectPdps, isAuthenticPDP } from "@/services/openweb";
+import { searchOpenWebProducts, isExactProductQuery, isAuthenticPDP } from "@/services/openweb";
 import { addToInventoryPool, consultAiShopkeeper } from "@/services/semanticCache";
 import { recordSearchMetric } from "@/services/adminMetrics";
 import { applyAdaptiveSlowdown, recordSecurityIncident, checkBurstTripwire } from "@/services/securityRadar";
@@ -281,21 +281,6 @@ export async function POST(request) {
           let finalCachedProducts = (isUrlLookup && cachedPayload.products) 
             ? cachedPayload.products.slice(0, 1) 
             : (cachedPayload.products || []);
-
-          finalCachedProducts = finalCachedProducts.map(p => {
-            const rawL = p.deal_link || p.link || p.affiliateUrl || "";
-            if (rawL.includes("google.com") || rawL.includes("ibp=")) {
-              const cleanL = getStoreDirectSearchFallback(p.store_name, p.title, country);
-              return {
-                ...p,
-                link: cleanL,
-                deal_link: cleanL,
-                affiliateUrl: cleanL,
-                direct_link: cleanL
-              };
-            }
-            return p;
-          });
 
           if (sourceStore && sourceUrl && finalCachedProducts.length > 0) {
             finalCachedProducts = finalCachedProducts.map(p => {

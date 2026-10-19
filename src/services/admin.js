@@ -15,7 +15,7 @@ export const defaultFeatureFlags = {
   maintenanceBanner: false   // System Maintenance Notice Banner
 };
 
-const defaultSettings = {
+export const defaultSettings = {
   personalTags: [],
   aggregators: envCuelinksKey ? [
     { id: "agg-cuelinks-env", name: "CueLinks", token: envCuelinksKey, region: "IN" }
@@ -33,7 +33,7 @@ const defaultSettings = {
   featureFlags: { ...defaultFeatureFlags }
 };
 
-function normalizeSettings(raw) {
+export function normalizeSettings(raw) {
   if (!raw) return defaultSettings;
   
   const normalized = {
