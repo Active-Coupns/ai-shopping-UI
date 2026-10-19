@@ -18,6 +18,27 @@
 
 ## 📅 Daily Changelog & Feature Timeline
 
+### 🗓️ 2026-10-19 (Production Launch: Full Vercel Automation, Zero-Drift Env Sync & Clerk SEO Middleware Fix)
+
+* **Git Commit**: `857e50d`
+* **Commit Message**: `fix(seo): exempt robots.txt and sitemap.xml from Clerk auth middleware`
+* **Production URL**: `https://ai-shopping-ui.vercel.app`
+* **Status**: ✅ 100% Production Live & Verified (Vercel Build READY, Status 200 on /robots.txt, /sitemap.xml, and live search)
+* **Rationale & Why This Was Done**:
+  1. **Automated Vercel Production Sync**: Injected all 21 production environment variables directly via Vercel REST API (Clerk API keys, Upstash Redis, OpenWeb Ninja, Groq, Gemini, PixelAPI, Zyte, `ADMIN_USER_IDS=user_3JGg_MnXc5O3td`, and cryptographic `CRON_SECRET`).
+  2. **Clerk Middleware SEO Exemption**: Next.js App Router dynamic `/robots.txt` and `/sitemap.xml` were intercepted by Clerk route matching. Updated `src/middleware.js` to add `/robots.txt` and `/sitemap.xml` to `isPublicRoute` and excluded `.txt` and `.xml` from matcher regex to ensure search engine crawlers can index without authentication barriers.
+  3. **Live Production End-to-End Verification**:
+     - `GET https://ai-shopping-ui.vercel.app/robots.txt` -> HTTP 200 (`text/plain`), proper disallows for private `/admin` & auth paths.
+     - `GET https://ai-shopping-ui.vercel.app/sitemap.xml` -> HTTP 200 (`application/xml`), dynamic site indexing.
+     - `POST https://ai-shopping-ui.vercel.app/api/search` -> HTTP 200, 10 live authentic products retrieved from OpenWeb Ninja.
+     - `GET https://ai-shopping-ui.vercel.app/api/redirect?url=...` -> HTTP 307 temporary redirect directly to verified merchant PDP.
+
+#### 📂 Files Modified:
+- `src/middleware.js` *(Updated `isPublicRoute` and static file exclusion regex)*
+- `DEVELOPMENT_LOG.md` *(Added release entry)*
+
+---
+
 ### 🗓️ 2026-10-19 (Launch Preparation: Dynamic Robots.txt, Sitemap.xml, Flexible Domain SEO & CRON_SECRET Security)
 
 * **Git Commit**: `af6bfc6`
