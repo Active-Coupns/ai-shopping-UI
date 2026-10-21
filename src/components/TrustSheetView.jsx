@@ -40,6 +40,7 @@ import {
   Tag
 } from "lucide-react";
 import { searchProducts } from "@/services/api";
+import { getCountryMeta, formatCountryPrice } from "@/lib/countryConfig";
 
 const DEMO_GADGETS_IN = [
   { label: "🧺 LG 8 Kg 5 Star Front Load", query: "LG 8 Kg 5 Star Inverter Direct Drive Front Load Washing Machine" },
@@ -63,6 +64,7 @@ export default function TrustSheetView({
   onBack,
   onTriggerSearch
 }) {
+  const countryMeta = getCountryMeta(country);
   const isUS = (country || "IN").toUpperCase() === "US";
   const demoGadgets = isUS ? DEMO_GADGETS_US : DEMO_GADGETS_IN;
   const [inputVal, setInputVal] = useState(initialQuery || "");
@@ -356,7 +358,7 @@ export default function TrustSheetView({
             basePrice: targetPrice,
             baseStore: targetStore,
             baseLink: targetUrl,
-            country: country || "IN"
+            country: country || dossier?.product?.country || "IN"
           })
         });
 
@@ -514,7 +516,7 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
       </div>
 
       {/* Quick Suggestion Chips */}
-      <div className="flex flex-wrap items-center gap-1.5">
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 no-scrollbar sm:flex-wrap">
         <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 mr-1">
           Quick Doubts:
         </span>
@@ -739,25 +741,26 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
     <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 animate-in fade-in duration-300">
       
       {/* 1. Top Navigation Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-5 border-b border-slate-200/80 mb-6">
+      <div className="flex items-center justify-between gap-2 pb-3.5 sm:pb-5 border-b border-slate-200/80 mb-4 sm:mb-6">
         <button
           onClick={onBack}
-          className="inline-flex items-center gap-2 text-sm font-bold text-slate-700 hover:text-brand-indigo transition-colors cursor-pointer group"
+          className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-700 hover:text-brand-indigo transition-colors cursor-pointer group"
         >
-          <div className="w-8 h-8 rounded-xl bg-slate-100 group-hover:bg-brand-indigo/10 flex items-center justify-center transition-colors">
-            <ArrowLeft className="w-4 h-4 text-slate-600 group-hover:text-brand-indigo" />
+          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-slate-100 group-hover:bg-brand-indigo/10 flex items-center justify-center transition-colors">
+            <ArrowLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-600 group-hover:text-brand-indigo" />
           </div>
           <span>Back to Deals</span>
         </button>
 
-        <div className="flex items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-indigo-50 text-indigo-700 border border-indigo-200 shadow-2xs">
-            <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" />
-            AI Trust Sheet™ • Hardware Reality Engine
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          <span className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 rounded-full text-[11px] sm:text-xs font-black bg-indigo-50 text-indigo-700 border border-indigo-200 shadow-2xs">
+            <ShieldCheck className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+            <span className="hidden sm:inline">AI Trust Sheet™ • Hardware Reality Engine</span>
+            <span className="sm:hidden">AI Trust Sheet™</span>
           </span>
           <span className="hidden md:inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
             <Sparkles className="w-3.5 h-3.5 text-emerald-600 animate-spin-slow" />
-            360° Comprehensive Web Research Active
+            360° Web Research
           </span>
         </div>
       </div>
@@ -1124,7 +1127,7 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
           <div className="space-y-6 animate-in fade-in duration-300">
             
             {/* Dossier Header Actions */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-200/80">
+            <div className="flex items-center justify-between gap-2 pb-3.5 border-b border-slate-200/80">
               <button
                 onClick={handleReset}
                 className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer"
@@ -1139,7 +1142,7 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all cursor-pointer shadow-2xs"
               >
                 {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-                <span>{copied ? "Copied Summary!" : "Copy Summary for WhatsApp"}</span>
+                <span>{copied ? "Copied!" : <><span className="hidden sm:inline">Copy Summary for WhatsApp</span><span className="sm:hidden">Share Summary</span></>}</span>
               </button>
             </div>
           </div>
@@ -1445,7 +1448,7 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
               
               {/* Product Card */}
               <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-sm text-center">
-                <div className="w-40 h-40 mx-auto rounded-2xl bg-slate-50 border border-slate-200/80 p-3 mb-4 flex items-center justify-center overflow-hidden">
+                <div className="w-28 h-28 sm:w-40 sm:h-40 mx-auto rounded-2xl bg-slate-50 border border-slate-200/80 p-2 sm:p-3 mb-3 sm:mb-4 flex items-center justify-center overflow-hidden">
                   <img
                     src={dossier.product?.image || identifiedProduct?.image}
                     alt={dossier.product?.title}
@@ -1500,7 +1503,7 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
                           <span className="px-1.5 py-0.2 rounded-full bg-indigo-500/30 text-indigo-200 text-[9px] font-bold shrink-0">On-Demand</span>
                         </div>
                         <p className="text-[10px] text-slate-400 font-normal truncate">
-                          {isUS ? "Amazon • Walmart • Best Buy • Target" : "Amazon • Flipkart • Croma • Reliance"}
+                          {countryMeta.popularStores}
                         </p>
                       </div>
                     </div>

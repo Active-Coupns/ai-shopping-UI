@@ -1,4 +1,5 @@
 import { MASTER_COUPON_DATABASE, matchStoreKey } from "./couponDatabase.js";
+import { getCountryMeta } from "@/lib/countryConfig.js";
 
 /**
  * Real-Time On-Demand Coupon Evaluation Engine
@@ -28,6 +29,10 @@ export async function getCouponsForStore(queryOrStore = "", country = "IN") {
 
   // 3. If still not matched, provide verified universal welcome promotions
   if (!storeData) {
+    const meta = getCountryMeta(country);
+    const amount = meta.code === "IN" ? 100 : (meta.code === "AE" ? 25 : 10);
+    const minOrder = meta.code === "IN" ? 499 : (meta.code === "AE" ? 100 : 50);
+
     storeData = {
       name: queryOrStore || "Trending Stores",
       category: "All Store Deals",
@@ -36,13 +41,13 @@ export async function getCouponsForStore(queryOrStore = "", country = "IN") {
       coupons: [
         {
           id: "gen-welcome",
-          code: "WELCOME100",
-          title: "Flat ₹100 OFF on First Order",
-          description: `Valid on minimum checkout value of ₹499 on ${queryOrStore || "all partner stores"}.`,
+          code: meta.code === "IN" ? "WELCOME100" : "WELCOME10",
+          title: `Flat ${meta.symbol}${amount} OFF on First Order`,
+          description: `Valid on minimum checkout value of ${meta.symbol}${minOrder} on ${queryOrStore || "all partner stores"}.`,
           discount_type: "FLAT",
-          discount_val: 100,
-          min_order: 499,
-          max_discount: 100,
+          discount_val: amount,
+          min_order: minOrder,
+          max_discount: amount,
           payment_method: "All Payment Methods",
           valid_till: "2026-10-31",
           verified_rate: "96% Success Rate",

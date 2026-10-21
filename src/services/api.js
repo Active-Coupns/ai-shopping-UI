@@ -1,4 +1,5 @@
 import { getDeviceFingerprint } from "@/lib/deviceFingerprint";
+import { getCountryMeta } from "@/lib/countryConfig";
 
 function getDefaultSpecs(title = "", store = "Online Store") {
   return [
@@ -46,9 +47,10 @@ export async function searchProducts(query, country = "IN", isUrlLookup = false,
     const rawProducts = data.products || [];
 
     const mappedResults = rawProducts.map((p, idx) => {
-      const isUSD = country.toUpperCase() === "US";
-      const currencyCode = isUSD ? "USD" : "INR";
-      const locale = isUSD ? "en-US" : "en-IN";
+      const countryMeta = getCountryMeta(country);
+      const currencyCode = countryMeta.currency;
+      const locale = countryMeta.locale;
+      const currencySymbol = countryMeta.symbol;
 
       const numericPrice = typeof p.rawPrice === 'number' 
         ? p.rawPrice 
@@ -66,7 +68,7 @@ export async function searchProducts(query, country = "IN", isUrlLookup = false,
         ? p.discountPercent 
         : (calculatedOriginal > basePrice && basePrice > 0 ? Math.round(((calculatedOriginal - basePrice) / calculatedOriginal) * 100) : 0);
 
-      const formattedPrice = (typeof p.price === 'string' && p.price.includes(isUSD ? '$' : '₹'))
+      const formattedPrice = (typeof p.price === 'string' && (p.price.includes(currencySymbol) || p.price.includes('$') || p.price.includes('₹') || p.price.includes('£')))
         ? p.price
         : new Intl.NumberFormat(locale, {
             style: "currency",
@@ -74,7 +76,7 @@ export async function searchProducts(query, country = "IN", isUrlLookup = false,
             maximumFractionDigits: 0,
           }).format(basePrice);
 
-      const formattedOriginal = (typeof p.originalPrice === 'string' && p.originalPrice.includes(isUSD ? '$' : '₹'))
+      const formattedOriginal = (typeof p.originalPrice === 'string' && (p.originalPrice.includes(currencySymbol) || p.originalPrice.includes('$') || p.originalPrice.includes('₹') || p.originalPrice.includes('£')))
         ? p.originalPrice
         : new Intl.NumberFormat(locale, {
             style: "currency",

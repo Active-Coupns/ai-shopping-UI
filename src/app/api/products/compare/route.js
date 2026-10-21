@@ -1,3 +1,4 @@
+import { getCountryMeta } from "@/lib/countryConfig";
 import { NextResponse } from "next/server";
 import { getAuth } from "@clerk/nextjs/server";
 import { redis } from "@/services/redis";
@@ -43,10 +44,10 @@ export async function POST(request) {
     }
 
     const { productId, title = "", basePrice = 0, baseStore = "Online Store", baseLink = "", country = "IN" } = body;
-    const isUS = String(country).toUpperCase() === "US";
-    const cleanCountry = isUS ? "us" : "in";
+    const meta = getCountryMeta(country);
+    const cleanCountry = (meta.apiCode || "in").toLowerCase();
     const cleanPId = String(productId || "").slice(-50).replace(/[^a-zA-Z0-9]/g, "");
-    const compCacheKey = `cache:comp:v5:${cleanPId}:${cleanCountry}`;
+    const compCacheKey = `cache:comp:v7:${cleanPId}:${cleanCountry}`;
 
     // 1. Check Redis Cache First (0.01ms - Costs ₹0)
     let cachedStores = null;
@@ -176,7 +177,7 @@ export async function POST(request) {
           deal_link: cleanUrl,
           is_lowest: false,
           is_verified: true,
-          diff_text: diff > 0 ? `+${isUS ? "$" : "₹"}${diff.toLocaleString(isUS ? "en-US" : "en-IN")}` : "Matching"
+          diff_text: diff > 0 ? `+${meta.symbol}${diff.toLocaleString(meta.locale)}` : "Matching"
         });
       }
     });
@@ -209,7 +210,7 @@ export async function POST(request) {
               deal_link: cleanUrl,
               is_lowest: false,
               is_verified: true,
-              diff_text: diff > 0 ? `+${isUS ? "$" : "₹"}${diff.toLocaleString(isUS ? "en-US" : "en-IN")}` : diff < 0 ? `-${isUS ? "$" : "₹"}${Math.abs(diff).toLocaleString(isUS ? "en-US" : "en-IN")}` : "Matching"
+              diff_text: diff > 0 ? `+${meta.symbol}${diff.toLocaleString(meta.locale)}` : diff < 0 ? `-${meta.symbol}${Math.abs(diff).toLocaleString(meta.locale)}` : "Matching"
             });
           }
         });

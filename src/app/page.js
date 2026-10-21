@@ -10,6 +10,7 @@ import ProductCard from "@/components/ProductCard";
 import CouponCard from "@/components/CouponCard";
 import SmartFilterChips, { generateSmartChips } from "@/components/SmartFilterChips";
 import { isProductUrl, extractProductTitleFromUrl, extractProductInfoFromUrl } from "@/lib/urlProductParser";
+import { SUPPORTED_COUNTRIES, getCountryMeta } from "@/lib/countryConfig";
 import { searchProducts } from "@/services/api";
 import { userJourneyTracker } from "@/services/userJourneyTracker";
 
@@ -180,7 +181,7 @@ export default function Home() {
     const isUrl = isProductUrl(cleanInput);
     const info = explicitInfo || (isUrl ? extractProductInfoFromUrl(cleanInput) : {
       isUrl: false,
-      store: selectedCountry === "IN" ? "Amazon.in" : "Amazon.com",
+      store: SUPPORTED_COUNTRIES[selectedCountry]?.defaultStore || "Amazon",
       title: cleanInput,
       canonicalUrl: ""
     });
@@ -391,14 +392,14 @@ export default function Home() {
     if (activeFilterChipId === "all") {
       return products.slice(0, 3);
     }
-    const chips = generateSmartChips(products, searchQuery);
+    const chips = generateSmartChips(products, searchQuery, selectedCountry);
     const selected = chips.find(c => c.id === activeFilterChipId);
     if (!selected || !selected.filter) {
       return products.slice(0, 3);
     }
     const filtered = products.filter(selected.filter);
     return filtered.length > 0 ? filtered.slice(0, 3) : products.slice(0, 3);
-  }, [products, activeFilterChipId, searchQuery]);
+  }, [products, activeFilterChipId, searchQuery, selectedCountry]);
 
   useEffect(() => {
     const handleUnhandledRejection = (event) => {
@@ -709,68 +710,14 @@ export default function Home() {
             </button>
           </div>
 
-          {/* 3. Right: Desktop (Country Pill + Quota + Account) & Mobile (Compact Switcher + Account Trigger) */}
+          {/* 3. Right: Clean Header with Support & Unified Account Hub */}
           <div className="flex items-center gap-2 sm:gap-3 text-xs md:text-sm shrink-0">
-            {/* Desktop Country Pill Selector */}
-            <div className="hidden lg:flex items-center gap-1 p-1 rounded-xl bg-slate-100 border border-slate-200 shadow-inner">
-              <button
-                type="button"
-                suppressHydrationWarning
-                onClick={() => handleCountryChange("IN")}
-                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  selectedCountry === "IN"
-                    ? "bg-white text-brand-indigo shadow-sm"
-                    : "text-slate-500 hover:text-slate-900"
-                }`}
-              >
-                <span>🇮🇳</span>
-                <span>IN (₹)</span>
-              </button>
-              <button
-                type="button"
-                suppressHydrationWarning
-                onClick={() => handleCountryChange("US")}
-                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  selectedCountry === "US"
-                    ? "bg-white text-brand-indigo shadow-sm"
-                    : "text-slate-500 hover:text-slate-900"
-                }`}
-              >
-                <span>🇺🇸</span>
-                <span>US ($)</span>
-              </button>
-            </div>
-
-            {/* Desktop Quota badge */}
-            {isSignedIn && (
-              <span className="hidden md:inline-flex text-xs font-semibold text-brand-emerald bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
-                {searchesLeft} / 10 Left
-              </span>
-            )}
-
-            {/* Saved Deals Button (Bookmarks Drawer Trigger) */}
-            <button
-              type="button"
-              suppressHydrationWarning
-              onClick={() => setIsSavedDrawerOpen(true)}
-              className="relative flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-xl sm:rounded-2xl bg-white hover:bg-rose-50 text-slate-700 hover:text-rose-600 border border-slate-200/90 shadow-2xs transition-all cursor-pointer active:scale-95 text-xs font-bold shrink-0"
-              title="View Saved Bookmarks"
-            >
-              <Heart className={`w-3.5 h-3.5 ${savedDeals.length > 0 ? "fill-rose-500 text-rose-500" : ""}`} />
-              <span className="hidden sm:inline">Saved</span>
-              {savedDeals.length > 0 && (
-                <span className="px-1.5 py-0.2 rounded-full bg-rose-500 text-white text-[10px] font-black">
-                  {savedDeals.length}
-                </span>
-              )}
-            </button>
-
             {/* Support Desk Trigger */}
             <button
               type="button"
               suppressHydrationWarning
               onClick={() => setIsSupportModalOpen(true)}
-              className="relative flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-xl sm:rounded-2xl bg-white hover:bg-blue-50 text-slate-700 hover:text-blue-600 border border-slate-200/90 shadow-2xs transition-all cursor-pointer active:scale-95 text-xs font-bold shrink-0"
+              className="relative flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl sm:rounded-2xl bg-white hover:bg-blue-50 text-slate-700 hover:text-blue-600 border border-slate-200/90 shadow-2xs transition-all cursor-pointer active:scale-95 text-xs font-bold shrink-0"
               title="Need Help? Raise Support Ticket"
             >
               <LifeBuoy className="w-3.5 h-3.5 text-blue-600" />
@@ -799,7 +746,7 @@ export default function Home() {
                   )}
                   {/* Flag badge on avatar */}
                   <span className="absolute -bottom-1 -right-1 text-[10px] leading-none bg-white rounded-full p-0.5 shadow-xs border border-slate-200">
-                    {selectedCountry === "IN" ? "🇮🇳" : "🇺🇸"}
+                    {SUPPORTED_COUNTRIES[selectedCountry]?.flag || "🇮🇳"}
                   </span>
                 </div>
               ) : (
@@ -808,7 +755,7 @@ export default function Home() {
                     <User className="w-4 h-4" />
                   </div>
                   <span className="hidden sm:inline">Account</span>
-                  <span className="text-xs">{selectedCountry === "IN" ? "🇮🇳" : "🇺🇸"}</span>
+                  <span className="text-xs">{SUPPORTED_COUNTRIES[selectedCountry]?.flag || "🇮🇳"}</span>
                 </div>
               )}
 
@@ -1083,6 +1030,7 @@ export default function Home() {
                       searchQuery={searchQuery}
                       activeChipId={activeFilterChipId}
                       onSelectChip={(chipId) => setActiveFilterChipId(chipId)}
+                      country={selectedCountry}
                     />
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
@@ -1279,7 +1227,7 @@ export default function Home() {
           <div className="relative">
             <User className="w-4.5 h-4.5 stroke-[1.75]" />
             <span className="absolute -top-1 -right-2 text-[10px] leading-none">
-              {selectedCountry === "IN" ? "🇮🇳" : "🇺🇸"}
+              {SUPPORTED_COUNTRIES[selectedCountry]?.flag || "🇮🇳"}
             </span>
           </div>
           <span className="text-[10px] tracking-tight">Account ({selectedCountry})</span>
@@ -1294,6 +1242,11 @@ export default function Home() {
         onCountryChange={handleCountryChange}
         searchesLeft={searchesLeft}
         appState={appState}
+        savedDealsCount={savedDeals.length}
+        onOpenSavedDeals={() => {
+          setIsAccountModalOpen(false);
+          setIsSavedDrawerOpen(true);
+        }}
         onNavigate={(newState) => setAppState(newState)}
         onOpenSupportTicket={() => setIsSupportModalOpen(true)}
       />

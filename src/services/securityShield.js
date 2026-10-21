@@ -13,7 +13,7 @@ const JAILBREAK_REGEX = /\b(ignore (all|previous|prior|above)|system prompt|reve
 // Highly targeted illegal / violent patterns (Zero false-positives on everyday retail e.g. kitchen knives, pharma, garments)
 const HARMFUL_SEARCH_PATTERNS = [
   // Violent explosives / Weapons of mass harm
-  /\b(make a bomb|build (a )?pipe bomb|ied explosive|molotov cocktail guide|bomb making tutorial|buy rdx|buy ak47)\b/i,
+  /\b((make|build|create|how to (make|build)) (a )?(pipe )?bomb|pipe bomb|ied explosive|molotov cocktail|bomb making|buy (rdx|ak47|dynamite))\b/i,
   // Commercial distribution of illicit narcotics
   /\b(buy (heroin|cocaine|methamphetamine|fentanyl|mdma|charas online|drugs online)|how to make (meth|fentanyl))\b/i,
   // Child exploitation & illegal abuse

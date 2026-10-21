@@ -6,18 +6,48 @@ import {
   X, 
   Send, 
   ArrowRight, 
-  ArrowUpRight, 
+  ArrowUp, 
   CheckCircle, 
-  CornerDownLeft, 
   Bot, 
   User, 
-  Edit3, 
-  Loader2, 
+  RefreshCw, 
   Zap, 
-  Search 
+  Search,
+  MessageSquare,
+  Plus,
+  ExternalLink
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import ProductCard from "@/components/ProductCard";
+import { searchProducts } from "@/services/api";
 import { userJourneyTracker } from "@/services/userJourneyTracker";
+
+const STARTER_PROMPTS = [
+  {
+    icon: "💻",
+    title: "Coding Laptop under ₹50k",
+    subtitle: "16GB RAM, battery reality & true daily cost",
+    query: "I need a coding laptop under 50000 with 16GB RAM"
+  },
+  {
+    icon: "💊",
+    title: "Paracetamol vs Dolo 650",
+    subtitle: "Active salt info, pharmacy price & dosage warning",
+    query: "Compare Paracetamol vs Dolo 650 and show prices"
+  },
+  {
+    icon: "🎧",
+    title: "ANC Earbuds under ₹3,000",
+    subtitle: "Real mic quality, ANC decibels & battery life",
+    query: "Best noise cancelling earbuds under 3000"
+  },
+  {
+    icon: "🎟️",
+    title: "Today's Top Deals & Coupons",
+    subtitle: "Verified credit card offers & lowest market prices",
+    query: "Show today's best electronics deals and bank offers"
+  }
+];
 
 export default function SearchAiConciergeModal({
   isOpen,
@@ -25,18 +55,19 @@ export default function SearchAiConciergeModal({
   initialQuery = "",
   country = "IN",
   onConfirmSearch,
-  onDirectSearch
+  onDirectSearch,
+  onOpenPriceAlert,
+  onOpenTrustSheet,
+  onTryInStudio
 }) {
   const [messages, setMessages] = useState([]);
-  const [inputText, setInputText] = useState("");
+  const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [activeChips, setActiveChips] = useState([]);
-  const [readySearchData, setReadySearchData] = useState(null);
-  const [isEditingQuery, setIsEditingQuery] = useState(false);
-  const [customQueryInput, setCustomQueryInput] = useState("");
+  const [activeSelections, setActiveSelections] = useState({});
 
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+  const prevIsOpenRef = useRef(false);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -44,169 +75,227 @@ export default function SearchAiConciergeModal({
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, activeChips, readySearchData, isLoading]);
+  }, [messages, isLoading]);
 
-  const sendInitialGreeting = async (topic) => {
-    setIsLoading(true);
-    const browsingCtx = {
-      recentSearches: userJourneyTracker.getJourneyContext()?.searches?.slice(0, 3) || [],
-      recentProducts: userJourneyTracker.getRecentViewedProducts()?.slice(0, 3) || []
-    };
-
-    try {
-      const res = await fetch("/api/ai/concierge", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userMessage: topic ? `I am looking for: ${topic}` : "Hi, please guide me to find the best deals.",
-          conversationHistory: [],
-          initialTopic: topic,
-          country,
-          browsingContext: browsingCtx
-        })
-      });
-
-      const data = await res.json();
-      if (data && data.reply) {
-        setMessages([
-          { role: "assistant", text: data.reply }
-        ]);
-        const chips = [...(data.suggestedChips || [])];
-        if (data.isReadyToSearch && data.suggestedQuery) {
-          setReadySearchData(data);
-          setCustomQueryInput(data.suggestedQuery);
-          const searchChip = `🚀 Search: "${data.suggestedQuery}"`;
-          if (!chips.includes(searchChip)) chips.push(searchChip);
-        }
-        setActiveChips(chips);
-      }
-    } catch (err) {
-      console.error("[Concierge Init Error]:", err);
-      setMessages([
-        { 
-          role: "assistant", 
-          text: topic 
-            ? `Namaste! Aap ${topic} dekh rahe hain. Aapka lagbhag budget kitna hai aur main use-case kya rahega?` 
-            : "Namaste! Main aapka AI Shopping Advisor hoon. Aap aaj kya kharidne ki soch rahe hain?" 
-        }
-      ]);
-      setActiveChips(["Under ₹20,000", "Under ₹50,000", "Best Value Deals", "Top Rated"]);
-    } finally {
-      setIsLoading(false);
-      setTimeout(() => {
-        if (typeof window !== "undefined" && window.innerWidth >= 768) {
-          inputRef.current?.focus();
-        }
-      }, 150);
-    }
-  };
-
-  // Initial trigger when modal opens
-  useEffect(() => {
-    if (isOpen) {
-      setMessages([]);
-      setActiveChips([]);
-      setReadySearchData(null);
-      setIsEditingQuery(false);
-      setInputText("");
-
-      const startTopic = initialQuery.trim();
-      sendInitialGreeting(startTopic);
-    }
-  }, [isOpen]);
-
-  const handleSendMessage = async (userTextToSend) => {
-    const text = (userTextToSend || inputText).trim();
-    if (!text || isLoading) return;
-
-    const newMessages = [...messages, { role: "user", text }];
-    setMessages(newMessages);
-    setInputText("");
-    setActiveChips([]);
+  // Execute 1 single call to our classic search backend
+  const executeSearch = async (searchQuery, adviceNote = "") => {
     setIsLoading(true);
 
-    const browsingCtx = {
-      recentSearches: userJourneyTracker.getJourneyContext()?.searches?.slice(0, 3) || [],
-      recentProducts: userJourneyTracker.getRecentViewedProducts()?.slice(0, 3) || []
-    };
-
     try {
-      const res = await fetch("/api/ai/concierge", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userMessage: text,
-          conversationHistory: newMessages,
-          initialTopic: initialQuery,
-          country,
-          browsingContext: browsingCtx
-        })
-      });
+      const data = await searchProducts(searchQuery, country);
+      const returnedProducts = Array.isArray(data) 
+        ? data 
+        : (Array.isArray(data?.results) ? data.results : (Array.isArray(data?.products) ? data.products : []));
 
-      const data = await res.json();
-      if (data && data.reply) {
-        setMessages(prev => [...prev, { role: "assistant", text: data.reply }]);
-        const chips = [...(data.suggestedChips || [])];
-        if (data.isReadyToSearch && data.suggestedQuery) {
-          setReadySearchData(data);
-          setCustomQueryInput(data.suggestedQuery);
-          const searchChip = `🚀 Search: "${data.suggestedQuery}"`;
-          if (!chips.includes(searchChip)) chips.push(searchChip);
-        } else {
-          setReadySearchData(null);
-        }
-        setActiveChips(chips);
-      }
+      const assistantMsg = {
+        id: Date.now() + 2,
+        role: "assistant",
+        type: "products",
+        adviceNote: adviceNote || null,
+        text: returnedProducts.length > 0 
+          ? `I found ${returnedProducts.length} verified deals for "${searchQuery}". Here are the top vetted matches:`
+          : `I searched live stores for "${searchQuery}" but couldn't find in-stock products right now. Would you like to adjust your budget or brand preference?`,
+        products: returnedProducts,
+        searchQuery,
+        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+      };
+
+      setMessages(prev => [...prev, assistantMsg]);
     } catch (err) {
-      console.error("[Concierge Reply Error]:", err);
+      console.error("[AiGuide] Search execution error:", err);
       setMessages(prev => [
-        ...prev, 
-        { role: "assistant", text: "Samajh gaya! Aap aur kya specific cheez dekh rahe hain?" }
+        ...prev,
+        {
+          id: Date.now() + 2,
+          role: "assistant",
+          type: "error",
+          text: "Search network connection timeout. Please try again.",
+          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+        }
       ]);
-      setReadySearchData({
-        suggestedQuery: initialQuery || text,
-        userPersona: "Value Buyer",
-        userRequirement: text
-      });
-      setCustomQueryInput(initialQuery || text);
     } finally {
       setIsLoading(false);
-      setTimeout(() => {
-        if (typeof window !== "undefined" && window.innerWidth >= 768) {
-          inputRef.current?.focus();
-        }
-      }, 150);
     }
   };
 
-  const handleChipClick = (chipText) => {
-    // If chip is an affirmative search trigger
-    if (chipText.startsWith("🚀") || chipText.toLowerCase().includes("search:")) {
-      executeConfirmedSearch();
-      return;
-    }
-    handleSendMessage(chipText);
+  // Handle Radio selection change in questionnaire
+  const handleOptionChange = (msgId, questionId, optionText) => {
+    setActiveSelections(prev => ({
+      ...prev,
+      [`${msgId}_${questionId}`]: optionText
+    }));
   };
 
-  const executeConfirmedSearch = () => {
-    const finalQuery = (customQueryInput || readySearchData?.suggestedQuery || initialQuery || inputText).trim();
-    const sharedContext = {
-      userPersona: readySearchData?.userPersona || "Custom Buyer Profile",
-      userRequirement: readySearchData?.userRequirement || finalQuery,
-      budgetLimit: readySearchData?.budgetLimit || null,
-      conciergeSummary: readySearchData?.reply || "",
-      suggestedQuery: finalQuery
+  // User submits the "Find my best [category]" questionnaire
+  const handleSubmitQuestionnaire = async (msg) => {
+    if (isLoading) return;
+    setIsLoading(true);
+
+    // Collect user selections
+    const selections = {};
+    (msg.questions || []).forEach((q, idx) => {
+      const selected = activeSelections[`${msg.id}_${q.id}`] || q.options?.[q.defaultSelected ?? 0] || q.options?.[0];
+      selections[q.id || `q${idx + 1}`] = selected;
+    });
+
+    try {
+      const res = await fetch("/api/ai/studio", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "finalize_query",
+          message: msg.originalUserQuery || inputValue,
+          selections,
+          country
+        })
+      });
+
+      const data = await res.json();
+      if (data && data.success && data.searchQuery) {
+        await executeSearch(data.searchQuery, data.adviceNote);
+      } else {
+        await executeSearch(msg.originalUserQuery || "laptop 16GB RAM");
+      }
+    } catch (err) {
+      console.error("[AiGuide] Questionnaire submission error:", err);
+      await executeSearch(msg.originalUserQuery || "laptop 16GB RAM");
+    }
+  };
+
+  // Send message to Conversational Ask AI
+  const handleSendMessage = async (customText = null) => {
+    const textToSend = typeof customText === "string" ? customText : inputValue;
+    const cleanText = textToSend.trim();
+    if (!cleanText || isLoading) return;
+
+    userJourneyTracker.recordSearch(cleanText);
+
+    const userMsg = {
+      id: Date.now(),
+      role: "user",
+      text: cleanText,
+      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
     };
-    // Sync into user journey telemetry ledger
-    userJourneyTracker.recordGuideSync(sharedContext);
 
-    onConfirmSearch(finalQuery, sharedContext);
-    onClose();
+    const newMessages = [...messages, userMsg];
+    setMessages(newMessages);
+    setInputValue("");
+    setIsLoading(true);
+
+    // Check if there are products already displayed on screen
+    const latestProducts = [...newMessages].reverse().find(m => m.type === "products" && Array.isArray(m.products) && m.products.length > 0)?.products || [];
+
+    try {
+      const historyPayload = newMessages.slice(-6).map(m => ({
+        role: m.role,
+        text: typeof m.text === "string" ? m.text : (m.reply || "")
+      }));
+
+      // Call API for ChatGPT-style questionnaire generation or follow-up chat
+      const res = await fetch("/api/ai/studio", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "chat",
+          message: cleanText,
+          history: historyPayload,
+          country,
+          displayedProducts: latestProducts
+        })
+      });
+
+      const data = await res.json();
+
+      if (data && data.success) {
+        if (data.type === "questionnaire") {
+          // Setup default radio selections
+          const newDefaults = {};
+          (data.questions || []).forEach((q, idx) => {
+            const defIdx = q.defaultSelected !== undefined ? q.defaultSelected : 0;
+            newDefaults[`${data.id || (Date.now() + 1)}_${q.id}`] = q.options[defIdx];
+          });
+          setActiveSelections(prev => ({ ...prev, ...newDefaults }));
+
+          const assistantMsg = {
+            id: Date.now() + 1,
+            role: "assistant",
+            type: "questionnaire",
+            originalUserQuery: cleanText,
+            introText: data.introText || "",
+            title: data.title || "Let me narrow it down for you",
+            buttonText: data.buttonText || "Find my best options",
+            questions: Array.isArray(data.questions) ? data.questions : [],
+            timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+          };
+          setMessages(prev => [...prev, assistantMsg]);
+          setIsLoading(false);
+        } else if (data.type === "chat_reply") {
+          const assistantMsg = {
+            id: Date.now() + 1,
+            role: "assistant",
+            type: "chat_reply",
+            text: data.reply || "",
+            timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+          };
+          setMessages(prev => [...prev, assistantMsg]);
+          setIsLoading(false);
+        } else if (data.type === "execute_search") {
+          await executeSearch(data.searchQuery, data.adviceNote);
+        }
+      } else {
+        setMessages(prev => [
+          ...prev,
+          {
+            id: Date.now() + 1,
+            role: "assistant",
+            type: "error",
+            text: data?.message || "I encountered a minor issue. Please try again.",
+            timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+          }
+        ]);
+        setIsLoading(false);
+      }
+    } catch (err) {
+      console.error("[AiGuide] Send error:", err);
+      setMessages(prev => [
+        ...prev,
+        {
+          id: Date.now() + 1,
+          role: "assistant",
+          type: "error",
+          text: "Network connection timeout. Please check your connection and retry.",
+          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+        }
+      ]);
+      setIsLoading(false);
+    }
   };
 
-  const handleBypassDirectSearch = () => {
-    const queryToSearch = (initialQuery || inputText || customQueryInput || "trending deals").trim();
-    onDirectSearch(queryToSearch);
+  // When modal opens: initialize with initialQuery if provided
+  useEffect(() => {
+    if (isOpen && !prevIsOpenRef.current) {
+      // Just opened
+      if (initialQuery && initialQuery.trim()) {
+        setMessages([]);
+        setActiveSelections({});
+        handleSendMessage(initialQuery.trim());
+      } else if (messages.length === 0) {
+        setMessages([]);
+      }
+    }
+    prevIsOpenRef.current = isOpen;
+  }, [isOpen, initialQuery]);
+
+  const handleReset = () => {
+    setMessages([]);
+    setInputValue("");
+    setActiveSelections({});
+    if (inputRef.current) inputRef.current.focus();
+  };
+
+  const handleBypassDirectSearch = (customQuery = null) => {
+    const q = (typeof customQuery === "string" ? customQuery : (initialQuery || inputValue || "trending deals")).trim();
+    if (onDirectSearch) onDirectSearch(q);
     onClose();
   };
 
@@ -215,7 +304,7 @@ export default function SearchAiConciergeModal({
   return (
     <AnimatePresence>
       <div 
-        className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/80 backdrop-blur-md"
+        className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/60 backdrop-blur-sm"
         onClick={onClose}
       >
         <motion.div
@@ -224,179 +313,320 @@ export default function SearchAiConciergeModal({
           exit={{ opacity: 0, scale: 0.96, y: 30 }}
           transition={{ duration: 0.25, ease: "easeOut" }}
           onClick={(e) => e.stopPropagation()}
-          className="relative w-full sm:max-w-xl bg-slate-900 border border-slate-800 rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col h-[94vh] sm:h-auto sm:max-h-[88vh] text-slate-100"
+          className="relative w-full sm:max-w-3xl bg-[#fcfcfd] border border-slate-200/90 rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col h-[94vh] sm:h-auto sm:max-h-[90vh] text-slate-900"
         >
           {/* Mobile Pull Handle */}
-          <div className="w-12 h-1 bg-slate-700/80 rounded-full mx-auto mt-2.5 mb-1 sm:hidden" />
+          <div className="w-12 h-1 bg-slate-300 rounded-full mx-auto mt-2.5 mb-1 sm:hidden" />
 
-          {/* Header */}
-          <div className="px-4 sm:px-5 py-3 sm:py-4 border-b border-slate-800/80 bg-slate-900/95 flex items-center justify-between shrink-0">
-            <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-              <div className="w-8 h-8 rounded-xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-indigo-300 shrink-0 shadow-inner">
-                <Sparkles className="w-4 h-4 text-indigo-300 animate-pulse" />
+          {/* Clean Light Header */}
+          <div className="px-4 sm:px-6 py-3.5 border-b border-slate-200/80 bg-white/95 backdrop-blur-md flex items-center justify-between shrink-0 shadow-2xs">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-brand-indigo to-brand-violet flex items-center justify-center text-white shrink-0 shadow-md shadow-indigo-500/20">
+                <Sparkles className="w-4.5 h-4.5" />
               </div>
               <div className="min-w-0">
-                <div className="flex items-center gap-1.5 sm:gap-2">
-                  <h3 className="text-xs sm:text-sm font-black text-white tracking-tight truncate">
-                    ShopSmart AI Guide
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-black text-slate-900 tracking-tight truncate">
+                    ShopSmart <span className="text-brand-indigo">Ask AI</span>
                   </h3>
-                  <span className="text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 whitespace-nowrap shrink-0">
-                    Personal Advisor
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-brand-indigo border border-indigo-200/80 whitespace-nowrap shrink-0">
+                    AI GUIDE
                   </span>
                 </div>
-                <p className="text-[10px] sm:text-[11px] text-slate-400 truncate">
-                  Ask advice freely &bull; We&rsquo;ll craft a clean 2-4 word query when you&rsquo;re ready
+                <p className="text-[11px] text-slate-500 truncate">
+                  Ask advice, narrow down specs with 2 quick questions & discover verified deals
                 </p>
               </div>
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
-              {/* Skip to direct search button */}
-              <button
-                type="button"
-                onClick={handleBypassDirectSearch}
-                className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-[11px] font-bold text-slate-300 hover:text-white border border-slate-700/80 transition-all cursor-pointer"
-                title="Search directly without AI conversation"
-              >
-                <Zap className="w-3 h-3 text-amber-400" />
-                <span>Direct Search</span>
-              </button>
+              {messages.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleReset}
+                  className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-[11px] font-bold text-slate-700 border border-slate-200/80 transition-all cursor-pointer"
+                  title="Start a fresh consultation"
+                >
+                  <Plus className="w-3 h-3 text-slate-500" />
+                  <span>New Chat</span>
+                </button>
+              )}
 
               <button
                 type="button"
                 onClick={onClose}
-                className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
+                title="Close Ask AI"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
           </div>
 
-          {/* Chat Messages Body */}
-          <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3.5 scrollbar-thin scrollbar-thumb-slate-700">
-            {messages.map((msg, idx) => {
-              const isAi = msg.role === "assistant";
-              return (
-                <div
-                  key={idx}
-                  className={`flex items-start gap-2.5 ${isAi ? "justify-start" : "justify-end"}`}
-                >
-                  {isAi && (
-                    <div className="w-7 h-7 rounded-xl bg-indigo-600/30 border border-indigo-500/40 flex items-center justify-center text-indigo-400 shrink-0 mt-0.5">
-                      <Bot className="w-3.5 h-3.5" />
-                    </div>
-                  )}
-
-                  <div
-                    className={`max-w-[85%] px-4 py-2.5 rounded-2xl text-xs sm:text-sm leading-relaxed ${
-                      isAi
-                        ? "bg-slate-800/90 text-slate-100 border border-slate-700/80 shadow-xs"
-                        : "bg-gradient-to-r from-indigo-600 to-indigo-700 text-white font-medium shadow-md shadow-indigo-600/20"
-                    }`}
-                  >
-                    {msg.text}
-                  </div>
-
-                  {!isAi && (
-                    <div className="w-7 h-7 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-400 shrink-0 mt-0.5">
-                      <User className="w-3.5 h-3.5" />
-                    </div>
-                  )}
+          {/* Chat Messages Body (Clean Light Canvas) */}
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 scrollbar-thin scrollbar-thumb-slate-300 bg-[#fcfcfd]">
+            
+            {/* Empty State / Welcome Screen */}
+            {messages.length === 0 && (
+              <div className="py-6 sm:py-10 flex flex-col items-center justify-center text-center max-w-xl mx-auto">
+                <div className="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-200/80 flex items-center justify-center text-brand-indigo mb-3.5 shadow-sm">
+                  <Sparkles className="w-6 h-6" />
                 </div>
-              );
-            })}
+                <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight mb-1.5">
+                  What are you looking to buy today?
+                </h2>
+                <p className="text-xs text-slate-500 mb-6 leading-relaxed">
+                  Tell me what you need, your budget, or choose a popular topic below. I will guide you to the best verified deals.
+                </p>
 
-            {isLoading && (
-              <div className="flex items-center gap-2 text-xs text-indigo-400 font-medium pl-9">
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                <span>AI shopping concierge is thinking...</span>
+                {/* Starter Suggestion Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full text-left">
+                  {STARTER_PROMPTS.map((prompt, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => handleSendMessage(prompt.query)}
+                      className="p-3.5 rounded-2xl bg-white border border-slate-200/90 hover:border-brand-indigo hover:shadow-md transition-all text-left group cursor-pointer"
+                    >
+                      <div className="flex items-start gap-2.5">
+                        <span className="text-xl">{prompt.icon}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-bold text-slate-900 group-hover:text-brand-indigo transition-colors">
+                            {prompt.title}
+                          </p>
+                          <p className="text-[10px] text-slate-500 mt-0.5 line-clamp-1">{prompt.subtitle}</p>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
 
-            {/* Quick Tap Chips */}
-            {activeChips.length > 0 && !isLoading && (
-              <div className="px-1 sm:pl-9 pt-1 flex flex-nowrap overflow-x-auto sm:flex-wrap gap-1.5 pb-1.5 scrollbar-none touch-pan-x">
-                {activeChips.map((chip, cIdx) => {
-                  const isSearchChip = chip.startsWith("🚀");
-                  return (
-                    <button
-                      key={cIdx}
-                      type="button"
-                      onClick={() => handleChipClick(chip)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer shadow-xs active:scale-95 flex items-center gap-1.5 shrink-0 sm:shrink ${
-                        isSearchChip
-                          ? "bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold shadow-md shadow-indigo-600/30 border border-indigo-400/40"
-                          : "bg-slate-800/90 hover:bg-indigo-600/30 text-indigo-200 hover:text-white border border-indigo-500/30 hover:border-indigo-400"
-                      }`}
-                    >
-                      <span>{chip}</span>
-                      {isSearchChip && <ArrowRight className="w-3 h-3" />}
-                    </button>
-                  );
-                })}
+            {/* Render Messages */}
+            {messages.map((msg) => (
+              <div key={msg.id} className="w-full">
+                {/* USER MESSAGE */}
+                {msg.role === "user" && (
+                  <div className="flex items-start justify-end gap-2.5 w-full">
+                    <div className="bg-slate-900 text-white rounded-2xl rounded-tr-xs px-4 py-2.5 max-w-[85%] text-xs sm:text-sm shadow-sm leading-relaxed">
+                      {msg.text}
+                    </div>
+                    <div className="w-7 h-7 rounded-xl bg-slate-200 text-slate-700 flex items-center justify-center shrink-0 mt-0.5">
+                      <User className="w-3.5 h-3.5" />
+                    </div>
+                  </div>
+                )}
+
+                {/* ASSISTANT MESSAGE */}
+                {msg.role === "assistant" && (
+                  <div className="flex items-start gap-2.5 w-full">
+                    <div className="w-7 h-7 rounded-xl bg-gradient-to-tr from-brand-indigo to-brand-violet flex items-center justify-center text-white shrink-0 mt-0.5 shadow-xs">
+                      <Sparkles className="w-3.5 h-3.5" />
+                    </div>
+
+                    <div className="flex-1 space-y-3.5 max-w-full">
+                      {/* Regular Text or Follow-up Chat Reply */}
+                      {(msg.text && msg.type !== "questionnaire" && msg.type !== "products") && (
+                        <div className="bg-white border border-slate-200/90 rounded-2xl rounded-tl-xs px-4 py-3 text-xs sm:text-sm text-slate-800 shadow-2xs leading-relaxed whitespace-pre-wrap">
+                          {msg.text}
+                        </div>
+                      )}
+
+                      {/* CHAT REPLY (Follow-up advice bubble) */}
+                      {msg.type === "chat_reply" && (
+                        <div className="bg-white border border-indigo-200/80 rounded-2xl rounded-tl-xs px-4 py-3 text-xs sm:text-sm text-slate-800 shadow-2xs leading-relaxed whitespace-pre-wrap">
+                          <div className="flex items-center gap-1.5 text-brand-indigo font-bold text-xs mb-1">
+                            <MessageSquare className="w-3.5 h-3.5" />
+                            <span>AI Advisor</span>
+                          </div>
+                          {msg.text}
+                        </div>
+                      )}
+
+                      {/* 1. NATURAL INTRO ADVICE */}
+                      {msg.introText && (
+                        <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-normal">
+                          {msg.introText}
+                        </p>
+                      )}
+
+                      {/* 2. CHATGPT QUESTIONNAIRE CARD */}
+                      {msg.type === "questionnaire" && (
+                        <div className="w-full rounded-2xl bg-[#0f172a] text-white p-4 sm:p-5 shadow-xl border border-slate-800 space-y-4">
+                          <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
+                            <div className="flex items-center gap-2">
+                              <Sparkles className="w-4 h-4 text-amber-400" />
+                              <h4 className="text-xs sm:text-sm font-bold tracking-tight text-white uppercase tracking-wider">
+                                {msg.title || "Let me narrow it down for you"}
+                              </h4>
+                            </div>
+                            <span className="text-[10px] text-slate-400 font-medium">Quick 2-question filter</span>
+                          </div>
+
+                          {/* Question blocks */}
+                          <div className="space-y-4">
+                            {(msg.questions || []).map((q, qIdx) => {
+                              const currentSelected = activeSelections[`${msg.id}_${q.id}`] || q.options?.[q.defaultSelected ?? 0] || q.options?.[0];
+
+                              return (
+                                <div key={q.id || qIdx} className="space-y-2">
+                                  <p className="text-xs sm:text-sm font-bold text-slate-200">
+                                    {qIdx + 1}. {q.text}
+                                  </p>
+
+                                  {/* Radio Options */}
+                                  <div className="space-y-1.5 pl-1">
+                                    {(q.options || []).map((opt, optIdx) => {
+                                      const isChecked = currentSelected === opt;
+
+                                      return (
+                                        <label
+                                          key={optIdx}
+                                          onClick={() => handleOptionChange(msg.id, q.id, opt)}
+                                          className={`flex items-center gap-2.5 px-3 py-2 rounded-xl cursor-pointer transition-all border ${
+                                            isChecked
+                                              ? "bg-slate-800/95 border-brand-indigo text-white shadow-xs"
+                                              : "bg-slate-900/60 border-slate-800 text-slate-300 hover:bg-slate-800/50 hover:text-white"
+                                          }`}
+                                        >
+                                          <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center shrink-0 transition-all ${
+                                            isChecked ? "border-brand-indigo bg-brand-indigo" : "border-slate-600 bg-transparent"
+                                          }`}>
+                                            {isChecked && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                                          </div>
+                                          <span className="text-xs select-none">{opt}</span>
+                                        </label>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          {/* Submit Questionnaire Button */}
+                          <div className="pt-1.5">
+                            <button
+                              type="button"
+                              onClick={() => handleSubmitQuestionnaire(msg)}
+                              disabled={isLoading}
+                              className="w-full py-3 px-5 rounded-xl bg-white hover:bg-slate-100 text-slate-950 font-black text-xs sm:text-sm transition-all shadow-md active:scale-98 cursor-pointer flex items-center justify-center gap-2 group"
+                            >
+                              {isLoading ? (
+                                <>
+                                  <RefreshCw className="w-4 h-4 animate-spin text-slate-900" />
+                                  <span>Searching live verified deals...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <span>{msg.buttonText || "Find my best options"}</span>
+                                  <ArrowRight className="w-4 h-4 text-slate-900 group-hover:translate-x-1 transition-transform" />
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* 3. ADVICE NOTE */}
+                      {msg.adviceNote && (
+                        <div className="p-3.5 rounded-xl bg-indigo-50 border border-indigo-200/80 text-xs text-slate-800 leading-relaxed font-medium">
+                          <span className="font-bold text-brand-indigo">AI Buying Advice: </span>
+                          {msg.adviceNote}
+                        </div>
+                      )}
+
+                      {/* 4. EXACT PRODUCT CARDS */}
+                      {Array.isArray(msg.products) && msg.products.length > 0 && (
+                        <div className="space-y-3 pt-1">
+                          <div className="flex items-center justify-between text-xs text-slate-500">
+                            <span>Showing {msg.products.length} vetted deals</span>
+                            <button
+                              type="button"
+                              onClick={() => handleBypassDirectSearch(msg.searchQuery)}
+                              className="text-brand-indigo hover:text-indigo-800 font-bold flex items-center gap-1 cursor-pointer"
+                            >
+                              <span>View in main search grid</span>
+                              <ExternalLink className="w-3 h-3" />
+                            </button>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                            {msg.products.map((prod, pIdx) => (
+                              <ProductCard
+                                key={prod.id || pIdx}
+                                product={prod}
+                                searchQuery={msg.searchQuery || ""}
+                                country={country}
+                                onOpenPriceAlert={onOpenPriceAlert}
+                                onOpenTrustSheet={onOpenTrustSheet}
+                                onTryInStudio={onTryInStudio}
+                                siblingProducts={msg.products}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+
+            {/* Loading Indicator */}
+            {isLoading && (
+              <div className="flex items-start gap-2.5 w-full">
+                <div className="w-7 h-7 rounded-xl bg-gradient-to-tr from-brand-indigo to-brand-violet flex items-center justify-center text-white shrink-0 mt-0.5 shadow-xs animate-pulse">
+                  <Bot className="w-3.5 h-3.5" />
+                </div>
+                <div className="bg-white border border-slate-200/80 rounded-2xl rounded-tl-xs px-3.5 py-2.5 text-xs text-slate-600 flex items-center gap-2 shadow-2xs">
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin text-brand-indigo" />
+                  <span>Cross-checking live stores across Amazon, Flipkart & Croma...</span>
+                </div>
               </div>
             )}
 
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Footer Input Bar */}
-          <div className="p-3 sm:p-4 border-t border-slate-800 bg-slate-900/95 shrink-0">
-            {/* Sleek Smart Query Pill Indicator (Non-intrusive) */}
-            {readySearchData?.suggestedQuery && (
-              <div className="mb-2.5 px-3 py-1.5 rounded-xl bg-slate-800/80 border border-indigo-500/30 flex items-center justify-between gap-2 shadow-xs">
-                <div className="flex items-center gap-1.5 text-xs overflow-hidden min-w-0 flex-1">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-300 shrink-0" />
-                  <span className="text-slate-400 text-[11px] shrink-0 font-medium hidden sm:inline">Smart Query:</span>
-                  <span className="font-bold text-amber-300 text-xs truncate">
-                    &ldquo;{customQueryInput || readySearchData.suggestedQuery}&rdquo;
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={executeConfirmedSearch}
-                  className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-xs flex items-center gap-1 shadow-sm transition-all active:scale-95 cursor-pointer shrink-0"
-                >
-                  <span>Search Deals</span>
-                  <ArrowRight className="w-3 h-3" />
-                </button>
-              </div>
-            )}
-
+          {/* Clean Light Footer Input Bar */}
+          <div className="p-3 sm:p-4 border-t border-slate-200/80 bg-white shrink-0">
             <form
               onSubmit={(e) => {
                 e.preventDefault();
                 handleSendMessage();
               }}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 bg-slate-50 border border-slate-300 rounded-2xl px-3 py-1.5 focus-within:bg-white focus-within:border-brand-indigo focus-within:ring-2 focus-within:ring-brand-indigo/15 transition-all shadow-inner"
             >
               <input
                 ref={inputRef}
                 type="text"
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
-                placeholder="Ask advice, requirements, or type budget..."
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                placeholder="Ask follow-up advice... e.g. 'Inme se battery kiski best hai?'"
                 disabled={isLoading}
-                className="flex-1 bg-slate-800/90 border border-slate-700/80 rounded-2xl px-4 py-2.5 text-xs sm:text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+                className="flex-1 bg-transparent py-1.5 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none"
               />
 
               <button
                 type="submit"
-                disabled={!inputText.trim() || isLoading}
-                className="p-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 disabled:text-slate-600 text-white transition-all cursor-pointer shrink-0 shadow-md shadow-indigo-600/20"
+                disabled={!inputValue.trim() || isLoading}
+                className="p-2 rounded-xl bg-brand-indigo hover:bg-indigo-700 disabled:bg-slate-200 disabled:text-slate-400 text-white transition-all cursor-pointer shrink-0 shadow-sm"
+                title="Send Message"
               >
-                <Send className="w-4 h-4" />
+                <ArrowUp className="w-4 h-4 stroke-[2.5]" />
               </button>
             </form>
 
-            <div className="mt-2 flex items-center justify-between text-[10px] text-slate-500 px-1">
-              <span>Press Enter to reply</span>
+            <div className="mt-2 flex items-center justify-between text-[10px] text-slate-400 px-1">
+              <span>Press Enter to chat with Ask AI</span>
               <button
                 type="button"
-                onClick={handleBypassDirectSearch}
-                className="hover:text-indigo-400 underline cursor-pointer"
+                onClick={() => handleBypassDirectSearch()}
+                className="text-brand-indigo hover:text-indigo-800 underline cursor-pointer font-medium"
               >
-                Skip chat & search directly →
+                Skip chat & search main grid directly →
               </button>
             </div>
           </div>

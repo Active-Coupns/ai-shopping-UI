@@ -5,6 +5,7 @@
 
 import { redis } from "@/services/redis";
 import { executeSearchRequest, parsePriceNum, sanitizeOfferUrl, formatStoreName } from "@/services/openweb";
+import { getAmazonBaseUrl } from "@/lib/countryConfig";
 
 export const DEAL_CATEGORIES = [
   {
@@ -179,9 +180,7 @@ export async function getDealsForCategory(categoryId = "smartphones", country = 
       );
 
       if (asinMatch) {
-        dealUrl = isUS 
-          ? `https://www.amazon.com/dp/${asinMatch[1]}`
-          : `https://www.amazon.in/dp/${asinMatch[1]}`;
+        dealUrl = `${getAmazonBaseUrl(country)}/dp/${asinMatch[1]}`;
       } else if (isDirectMerchantPdp) {
         dealUrl = rawUrl;
       } else {

@@ -12,6 +12,7 @@ import { clampString, checkSearchContentSafety } from "@/services/securityShield
 import { recordCrashException } from "@/services/crashVault";
 import { safeClientError } from "@/lib/errorShield";
 import { curateProductsWithAi } from "@/services/aiProductCurator";
+import { validateCountryCode } from "@/lib/countryConfig";
 
 export const maxDuration = 30;
 
@@ -22,7 +23,7 @@ function getCacheKey(country, query) {
     .replace(/\s+/g, " ")
     .trim()
     .replace(/\s/g, "-");
-  return `cache:search:v14:${(country || "in").toLowerCase()}:${clean || "default"}`;
+  return `cache:search:v16:${(country || "in").toLowerCase()}:${clean || "default"}`;
 }
 
 /**
@@ -217,7 +218,8 @@ export async function POST(request) {
     }
 
     const effectiveDeviceFingerprint = deviceFingerprint || body?.deviceFingerprint || null;
-    const { query, country, isUrlLookup, sourceStore, sourceUrl, isExactLookup } = body;
+    const { query, country: rawCountry, isUrlLookup, sourceStore, sourceUrl, isExactLookup } = body;
+    const country = validateCountryCode(rawCountry);
 
     if (!query || typeof query !== "string") {
       return NextResponse.json({ products: [], error: "Query is required" }, { status: 200 });

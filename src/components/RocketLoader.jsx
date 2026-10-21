@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { getCountryMeta } from "@/lib/countryConfig";
 import { 
   Check, 
   Loader2, 
@@ -58,6 +59,62 @@ const STORE_CONFIGS = {
       { name: "iHerb", tag: "Promo Verified", color: "from-emerald-500 to-green-600", border: "border-emerald-400/50", glow: "rgba(16,185,129,0.25)", pos: "top-1/2 right-1 -translate-y-1/2" },
       { name: "GNC Health", tag: "Member Gold", color: "from-amber-500 to-yellow-600", border: "border-amber-400/50", glow: "rgba(245,158,11,0.25)", pos: "top-1/2 left-1 -translate-y-1/2" }
     ]
+  },
+  GB: {
+    ecommerce: [
+      { name: "Amazon UK", tag: "Prime Deal", color: "from-amber-500 to-orange-600", border: "border-amber-400/50", glow: "rgba(245,158,11,0.25)", pos: "top-1 left-1/2 -translate-x-1/2" },
+      { name: "Argos", tag: "Fast Track", color: "from-red-600 to-rose-600", border: "border-red-400/50", glow: "rgba(220,38,38,0.25)", pos: "bottom-1 left-1/2 -translate-x-1/2" },
+      { name: "Currys", tag: "Price Promise", color: "from-purple-600 to-indigo-600", border: "border-purple-400/50", glow: "rgba(147,51,234,0.25)", pos: "top-1/2 right-1 -translate-y-1/2" },
+      { name: "John Lewis", tag: "Never Undersold", color: "from-emerald-600 to-teal-600", border: "border-emerald-400/50", glow: "rgba(16,185,129,0.25)", pos: "top-1/2 left-1 -translate-y-1/2" }
+    ],
+    pharma: [
+      { name: "Boots UK", tag: "Advantage Card", color: "from-blue-600 to-indigo-600", border: "border-blue-400/50", glow: "rgba(37,99,235,0.25)", pos: "top-1 left-1/2 -translate-x-1/2" },
+      { name: "Superdrug", tag: "Health & Beauty", color: "from-pink-500 to-rose-600", border: "border-pink-400/50", glow: "rgba(244,63,94,0.25)", pos: "bottom-1 left-1/2 -translate-x-1/2" },
+      { name: "Holland & Barrett", tag: "Rewards for Life", color: "from-emerald-600 to-teal-600", border: "border-emerald-400/50", glow: "rgba(16,185,129,0.25)", pos: "top-1/2 right-1 -translate-y-1/2" },
+      { name: "LloydsPharmacy", tag: "Verified NHS", color: "from-teal-500 to-cyan-600", border: "border-teal-400/50", glow: "rgba(20,184,166,0.25)", pos: "top-1/2 left-1 -translate-y-1/2" }
+    ]
+  },
+  AU: {
+    ecommerce: [
+      { name: "Amazon AU", tag: "Prime Saver", color: "from-amber-500 to-orange-600", border: "border-amber-400/50", glow: "rgba(245,158,11,0.25)", pos: "top-1 left-1/2 -translate-x-1/2" },
+      { name: "JB Hi-Fi", tag: "Smashing Deals", color: "from-yellow-500 to-amber-600", border: "border-yellow-400/50", glow: "rgba(234,179,8,0.25)", pos: "bottom-1 left-1/2 -translate-x-1/2" },
+      { name: "Harvey Norman", tag: "Great Deals", color: "from-blue-600 to-indigo-600", border: "border-blue-400/50", glow: "rgba(37,99,235,0.25)", pos: "top-1/2 right-1 -translate-y-1/2" },
+      { name: "Kmart AU", tag: "Low Price", color: "from-rose-500 to-red-600", border: "border-rose-400/50", glow: "rgba(244,63,94,0.25)", pos: "top-1/2 left-1 -translate-y-1/2" }
+    ],
+    pharma: [
+      { name: "Chemist Warehouse", tag: "Stop The Pain", color: "from-yellow-500 to-amber-600", border: "border-yellow-400/50", glow: "rgba(234,179,8,0.25)", pos: "top-1 left-1/2 -translate-x-1/2" },
+      { name: "Priceline Pharmacy", tag: "Sister Club", color: "from-pink-500 to-rose-600", border: "border-pink-400/50", glow: "rgba(244,63,94,0.25)", pos: "bottom-1 left-1/2 -translate-x-1/2" },
+      { name: "TerryWhite Chemmart", tag: "Care Plus", color: "from-emerald-600 to-teal-600", border: "border-emerald-400/50", glow: "rgba(16,185,129,0.25)", pos: "top-1/2 right-1 -translate-y-1/2" },
+      { name: "Amcal", tag: "Expert Advice", color: "from-blue-600 to-indigo-600", border: "border-blue-400/50", glow: "rgba(37,99,235,0.25)", pos: "top-1/2 left-1 -translate-y-1/2" }
+    ]
+  },
+  CA: {
+    ecommerce: [
+      { name: "Amazon.ca", tag: "Prime Deals", color: "from-amber-500 to-orange-600", border: "border-amber-400/50", glow: "rgba(245,158,11,0.25)", pos: "top-1 left-1/2 -translate-x-1/2" },
+      { name: "Best Buy CA", tag: "Price Match", color: "from-yellow-500 to-amber-600", border: "border-yellow-400/50", glow: "rgba(234,179,8,0.25)", pos: "bottom-1 left-1/2 -translate-x-1/2" },
+      { name: "Walmart CA", tag: "Rollback", color: "from-blue-600 to-sky-600", border: "border-blue-400/50", glow: "rgba(37,99,235,0.25)", pos: "top-1/2 right-1 -translate-y-1/2" },
+      { name: "Canadian Tire", tag: "Triangle Bonus", color: "from-red-600 to-rose-600", border: "border-red-400/50", glow: "rgba(220,38,38,0.25)", pos: "top-1/2 left-1 -translate-y-1/2" }
+    ],
+    pharma: [
+      { name: "Shoppers Drug Mart", tag: "PC Optimum", color: "from-red-600 to-rose-600", border: "border-red-400/50", glow: "rgba(220,38,38,0.25)", pos: "top-1 left-1/2 -translate-x-1/2" },
+      { name: "Rexall", tag: "Be Well", color: "from-blue-600 to-indigo-600", border: "border-blue-400/50", glow: "rgba(37,99,235,0.25)", pos: "bottom-1 left-1/2 -translate-x-1/2" },
+      { name: "Well.ca", tag: "Organic Health", color: "from-emerald-600 to-teal-600", border: "border-emerald-400/50", glow: "rgba(16,185,129,0.25)", pos: "top-1/2 right-1 -translate-y-1/2" },
+      { name: "London Drugs", tag: "Pharmacy Plus", color: "from-teal-500 to-cyan-600", border: "border-teal-400/50", glow: "rgba(20,184,166,0.25)", pos: "top-1/2 left-1 -translate-y-1/2" }
+    ]
+  },
+  AE: {
+    ecommerce: [
+      { name: "Amazon.ae", tag: "Prime Delivery", color: "from-amber-500 to-orange-600", border: "border-amber-400/50", glow: "rgba(245,158,11,0.25)", pos: "top-1 left-1/2 -translate-x-1/2" },
+      { name: "Noon", tag: "Yellow Friday", color: "from-yellow-400 to-amber-500", border: "border-yellow-400/50", glow: "rgba(234,179,8,0.25)", pos: "bottom-1 left-1/2 -translate-x-1/2" },
+      { name: "Sharaf DG", tag: "Best Price Guaranteed", color: "from-blue-600 to-indigo-600", border: "border-blue-400/50", glow: "rgba(37,99,235,0.25)", pos: "top-1/2 right-1 -translate-y-1/2" },
+      { name: "Carrefour UAE", tag: "MyCLUB Deal", color: "from-sky-500 to-blue-600", border: "border-sky-400/50", glow: "rgba(14,165,233,0.25)", pos: "top-1/2 left-1 -translate-y-1/2" }
+    ],
+    pharma: [
+      { name: "Aster Pharmacy", tag: "Aster Rewards", color: "from-emerald-500 to-teal-600", border: "border-emerald-400/50", glow: "rgba(16,185,129,0.25)", pos: "top-1 left-1/2 -translate-x-1/2" },
+      { name: "Life Pharmacy", tag: "Healthy Deals", color: "from-blue-600 to-indigo-600", border: "border-blue-400/50", glow: "rgba(37,99,235,0.25)", pos: "bottom-1 left-1/2 -translate-x-1/2" },
+      { name: "Supercare Pharmacy", tag: "Wellness Club", color: "from-rose-500 to-red-600", border: "border-rose-400/50", glow: "rgba(244,63,94,0.25)", pos: "top-1/2 right-1 -translate-y-1/2" },
+      { name: "BinSina Pharmacy", tag: "Health Partner", color: "from-purple-500 to-indigo-600", border: "border-purple-400/50", glow: "rgba(168,85,247,0.25)", pos: "top-1/2 left-1 -translate-y-1/2" }
+    ]
   }
 };
 
@@ -79,7 +136,8 @@ export default function RocketLoader({ query = "", country = "IN", onComplete, a
     return PHARMA_KEYWORDS.some(k => q.includes(k));
   }, [query]);
 
-  const countryKey = country === "US" ? "US" : "IN";
+  const upperC = (country || "IN").toUpperCase();
+  const countryKey = STORE_CONFIGS[upperC] ? upperC : "IN";
   const activeStores = useMemo(() => {
     return isPharma ? STORE_CONFIGS[countryKey].pharma : STORE_CONFIGS[countryKey].ecommerce;
   }, [isPharma, countryKey]);
@@ -238,7 +296,7 @@ export default function RocketLoader({ query = "", country = "IN", onComplete, a
             {isPharma ? "HEALTH & PHARMA RADAR ACTIVE" : "MULTI-STORE AI RADAR ACTIVE"}
           </span>
           <span className="text-slate-400">|</span>
-          <span className="text-slate-600 font-bold">{country === "US" ? "🇺🇸 United States" : "🇮🇳 India"}</span>
+          <span className="text-slate-600 font-bold">{(() => { const m = getCountryMeta(country); return `${m.flag} ${m.name}`; })()}</span>
         </div>
 
         <div className="max-w-md mx-auto px-4 py-2 rounded-2xl bg-white/80 backdrop-blur-md border border-slate-200/80 shadow-md flex items-center justify-center gap-2">

@@ -5,9 +5,10 @@ import { useUser, useClerk, SignInButton } from "@clerk/nextjs";
 import { 
   User, LogOut, Globe, Sparkles, ShoppingBag, 
   Pill, Shirt, Check, ChevronRight, X, ShieldCheck, Zap,
-  Trash2, AlertTriangle, Loader2, LifeBuoy
+  Trash2, AlertTriangle, Loader2, LifeBuoy, Heart
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { COUNTRIES_LIST } from "@/lib/countryConfig";
 
 export default function UnifiedAccountModal({
   isOpen,
@@ -17,7 +18,9 @@ export default function UnifiedAccountModal({
   searchesLeft = 10,
   appState = "idle",
   onNavigate,
-  onOpenSupportTicket
+  onOpenSupportTicket,
+  savedDealsCount = 0,
+  onOpenSavedDeals
 }) {
   const { isSignedIn, user, isLoaded } = useUser();
   const { signOut, openSignIn } = useClerk();
@@ -25,8 +28,7 @@ export default function UnifiedAccountModal({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState(null);
-
-  const handleDeleteAccount = async () => {
+      const handleDeleteAccount = async () => {
     setIsDeleting(true);
     setDeleteError(null);
     try {
@@ -173,7 +175,38 @@ export default function UnifiedAccountModal({
               </div>
             </div>
 
-            {/* 3. Unified Country / Region Selector (USER REQUESTED) */}
+            {/* 2.5 Saved Deals & Wishlist Bookmarks */}
+            <button
+              type="button"
+              onClick={() => {
+                if (onOpenSavedDeals) onOpenSavedDeals();
+              }}
+              className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-gradient-to-r from-rose-50/80 via-white to-pink-50/40 border border-rose-200/80 hover:border-rose-300 hover:shadow-xs transition-all cursor-pointer text-left group"
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-rose-100 text-rose-600 group-hover:scale-105 transition-transform">
+                  <Heart className="w-4 h-4 fill-rose-500 text-rose-500" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-slate-900 group-hover:text-rose-600 transition-colors">
+                    Saved Deals & Price Trackers
+                  </p>
+                  <p className="text-[11px] text-slate-500">
+                    {savedDealsCount > 0 ? `${savedDealsCount} deal${savedDealsCount > 1 ? 's' : ''} saved in your list` : "View your bookmarked products & offers"}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5">
+                {savedDealsCount > 0 && (
+                  <span className="px-2 py-0.5 rounded-full bg-rose-500 text-white text-[10px] font-black shadow-xs">
+                    {savedDealsCount}
+                  </span>
+                )}
+                <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-rose-500 group-hover:translate-x-0.5 transition-all" />
+              </div>
+            </button>
+
+            {/* 3. Unified Country / Region Selector (USER REQUESTED - 6 TIER-1 GLOBAL MARKETS) */}
             <div>
               <div className="flex items-center gap-2 mb-2.5">
                 <Globe className="w-4 h-4 text-brand-indigo" />
@@ -182,54 +215,40 @@ export default function UnifiedAccountModal({
                 </h4>
               </div>
 
-              <div className="grid grid-cols-2 gap-2.5">
-                {/* India Option */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    onCountryChange("IN");
-                  }}
-                  className={`p-3.5 rounded-2xl border text-left transition-all relative cursor-pointer ${
-                    selectedCountry === "IN"
-                      ? "bg-indigo-50/70 border-brand-indigo ring-2 ring-brand-indigo/20 shadow-xs"
-                      : "bg-white border-slate-200 hover:bg-slate-50"
-                  }`}
-                >
-                  {selectedCountry === "IN" && (
-                    <div className="absolute top-2.5 right-2.5 w-4 h-4 rounded-full bg-brand-indigo text-white flex items-center justify-center">
-                      <Check className="w-2.5 h-2.5 stroke-[3]" />
-                    </div>
-                  )}
-                  <div className="text-2xl mb-1">🇮🇳</div>
-                  <div className="text-xs font-extrabold text-slate-900">India (INR ₹)</div>
-                  <div className="text-[10px] text-slate-500 font-medium mt-0.5">
-                    Amazon.in, Flipkart, Myntra, 1mg, Apollo
-                  </div>
-                </button>
-
-                {/* United States Option */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    onCountryChange("US");
-                  }}
-                  className={`p-3.5 rounded-2xl border text-left transition-all relative cursor-pointer ${
-                    selectedCountry === "US"
-                      ? "bg-indigo-50/70 border-brand-indigo ring-2 ring-brand-indigo/20 shadow-xs"
-                      : "bg-white border-slate-200 hover:bg-slate-50"
-                  }`}
-                >
-                  {selectedCountry === "US" && (
-                    <div className="absolute top-2.5 right-2.5 w-4 h-4 rounded-full bg-brand-indigo text-white flex items-center justify-center">
-                      <Check className="w-2.5 h-2.5 stroke-[3]" />
-                    </div>
-                  )}
-                  <div className="text-2xl mb-1">🇺🇸</div>
-                  <div className="text-xs font-extrabold text-slate-900">United States (USD $)</div>
-                  <div className="text-[10px] text-slate-500 font-medium mt-0.5">
-                    Amazon.com, Walmart, Best Buy, Target
-                  </div>
-                </button>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                {COUNTRIES_LIST.map((c) => {
+                  const isSelected = selectedCountry === c.code;
+                  return (
+                    <button
+                      key={c.code}
+                      type="button"
+                      onClick={() => {
+                        onCountryChange(c.code);
+                      }}
+                      className={`p-3 rounded-2xl border text-left transition-all relative cursor-pointer ${
+                        isSelected
+                          ? "bg-indigo-50/70 border-brand-indigo ring-2 ring-brand-indigo/20 shadow-xs"
+                          : "bg-white border-slate-200 hover:bg-slate-50"
+                      }`}
+                    >
+                      {isSelected && (
+                        <div className="absolute top-2 right-2 w-4 h-4 rounded-full bg-brand-indigo text-white flex items-center justify-center">
+                          <Check className="w-2.5 h-2.5 stroke-[3]" />
+                        </div>
+                      )}
+                      <div className="text-2xl mb-1">{c.flag}</div>
+                      <div className="text-xs font-extrabold text-slate-900 leading-tight">
+                        {c.name}
+                      </div>
+                      <div className="text-[11px] font-bold text-brand-indigo mt-0.5">
+                        {c.currency} ({c.symbol})
+                      </div>
+                      <div className="text-[10px] text-slate-500 font-medium mt-1 line-clamp-1">
+                        {c.popularStores}
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 

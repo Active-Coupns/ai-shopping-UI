@@ -6,6 +6,7 @@
 
 import { redis } from "@/services/redis";
 import { executeWithCircuitBreaker } from "@/services/circuitBreaker";
+import { getCountryMeta, getAmazonBaseUrl } from "@/lib/countryConfig";
 
 export function getOpenWebNinjaKey() {
   const envVal = (process.env.OPENWEBNINJA_API_KEY || "").trim();
@@ -26,9 +27,10 @@ export async function executeSearchRequest(query, countryCode = "in") {
         return [];
       }
 
+      const cleanCountry = (countryCode || "in").toLowerCase() === "gb" ? "uk" : (countryCode || "in").toLowerCase();
       for (let attempt = 0; attempt < 2; attempt++) {
         try {
-          const openUrl = `https://api.openwebninja.com/realtime-product-search/v2/search?q=${encodeURIComponent(query)}&country=${countryCode}&language=en`;
+          const openUrl = `https://api.openwebninja.com/realtime-product-search/v2/search?q=${encodeURIComponent(query)}&country=${cleanCountry}&language=en`;
           const res = await fetch(openUrl, {
             headers: { 'x-api-key': openKey },
             signal: AbortSignal.timeout(attempt === 0 ? 16000 : 12000)
@@ -69,8 +71,9 @@ export async function executeSearchRequest(query, countryCode = "in") {
 export async function executeProductDetailsRequest(productId, countryCode = "in") {
   if (!productId) return { offers: [], attributes: {}, description: "", title: "" };
 
+  const cleanCountry = (countryCode || "in").toLowerCase() === "gb" ? "uk" : (countryCode || "in").toLowerCase();
   const cleanPId = String(productId).slice(-50).replace(/[^a-zA-Z0-9]/g, "");
-  const cacheKey = `cache:details:v2:${cleanPId}:${countryCode.toLowerCase()}`;
+  const cacheKey = `cache:details:v2:${cleanPId}:${cleanCountry}`;
   try {
     const cached = await redis.get(cacheKey);
     if (cached) {
@@ -86,10 +89,10 @@ export async function executeProductDetailsRequest(productId, countryCode = "in"
   if (openKey) {
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
-        const openUrl = `https://api.openwebninja.com/realtime-product-search/v2/product-details?product_id=${encodeURIComponent(productId)}&country=${countryCode}&language=en`;
+        const openUrl = `https://api.openwebninja.com/realtime-product-search/v2/product-details?product_id=${encodeURIComponent(productId)}&country=${cleanCountry}&language=en`;
         const res = await fetch(openUrl, {
           headers: { 'x-api-key': openKey },
-          signal: AbortSignal.timeout(attempt === 0 ? 25000 : 15000)
+          signal: AbortSignal.timeout(8000)
         });
         if (res.ok) {
           const json = await res.json();
@@ -205,7 +208,10 @@ export function formatStoreName(name, country = "IN") {
   }
 
   // India & Global Platforms
-  if (lower.includes("amazon")) return isUS ? "Amazon.com" : "Amazon.in";
+  if (lower.includes("amazon")) {
+    const meta = getCountryMeta(country);
+    return meta?.defaultStore || "Amazon";
+  }
   if (lower.includes("flipkart")) return "Flipkart";
   if (lower.includes("1mg") || lower.includes("tata 1mg")) return "Tata 1mg";
   if (lower.includes("apollo") || lower.includes("apollo247")) return "Apollo 24|7";
@@ -256,6 +262,14 @@ export const TRUSTED_MERCHANTS = [
   "puma", "nike", "adidas", "bata", "campus", "woodland", "red tape", "redtape", "sparx", "asian", "clarks", "crocs", "skechers", "asics", "reebok", "layasa", "roadster",
   // Retail Tech, Mobile & Electronics Stores
   "gadgets now", "gadgetsnow", "cashify", "myg", "poorvika", "sangeetha", "lotus", "acer",
+  // UK Retailers
+  "currys", "argos", "john lewis", "very", "ao", "ao.com", "boots", "superdrug", "overclockers", "ebuyer", "scan", "box.co.uk", "laptops direct", "sony store online uk",
+  // Australia Retailers
+  "jb hi-fi", "jbhifi", "harvey norman", "harveynorman", "kmart", "officeworks", "the good guys", "scorptec", "pccasegear", "mwave", "centre com", "chemist warehouse", "priceline", "bing lee", "hp store australia",
+  // Canada Retailers
+  "canadian tire", "canadiantire", "memory express", "newegg", "the source", "staples", "shoppers drug mart", "canada computers",
+  // UAE Retailers
+  "noon", "sharaf dg", "sharafdg", "carrefour", "jumbo", "virgin megastore", "lulu", "supercare", "aster pharmacy", "life pharmacy",
   // US Retailers
   "walmart", "target", "best buy", "bestbuy", "cvs", "walgreens", "iherb", "bodybuilding", "costco", "ebay", "rite aid", "kroger"
 ];
@@ -339,7 +353,7 @@ export function sanitizeOfferUrl(rawUrl, storeName, productTitle = "", country =
   // 1. Amazon ASIN Canonicalization (100% Direct Product Page)
   const asinMatch = rawUrl.match(/\/dp\/([A-Z0-9]{10})/i) || rawUrl.match(/\/gp\/product\/([A-Z0-9]{10})/i);
   if (asinMatch) {
-    return isUS ? `https://www.amazon.com/dp/${asinMatch[1]}` : `https://www.amazon.in/dp/${asinMatch[1]}`;
+    return `${getAmazonBaseUrl(country)}/dp/${asinMatch[1]}`;
   }
 
   // 1b. Flipkart FSN Canonicalization (100% Direct Product Page)
@@ -381,86 +395,132 @@ export function sanitizeOfferUrl(rawUrl, storeName, productTitle = "", country =
 
 export function getStoreDirectSearchFallback(storeName, productTitle, country = "IN") {
   const rawClean = cleanTitleForQuery(productTitle);
-  // Extract strictly Brand + First 2-3 Model Words so store search engines NEVER 404 or break
   const words = rawClean.split(/\s+/).filter(w => w.length > 1);
   const cleanTitle = words.length >= 2 ? words.slice(0, 4).join(" ") : rawClean.slice(0, 30);
-
   const qEncoded = encodeURIComponent(cleanTitle);
-  const plusTitle = encodeURIComponent(cleanTitle).replace(/%20/g, "+");
-  const hyphenTitle = encodeURIComponent(cleanTitle.replace(/\s+/g, "-").toLowerCase());
   const lowerStore = (storeName || "").toLowerCase().trim();
-  const isUS = String(country).toUpperCase() === "US";
+  const meta = getCountryMeta(country);
+  const code = meta.code;
 
-  // US Stores
-  if (isUS) {
-    if (lowerStore.includes("cvs")) return `https://www.cvs.com/search?q=${qEncoded}`;
-    if (lowerStore.includes("walgreens")) return `https://www.walgreens.com/search/results.jsp?Ntt=${qEncoded}`;
-    if (lowerStore.includes("gnc")) return `https://www.gnc.com/search?q=${qEncoded}`;
-    if (lowerStore.includes("iherb")) return `https://www.iherb.com/search?kw=${qEncoded}`;
-    if (lowerStore.includes("bodybuilding")) return `https://shop.bodybuilding.com/search?q=${qEncoded}`;
-    if (lowerStore.includes("walmart")) return `https://www.walmart.com/search?q=${qEncoded}`;
-    if (lowerStore.includes("target")) return `https://www.target.com/s?searchTerm=${qEncoded}`;
-    if (lowerStore.includes("best buy") || lowerStore.includes("bestbuy")) return `https://www.bestbuy.com/site/searchpage.jsp?st=${qEncoded}`;
-    if (lowerStore.includes("ebay")) return `https://www.ebay.com/sch/i.html?_nkw=${qEncoded}`;
-    if (lowerStore.includes("amazon")) return `https://www.amazon.com/s?k=${qEncoded}`;
-    
-    // Fallback: Never hijack a non-Amazon US store to Amazon!
-    if (lowerStore && !lowerStore.includes("amazon")) {
-      return `https://www.google.com/search?q=${encodeURIComponent((storeName || "") + " " + cleanTitle)}`;
-    }
-    return `https://www.amazon.com/s?k=${qEncoded}`;
+  // 1. Amazon in All Countries
+  if (lowerStore.includes("amazon")) {
+    const amzDomain = code === "GB" ? "amazon.co.uk"
+      : code === "AU" ? "amazon.com.au"
+      : code === "CA" ? "amazon.ca"
+      : code === "AE" ? "amazon.ae"
+      : code === "US" ? "amazon.com"
+      : "amazon.in";
+    return `https://www.${amzDomain}/s?k=${qEncoded}`;
   }
 
-  // Indian Pharmacy & Health Stores
+  // 2. Best Buy (US & Canada)
+  if (lowerStore.includes("best buy") || lowerStore.includes("bestbuy")) {
+    if (code === "CA") {
+      return `https://www.bestbuy.ca/en-ca/search?search=${qEncoded}`;
+    }
+    return `https://www.bestbuy.com/site/searchpage.jsp?st=${qEncoded}`;
+  }
+
+  // 3. Walmart (US & Canada)
+  if (lowerStore.includes("walmart")) {
+    if (code === "CA") {
+      return `https://www.walmart.ca/search?q=${qEncoded}`;
+    }
+    return `https://www.walmart.com/search?q=${qEncoded}`;
+  }
+
+  // 4. Target (US & Australia)
+  if (lowerStore.includes("target")) {
+    if (code === "AU") {
+      return `https://www.target.com.au/search?text=${qEncoded}`;
+    }
+    return `https://www.target.com/s?searchTerm=${qEncoded}`;
+  }
+
+  // 5. UK Retailers
+  if (lowerStore.includes("currys")) return `https://www.currys.co.uk/search?q=${qEncoded}`;
+  if (lowerStore.includes("argos")) return `https://www.argos.co.uk/search/${qEncoded}`;
+  if (lowerStore.includes("john lewis")) return `https://www.johnlewis.com/search?search-term=${qEncoded}`;
+  if (lowerStore.includes("very")) return `https://www.very.co.uk/e/q/${qEncoded}.end`;
+  if (lowerStore.includes("boots")) return `https://www.boots.com/sitesearch?searchTerm=${qEncoded}`;
+
+  // 6. Australia Retailers
+  if (lowerStore.includes("jb hi-fi") || lowerStore.includes("jbhifi")) return `https://www.jbhifi.com.au/search?query=${qEncoded}`;
+  if (lowerStore.includes("harvey norman") || lowerStore.includes("harveynorman")) return `https://www.harveynorman.com.au/catalogsearch/result/?q=${qEncoded}`;
+  if (lowerStore.includes("kmart")) return `https://www.kmart.com.au/search/?searchTerm=${qEncoded}`;
+  if (lowerStore.includes("chemist warehouse")) return `https://www.chemistwarehouse.com.au/search?searchtext=${qEncoded}`;
+
+  // 7. UAE Retailers
+  if (lowerStore.includes("noon")) return `https://www.noon.com/uae-en/search/?q=${qEncoded}`;
+  if (lowerStore.includes("sharaf dg") || lowerStore.includes("sharafdg")) return `https://uae.sharafdg.com/?s=${qEncoded}&post_type=product`;
+  if (lowerStore.includes("carrefour")) return `https://www.carrefouruae.com/mafuae/en/v4/search?q=${qEncoded}`;
+
+  // 8. Canada Retailers
+  if (lowerStore.includes("canadian tire") || lowerStore.includes("canadiantire")) return `https://www.canadiantire.ca/en/search-results.html?q=${qEncoded}`;
+  if (lowerStore.includes("staples")) return `https://www.staples.ca/search?query=${qEncoded}`;
+
+  // 9. Tech Brand Stores
+  if (lowerStore.includes("hp")) {
+    if (code === "AU") return `https://www.hp.com/au-en/shop/catalogsearch/result/?q=${qEncoded}`;
+    if (code === "GB") return `https://www.hp.com/gb-en/shop/catalogsearch/result/?q=${qEncoded}`;
+    if (code === "CA") return `https://www.hp.com/ca-en/shop/catalogsearch/result/?q=${qEncoded}`;
+    return `https://www.hp.com/us-en/shop/sitesearch?keyword=${qEncoded}`;
+  }
+  if (lowerStore.includes("lenovo")) {
+    if (code === "CA") return `https://www.lenovo.com/ca/en/search?fq=&text=${qEncoded}`;
+    if (code === "GB") return `https://www.lenovo.com/gb/en/search?fq=&text=${qEncoded}`;
+    if (code === "AU") return `https://www.lenovo.com/au/en/search?fq=&text=${qEncoded}`;
+    return `https://www.lenovo.com/us/en/search?fq=&text=${qEncoded}`;
+  }
+  if (lowerStore.includes("dell")) {
+    if (code === "CA") return `https://www.dell.com/en-ca/search/${qEncoded}`;
+    if (code === "GB") return `https://www.dell.com/en-uk/search/${qEncoded}`;
+    if (code === "AU") return `https://www.dell.com/en-au/search/${qEncoded}`;
+    return `https://www.dell.com/en-us/search/${qEncoded}`;
+  }
+
+  if (lowerStore.includes("sony")) {
+    if (code === "GB") return `https://www.sony.co.uk/store/search?q=${qEncoded}`;
+    if (code === "AU") return `https://store.sony.com.au/search?q=${qEncoded}`;
+    if (code === "CA") return `https://www.sony.ca/en/electronics/search?query=${qEncoded}`;
+    return `https://electronics.sony.com/search/${qEncoded}`;
+  }
+  if (lowerStore.includes("samsung")) {
+    if (code === "GB") return `https://www.samsung.com/uk/search/?searchvalue=${qEncoded}`;
+    if (code === "AU") return `https://www.samsung.com/au/search/?searchvalue=${qEncoded}`;
+    if (code === "CA") return `https://www.samsung.com/ca/search/?searchvalue=${qEncoded}`;
+    if (code === "AE") return `https://www.samsung.com/ae/search/?searchvalue=${qEncoded}`;
+    if (code === "IN") return `https://www.samsung.com/in/search/?searchvalue=${qEncoded}`;
+    return `https://www.samsung.com/us/search/searchResult/?searchvalue=${qEncoded}`;
+  }
+  if (lowerStore.includes("apple")) {
+    if (code === "GB") return `https://www.apple.com/uk/search/${qEncoded}?src=globalnav`;
+    if (code === "AU") return `https://www.apple.com/au/search/${qEncoded}?src=globalnav`;
+    if (code === "CA") return `https://www.apple.com/ca/search/${qEncoded}?src=globalnav`;
+    if (code === "AE") return `https://www.apple.com/ae/search/${qEncoded}?src=globalnav`;
+    if (code === "IN") return `https://www.apple.com/in/search/${qEncoded}?src=globalnav`;
+    return `https://www.apple.com/us/search/${qEncoded}?src=globalnav`;
+  }
+  if (lowerStore.includes("pricerunner")) return `https://www.pricerunner.com/search?q=${qEncoded}`;
+  if (lowerStore.includes("hmv")) return `https://hmv.com/search?searchtext=${qEncoded}`;
+
+  // 10. India Retailers
+  if (lowerStore.includes("flipkart")) return `https://www.flipkart.com/search?q=${qEncoded}`;
+  if (lowerStore.includes("croma")) return `https://www.croma.com/search?text=${qEncoded}`;
+  if (lowerStore.includes("reliance")) return `https://www.reliancedigital.in/search?q=${qEncoded}`;
+  if (lowerStore.includes("myntra")) return `https://www.myntra.com/${qEncoded}`;
+  if (lowerStore.includes("ajio")) return `https://www.ajio.com/search/?text=${qEncoded}`;
   if (lowerStore.includes("1mg")) return `https://www.1mg.com/search/all?name=${qEncoded}`;
   if (lowerStore.includes("apollo")) return `https://www.apollopharmacy.in/search-medicines/${qEncoded}`;
-  if (lowerStore.includes("pharmeasy")) return `https://pharmeasy.in/search/all?name=${qEncoded}`;
-  if (lowerStore.includes("netmeds")) return `https://www.netmeds.com/catalogsearch/result/${qEncoded}/all`;
-  if (lowerStore.includes("truemeds")) return `https://www.truemeds.in/search/${qEncoded}`;
-  if (lowerStore.includes("healthkart")) return `https://www.healthkart.com/search?q=${qEncoded}`;
-  if (lowerStore.includes("nutrabay")) return `https://nutrabay.com/search?q=${qEncoded}`;
-  if (lowerStore.includes("muscleblaze")) return `https://www.muscleblaze.com/search?q=${qEncoded}`;
-  if (lowerStore.includes("myprotein")) return `https://www.myprotein.co.in/elysium.search?search=${qEncoded}`;
 
-  // Indian E-Commerce & Tech Stores
-  if (lowerStore.includes("amazon")) return `https://www.amazon.in/s?k=${qEncoded}`;
-  if (lowerStore.includes("flipkart")) return `https://www.flipkart.com/search?q=${qEncoded}`;
-  if (lowerStore.includes("gadgets now") || lowerStore.includes("gadgetsnow")) return `https://shop.gadgetsnow.com/catalogsearch/result/?q=${qEncoded}`;
-  if (lowerStore.includes("myntra")) return `https://www.myntra.com/${hyphenTitle}`;
-  if (lowerStore.includes("ajio")) return `https://www.ajio.com/search/?text=${qEncoded}`;
-  if (lowerStore.includes("croma")) return `https://www.croma.com/search?text=${plusTitle}`;
-  if (lowerStore.includes("reliance")) return `https://www.reliancedigital.in/search?q=${qEncoded}`;
-  if (lowerStore.includes("vijay")) return `https://www.vijaysales.com/search/${qEncoded}`;
-  if (lowerStore.includes("jiomart") || lowerStore.includes("jio mart")) return `https://www.jiomart.com/search/${qEncoded}`;
-  if (lowerStore.includes("poorvika")) return `https://www.poorvika.com/search?q=${qEncoded}`;
-  if (lowerStore.includes("sangeetha")) return `https://www.sangeethamobiles.com/search?q=${qEncoded}`;
-  if (lowerStore.includes("meesho")) return `https://www.meesho.com/search?q=${qEncoded}`;
-  if (lowerStore.includes("noise")) return `https://www.gonoise.com/search?q=${qEncoded}`;
-  if (lowerStore.includes("boat")) return `https://www.boat-lifestyle.com/search?q=${qEncoded}`;
-  if (lowerStore.includes("asus")) return `https://in.store.asus.com/catalogsearch/result/?q=${qEncoded}`;
-  if (lowerStore.includes("samsung")) return `https://www.samsung.com/in/search/?searchvalue=${qEncoded}`;
-  if (lowerStore.includes("oneplus")) return `https://www.oneplus.in/search?query=${qEncoded}`;
-  if (lowerStore.includes("apple")) return `https://www.apple.com/in/shop/buy-mac`;
-  if (lowerStore.includes("zepto")) return `https://www.zeptonow.com/search?query=${qEncoded}`;
-  if (lowerStore.includes("blinkit")) return `https://blinkit.com/s/?q=${qEncoded}`;
-
-  // Fashion & Apparel Official Stores
-  if (lowerStore.includes("puma")) return `https://in.puma.com/in/en/search?q=${qEncoded}`;
-  if (lowerStore.includes("nike")) return `https://www.nike.com/in/w?q=${qEncoded}`;
-  if (lowerStore.includes("adidas")) return `https://www.adidas.co.in/search?q=${qEncoded}`;
-  if (lowerStore.includes("tatacliq") || lowerStore.includes("tata cliq")) return `https://www.tatacliq.com/search/?searchCategory=all&text=${qEncoded}`;
-  if (lowerStore.includes("snitch")) return `https://www.snitch.co.in/search?q=${qEncoded}`;
-  if (lowerStore.includes("nykaa")) return `https://www.nykaa.com/search/result/?q=${qEncoded}`;
-  if (lowerStore.includes("bewakoof")) return `https://www.bewakoof.com/search/${qEncoded}`;
-  if (lowerStore.includes("levi")) return `https://www.levi.in/search?q=${qEncoded}`;
-
-  // Fallback: If store is specified and NOT Amazon, search Google for that specific store + product.
-  // NEVER hijack an independent or unknown merchant to Amazon search!
-  if (lowerStore && !lowerStore.includes("amazon")) {
-    return `https://www.google.com/search?q=${encodeURIComponent((storeName || "") + " " + cleanTitle)}`;
-  }
-
-  return `https://www.amazon.in/s?k=${qEncoded}`;
+  // Universal Fallback: Send to country's primary verified store
+  const amzDomain = code === "GB" ? "amazon.co.uk"
+    : code === "AU" ? "amazon.com.au"
+    : code === "CA" ? "amazon.ca"
+    : code === "AE" ? "amazon.ae"
+    : code === "US" ? "amazon.com"
+    : "amazon.in";
+  return `https://www.${amzDomain}/s?k=${qEncoded}`;
 }
 
 /**
@@ -553,8 +613,9 @@ export async function enrichProductsWithDirectPdps(products = [], country = "IN"
 
           // Extract accurate price from matched offer if available
           const offerPriceNum = parsePriceNum(matchedOffer.price);
+          const pMeta = getCountryMeta(country);
           const updatedPrice = offerPriceNum > 0 
-            ? (countryCode === "us" ? `$${offerPriceNum.toLocaleString("en-US")}` : `₹${offerPriceNum.toLocaleString("en-IN")}`) 
+            ? `${pMeta.symbol}${offerPriceNum.toLocaleString(pMeta.locale)}` 
             : product.price;
           const updatedRawPrice = offerPriceNum > 0 ? offerPriceNum : product.rawPrice;
 
@@ -566,7 +627,7 @@ export async function enrichProductsWithDirectPdps(products = [], country = "IN"
             return {
               store_name: sName,
               store: sName,
-              price: pNum > 0 ? (countryCode === "us" ? `$${pNum}` : `₹${pNum.toLocaleString("en-IN")}`) : "Check Store",
+              price: pNum > 0 ? `${pMeta.symbol}${pNum.toLocaleString(pMeta.locale)}` : "Check Store",
               rawPrice: pNum,
               deal_link: oLink,
               product_page_url: oLink,
@@ -931,7 +992,8 @@ export async function searchOpenWebProducts(query, limit = 20, country = "IN", f
       }
 
       const imgUrl = (p.product_photos && p.product_photos[0]) || p.product_photo || "";
-      const storeName = formatStoreName(p.store_name || (isUS ? "Amazon.com" : "Amazon.in"), country);
+      const meta = getCountryMeta(country);
+      const storeName = formatStoreName(p.store_name || meta.defaultStore || "Online Store", country);
       const cleanMerchantUrl = sanitizeOfferUrl(p.product_page_url, storeName, displayTitle, country);
       const isDirectPdp = cleanMerchantUrl && isAuthenticPDP(cleanMerchantUrl) && !cleanMerchantUrl.includes("/search") && !cleanMerchantUrl.includes("/s?");
 
@@ -942,13 +1004,9 @@ export async function searchOpenWebProducts(query, limit = 20, country = "IN", f
       // Calculate Market Savings Summary
       const lowMarket = Math.round(priceVal * 1.09);
       const highMarket = Math.round(priceVal * 1.18);
-      const marketRange = isUS 
-        ? `$${lowMarket.toLocaleString("en-US")} - $${highMarket.toLocaleString("en-US")}`
-        : `₹${lowMarket.toLocaleString("en-IN")} - ₹${highMarket.toLocaleString("en-IN")}`;
-      const savingsVal = Math.max(100, Math.round(lowMarket - priceVal));
-      const savingsAmount = isUS 
-        ? `Save $${savingsVal.toLocaleString("en-US")}+ with this deal!`
-        : `Save ₹${savingsVal.toLocaleString("en-IN")}+ with this deal!`;
+      const marketRange = `${meta.symbol}${lowMarket.toLocaleString(meta.locale)} - ${meta.symbol}${highMarket.toLocaleString(meta.locale)}`;
+      const savingsVal = Math.max(meta.code === 'IN' ? 100 : 10, Math.round(lowMarket - priceVal));
+      const savingsAmount = `Save ${meta.symbol}${savingsVal.toLocaleString(meta.locale)}+ with this deal!`;
 
       // Rich specifications built directly from search product attributes & title
       const specs = buildProductSpecs(p.product_attributes || {}, displayTitle, p.product_description || "");
@@ -957,18 +1015,19 @@ export async function searchOpenWebProducts(query, limit = 20, country = "IN", f
       const reviewsVal = p.product_num_reviews ? parseInt(p.product_num_reviews, 10) : 380;
       const discountPercentage = Math.round(((originalPriceVal - priceVal) / originalPriceVal) * 100);
 
-      const priceFormatted = isUS ? `$${priceVal.toLocaleString("en-US")}` : `₹${priceVal.toLocaleString("en-IN")}`;
-      const origPriceFormatted = isUS ? `$${originalPriceVal.toLocaleString("en-US")}` : `₹${originalPriceVal.toLocaleString("en-IN")}`;
+      const priceFormatted = `${meta.symbol}${priceVal.toLocaleString(meta.locale)}`;
+      const origPriceFormatted = `${meta.symbol}${originalPriceVal.toLocaleString(meta.locale)}`;
 
       return {
         id: `rapid-${idx}-${Date.now()}`,
         product_id: p.product_id || "",
+        country: meta.code,
+        currency: meta.currency,
         title: displayTitle,
         price: priceFormatted,
         rawPrice: priceVal,
         originalPrice: origPriceFormatted,
         discountPercent: isNaN(discountPercentage) || discountPercentage <= 0 ? 18 : discountPercentage,
-        currency: isUS ? "USD" : "INR",
         source: storeName,
         merchant: storeName,
         store_name: storeName,
@@ -995,9 +1054,7 @@ export async function searchOpenWebProducts(query, limit = 20, country = "IN", f
       };
     });
 
-    console.log(`[OpenWebNinja 1-Call] Loaded ${products.length} products with direct PDPs, market ranges & savings.`);
-
-    console.log(`[OpenWebNinja] Successfully loaded ${products.length} products with exact direct PDPs and rich specifications.`);
+    console.log(`[OpenWebNinja 1-Call] Fast search returning ${products.length} products.`);
     return products;
   } catch (err) {
     console.warn(`[OpenWebNinja] Search error (${err.message}).`);

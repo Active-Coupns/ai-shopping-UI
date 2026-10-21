@@ -15,12 +15,25 @@ function parsePriceNum(val) {
 
 const GROQ_API_KEY = process.env.GROQ_API_KEY || "";
 
+function getMinDevicePrice(country = "IN") {
+  const c = String(country || "IN").toUpperCase();
+  switch (c) {
+    case "US": return 60; // $60 USD
+    case "GB": return 50; // £50 GBP
+    case "CA": return 80; // C$80 CAD
+    case "AU": return 90; // A$90 AUD
+    case "AE": return 200; // 200 AED (~$54)
+    case "IN":
+    default: return 5000; // ₹5,000 INR
+  }
+}
+
 /**
  * Fast Heuristic Fallback in case AI is unreachable
  */
 function heuristicFallback(query, products, country = "IN") {
-  const isUS = String(country).toUpperCase() === "US";
   const qLower = String(query || "").toLowerCase();
+  const minPriceThreshold = getMinDevicePrice(country);
   
   const isHighValueDevice = /\b(laptop|notebook|macbook|pc|desktop|phone|mobile|smartphone|iphone|galaxy|tablet|ipad|tv|television|refrigerator|fridge|washing\s*machine|ac|air\s*conditioner)\b/i.test(qLower);
   const isAccessorySearch = /\b(skin|sticker|cover|case|tempered|guard|charger|cable|adapter|pouch|sleeve|stand|battery|remote|filter)\b/i.test(qLower);
@@ -31,8 +44,8 @@ function heuristicFallback(query, products, country = "IN") {
 
     // If searching for a main device (not accessory), drop items that are ridiculously cheap
     if (isHighValueDevice && !isAccessorySearch) {
-      if (price > 0 && price < (isUS ? 60 : 5000)) {
-        console.warn(`[AI Product Curator: Heuristic] Discarded low-price spoof item '${title.slice(0, 40)}' (${price})`);
+      if (price > 0 && price < minPriceThreshold) {
+        console.warn(`[AI Product Curator: Heuristic] Discarded low-price spoof item '${title.slice(0, 40)}' (${price} < ${minPriceThreshold})`);
         return false;
       }
     }

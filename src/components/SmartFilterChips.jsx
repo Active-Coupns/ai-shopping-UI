@@ -11,11 +11,12 @@ export default function SmartFilterChips({
   products = [],
   searchQuery = "",
   activeChipId = "all",
-  onSelectChip
+  onSelectChip,
+  country = "IN"
 }) {
   const chips = useMemo(() => {
-    return generateSmartChips(products, searchQuery);
-  }, [products, searchQuery]);
+    return generateSmartChips(products, searchQuery, country);
+  }, [products, searchQuery, country]);
 
   if (!chips || chips.length <= 1) return null;
 

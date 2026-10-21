@@ -1,3 +1,4 @@
+import { getCountryMeta } from "./countryConfig.js";
 /**
  * Dynamic Smart Filter Chips Generator (Pure In-Memory Filter Engine)
  * Strictly inspects the loaded products and generates 4-5 specification-driven hardware filters.
@@ -45,7 +46,7 @@ function detectQueryCategory(query = "", products = []) {
   return "general";
 }
 
-export function generateSmartChips(products = [], query = "") {
+export function generateSmartChips(products = [], query = "", country = "IN") {
   if (!Array.isArray(products) || products.length === 0) return [];
 
   const chips = [
@@ -282,9 +283,14 @@ export function generateSmartChips(products = [], query = "") {
   if (prices.length >= 3) {
     const minP = Math.min(...prices);
     const maxP = Math.max(...prices);
-    if (maxP - minP >= 250) {
-      // Find midpoint rounded to a clean ₹50 or ₹500
-      const step = (maxP - minP) > 10000 ? 500 : 50;
+    const effectiveCountry = country || products[0]?.country || "IN";
+    const meta = getCountryMeta(effectiveCountry);
+    const minSpread = meta.code === "IN" ? 250 : 20;
+
+    if (maxP - minP >= minSpread) {
+      const step = meta.code === "IN" 
+        ? ((maxP - minP) > 10000 ? 500 : 50)
+        : ((maxP - minP) > 100 ? 10 : 5);
       const midP = Math.round((minP + maxP) / 2 / step) * step;
       
       const testPrice = p => {
@@ -296,9 +302,9 @@ export function generateSmartChips(products = [], query = "") {
 
       const underMidCount = products.filter(testPrice).length;
       if (underMidCount >= 2 && underMidCount < products.length) {
-        const formattedMid = midP >= 100000 
+        const formattedMid = meta.code === "IN" && midP >= 100000 
           ? `₹${(midP / 100000).toFixed(1)}L` 
-          : `₹${midP.toLocaleString("en-IN")}`;
+          : `${meta.symbol}${midP.toLocaleString(meta.locale)}`;
         potentialTraits.push({
           id: "budget-tier",
           label: `Under ${formattedMid}`,

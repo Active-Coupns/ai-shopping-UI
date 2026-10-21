@@ -1,3 +1,12 @@
+function getAmazonBaseUrl(region = "IN") {
+  const r = String(region || "IN").toUpperCase();
+  if (r === "GB" || r === "UK") return "https://www.amazon.co.uk";
+  if (r === "AU") return "https://www.amazon.com.au";
+  if (r === "CA") return "https://www.amazon.ca";
+  if (r === "AE") return "https://www.amazon.ae";
+  if (r === "US") return "https://www.amazon.com";
+  return "https://www.amazon.in";
+}
 import { NextResponse } from "next/server";
 import { getAuth } from "@clerk/nextjs/server";
 import { redis } from "@/services/redis";
@@ -311,18 +320,19 @@ export async function GET(request) {
   const settings = await getAdminSettings();
 
   const safeRedirect = (targetUrl) => {
-    if (!targetUrl || targetUrl === "https://www.google.com") {
-      return NextResponse.redirect("https://www.google.com");
+    let candidate = targetUrl;
+    if (!candidate || candidate.includes("google.com") || candidate.includes("google.co.in") || candidate.includes("googleadservices")) {
+      candidate = getStoreDirectSearchFallback(storeName, title, region);
     }
 
     // SSRF & Open-Redirect Defense Shield
-    const safetyCheck = isSafeRedirectUrl(targetUrl);
+    const safetyCheck = isSafeRedirectUrl(candidate);
     if (!safetyCheck.safe) {
       console.warn(`[Redirect Security] Blocked unsafe redirect to "${targetUrl}": ${safetyCheck.reason}`);
       return NextResponse.json({ success: false, error: "BLOCKED_UNSAFE_REDIRECT", reason: safetyCheck.reason }, { status: 400 });
     }
 
-    let cleanUrl = safetyCheck.cleanUrl || targetUrl;
+    let cleanUrl = safetyCheck.cleanUrl || candidate;
     if (cleanUrl.includes("gonoise.com")) {
       try {
         const u = new URL(cleanUrl);
@@ -344,7 +354,7 @@ export async function GET(request) {
     const asinMatch = fallbackUrl?.match(/\/dp\/([A-Z0-9]{10})/i) || fallbackUrl?.match(/\/gp\/product\/([A-Z0-9]{10})/i);
     if (asinMatch) {
       const isUS = String(region).toUpperCase() === "US";
-      return safeRedirect(isUS ? `https://www.amazon.com/dp/${asinMatch[1]}` : `https://www.amazon.in/dp/${asinMatch[1]}`);
+      return safeRedirect(`${getAmazonBaseUrl(region)}/dp/${asinMatch[1]}`);
     }
 
     // 2. Unwrap Google redirect parameters (url, dest, q, adurl)
@@ -356,7 +366,7 @@ export async function GET(request) {
           const unwrappedAsin = embedded.match(/\/dp\/([A-Z0-9]{10})/i) || embedded.match(/\/gp\/product\/([A-Z0-9]{10})/i);
           if (unwrappedAsin) {
             const isUS = String(region).toUpperCase() === "US";
-            return safeRedirect(isUS ? `https://www.amazon.com/dp/${unwrappedAsin[1]}` : `https://www.amazon.in/dp/${unwrappedAsin[1]}`);
+            return safeRedirect(`${getAmazonBaseUrl(region)}/dp/${unwrappedAsin[1]}`);
           }
           cleanFallback = cleanUrlParams(embedded);
         }
@@ -388,7 +398,7 @@ export async function GET(request) {
       }
       // If user clicked a non-Amazon brand/store but fallback points to Amazon:
       const cleanStore = storeLower.replace(/[^a-z0-9]/g, "");
-      if (cleanStore && !cleanStore.includes("amazon") && !cleanStore.includes("online") && !cleanStore.includes("store") && cleanFallback.includes("amazon.in")) {
+      if (cleanStore && !cleanStore.includes("amazon") && !cleanStore.includes("online") && !cleanStore.includes("store") && cleanFallback.includes("amazon.")) {
         const storeSearch = getStoreDirectSearchFallback(store, title, region);
         if (storeSearch && !storeSearch.includes("amazon.in")) {
           return safeRedirect(storeSearch);
@@ -397,7 +407,7 @@ export async function GET(request) {
       return safeRedirect(cleanFallback);
     }
     const storeSearch = getStoreDirectSearchFallback(store, title, region);
-    return safeRedirect(storeSearch || "https://www.google.com");
+    return safeRedirect(storeSearch);
   };
 
   if (productId) {
