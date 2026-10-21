@@ -561,6 +561,129 @@
     </tbody>
   </table>
 
+  <div class="page-break"></div>
+
+  <h2>5. 6 Tier-1 Multi-Country Engine &amp; Direct PDP Routing Architecture</h2>
+  <div class="section-desc">
+    ShopSmart AI dynamically serves 6 Tier-1 countries with 100% localized pricing, stores, and direct Product Detail Page (PDP) landing without cross-country data pollution.
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Country</th>
+        <th>ISO Code</th>
+        <th>Currency</th>
+        <th>Amazon Base Domain</th>
+        <th>Popular Local Stores Scanned</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>🇮🇳 India</strong></td>
+        <td><code>IN</code></td>
+        <td>INR (₹)</td>
+        <td><code>https://www.amazon.in</code></td>
+        <td>Amazon.in, Flipkart, Myntra, 1mg, Apollo Pharmacy</td>
+      </tr>
+      <tr>
+        <td><strong>🇺🇸 United States</strong></td>
+        <td><code>US</code></td>
+        <td>USD ($)</td>
+        <td><code>https://www.amazon.com</code></td>
+        <td>Amazon.com, Walmart, Best Buy, Target</td>
+      </tr>
+      <tr>
+        <td><strong>🇬🇧 United Kingdom</strong></td>
+        <td><code>GB</code></td>
+        <td>GBP (£)</td>
+        <td><code>https://www.amazon.co.uk</code></td>
+        <td>Amazon.co.uk, Argos, Currys, John Lewis, ASOS</td>
+      </tr>
+      <tr>
+        <td><strong>🇨🇦 Canada</strong></td>
+        <td><code>CA</code></td>
+        <td>CAD (C$)</td>
+        <td><code>https://www.amazon.ca</code></td>
+        <td>Amazon.ca, Best Buy Canada, Walmart CA, Canadian Tire</td>
+      </tr>
+      <tr>
+        <td><strong>🇦🇺 Australia</strong></td>
+        <td><code>AU</code></td>
+        <td>AUD (A$)</td>
+        <td><code>https://www.amazon.com.au</code></td>
+        <td>Amazon.com.au, JB Hi-Fi, Harvey Norman, Kmart AU</td>
+      </tr>
+      <tr>
+        <td><strong>🇦🇪 UAE</strong></td>
+        <td><code>AE</code></td>
+        <td>AED (AED)</td>
+        <td><code>https://www.amazon.ae</code></td>
+        <td>Amazon.ae, Noon, Sharaf DG, Carrefour UAE</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>5.1 Architectural Rules &amp; Direct PDP Routing Principles</h3>
+  <ul>
+    <li><strong>1-Call Search Latency (&lt;2s)</strong>: Initial search queries resolve in a single OpenWeb scrape call. Heavy parallel scans are deferred until user clicks "Compare Stores".</li>
+    <li><strong>8-Second Deep PDP Resolution</strong>: <code>executeProductDetailsRequest</code> operates with an 8000ms timeout ceiling to guarantee exact merchant PDP resolution, eliminating generic Google search fallbacks.</li>
+    <li><strong>Zero Cross-Country Contamination</strong>: Redirection links strictly include <code>&amp;region=${country}</code>. When UK or Canada users click merchant offers, they land on localized domains (e.g. <code>argos.co.uk</code> or <code>bestbuy.ca</code>), never defaulting to Indian stores or rupees.</li>
+  </ul>
+
+  <h2>6. Smart "Sun-Chaser" Time-Zone Cron Job Architecture</h2>
+  <div class="section-desc">
+    Rather than running generic global tests, ShopSmart AI deploys an automated "Sun-Chaser" sentinel schedule that audits each geographic region at 6:00 AM local pre-dawn time before active shopper traffic surges.
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Cluster / Region</th>
+        <th>Countries Audited</th>
+        <th>Vercel Cron Schedule (UTC)</th>
+        <th>Local Pre-Dawn Time</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>APAC East</strong></td>
+        <td>🇦🇺 Australia (<code>AU</code>)</td>
+        <td><code>0 20 * * *</code></td>
+        <td>06:00 AM AEST (Sydney / Melbourne)</td>
+      </tr>
+      <tr>
+        <td><strong>APAC South &amp; Gulf</strong></td>
+        <td>🇮🇳 India (<code>IN</code>), 🇦🇪 UAE (<code>AE</code>)</td>
+        <td><code>30 0 * * *</code></td>
+        <td>06:00 AM IST (New Delhi / Mumbai) / 04:30 AM GST</td>
+      </tr>
+      <tr>
+        <td><strong>EMEA West</strong></td>
+        <td>🇬🇧 United Kingdom (<code>GB</code>)</td>
+        <td><code>0 6 * * *</code></td>
+        <td>06:00 AM GMT / BST (London)</td>
+      </tr>
+      <tr>
+        <td><strong>Americas</strong></td>
+        <td>🇺🇸 USA (<code>US</code>), 🇨🇦 Canada (<code>CA</code>)</td>
+        <td><code>0 11 * * *</code></td>
+        <td>06:00 AM EST (New York / Toronto)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>7. Ask AI Guide &amp; Mobile Trust Sheet UX Specification</h2>
+  <div class="section-desc">
+    Standards for the conversational shopping concierge and mobile-optimized Trust Sheet hardware reality viewer.
+  </div>
+  <ul>
+    <li><strong>Branded Identity</strong>: Identified strictly under the branded pill badge <code>AI GUIDE</code>. Mentions of third-party model brands (e.g., 'ChatGPT Style') are strictly prohibited in user-facing UI.</li>
+    <li><strong>Mobile Navigation Architecture</strong>: Top navigation headers are compact (<code>text-xs sm:text-sm</code>, <code>w-7 h-7</code> icon pads) preventing horizontal overflow on 360px-414px mobile viewports.</li>
+    <li><strong>Horizontal-Scroll Quick Questions</strong>: Hardware doubts chips use smooth horizontal scrolling (<code>overflow-x-auto no-scrollbar</code>) rather than stacking vertically and crowding mobile phone screens.</li>
+    <li><strong>Touch-First Mobile CTAs</strong>: Action buttons inside sheets and modals adapt to <code>flex-col sm:flex-row</code> with full-width finger-friendly touch targets on mobile viewports.</li>
+  </ul>
+
   <div style="margin-top: 20px; text-align: center; border-top: 1px solid #cbd5e1; padding-top: 10px;">
     <p style="font-size: 7.5pt; color: #64748b; margin: 0;">ShopSmart AI — Master Architecture &amp; System Flow Manual • Strictly Confidential • Maintained locally</p>
   </div>

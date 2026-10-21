@@ -18,6 +18,38 @@
 
 ## 📅 Daily Changelog & Feature Timeline
 
+### 🗓️ 2026-10-21 (Global Expansion: 6 Tier-1 Countries, Direct PDP Routing, Ask AI Guide & Sun-Chaser Sentinel)
+
+* **Git Commit**: `330dadb`
+* **Commit Message**: `feat: expand 6 Tier-1 countries, direct PDP routing, Ask AI guide & sun-chaser sentinel`
+* **Status**: ✅ 100% Tested, Verified & Pushed to GitHub `main`
+* **Rationale & Why This Was Done**:
+  1. **6 Tier-1 Country Engine (`IN`, `US`, `GB`, `CA`, `AU`, `AE`)**: Replaced hardcoded India/US bifurcations with a centralized multi-country hub (`countryConfig.js`). Implemented isolated search cache keys (`cache:search:v16:${country}:${query}`), dynamic currency formatters (`₹`, `$`, `£`, `C$`, `A$`, `AED`), and localized budget filter chips (`Under £240`, `Under C$250`).
+  2. **100% Direct Product Detail Page (PDP) Routing Engine**: Fixed OpenWeb details resolution (8s timeout ceiling) and passed `&region=${country}` across `/api/redirect`. Eliminated all Google search fallbacks and prevented cross-country store contamination (e.g. UK/Canada queries landing on `amazon.in` or Flipkart).
+  3. **On-Demand Local Store Comparison**: Lazy-loaded store comparison on 2nd click returning only genuine local stores (e.g. Best Buy Canada & Staples for Canada; Argos & Currys for UK) with localized price differences.
+  4. **Ask AI Shopping Concierge & Studio (`/api/ai/studio`)**: Integrated conversational AI query optimizer and questionnaire engine. Enforced strict 30 req/min IP rate limiting, regex-based prompt injection shield (`sanitizeAiPrompt`), and content safety verification (`checkSearchContentSafety`). Standardized branded header to **`AI GUIDE`** (zero third-party branding leaks).
+  5. **Smart "Sun-Chaser" Isolated Cron Job Sentinel**: Scheduled 4 pre-dawn automated time-zone audits (6:00 AM local time in Australia, India/UAE, UK, and the Americas) to verify health before morning traffic surges. Enforced cryptographic `CRON_SECRET` Bearer authorization on `/api/cron/heal-sentinel`.
+  6. **Mobile Trust Sheet UX Polish**: Designed compact mobile navigation, horizontal-scrolling hardware question chips, balanced product snapshot image sizing (`w-28 h-28`), and responsive full-width action buttons for mobile touch displays.
+
+#### 📂 Files Modified / Created (32 Files):
+- `src/lib/countryConfig.js` *(New centralized 6-country hub and validator)*
+- `src/app/api/ai/studio/route.js` *(New Ask AI Studio endpoint with security shields)*
+- `src/components/ConversationalAiStudio.jsx` *(New studio UI component)*
+- `src/components/TrustSheetView.jsx` *(Mobile-first polish, dynamic stores & localized currency)*
+- `src/components/ProductCard.jsx` *(Region-aware PDP redirection, responsive mobile CTAs)*
+- `src/components/SearchAiConciergeModal.jsx` *(Replaced 'CHATGPT STYLE' with 'AI GUIDE')*
+- `src/app/api/cron/heal-sentinel/route.js` *(Multi-country parameters & strict CRON_SECRET authorization)*
+- `src/services/autoHealingSentinel.js` *(6-country isolated canary probing & health matrix)*
+- `src/app/api/products/compare/route.js` *(Multi-country store comparison & localized diffs)*
+- `src/app/api/redirect/route.js` *(Localized domain routing and open-redirect defense)*
+- `src/app/api/search/route.js` *(Country code validation & cache key isolation)*
+- `src/services/securityShield.js` *(Strengthened harmful search regex & input clamping)*
+- `src/middleware.js` *(Exempted /api/cron from Clerk auth blocking)*
+- `vercel.json` *(Configured 4 Sun-Chaser cron schedules)*
+- `local_docs/` *(Architecture manual & security blueprint)*
+
+---
+
 ### 🗓️ 2026-10-19 (Architectural Bible: Created Master System & Feature Manifest)
 
 * **Git Commit**: `8d5959e`

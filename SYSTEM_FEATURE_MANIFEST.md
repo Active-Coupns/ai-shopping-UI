@@ -52,6 +52,10 @@ Whenever maintaining, debugging, or extending any feature, you **MUST** strictly
 | **INV-5** | **Zero Client-Side Secret Leakage** | All private vendor API keys (OpenWeb Ninja, Zyte, Upstash, Groq, Gemini, PixelAPI) live strictly on the server (`process.env`). Never prefix vendor keys with `NEXT_PUBLIC_`. |
 | **INV-6** | **Safe Error Shield** | Catch-all error handlers must never return raw database or stack traces to clients. Return sanitized user-friendly Hindi/English messages with clean error codes (`SERVER_BUSY`, `UNAUTHORIZED`, `RATE_LIMITED`). |
 | **INV-7** | **Fail-Safe Caching** | If Upstash Redis is unreachable or rate-limited, fallback to in-memory cache gracefully without crashing Next.js server processes. |
+| **INV-8** | **Multi-Country Regional Isolation** | Support strictly whitelisted 6 Tier-1 countries (`IN`, `US`, `GB`, `CA`, `AU`, `AE`). Never contaminate a country's search, stores, currency symbols, or PDP redirects with another country's data. |
+| **INV-9** | **Zero Third-Party AI Brand Leakage** | All conversational guides and concierge features must be presented under native branded identity (`ShopSmart AI` / `AI GUIDE`). Never expose third-party brand names (e.g. 'ChatGPT Style') in user-facing UI. |
+| **INV-10** | **Pre-Dawn Sun-Chaser Sentinel** | Diagnostic cron jobs must execute at 6:00 AM local pre-dawn time per geographic cluster with mandatory `CRON_SECRET` Bearer token authentication in production. |
+| **INV-11** | **Mobile-First Modal & Sheet Polish** | Modals and Trust Sheets must adapt gracefully to mobile viewports (360px-414px) with compact top headers, horizontal-scrolling question chips, and full-width touch-friendly action buttons. |
 
 ---
 
