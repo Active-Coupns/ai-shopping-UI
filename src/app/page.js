@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, ShoppingBag, ArrowLeft, RefreshCw, Layers, ShieldAlert, Coins, Tag, AlertCircle, Shirt, User, Globe, Search, Pill, Heart, Scale, Bell, X, Zap, LifeBuoy, ShieldCheck } from "lucide-react";
+import { Sparkles, ShoppingBag, ArrowLeft, RefreshCw, Layers, ShieldAlert, Coins, Tag, AlertCircle, Shirt, User, Globe, Search, Pill, Heart, Scale, Bell, X, Zap, LifeBuoy, ShieldCheck, Tv } from "lucide-react";
 import { SignedIn, SignedOut, SignInButton, useUser, useClerk } from "@clerk/nextjs";
 import dynamic from "next/dynamic";
 import SearchHero from "@/components/SearchHero";
@@ -21,6 +21,7 @@ const DealsResultView = dynamic(() => import("@/components/DealsResultView"), { 
 const InChatShoppingAgent = dynamic(() => import("@/components/InChatShoppingAgent"), { ssr: false });
 const ProductNotFoundState = dynamic(() => import("@/components/ProductNotFoundState"), { ssr: false });
 const SavedDealsDrawer = dynamic(() => import("@/components/SavedDealsDrawer"), { ssr: false });
+const SubscriptionsView = dynamic(() => import("@/components/SubscriptionsView"), { ssr: false });
 const QuotaModal = dynamic(() => import("@/components/QuotaModal"), { ssr: false });
 
 const FashionTrialRoom = dynamic(() => import("@/components/FashionTrialRoom"), {
@@ -708,6 +709,21 @@ export default function Home() {
               <span>Trial Room</span>
               <span className="px-1.5 py-0.2 rounded-full bg-pink-100 text-[9px] text-pink-700 font-black border border-pink-200">AI STUDIO</span>
             </button>
+
+            <button
+              type="button"
+              suppressHydrationWarning
+              onClick={() => setAppState("subscriptions")}
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer relative ${
+                appState === "subscriptions"
+                  ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md shadow-indigo-500/20"
+                  : "text-slate-700 hover:text-indigo-900 hover:bg-white/60"
+              }`}
+            >
+              <Tv className={`w-3.5 h-3.5 ${appState === "subscriptions" ? "text-white" : "text-indigo-600"}`} />
+              <span>OTT & Subs</span>
+              <span className="px-1.5 py-0.2 rounded-full bg-indigo-100 text-[9px] text-indigo-700 font-black border border-indigo-200">NEW</span>
+            </button>
           </div>
 
           {/* 3. Right: Clean Header with Support & Unified Account Hub */}
@@ -863,6 +879,7 @@ export default function Home() {
                 onOpenConcierge={handleOpenConcierge}
                 onOpenTrustSheet={handleOpenTrustSheet}
                 onSelectCategoryDeal={handleSelectCategoryDeal}
+                onOpenSubscriptions={() => setAppState("subscriptions")}
               />
             </motion.div>
           )}
@@ -906,7 +923,22 @@ export default function Home() {
             </motion.div>
           )}
 
-
+          {/* OTT & SUBSCRIPTIONS VIEW */}
+          {appState === "subscriptions" && (
+            <motion.div
+              key="subscriptions-state"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.3 }}
+              className="w-full"
+            >
+              <SubscriptionsView
+                onBack={() => setAppState("idle")}
+                selectedCountry={selectedCountry}
+              />
+            </motion.div>
+          )}
 
           {/* SEARCHING LOADER */}
           {appState === "searching" && (
@@ -1217,6 +1249,22 @@ export default function Home() {
             <span className="text-[10px] tracking-tight">Ask AI</span>
           </button>
         )}
+
+        {/* Tab 3.5: OTT & Subscriptions */}
+        <button
+          type="button"
+          onClick={() => setAppState("subscriptions")}
+          className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl transition-all cursor-pointer relative ${
+            appState === "subscriptions"
+              ? "text-brand-indigo font-bold"
+              : "text-slate-500 hover:text-indigo-600"
+          }`}
+        >
+          <div className={`p-1 rounded-xl ${appState === "subscriptions" ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-xs" : ""}` }>
+            <Tv className={`w-4 h-4 ${appState === "subscriptions" ? "text-white" : "text-indigo-600"}`} />
+          </div>
+          <span className="text-[10px] tracking-tight">OTT</span>
+        </button>
 
         {/* Tab 4: Unified Account & Preferences */}
         <button

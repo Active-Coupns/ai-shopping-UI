@@ -36,6 +36,7 @@
 14. [Sentinel Autonomous Self-Healing Cron Probe](#14-sentinel-autonomous-self-healing-cron-probe)
 15. [Adaptive SEO, Dynamic Robots & Sitemap Engine](#15-adaptive-seo-dynamic-robots--sitemap-engine)
 16. [Master API Key & Environment Variable Matrix](#16-master-api-key--environment-variable-matrix)
+17. [Global OTT & Digital Subscriptions Hub (6 Countries, Savings Blueprints, On-Demand AI & Weekly Cron)](#17-global-ott--digital-subscriptions-hub)
 
 ---
 
@@ -606,6 +607,45 @@ This comprehensive table explains every environment variable configured in `.env
 | **19** | `CRON_SECRET` | Security & Sentinel | 48-character cryptographic secret protecting `/api/cron/heal-sentinel` from unauthorized access. |
 | **20** | `EARNKARO_KEY` | Monetization | Future EarnKaro affiliate network key (kept on standby until affiliate approval). |
 | **21** | `CUELINKS_CID` | Monetization | Future Cuelinks campaign ID (kept on standby until affiliate approval). |
+
+---
+
+---
+
+## 17. Global OTT & Digital Subscriptions Hub
+
+The Subscriptions & OTT Engine provides a verified, zero-fake-deal streaming and software subscriptions directory covering 6 Tier-1 countries with interactive plan switchers, 4-Level Savings Blueprints, AI-powered on-demand ingestion, weekly automated synchronization, and user retention funnels.
+
+### 17.1 Supported Countries & Verified Brand Distribution (150 Total Brands)
+- **India (IN 🇮🇳)**: 25 Brands (`subscriptionsCatalog.js`) — Netflix, Hotstar, JioCinema, Prime, SonyLIV, Zee5, YouTube Premium, Spotify, etc.
+- **United States (US 🇺🇸)**: 25 Brands (`subscriptionsCatalogUS.js`) — Netflix US, Hulu, Max, Peacock, Paramount+, Apple TV+, Disney+ Bundle, etc.
+- **United Kingdom (UK 🇬🇧)**: 25 Brands (`subscriptionsCatalogUK.js`) — Netflix UK, BBC iPlayer, ITVX, NOW, Channel 4+, Sky Stream, etc.
+- **Canada (CA 🇨🇦)**: 25 Brands (`subscriptionsCatalogCA.js`) — Crave, CBC Gem, Sportsnet+, TSN, Citytv+, StackTV, etc.
+- **Australia (AU 🇦🇺)**: 25 Brands (`subscriptionsCatalogAU.js`) — Stan, BINGE, Foxtel Now, Kayo Sports, Optus SubHub, etc.
+- **United Arab Emirates (AE 🇦🇪)**: 25 Brands (`subscriptionsCatalogAE.js`) — OSN+, Shahid VIP, TOD, Starzplay Arabia, Careem Plus, etc.
+
+### 17.2 The 4-Level Savings Blueprint Architecture
+Every brand features our proprietary 4-level savings stack:
+1. **Level 1 (Telecom Free Perk)**: Operators offering 100% complimentary access (Jio/Airtel/Vi in India, T-Mobile/Verizon in US, EE/O2 in UK, Telus in CA, Telstra/Optus in AU, Etisalat/du in UAE).
+2. **Level 2 (Voucher / Gift Card Discount)**: 5%–15% cash savings via gift vouchers (Amazon Pay, Target Circle, Tesco Clubcard, Smiles UAE).
+3. **Level 3 (Super Combo Pass)**: Curated multi-service bundles saving $10–$25/month over individual subscriptions.
+4. **Level 4 (Promo Code with 1-Click Copy)**: Verified coupon codes with instant clipboard copying.
+
+### 17.3 User Retention & CTA Architecture
+- **Catalog Card CTA**: Unified single high-converting button **`✨ Reveal Secret Offers & Plans ↗`** (`w-full`, mobile touch-friendly 44px height, responsive desktop hover animation). Direct external exit buttons are completely removed from catalog cards to eliminate bounce rates.
+- **Internal Landing Pages (`/subscriptions/[slug]`)**: Fully responsive SSR pages featuring interactive plan tier switches, 3-Mo / 1-Yr projection calculators, device/audio streaming matrices, and dynamic FAQs.
+- **Safe Activation**: The official site button (`Visit Official [Brand] Site`) is placed exclusively at the bottom of the internal landing page, guarded with `rel="noopener noreferrer nofollow"`.
+
+### 17.4 Zero-Scraping On-Demand AI Ingestion (`/api/subscriptions/on-demand`)
+- When users search for uncataloged brands, Groq Llama-3 / Qwen AI generates verified catalog entries using pure LLM knowledge (0% web scraping, 0% server IP exposure).
+- Input Whitelist regex (`/^[a-zA-Z0-9\s\-+&.'’]{2,40}$/`) and prompt injection shield block malicious payloads with HTTP 400.
+- Schema sanitization guarantees positive numeric prices and secure `https://` URLs.
+- Results are saved to Upstash Redis with a 90-day auto-expiry TTL (`ex: 7776000`) preventing database bloat.
+
+### 17.5 Weekly Automated Synchronization Cron Job (`/api/cron/sync-subscriptions`)
+- Scheduled in `vercel.json` every Sunday across staggered regional windows (IN 02:00, US 04:00, UK 06:00, CA 08:00, AU 10:00, AE 12:00 UTC).
+- Cryptographically guarded by `CRON_SECRET` Bearer header or query parameter (unauthorized callers receive HTTP 401).
+- Audits baseline plans and telecom bundles with AI; writes detected changes as Redis live overlays so production displays fresh pricing without requiring a redeploy.
 
 ---
 

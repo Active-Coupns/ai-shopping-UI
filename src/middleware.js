@@ -5,6 +5,7 @@ const isPublicRoute = createRouteMatcher([
   "/",
   "/robots.txt",
   "/sitemap.xml",
+  "/subscriptions(.*)",
   "/sign-in(.*)",
   "/sign-up(.*)",
   "/reset-password(.*)",
@@ -23,6 +24,7 @@ const isPublicRoute = createRouteMatcher([
   "/api/products(.*)",
   "/api/support(.*)",
   "/api/cron(.*)",
+  "/api/subscriptions(.*)",
   "/api/trust-sheet(.*)"
 ]);
 

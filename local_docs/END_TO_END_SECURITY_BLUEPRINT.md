@@ -482,3 +482,39 @@ Background diagnostic probes (`/api/cron/heal-sentinel`) perform live store cana
 
 ---
 *Maintained locally in `local_docs/END_TO_END_SECURITY_BLUEPRINT.md` | Strictly confidential*
+
+---
+
+## 17. Layer 17: OTT & Subscriptions Security & Fraud Prevention Architecture
+
+The Subscriptions and Streaming service aggregation engine implements strict defense-in-depth principles:
+
+### 17.1 Zero-Scraping IP Preservation Guarantee
+- Our production servers **never** execute HTTP requests, headless Chromium instances, Puppeteer, or Cheerio against streaming merchant portals (Netflix, Disney+, Amazon, Hotstar, OSN+, etc.).
+- Eliminates upstream IP blocking, Cloudflare captcha challenges, and vendor legal liability.
+- Data is synthesized exclusively through official AI APIs (Groq, Google Gemini) and verified static baseline registries.
+
+### 17.2 On-Demand Ingestion Input Shield & Injection Defense
+- **Strict Whitelist Regex**: `/^[a-zA-Z0-9\s\-+&.'’]{2,40}$/` rejects exotic characters, binary payloads, and excessive lengths.
+- **Injection Blocklist**: Prohibits `<script>`, `DROP TABLE`, `ignore previous instructions`, `system:`, `javascript:`, and XSS vectors, returning HTTP 400.
+- **Slug Normalization**: Enforces strict `/^[a-z0-9-]+$/` regex.
+
+### 17.3 Schema & URL Phishing Sanitization
+- Prior to saving to Upstash Redis, every brand entry is processed through `sanitizeBrandData()`.
+- Enforces strict positive numerical values on prices, validates periods (`month` or `year`), clamps screen counts (1 to 20), and strips unauthorized keys.
+- Sanitizes `officialUrl` to require explicit `https://` protocol and rejects `javascript:` and `data:` URI schemes.
+
+### 17.4 Redis Storage TTL & Cache Bloat Defense
+- On-demand ingested brands in Redis are configured with a mandatory 90-day TTL (`ex: 7776000` seconds).
+- Prevents unbounded growth of Redis storage and automatically clears stale catalog entries over time.
+
+### 17.5 Weekly Cron Cryptographic Bearer Guard
+- Endpoint: `/api/cron/sync-subscriptions`
+- Requires high-entropy `CRON_SECRET` authentication via Bearer header or secret query parameter.
+- Unauthorized probes are halted with HTTP 401 (`UNAUTHORIZED_CRON`).
+
+### 17.6 Anti-Scraping Blueprint Shield
+- High-value 4-level savings blueprints on internal landing pages are wrapped with `data-nosnippet="true"` attributes to prevent competitive search scraper parasitism.
+- Outbound external links are enforced with `rel="noopener noreferrer nofollow"`.
+
+---

@@ -24,28 +24,28 @@ import { userJourneyTracker } from "@/services/userJourneyTracker";
 
 const STARTER_PROMPTS = [
   {
+    icon: "🎬",
+    title: "Mirzapur / Web Series: Where to Watch?",
+    subtitle: "Streaming platform, ₹0 telecom perks & savings",
+    query: "Mirzapur kaha dekhu aur sabse saste me kaise dekh sakta hu?"
+  },
+  {
+    icon: "🍿",
+    title: "Best OTT Subscription for Family / Sports",
+    subtitle: "Hotstar vs Netflix vs Prime & Times Prime combos",
+    query: "Entertainment ke liye konsa OTT subscription lena chahiye?"
+  },
+  {
     icon: "💻",
     title: "Coding Laptop under ₹50k",
     subtitle: "16GB RAM, battery reality & true daily cost",
     query: "I need a coding laptop under 50000 with 16GB RAM"
   },
   {
-    icon: "💊",
-    title: "Paracetamol vs Dolo 650",
-    subtitle: "Active salt info, pharmacy price & dosage warning",
-    query: "Compare Paracetamol vs Dolo 650 and show prices"
-  },
-  {
     icon: "🎧",
     title: "ANC Earbuds under ₹3,000",
     subtitle: "Real mic quality, ANC decibels & battery life",
     query: "Best noise cancelling earbuds under 3000"
-  },
-  {
-    icon: "🎟️",
-    title: "Today's Top Deals & Coupons",
-    subtitle: "Verified credit card offers & lowest market prices",
-    query: "Show today's best electronics deals and bank offers"
   }
 ];
 

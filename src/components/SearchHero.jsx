@@ -17,7 +17,8 @@ import {
   Mic,
   Camera,
   Flame,
-  ShieldCheck
+  ShieldCheck,
+  Tv
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { userJourneyTracker } from "@/services/userJourneyTracker";
@@ -172,7 +173,8 @@ export default function SearchHero({
   onAnalyzeCartScreenshot,
   onOpenConcierge,
   onOpenTrustSheet,
-  onSelectCategoryDeal
+  onSelectCategoryDeal,
+  onOpenSubscriptions
 }) {
   const [activeTab, setActiveTab] = useState(
     initialTab === "COUPONS" || initialTab === "coupons"
@@ -344,7 +346,14 @@ export default function SearchHero({
     const activeSearchMode = isCoupons ? "coupons" : isHealth ? "medicine" : "shopping";
     userJourneyTracker.recordSearch(finalQuery, activeSearchMode);
 
-    // Auto-Routing: If user searches food/store promo codes while in Shopping/Pharmacy tab:
+    // Auto-Routing: If user searches OTT / subscription platforms
+    const isOttIntent = /\b(netflix|hotstar|prime\s*video|disney\+?|sonyliv|zee5|jiocinema|spotify|youtube\s*premium|times\s*prime|tata\s*play\s*binge|subscriptions?|ott)\b/i.test(lower);
+    if (isOttIntent && onOpenSubscriptions) {
+      onOpenSubscriptions(finalQuery);
+      return;
+    }
+
+        // Auto-Routing: If user searches food/store promo codes while in Shopping/Pharmacy tab:
     const isCouponIntent = /\b(zomato|swiggy|zepto|blinkit|domino'?s|ubereats|doordash|instamart|promo\s*codes?|coupons?|voucher|discount\s*codes?)\b/i.test(lower);
     if (!isCoupons && isCouponIntent && onCouponSearch) {
       setActiveTab("coupons");
@@ -557,6 +566,23 @@ export default function SearchHero({
           <Flame className="w-3.5 h-3.5 fill-current" />
           <span className="hidden sm:inline">Today&apos;s Deals</span>
           <span className="sm:hidden">Deals</span>
+        </button>
+
+        {/* 5. OTT & Subscriptions Tab */}
+        <button
+          type="button"
+          suppressHydrationWarning
+          onClick={() => {
+            if (onOpenSubscriptions) {
+              onOpenSubscriptions();
+            }
+          }}
+          className="flex-1 flex items-center justify-center gap-1 sm:gap-1.5 py-1.5 px-2 sm:px-2.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all cursor-pointer whitespace-nowrap text-slate-500 hover:text-indigo-600 hover:bg-indigo-50/50"
+        >
+          <Tv className="w-3.5 h-3.5 text-indigo-500" />
+          <span className="hidden sm:inline">OTT & Subs</span>
+          <span className="sm:hidden">OTT</span>
+          <span className="px-1.5 py-0.2 rounded-md bg-indigo-100 text-[8px] font-black text-indigo-700">NEW</span>
         </button>
       </div>
 
