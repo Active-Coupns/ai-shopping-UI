@@ -684,6 +684,19 @@
     <li><strong>Touch-First Mobile CTAs</strong>: Action buttons inside sheets and modals adapt to <code>flex-col sm:flex-row</code> with full-width finger-friendly touch targets on mobile viewports.</li>
   </ul>
 
+
+  <h2>8. Global OTT &amp; Digital Subscriptions Hub (6 Tier-1 Countries)</h2>
+  <div class="section-desc">
+    Complete architectural specification for the streaming passes and digital service aggregation engine.
+  </div>
+  <ul>
+    <li><strong>6 Tier-1 Country Catalogs (150 Brands Total)</strong>: Deployed static verified catalogs with localized currencies and telecom partner maps: India (<code>IN</code>, ₹), United States (<code>US</code>, $), United Kingdom (<code>GB</code>, £), Canada (<code>CA</code>, C$), Australia (<code>AU</code>, A$), and United Arab Emirates (<code>AE</code>, AED).</li>
+    <li><strong>4-Level Savings Blueprint</strong>: Transparent money-saving matrix on every subscription card: Level 1 (Complimentary Telecom Perks e.g. Jio/Airtel, Verizon, EE, Telus, Telstra, Etisalat), Level 2 (Gift Card Vouchers), Level 3 (Super Combo Passes saving $10-$25/mo), and Level 4 (Promo Codes with 1-click copy).</li>
+    <li><strong>User Retention Funnel &amp; High-Converting CTA</strong>: Replaced competing external buttons on cards with a single full-width button <code>✨ Reveal Secret Offers &amp; Plans ↗</code> (44px touch height on mobile, interactive hover lighting on desktop). Funnels users into internal <code>/subscriptions/[slug]</code> guides and eliminates immediate bounce.</li>
+    <li><strong>Zero-Scraping On-Demand AI Ingestion (<code>/api/subscriptions/on-demand</code>)</strong>: Uses Groq AI to synthesize uncataloged brands without sending any HTTP requests to OTT portals. Regex whitelist (<code>/^[a-zA-Z0-9\s\-+&.'’]{2,40}$/</code>), prompt injection shields, and 90-day Redis TTL (<code>ex: 7776000</code>).</li>
+    <li><strong>Weekly Automated Sync Cron (<code>/api/cron/sync-subscriptions</code>)</strong>: Scheduled in <code>vercel.json</code> every Sunday across staggered regional windows. Authenticated via cryptographic <code>CRON_SECRET</code> Bearer token. Detects pricing shifts via AI and writes live Redis overlays.</li>
+  </ul>
+
   <div style="margin-top: 20px; text-align: center; border-top: 1px solid #cbd5e1; padding-top: 10px;">
     <p style="font-size: 7.5pt; color: #64748b; margin: 0;">ShopSmart AI — Master Architecture &amp; System Flow Manual • Strictly Confidential • Maintained locally</p>
   </div>

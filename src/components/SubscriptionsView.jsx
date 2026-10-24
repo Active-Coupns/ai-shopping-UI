@@ -66,6 +66,66 @@ export default function SubscriptionsView({
   // Dynamic Catalog State (Baseline 25 + any On-Demand ingested brands)
   const [catalogSubs, setCatalogSubs] = useState(() => getSubscriptionsCatalog(selectedCountry));
   const [isDiscovering, setIsDiscovering] = useState(false);
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [verifiedEntity, setVerifiedEntity] = useState(null);
+  const [isVerifyingEntity, setIsVerifyingEntity] = useState(false);
+  const [onDemandError, setOnDemandError] = useState(null);
+
+  // 450ms debounce on search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(searchQuery.trim());
+    }, 450);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Entity verification trigger when query has no local matches in catalogSubs
+  useEffect(() => {
+    if (!debouncedQuery || debouncedQuery.length < 3) {
+      setVerifiedEntity(null);
+      setIsVerifyingEntity(false);
+      return;
+    }
+
+    const exactLocalMatch = catalogSubs.some(
+      (s) =>
+        s.name.toLowerCase().includes(debouncedQuery.toLowerCase()) ||
+        s.id.toLowerCase().includes(debouncedQuery.toLowerCase()) ||
+        (s.popularShows || []).some((show) => show.toLowerCase().includes(debouncedQuery.toLowerCase()))
+    );
+
+    if (exactLocalMatch) {
+      setVerifiedEntity(null);
+      setIsVerifyingEntity(false);
+      return;
+    }
+
+    let cancelled = false;
+    setIsVerifyingEntity(true);
+
+    fetch("/api/subscriptions/verify-entity", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        query: debouncedQuery,
+        country: selectedCountry
+      })
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (!cancelled && data.success) {
+          setVerifiedEntity(data);
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setIsVerifyingEntity(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [debouncedQuery, catalogSubs, selectedCountry]);
 
   // Sync catalog when selectedCountry changes and load on-demand brands for this country
   useEffect(() => {
@@ -660,37 +720,190 @@ export default function SubscriptionsView({
       </div>
 
       {filteredSubs.length === 0 && (
-        <div className="text-center py-12 bg-white rounded-3xl border border-slate-200 p-8 shadow-sm max-w-xl mx-auto">
-          <div className="w-14 h-14 rounded-3xl bg-gradient-to-tr from-amber-400 to-amber-500 text-slate-950 flex items-center justify-center mx-auto mb-4 shadow-md">
-            <Sparkles className="w-7 h-7 fill-slate-950 animate-pulse" />
-          </div>
-          <h3 className="text-base sm:text-lg font-black text-slate-900">
-            &quot;{searchQuery}&quot; is not in our baseline catalog yet!
-          </h3>
-          <p className="text-xs text-slate-500 mt-2 max-w-md mx-auto font-medium leading-relaxed">
-            Would you like ShopSmart AI to research official {regionName} plans, carrier perks, and generate its verified 4-Level Savings Blueprint live?
-          </p>
+        <div className="max-w-2xl mx-auto my-6">
+          {isVerifyingEntity ? (
+            /* Analyzing / Verifying Entity with ShopSmart AI */
+            <div className="p-8 rounded-3xl bg-white border border-slate-200 shadow-2xs flex flex-col items-center justify-center gap-3 text-center">
+              <div className="w-10 h-10 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
+                <RefreshCw className="w-5 h-5 animate-spin" />
+              </div>
+              <p className="text-xs font-bold text-slate-700">
+                Analyzing platform &amp; verifying official channels with ShopSmart AI...
+              </p>
+              <p className="text-[11px] text-slate-400">
+                Checking brand legitimacy and subscription match for &ldquo;{debouncedQuery || searchQuery}&rdquo;
+              </p>
+            </div>
+          ) : verifiedEntity?.action === "CATALOG_TYPO_MATCH" ? (
+            /* 1. CATALOG TYPO MATCH ("Did you mean...?") */
+            <div className="p-6 sm:p-7 rounded-3xl bg-indigo-50/90 border border-indigo-200 shadow-sm space-y-3">
+              <div className="flex items-center gap-2.5 text-indigo-950 font-black text-sm sm:text-base">
+                <Sparkles className="w-5 h-5 text-indigo-600 animate-pulse shrink-0" />
+                <span>Did you mean &ldquo;{verifiedEntity.canonicalName}&rdquo;?</span>
+              </div>
+              <p className="text-xs text-indigo-800 font-medium leading-relaxed max-w-xl">
+                We detected a possible spelling variation for &ldquo;{searchQuery.trim()}&rdquo;. We have multi-tier plans and 4-Level Savings Blueprints available for <strong>{verifiedEntity.canonicalName}</strong>.
+              </p>
+              <div className="flex flex-wrap items-center gap-2.5 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery(verifiedEntity.canonicalName)}
+                  className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black shadow-xs cursor-pointer transition-colors"
+                >
+                  Show Plans for {verifiedEntity.canonicalName}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="px-3.5 py-2.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold border border-slate-200 transition-colors cursor-pointer"
+                >
+                  Clear Search
+                </button>
+              </div>
+            </div>
+          ) : verifiedEntity?.action === "CATEGORY_MISMATCH" ? (
+            /* 2. CATEGORY MISMATCH (e.g. Airline in Subscriptions) */
+            <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 border border-indigo-500/30 text-white shadow-xl space-y-4">
+              <div className="flex items-start gap-3.5">
+                <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-amber-300 shrink-0 shadow-inner">
+                  <Sparkles className="w-6 h-6 animate-pulse" />
+                </div>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-300 text-[10px] font-black uppercase tracking-wider border border-amber-400/30">
+                      Category Guidance
+                    </span>
+                    <span className="text-xs text-slate-400 font-semibold">• {verifiedEntity.crossCategoryTitle}</span>
+                  </div>
+                  <h4 className="text-base sm:text-lg font-black text-white">
+                    Looking for deals for &ldquo;{verifiedEntity.canonicalName}&rdquo;?
+                  </h4>
+                  <p className="text-xs text-slate-300 font-medium leading-relaxed max-w-xl">
+                    &ldquo;{verifiedEntity.canonicalName}&rdquo; is a {verifiedEntity.description || "commercial booking service"}, not an OTT streaming platform. Would you like to check active deals in our {verifiedEntity.crossCategoryTitle}?
+                  </p>
+                </div>
+              </div>
 
-          <div className="mt-5 flex items-center justify-center gap-3">
-            <button
-              type="button"
-              onClick={() => handleDiscoverOnDemand(searchQuery)}
-              disabled={isDiscovering}
-              className="px-6 py-3 rounded-2xl bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-black text-xs sm:text-sm shadow-md flex items-center gap-2 cursor-pointer transition-all active:scale-95 disabled:opacity-50"
-            >
+              <div className="flex flex-wrap items-center gap-3 pt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    window.location.href = `/?tab=${verifiedEntity.crossCategoryTab || "travel"}`;
+                  }}
+                  className="px-5 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-black text-xs shadow-md flex items-center gap-2 cursor-pointer transition-all active:scale-95"
+                >
+                  <span>↗ Explore {verifiedEntity.crossCategoryTitle}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="px-4 py-3 rounded-2xl bg-white/10 hover:bg-white/15 text-slate-300 text-xs font-bold border border-white/10 transition-colors cursor-pointer"
+                >
+                  Back to Subscriptions
+                </button>
+              </div>
+            </div>
+          ) : verifiedEntity?.action === "SUBSCRIPTION_ENTITY_VERIFIED" ? (
+            /* 3. VERIFIED REAL UNLISTED SUBSCRIPTION (e.g. MUBI, Hayu) */
+            <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-indigo-950 via-slate-900 to-purple-950 border border-indigo-500/30 text-white shadow-xl space-y-5">
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                <div className="flex items-start gap-3.5">
+                  <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center shrink-0 text-indigo-300 shadow-inner">
+                    <Sparkles className="w-6 h-6 animate-pulse" />
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-0.5 rounded-full bg-emerald-500/30 text-emerald-300 text-[10px] font-black uppercase tracking-wider border border-emerald-400/30">
+                        Official Entity Verified
+                      </span>
+                      <span className="text-xs text-slate-400 font-semibold">• {verifiedEntity.domain}</span>
+                    </div>
+                    <h4 className="text-base sm:text-lg font-black text-white">
+                      Discover verified 4-Level Savings Blueprint for &ldquo;{verifiedEntity.canonicalName}&rdquo;?
+                    </h4>
+                    <p className="text-xs text-slate-300 font-medium max-w-xl leading-relaxed">
+                      ShopSmart AI has verified the official portal for <strong>{verifiedEntity.canonicalName}</strong> ({verifiedEntity.domain}). Would you like ShopSmart AI to research {regionName} plans, screen limits, telecom bundles, and generate its verified 4-Level Savings Blueprint live?
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               {isDiscovering ? (
-                <>
-                  <RefreshCw className="w-4 h-4 animate-spin text-amber-300" />
-                  <span>Researching & Ingesting &quot;{searchQuery}&quot;...</span>
-                </>
+                <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-2.5">
+                  <div className="flex items-center gap-2.5 text-xs font-bold text-indigo-200">
+                    <RefreshCw className="w-4 h-4 animate-spin text-indigo-400" />
+                    <span>Researching plans &amp; generating 4-Level Blueprint for &ldquo;{verifiedEntity.canonicalName}&rdquo;...</span>
+                  </div>
+                  <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
+                    <div className="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-emerald-400 w-3/4 animate-pulse rounded-full" />
+                  </div>
+                </div>
               ) : (
-                <>
-                  <Zap className="w-4 h-4 fill-amber-300 text-amber-300" />
-                  <span>⚡ On-Demand Ingest & Add &quot;{searchQuery}&quot; to Catalog</span>
-                </>
+                <div className="flex flex-wrap items-center gap-3 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => handleDiscoverOnDemand(verifiedEntity.canonicalName)}
+                    className="px-5 py-3 rounded-2xl bg-gradient-to-r from-indigo-500 via-indigo-600 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white text-xs sm:text-sm font-black shadow-lg shadow-indigo-500/25 flex items-center gap-2 cursor-pointer transition-all active:scale-95 group"
+                  >
+                    <Zap className="w-4 h-4 text-amber-300 animate-pulse group-hover:scale-110 transition-transform" />
+                    <span>⚡ Yes, Ingest Live Blueprint for &ldquo;{verifiedEntity.canonicalName}&rdquo;</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery("")}
+                    className="px-4 py-3 rounded-2xl bg-white/10 hover:bg-white/15 text-slate-300 text-xs sm:text-sm font-bold border border-white/10 transition-colors cursor-pointer"
+                  >
+                    No, Show All Subscriptions
+                  </button>
+                </div>
               )}
-            </button>
-          </div>
+
+              {onDemandError && (
+                <div className="p-3 rounded-xl bg-red-500/20 border border-red-500/30 text-red-200 text-xs font-medium">
+                  {onDemandError}
+                </div>
+              )}
+            </div>
+          ) : (
+            /* 4. PLATFORM NOT AVAILABLE IN DIRECTORY CARD */
+            <div className="p-6 sm:p-8 rounded-3xl bg-white border border-slate-200 shadow-2xs space-y-4">
+              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-3.5">
+                <div className="w-12 h-12 rounded-2xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500 shrink-0 shadow-inner">
+                  <Tv className="w-6 h-6" />
+                </div>
+                <div className="space-y-1.5 text-center sm:text-left">
+                  <h4 className="text-base font-extrabold text-slate-900">
+                    Platform Not Available in Our Directory
+                  </h4>
+                  <p className="text-xs text-slate-500 font-medium leading-relaxed max-w-xl">
+                    We currently do not have verified subscriptions or saving blueprints available for this platform in our database.
+                  </p>
+                </div>
+              </div>
+
+              {/* Suggestions / Clear */}
+              <div className="pt-2 flex flex-wrap items-center gap-2 text-[11px] text-slate-500 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold transition-colors cursor-pointer"
+                >
+                  Clear Search
+                </button>
+                <span className="font-semibold text-slate-400 pl-1">Or explore leading platforms:</span>
+                {["Netflix", "Hotstar", "Spotify", "Prime Video", "Crunchyroll"].map((sug) => (
+                  <button
+                    key={sug}
+                    type="button"
+                    onClick={() => setSearchQuery(sug)}
+                    className="px-2.5 py-1 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-[10px] transition-colors cursor-pointer"
+                  >
+                    {sug}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

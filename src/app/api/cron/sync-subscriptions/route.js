@@ -25,7 +25,10 @@ export async function GET(request) {
     const authHeader = request.headers.get("authorization");
     const cronSecret = process.env.CRON_SECRET;
 
-    // 1. Strict Security Check: If CRON_SECRET is set, enforce authentication
+    // 1. Strict Security Guard: Verify Bearer Secret or Query Secret
+    if (!cronSecret && process.env.NODE_ENV === "production") {
+      return NextResponse.json({ success: false, error: "CRON_SECRET_NOT_CONFIGURED" }, { status: 500 });
+    }
     if (cronSecret) {
       const isBearerValid = authHeader === `Bearer ${cronSecret}`;
       const isParamValid = searchParams.get("secret") === cronSecret;

@@ -25,6 +25,7 @@ const isPublicRoute = createRouteMatcher([
   "/api/support(.*)",
   "/api/cron(.*)",
   "/api/subscriptions(.*)",
+  "/api/travel(.*)",
   "/api/trust-sheet(.*)"
 ]);
 

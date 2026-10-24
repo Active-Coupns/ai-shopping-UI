@@ -155,8 +155,8 @@ export default function CouponResultView({
     }
   };
 
-  // SEO Savings Hacks curated for store
-  const savingHacks = [
+  // SEO Savings Strategies curated for store
+  const savingStrategies = [
     {
       title: "Hit Minimum Cart Thresholds",
       desc: `Check the exact cart minimums (e.g. ₹149, ₹199 or ₹499). Adding a ₹20 add-on often saves you ₹100+ on ${storeName} by qualifying for higher discounts.`
@@ -194,6 +194,50 @@ export default function CouponResultView({
       a: `If a code does not apply, check the minimum cart value shown on our card (e.g. ₹199 or ₹499). You can also upload your cart screenshot to ShopSmart AI to let our optimizer find the exact code matching your items.`
     }
   ];
+
+  // Polite Empty State if store not found or unverified
+  if (resultData?.notFound || resultData?.success === false) {
+    return (
+      <div className="w-full max-w-3xl mx-auto px-4 py-12 text-center">
+        <div className="p-8 sm:p-10 rounded-3xl bg-white border border-slate-200 shadow-2xs space-y-4">
+          <div className="w-14 h-14 rounded-2xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500 mx-auto shadow-inner">
+            <Store className="w-7 h-7" />
+          </div>
+          <div className="space-y-1.5">
+            <h3 className="text-lg font-extrabold text-slate-900">
+              {resultData?.isCategoryMismatch ? "Looking for this brand in another hub?" : "Store Not Available in Our Directory"}
+            </h3>
+            <p className="text-xs text-slate-500 font-medium leading-relaxed max-w-md mx-auto">
+              {resultData?.error || "We currently do not have verified coupons or saving strategies available for this store in our database."}
+            </p>
+          </div>
+
+          <div className="pt-3 flex flex-wrap items-center justify-center gap-2 text-[11px] text-slate-500 border-t border-slate-100">
+            <button
+              type="button"
+              onClick={() => onReset?.("COUPONS")}
+              className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold transition-colors cursor-pointer"
+            >
+              Browse Verified Stores
+            </button>
+            <span className="font-semibold text-slate-400 px-1">Or explore popular stores:</span>
+            {["Zomato", "Swiggy", "Myntra", "Amazon", "Nykaa", "Ajio"].map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => {
+                  window.location.href = `/?store=${encodeURIComponent(s.toLowerCase())}&tab=coupons`;
+                }}
+                className="px-2.5 py-1 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-[10px] transition-colors cursor-pointer"
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full max-w-5xl mx-auto px-4 py-6 md:py-8 text-left">
@@ -608,7 +652,7 @@ export default function CouponResultView({
           <div className="flex items-center gap-2 mb-1">
             <Award className="w-4 h-4 text-violet-600" />
             <h3 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
-              Top 4 Insider Saving Hacks for {storeName} (October 2026)
+              Top 4 Smart Saving Strategies for {storeName} (October 2026)
             </h3>
           </div>
           <p className="text-xs text-slate-500">
@@ -617,17 +661,17 @@ export default function CouponResultView({
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10">
-          {savingHacks.map((hack, hIdx) => (
+          {savingStrategies.map((strategy, sIdx) => (
             <div 
-              key={hIdx}
+              key={sIdx}
               className="p-4 rounded-2xl bg-slate-50/80 border border-slate-200/70 hover:border-violet-300 transition-all"
             >
               <div className="flex items-center gap-2 text-xs font-bold text-violet-800 mb-1">
                 <Lightbulb className="w-3.5 h-3.5 text-amber-500" />
-                <span>Hack #{hIdx + 1}: {hack.title}</span>
+                <span>Strategy #{sIdx + 1}: {strategy.title}</span>
               </div>
               <p className="text-xs text-slate-600 leading-relaxed">
-                {hack.desc}
+                {strategy.desc}
               </p>
             </div>
           ))}

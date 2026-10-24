@@ -419,6 +419,20 @@
     {"consentId":"cns_1792445105114_b2c68ae7","userId":"anon___1","email":"trial_shopper@example.com","consentType":"VTON_FACIAL_BIOMETRIC_PRIVACY","version":"1.0-prod","status":"ACCEPTED","timestamp":"2026-10-19T21:25:05.115Z","ipAddress":"::1","userAgent":"node","metadata":{"ephemeralZeroStorage":true,"appropriateModestPhoto":true,"noAiTraining":true,"adultSelfOwnership":true,"facialLandmarkAlignmentConsent":true}}
   </div>
 
+
+  <h2>4. Layer 17: OTT &amp; Subscriptions Cyber Security &amp; Fraud Prevention</h2>
+  <div class="section-desc">
+    Zero-scraping server IP preservation, prompt injection defense, schema validation, and bearer-authenticated cron synchronization.
+  </div>
+  <ul>
+    <li><strong>Zero-Scraping IP Preservation Guarantee</strong>: Server never makes direct HTTP requests or executes headless scrapers against Netflix, Disney+, Hotstar, or Prime Video servers. Eliminates IP ban risks and vendor liability.</li>
+    <li><strong>Strict On-Demand Input Whitelist &amp; Prompt Shield</strong>: Enforces regex <code>/^[a-zA-Z0-9\s\-+&.'’]{2,40}$/</code> and blocks prompt injection tokens (<code>&lt;script&gt;</code>, <code>DROP TABLE</code>, <code>ignore previous instructions</code>) with HTTP 400.</li>
+    <li><strong>Schema &amp; URL Phishing Sanitization</strong>: Function <code>sanitizeBrandData()</code> enforces positive numeric prices, clamps screen limits (1-20), strips dangerous URI schemes (<code>javascript:</code>, <code>data:</code>), and requires explicit <code>https://</code>.</li>
+    <li><strong>90-Day Redis TTL Bloat Defense</strong>: Ingested brands expire automatically after 90 days (<code>ex: 7776000</code>) preventing unbounded memory consumption.</li>
+    <li><strong>Cryptographic Bearer Cron Guard</strong>: <code>/api/cron/sync-subscriptions</code> requires <code>CRON_SECRET</code> bearer authentication. Unauthorized calls receive HTTP 401.</li>
+    <li><strong>Anti-Scraping Blueprint Protection</strong>: 4-Level Savings Blueprints are wrapped in <code>data-nosnippet="true"</code> to prevent competitive bot scraping. Outbound portal links enforce <code>rel="noopener noreferrer nofollow"</code>.</li>
+  </ul>
+
   <div style="margin-top: 15px; text-align: center; border-top: 1px solid #cbd5e1; padding-top: 8px;">
     <p style="font-size: 7pt; color: #64748b; margin: 0;">ShopSmart AI — Platform Cyber Security &amp; Threat Vault Manual • Strictly Confidential • Maintained locally</p>
   </div>

@@ -580,9 +580,8 @@ export default function SearchHero({
           className="flex-1 flex items-center justify-center gap-1 sm:gap-1.5 py-1.5 px-2 sm:px-2.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all cursor-pointer whitespace-nowrap text-slate-500 hover:text-indigo-600 hover:bg-indigo-50/50"
         >
           <Tv className="w-3.5 h-3.5 text-indigo-500" />
-          <span className="hidden sm:inline">OTT & Subs</span>
+          <span className="hidden sm:inline">OTT &amp; Subs</span>
           <span className="sm:hidden">OTT</span>
-          <span className="px-1.5 py-0.2 rounded-md bg-indigo-100 text-[8px] font-black text-indigo-700">NEW</span>
         </button>
       </div>
 

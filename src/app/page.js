@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, ShoppingBag, ArrowLeft, RefreshCw, Layers, ShieldAlert, Coins, Tag, AlertCircle, Shirt, User, Globe, Search, Pill, Heart, Scale, Bell, X, Zap, LifeBuoy, ShieldCheck, Tv } from "lucide-react";
+import { Sparkles, ShoppingBag, ArrowLeft, RefreshCw, Layers, ShieldAlert, Coins, Tag, AlertCircle, Shirt, User, Globe, Search, Pill, Heart, Scale, Bell, X, Zap, LifeBuoy, ShieldCheck, Tv, Plane } from "lucide-react";
 import { SignedIn, SignedOut, SignInButton, useUser, useClerk } from "@clerk/nextjs";
 import dynamic from "next/dynamic";
 import SearchHero from "@/components/SearchHero";
@@ -22,6 +22,8 @@ const InChatShoppingAgent = dynamic(() => import("@/components/InChatShoppingAge
 const ProductNotFoundState = dynamic(() => import("@/components/ProductNotFoundState"), { ssr: false });
 const SavedDealsDrawer = dynamic(() => import("@/components/SavedDealsDrawer"), { ssr: false });
 const SubscriptionsView = dynamic(() => import("@/components/SubscriptionsView"), { ssr: false });
+const TravelHubView = dynamic(() => import("@/components/TravelHubView"), { ssr: false });
+const TravelAiAdvisorModal = dynamic(() => import("@/components/TravelAiAdvisorModal"), { ssr: false });
 const QuotaModal = dynamic(() => import("@/components/QuotaModal"), { ssr: false });
 
 const FashionTrialRoom = dynamic(() => import("@/components/FashionTrialRoom"), {
@@ -139,6 +141,9 @@ export default function Home() {
   const [categoryDealsData, setCategoryDealsData] = useState(null);
   const [selectedDealCategory, setSelectedDealCategory] = useState("smartphones");
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
+  const [isTravelAdvisorOpen, setIsTravelAdvisorOpen] = useState(false);
+  const [travelAdvisorCategory, setTravelAdvisorCategory] = useState("flights");
+  const [travelAdvisorInitialQuery, setTravelAdvisorInitialQuery] = useState("");
   const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
   const [activeFilterChipId, setActiveFilterChipId] = useState("all");
 
@@ -662,67 +667,81 @@ export default function Home() {
             </div>
           </div>
 
-          {/* 2. Center: Desktop Mode Tabs (Hidden on mobile to keep top bar uncluttered) */}
-          <div className="hidden md:flex items-center gap-1.5 p-1 bg-slate-100/90 rounded-2xl border border-slate-200/80 shadow-inner">
+          {/* 2. Center: Desktop Mode Tabs (Clean & Modern Segmented Nav) */}
+          <div className="hidden md:flex items-center gap-1 p-1 bg-slate-100/90 rounded-2xl border border-slate-200/80 shadow-2xs backdrop-blur-md">
+            {/* Deals & Shopping Tab */}
             <button
               type="button"
               suppressHydrationWarning
               onClick={() => setAppState("idle")}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                appState !== "trial_room" && appState !== "purchase_terminal" && appState !== "trust_sheet"
-                  ? "bg-white text-slate-900 shadow-sm border border-slate-200/60"
-                  : "text-slate-600 hover:text-slate-900"
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                appState !== "trial_room" && appState !== "purchase_terminal" && appState !== "trust_sheet" && appState !== "subscriptions" && appState !== "travel"
+                  ? "bg-white text-slate-900 shadow-xs border border-slate-200/90 font-black scale-102"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-white/60 font-semibold"
               }`}
             >
-              <span>🔍</span>
+              <Search className={`w-3.5 h-3.5 ${appState !== "trial_room" && appState !== "purchase_terminal" && appState !== "trust_sheet" && appState !== "subscriptions" && appState !== "travel" ? "text-slate-900 stroke-[2.5]" : "text-slate-400"}`} />
               <span>Search Deals</span>
             </button>
+
+            {/* AI Trust Sheet Tab */}
             <button
               type="button"
               suppressHydrationWarning
               onClick={() => handleOpenTrustSheet("")}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer relative ${
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 appState === "trust_sheet"
-                  ? "bg-gradient-to-r from-brand-indigo to-brand-violet text-white shadow-md shadow-indigo-500/20"
-                  : "text-indigo-700 hover:text-indigo-900 hover:bg-white/60"
+                  ? "bg-white text-indigo-950 shadow-xs border border-indigo-200/90 font-black scale-102"
+                  : "text-slate-600 hover:text-indigo-900 hover:bg-white/60 font-semibold"
               }`}
             >
-              <ShieldCheck className={`w-3.5 h-3.5 ${appState === "trust_sheet" ? "text-white" : "text-indigo-600"}`} />
+              <ShieldCheck className={`w-3.5 h-3.5 ${appState === "trust_sheet" ? "text-indigo-600 stroke-[2.5]" : "text-indigo-500"}`} />
               <span>AI Trust Sheet</span>
-              <span className={`px-1.5 py-0.2 rounded-full text-[9px] font-black border ${
-                appState === "trust_sheet"
-                  ? "bg-white/20 text-white border-white/30"
-                  : "bg-indigo-100 text-indigo-700 border-indigo-200"
-              }`}>NEW</span>
             </button>
+
+            {/* Trial Room Tab */}
             <button
               type="button"
               suppressHydrationWarning
               onClick={() => setAppState("trial_room")}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer relative ${
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 appState === "trial_room"
-                  ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md shadow-purple-500/20"
-                  : "text-purple-700 hover:text-purple-900 hover:bg-white/60"
+                  ? "bg-white text-purple-950 shadow-xs border border-purple-200/90 font-black scale-102"
+                  : "text-slate-600 hover:text-purple-900 hover:bg-white/60 font-semibold"
               }`}
             >
-              <Shirt className="w-3.5 h-3.5 text-pink-500 animate-pulse" />
+              <Shirt className={`w-3.5 h-3.5 ${appState === "trial_room" ? "text-pink-600 stroke-[2.5]" : "text-pink-500"}`} />
               <span>Trial Room</span>
-              <span className="px-1.5 py-0.2 rounded-full bg-pink-100 text-[9px] text-pink-700 font-black border border-pink-200">AI STUDIO</span>
             </button>
 
+            {/* OTT & Subscriptions Tab */}
             <button
               type="button"
               suppressHydrationWarning
               onClick={() => setAppState("subscriptions")}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer relative ${
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 appState === "subscriptions"
-                  ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md shadow-indigo-500/20"
-                  : "text-slate-700 hover:text-indigo-900 hover:bg-white/60"
+                  ? "bg-white text-violet-950 shadow-xs border border-violet-200/90 font-black scale-102"
+                  : "text-slate-600 hover:text-violet-900 hover:bg-white/60 font-semibold"
               }`}
             >
-              <Tv className={`w-3.5 h-3.5 ${appState === "subscriptions" ? "text-white" : "text-indigo-600"}`} />
-              <span>OTT & Subs</span>
-              <span className="px-1.5 py-0.2 rounded-full bg-indigo-100 text-[9px] text-indigo-700 font-black border border-indigo-200">NEW</span>
+              <Tv className={`w-3.5 h-3.5 ${appState === "subscriptions" ? "text-violet-600 stroke-[2.5]" : "text-violet-500"}`} />
+              <span>OTT &amp; Subs</span>
+            </button>
+
+            {/* Travel & Stays Tab */}
+            <button
+              type="button"
+              suppressHydrationWarning
+              onClick={() => setAppState("travel")}
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                appState === "travel"
+                  ? "bg-white text-emerald-950 shadow-xs border border-emerald-200/90 font-black scale-102"
+                  : "text-slate-600 hover:text-emerald-900 hover:bg-white/60 font-semibold"
+              }`}
+            >
+              <Plane className={`w-3.5 h-3.5 ${appState === "travel" ? "text-emerald-600 stroke-[2.5]" : "text-emerald-500"}`} />
+              <span>Travel &amp; Stays</span>
             </button>
           </div>
 
@@ -936,6 +955,27 @@ export default function Home() {
               <SubscriptionsView
                 onBack={() => setAppState("idle")}
                 selectedCountry={selectedCountry}
+              />
+            </motion.div>
+          )}
+
+          {/* TRAVEL & STAYS STRATEGY VIEW */}
+          {appState === "travel" && (
+            <motion.div
+              key="travel-state"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.3 }}
+              className="w-full"
+            >
+              <TravelHubView
+                country={selectedCountry}
+                onOpenAdvisor={(cat, query) => {
+                  setTravelAdvisorCategory(cat || "flights");
+                  setTravelAdvisorInitialQuery(query || "");
+                  setIsTravelAdvisorOpen(true);
+                }}
               />
             </motion.div>
           )}
@@ -1161,7 +1201,19 @@ export default function Home() {
             </motion.div>
           )}
         </AnimatePresence>
-      </main>
+      
+      {/* Travel AI Strategy Advisor Modal */}
+      <TravelAiAdvisorModal
+        isOpen={isTravelAdvisorOpen}
+        onClose={() => {
+          setIsTravelAdvisorOpen(false);
+          setTravelAdvisorInitialQuery("");
+        }}
+        initialCategory={travelAdvisorCategory}
+        initialQuery={travelAdvisorInitialQuery}
+        country={selectedCountry}
+      />
+</main>
 
       {/* Footer */}
       <footer className="relative z-10 w-full py-3 pb-24 md:pb-6 text-center text-[10px] sm:text-xs text-slate-500 border-t border-slate-200/80 glass-panel border-x-0 border-b-0">

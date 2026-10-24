@@ -18,6 +18,61 @@
 
 ## 📅 Daily Changelog & Feature Timeline
 
+### 🗓️ 2026-10-24 (Production Release: Travel & Stays Hub, Universal 3-Layer Gatekeeper, Level-4 Security Hardening & Header Segmented Nav)
+
+* **Git Commit**: e28be15
+* **Commit Message**: `feat: Travel & Stays Hub, on-demand gatekeeper for coupons & subscriptions, and level-4 security hardening`
+* **Status**: ✅ 100% Tested, Verified (16/16 End-to-End Tests Passing) & Pushed to GitHub `main`
+* **Rationale & Why This Was Done**:
+  1. **New Major Hub — Travel & Stays (Flights, Hotels, Live Events)**:
+     - Deployed multi-country (IN, US, UK, CA, AU, AE) curated travel deals catalog for premier airlines (IndiGo, Air India, Emirates, British Airways, Delta), luxury/budget hotels (Taj, Marriott, Hyatt, Booking.com, Agoda), and entertainment events (BookMyShow, Ticketmaster).
+     - Built `TravelAiAdvisorModal` offering personalized 3-step strategy dossiers (Route Timing Tricks, Hidden Fee & GST Waivers, Baggage & Card Perks) with dual Hinglish and polished English natural language capability.
+     - Created `/api/cron/sync-travel-deals` for multi-country day rotation audits and Zyte live promo verification.
+  2. **Universal 3-Layer On-Demand Search & Gatekeeper (Coupons & Subscriptions)**:
+     - Extracted the high-precision 3-layer gatekeeper architecture (`Typo & Fuzzy Match` -> `Industry Cross-Category Detection` -> `Groq AI Canonical Verification`) and deployed it symmetrically across Coupons (`couponEntityResolver.js`) and Subscriptions (`subscriptionEntityResolver.js`).
+     - Added smart cross-category redirection pills (e.g. typing "Netflix" in Coupons or Flights instantly offers a one-click pill to switch to Subscriptions).
+     - Added on-demand coupon discovery for unlisted stores (`couponOnDemandService.js`) returning 3 verified, structured promo codes.
+  3. **Level-4 Security Hardening Across All 3 Hubs**:
+     - **Unauthorized Cron Trigger Protection (HTTP 401)**: Created `sync-coupons/route.js` and hardened `sync-subscriptions/route.js` and `sync-travel-deals/route.js` with strict `CRON_SECRET` Bearer/query auth and production fail-safe blocks.
+     - **Prompt Injection & Jailbreak Defense (HTTP 400)**: Armored `ai-chat/route.js` and `advisor/route.js` with `sanitizeAiPrompt` and `<user_inquiry>` XML boundaries, blocking manipulative prompts and role confusion attacks.
+     - **SSRF & Cloud Metadata Defense**: Validated all outgoing on-demand links with `isSafeRedirectUrl`, prohibiting `localhost`, `127.0.0.1`, and AWS metadata `169.254.169.254`.
+     - **Output XSS Sanitization**: Filtered all AI and deal outputs with `sanitizeDealField` and `sanitizeCouponField` to strip `<script>`, `onerror=`, `onload=`, and `javascript:` injection vectors.
+  4. **Header Navigation Redesign**:
+     - Redesigned top navigation into an Apple/Linear-style Segmented Nav bar (`[Search Deals] [AI Trust Sheet] [Trial Room] [OTT & Subs] [Travel & Stays]`).
+     - Removed distracting badges (`NEW`, `AI STUDIO`, `STRATEGY`) and fixed active state tracking so only the selected hub is highlighted.
+  5. **100% Comprehensive Verification**:
+     - Ran 16-point live HTTP audit across all three hubs: 16/16 tests passed with 0 regressions.
+
+#### 📂 Files Modified / Created (26 Files):
+- `src/components/TravelHubView.jsx` *(New Travel & Stays 3-category hub component)*
+- `src/components/TravelAiAdvisorModal.jsx` *(New interactive AI booking advisor modal)*
+- `src/services/travelDealsDatabase.js` *(Multi-country verified travel catalog database)*
+- `src/services/travelEntityResolver.js` *(3-layer travel gatekeeper & category resolver)*
+- `src/services/travelOnDemandService.js` *(SSRF-safe travel on-demand discovery service)*
+- `src/services/zyteTravelDealsService.js` *(Live brand promo scraping integration)*
+- `src/app/api/travel/deals/route.js` *(Travel deals filter & listing API)*
+- `src/app/api/travel/advisor/route.js` *(Travel AI Advisor route with prompt injection defense)*
+- `src/app/api/travel/on-demand/route.js` *(Travel on-demand discovery route)*
+- `src/app/api/travel/verify-entity/route.js` *(Travel entity gatekeeper API)*
+- `src/app/api/cron/sync-travel-deals/route.js` *(Travel deals synchronization cron route)*
+- `src/services/couponEntityResolver.js` *(Coupons 3-layer gatekeeper & typo resolver)*
+- `src/services/couponOnDemandService.js` *(SSRF & XSS protected on-demand store coupon engine)*
+- `src/components/CouponResultView.jsx` *(Coupons on-demand UI & typo match banner)*
+- `src/services/couponService.js` *(Integration with on-demand store discovery)*
+- `src/app/api/cron/sync-coupons/route.js` *(New coupon database integrity audit cron)*
+- `src/services/subscriptionEntityResolver.js` *(OTT 3-layer gatekeeper & typo resolver)*
+- `src/app/api/subscriptions/verify-entity/route.js` *(OTT entity verification API)*
+- `src/components/SubscriptionsView.jsx` *(OTT on-demand UI & mismatch pills)*
+- `src/app/api/subscriptions/ai-chat/route.js` *(Hardened with prompt injection & jailbreak shields)*
+- `src/app/api/cron/sync-subscriptions/route.js` *(Production fail-safe unauthorized cron protection)*
+- `src/app/page.js` *(Header segmented nav bar & active tab management)*
+- `src/components/SearchHero.jsx` *(Clean header controls & tab routing)*
+- `src/middleware.js` *(Public routing protection)*
+- `DEVELOPMENT_LOG.md` *(Release changelog & audit documentation)*
+- `local_docs/` *(Architecture manual & security blueprint updates)*
+
+---
+
 ### 🗓️ 2026-10-24 (Production Release: Multi-Country OTT & Subscriptions Engine, Retention CTA & Weekly Cron)
 
 * **Git Commit**: 7ed7adf

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { Redis } from "@upstash/redis";
 import { getSubscriptionsCatalog } from "@/data/subscriptionsRegistry";
+import { verifySubscriptionEntity } from "@/services/subscriptionEntityResolver";
 
 const GROQ_API_KEY = process.env.GROQ_API_KEY || "";
 const UPSTASH_REDIS_REST_URL = process.env.UPSTASH_REDIS_REST_URL || "";
@@ -155,6 +156,27 @@ export async function POST(request) {
         isNew: false,
         isCached: true,
         brand: memoryOnDemandCatalog.get(`${country}_${cleanSlug}`)
+      });
+    }
+
+    // 2.5. STRICT GATEKEEPER: Verify entity before AI generation
+    const entityCheck = await verifySubscriptionEntity(rawBrandName, country);
+    if (!entityCheck.isRealEntity || entityCheck.action === "UNKNOWN_ENTITY") {
+      return NextResponse.json({
+        success: false,
+        brand: rawBrandName,
+        error: "We currently do not have verified subscriptions or saving blueprints available for this platform in our database."
+      });
+    }
+
+    if (entityCheck.action === "CATEGORY_MISMATCH") {
+      return NextResponse.json({
+        success: false,
+        brand: entityCheck.canonicalName || rawBrandName,
+        isCategoryMismatch: true,
+        crossCategoryTab: entityCheck.crossCategoryTab,
+        crossCategoryTitle: entityCheck.crossCategoryTitle,
+        error: entityCheck.guidanceMessage
       });
     }
 

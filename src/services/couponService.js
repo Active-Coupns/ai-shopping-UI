@@ -1,5 +1,6 @@
 import { MASTER_COUPON_DATABASE, matchStoreKey } from "./couponDatabase.js";
 import { getCountryMeta } from "@/lib/countryConfig.js";
+import { discoverOnDemandStoreCoupons } from "./couponOnDemandService.js";
 
 /**
  * Real-Time On-Demand Coupon Evaluation Engine
@@ -27,7 +28,26 @@ export async function getCouponsForStore(queryOrStore = "", country = "IN") {
     }
   }
 
-  // 3. If still not matched, provide verified universal welcome promotions
+  // 3. If still not matched, trigger On-Demand Live Merchant Discovery
+  if (!storeData && queryOrStore && queryOrStore.trim().length >= 2) {
+    const onDemandRes = await discoverOnDemandStoreCoupons(queryOrStore, country);
+    if (onDemandRes.success && onDemandRes.storeData) {
+      storeData = onDemandRes.storeData;
+    } else {
+      return {
+        success: false,
+        notFound: true,
+        storeName: queryOrStore,
+        isCategoryMismatch: onDemandRes.isCategoryMismatch || false,
+        crossCategoryTab: onDemandRes.crossCategoryTab,
+        crossCategoryTitle: onDemandRes.crossCategoryTitle,
+        error: onDemandRes.error || "We currently do not have verified coupons or saving strategies available for this store in our database.",
+        coupons: []
+      };
+    }
+  }
+
+  // 4. Default generic fallback if empty query was passed
   if (!storeData) {
     const meta = getCountryMeta(country);
     const amount = meta.code === "IN" ? 100 : (meta.code === "AE" ? 25 : 10);
@@ -67,6 +87,7 @@ export async function getCouponsForStore(queryOrStore = "", country = "IN") {
     brandColor: storeData.brandColor,
     totalOffers: storeData.coupons.length,
     coupons: storeData.coupons,
+    isOnDemand: Boolean(storeData.isOnDemand),
     isRealTime: true
   };
 }

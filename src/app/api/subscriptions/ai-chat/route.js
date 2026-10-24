@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { sanitizeAiPrompt, checkSearchContentSafety, clampString } from "@/services/securityShield";
 import { INDIA_SUBSCRIPTIONS_CATALOG } from "@/data/subscriptionsCatalog";
 import { US_SUBSCRIPTIONS_CATALOG } from "@/data/subscriptionsCatalogUS";
 import { UK_SUBSCRIPTIONS_CATALOG } from "@/data/subscriptionsCatalogUK";
@@ -138,20 +139,27 @@ export async function POST(request) {
       country = "IN"
     } = body;
 
-    const rawMsg = String(message || "").trim();
-    if (!rawMsg) {
-      return NextResponse.json({ error: "Message is required" }, { status: 400 });
+    const rawMsg = clampString(String(message || "").trim(), 400);
+    if (!rawMsg || rawMsg.length < 2) {
+      return NextResponse.json({ error: "Message is required and must be at least 2 characters." }, { status: 400 });
     }
 
-    // SECURITY GUARDRAIL: Limit user message length to prevent token exhaustion & overflow
-    if (rawMsg.length > 400) {
+    // SECURITY GUARDRAIL 1: Content Safety Audit
+    const safetyCheck = checkSearchContentSafety(rawMsg);
+    if (!safetyCheck.safe) {
+      return NextResponse.json({ error: safetyCheck.reason }, { status: 400 });
+    }
+
+    // SECURITY GUARDRAIL 2: Advanced Prompt Injection & Jailbreak Defense
+    const promptSecurity = sanitizeAiPrompt(rawMsg, 400);
+    if (promptSecurity.isJailbreak) {
       return NextResponse.json({ 
-        error: "Message exceeds maximum allowed limit of 400 characters." 
+        error: "Security violation: Manipulative prompt or jailbreak pattern detected." 
       }, { status: 400 });
     }
 
-    // Strip control characters & null bytes
-    const userMessage = rawMsg.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "").trim();
+    // Strip control characters & null bytes from sanitized text
+    const userMessage = promptSecurity.cleanText.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "").trim();
 
     const rawCountry = String(country || "IN").toUpperCase();
     const VALID_COUNTRIES = ["IN", "US", "GB", "UK", "CA", "AU", "AE"];
@@ -187,7 +195,7 @@ CRITICAL ARCHITECTURAL CONVERSATION PRINCIPLES:
       - Set "savingSteps" to an empty array [].
       - Set "followUps" to: ["👉 Yes, build the 4-level savings blueprint", "👉 What is the cheapest ad-free plan?", "👉 Suggest 2 similar shows in UAE"]
 
-   B) MODE 2 — ON-DEMAND BLUEPRINT UNLOCK (User clicks yes, or asks for prices, saving hacks, telecom deals):
+   B) MODE 2 — ON-DEMAND BLUEPRINT UNLOCK (User clicks yes, or asks for prices, saving strategies, telecom deals):
       - Deliver full structured executive dossier in UAE Dirham (AED):
         * summary: Crisp headline with exact UAE pricing in AED.
         * whereToWatch: Platform name and cheapest route.
@@ -263,7 +271,7 @@ CRITICAL ARCHITECTURAL CONVERSATION PRINCIPLES:
       - Set "savingSteps" to an empty array [].
       - Set "followUps" to: ["👉 Yes, build the 4-level savings blueprint", "👉 What is the cheapest ad-free plan?", "👉 Suggest 2 similar Aussie shows"]
 
-   B) MODE 2 — ON-DEMAND BLUEPRINT UNLOCK (User clicks yes, or asks for prices, saving hacks, telecom deals):
+   B) MODE 2 — ON-DEMAND BLUEPRINT UNLOCK (User clicks yes, or asks for prices, saving strategies, telecom deals):
       - Deliver full structured executive dossier in AUD (A$):
         * summary: Crisp headline with exact Australian pricing in A$.
         * whereToWatch: Platform name and cheapest route.
@@ -339,7 +347,7 @@ CRITICAL ARCHITECTURAL CONVERSATION PRINCIPLES:
       - Set "savingSteps" to an empty array [].
       - Set "followUps" to: ["👉 Yes, build the 4-level savings blueprint", "👉 What is the cheapest ad-free plan?", "👉 Suggest 2 similar shows"]
 
-   B) MODE 2 — ON-DEMAND BLUEPRINT UNLOCK (User clicks yes, or asks for prices, saving hacks, telecom deals):
+   B) MODE 2 — ON-DEMAND BLUEPRINT UNLOCK (User clicks yes, or asks for prices, saving strategies, telecom deals):
       - Deliver full structured executive dossier in CAD (C$):
         * summary: Crisp headline with exact Canadian pricing in C$.
         * whereToWatch: Platform name and cheapest route.
@@ -415,7 +423,7 @@ CRITICAL ARCHITECTURAL CONVERSATION PRINCIPLES:
       - Set "savingSteps" to an empty array [].
       - Set "followUps" to: ["👉 Yes, build the 4-level savings blueprint", "👉 What is the cheapest ad-free plan?", "👉 Suggest 2 similar British shows"]
 
-   B) MODE 2 — ON-DEMAND BLUEPRINT UNLOCK (User clicks yes, or asks for prices, saving hacks, telecom deals):
+   B) MODE 2 — ON-DEMAND BLUEPRINT UNLOCK (User clicks yes, or asks for prices, saving strategies, telecom deals):
       - Deliver full structured executive dossier in GBP (£):
         * summary: Crisp headline with exact UK pricing in £.
         * whereToWatch: Platform name and cheapest route.
@@ -491,7 +499,7 @@ CRITICAL ARCHITECTURAL CONVERSATION PRINCIPLES:
       - Set "savingSteps" to an empty array [].
       - Set "followUps" to: ["👉 Yes, build the 4-level savings blueprint", "👉 What is the cheapest ad-free plan?", "👉 Suggest 2 similar shows"]
 
-   B) MODE 2 — ON-DEMAND BLUEPRINT UNLOCK (User clicks yes, or asks for prices, saving hacks, telecom deals):
+   B) MODE 2 — ON-DEMAND BLUEPRINT UNLOCK (User clicks yes, or asks for prices, saving strategies, telecom deals):
       - Deliver full structured executive dossier in USD ($):
         * summary: Crisp headline.
         * whereToWatch: Platform name and cheapest route.
@@ -567,14 +575,14 @@ CRITICAL ARCHITECTURAL CONVERSATION PRINCIPLES:
       - In "followUps", provide 1-tap user actions:
         ["👉 Haan, [Platform] ka complete 4-level blueprint banao", "👉 TV vs Mobile ka sasta plan batao", "👉 [Genre] ke 2 aur best shows batao"]
 
-   B) MODE 2 — ON-DEMAND BLUEPRINT UNLOCK (User clicks "Haan blueprint banao", or explicitly asks for prices, saving hacks, telecom deals):
+   B) MODE 2 — ON-DEMAND BLUEPRINT UNLOCK (User clicks "Haan blueprint banao", or explicitly asks for prices, saving strategies, telecom deals):
       - Deliver the full structured executive dossier:
         * summary: Crisp headline.
         * whereToWatch: Platform name and cheapest route.
         * savingSteps: Exactly 3 actionable level cards:
           - Level 1: ₹0 Telecom Perks (Jio / Airtel prepaid/postpaid/fiber)
           - Level 2: Super Combo / Voucher (Times Prime ₹1,199 / Gyftr cashback)
-          - Level 3: Smart Hack (1-Month binge & cancel / Family split)
+          - Level 3: Smart Strategy (1-Month binge & cancel / Family split)
         * clarifyingNote: TV vs Phone screen and resolution warning.
         * followUps: First-person user answers to your clarifying questions (e.g. ["👉 Mere paas Jio connection hai", "👉 Mere paas Airtel SIM hai", "👉 TV par dekhne ke liye konsa lu?"])
 
@@ -604,7 +612,7 @@ OUTPUT STRICTLY IN THIS JSON FORMAT:
       "detail": "1-2 sentence specific actionable tip"
     },
     {
-      "level": "Level 3: Smart Binge Hack",
+      "level": "Level 3: Smart Binge Strategy",
       "icon": "⚡",
       "title": "Short title",
       "detail": "1-2 sentence specific actionable tip"
@@ -631,7 +639,7 @@ ${COMPACT_CATALOG_SUMMARY}`;
     const conversationMessages = [
       { role: "system", content: systemPrompt },
       ...formattedHistory,
-      { role: "user", content: userMessage }
+      { role: "user", content: `<user_inquiry>\n${userMessage}\n</user_inquiry>` }
     ];
 
     let structuredData = null;
@@ -1018,7 +1026,7 @@ function generateCatalogFallbackStructured(query, isUS = false, isUK = false, is
 
     if (q.includes("deliveroo") || q.includes("prime") || q.includes("food delivery") || q.includes("talabat") || q.includes("careem")) {
       return {
-        summary: "UAE Food Delivery Hack: Amazon Prime UAE (AED 16/mo or AED 140/yr) includes Deliveroo Plus Silver (worth AED 19/mo) completely FREE! You get free delivery on food orders over AED 30 across the UAE, plus Prime Video, and free next-day Amazon shipping. Careem Plus (AED 19/mo) also gives 10% cashback on Hala taxi rides and free food delivery.",
+        summary: "UAE Food Delivery Strategy: Amazon Prime UAE (AED 16/mo or AED 140/yr) includes Deliveroo Plus Silver (worth AED 19/mo) completely FREE! You get free delivery on food orders over AED 30 across the UAE, plus Prime Video, and free next-day Amazon shipping. Careem Plus (AED 19/mo) also gives 10% cashback on Hala taxi rides and free food delivery.",
         whereToWatch: {
           platform: "Amazon Prime UAE & Deliveroo Plus",
           cheapestRoute: "AED 16.00/mo (Deliveroo Plus Silver included free at AED 0)"
@@ -1034,7 +1042,7 @@ function generateCatalogFallbackStructured(query, isUS = false, isUK = false, is
           {
             level: "Level 2: Careem Plus 10% Taxi Cashback",
             icon: "🚕",
-            title: "Careem Plus ROI Hack",
+            title: "Careem Plus ROI Strategy",
             detail: "Careem Plus (AED 19/mo) pays for itself with just 2 Hala taxi rides per month (10% cashback into your Careem Pay wallet) plus free food deliveries."
           },
           {
@@ -1170,7 +1178,7 @@ function generateCatalogFallbackStructured(query, isUS = false, isUK = false, is
             detail: "Purchase Apple or Google Play gift cards during Woolworths 20x Everyday Rewards points promotions. Pay your Stan bill through in-app billing to capture 10% real value back."
           },
           {
-            level: "Level 3: Binge & Rotate Hack",
+            level: "Level 3: Binge & Rotate Strategy",
             icon: "⚡",
             title: "Monthly Rotation Strategy",
             detail: "Stan has zero lock-in contracts. Activate Stan for 1 month to binge Yellowstone and Stan Originals, then pause and switch to BINGE or Kayo to save over A$120/year."
@@ -1214,7 +1222,7 @@ function generateCatalogFallbackStructured(query, isUS = false, isUK = false, is
         isBlueprintUnlocked: true,
         savingSteps: [
           {
-            level: "Level 1: AFL / NRL Digital Club Hack",
+            level: "Level 1: AFL / NRL Digital Club Privilege",
             icon: "🏉",
             title: "AFL & NRL Club Digital Membership",
             detail: "Almost every AFL and NRL club (Richmond, Collingwood, Broncos, Rabbitohs) offers a Digital Club Membership for ~A$240-$260/yr that includes a full 12-month Kayo Basic voucher. This slashes the regular A$35/mo (A$420/yr) price by ~40%!"
@@ -1342,7 +1350,7 @@ function generateCatalogFallbackStructured(query, isUS = false, isUK = false, is
           {
             level: "Level 3: Short Binge & Cancel",
             icon: "⚡",
-            title: "1-Month Binge Hack",
+            title: "1-Month Binge Strategy",
             detail: "Pay $22 for 1 month of 4K Ad-Free Premium to binge your favorite season, then cancel immediately to avoid recurring billing."
           }
         ],
@@ -1645,7 +1653,7 @@ function generateCatalogFallbackStructured(query, isUS = false, isUK = false, is
   if (q.includes("mirzapur") || q.includes("prime") || q.includes("panchayat")) {
     if (!isAskingBlueprint) {
       return {
-        summary: "Mirzapur exclusively Amazon Prime Video par available hai! Lekin direct ₹1,499 pay karne ki zaroorat nahi hai. Kya main aapke liye Amazon Prime ka complete 4-Level Savings Blueprint (₹0 Telecom deals, vouchers, family split hack) generate karoon?",
+        summary: "Mirzapur exclusively Amazon Prime Video par available hai! Lekin direct ₹1,499 pay karne ki zaroorat nahi hai. Kya main aapke liye Amazon Prime ka complete 4-Level Savings Blueprint (₹0 Telecom deals, vouchers, family split privilege) generate karoon?",
         whereToWatch: {
           platform: "Amazon Prime Video",
           cheapestRoute: "₹0 via Telecom ya ₹299/month (Binge & Cancel)"
@@ -1683,7 +1691,7 @@ function generateCatalogFallbackStructured(query, isUS = false, isUK = false, is
           detail: "Prime Video ke saath Hotstar aur SonyLIV bhi ek hi combo membership me milti hain."
         },
         {
-          level: "Level 3: Short Binge Hack",
+          level: "Level 3: Short Binge Strategy",
           icon: "⚡",
           title: "1-Month Plan leke Cancel",
           detail: "Pura saal bhar pay karne ke bajaye ₹299 ka monthly pack leke show binge karein aur baad me cancel karein."
