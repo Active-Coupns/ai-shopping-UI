@@ -59,3 +59,13 @@ AGENTS.md
 CLAUDE.md
 LOCAL_WORK_AND_NEXT_STEPS_CHECKPOINT.md
 data/*.jsonl
+
+personal_audit/
+*.pdf
+public/*.pdf
+
+public/test_results/
+MASS_VTON_TESTING_AUDIT_REPORT.md
+MASS_VTON_TESTING_AUDIT_REPORT.pdf
+scripts/*personal*
+scripts/rebuild_personal_pdf.mjs

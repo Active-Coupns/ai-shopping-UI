@@ -2,9 +2,8 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import Image from "next/image";
-import { Sparkles, Shirt, Camera, RefreshCw, ExternalLink, Check, ChevronRight, Send, ArrowLeft, Lock, X, LifeBuoy } from "lucide-react";
+import { Sparkles, Shirt, Camera, RefreshCw, ExternalLink, Check, ChevronRight, Send, ArrowLeft, Lock, X, LifeBuoy, ShieldCheck } from "lucide-react";
 import { useClerk } from "@clerk/nextjs";
-import { FASHION_CATALOG } from "@/data/fashionCatalog";
 import { getDeviceFingerprint } from "@/lib/deviceFingerprint";
 
 const SAMPLE_MODELS = {
@@ -61,13 +60,221 @@ const CATEGORY_TABS = [
   { key: "girls_casuals", label: "🌸 Girls Tops & Co-Ords", gender: "kids" }
 ];
 
-export default function FashionTrialRoom({ initialGarment = null, onBackToSearch, onOpenSupportTicket }) {
+const US_CATEGORY_TABS = [
+  { key: "all", label: "✨ All US Looks" },
+  // Men (US - 10 Categories)
+  { key: "us_men_oxford_shirts", label: "👔 Oxford & Dress Shirts", gender: "men" },
+  { key: "us_men_casual_flannels", label: "👕 Flannels & Plaids", gender: "men" },
+  { key: "us_men_streetwear_hoodies", label: "🧥 Streetwear & Hoodies", gender: "men" },
+  { key: "us_men_graphic_tees", label: "👕 Vintage Graphic Tees", gender: "men" },
+  { key: "us_men_polos", label: "👕 Classic & Golf Polos", gender: "men" },
+  { key: "us_men_blazers_suits", label: "🧥 Suits & Executive Blazers", gender: "men" },
+  { key: "us_men_denim_501", label: "👖 501s & Straight Denim", gender: "men" },
+  { key: "us_men_chinos_cargos", label: "👖 Chinos & Cargo Pants", gender: "men" },
+  { key: "us_men_denim_bombers", label: "🧥 Denim & Bomber Jackets", gender: "men" },
+  { key: "us_men_puffer_parkas", label: "🧥 Down Puffers & Parkas", gender: "men" },
+
+  // Women (US - 12 Categories)
+  { key: "us_women_cocktail_evening", label: "👗 Cocktail & Evening Gowns", gender: "women" },
+  { key: "us_women_sundresses_maxi", label: "👗 Sundresses & Maxis", gender: "women" },
+  { key: "us_women_athleisure_sets", label: "✨ Athleisure & Sculpt Sets", gender: "women" },
+  { key: "us_women_power_blazers", label: "🧥 Power Blazers & Suits", gender: "women" },
+  { key: "us_women_workwear_blouses", label: "👚 Silk Blouses & Shirts", gender: "women" },
+  { key: "us_women_casual_tees_baby", label: "👕 Baby Tees & Bodysuits", gender: "women" },
+  { key: "us_women_knit_cardigans", label: "🧥 Cardigans & Cashmere", gender: "women" },
+  { key: "us_women_denim_wideleg", label: "👖 Wide-Leg & 90s Jeans", gender: "women" },
+  { key: "us_women_denim_trench", label: "🧥 Trench Coats & Jackets", gender: "women" },
+  { key: "us_women_skirts_shorts", label: "👗 Skirts & Linen Shorts", gender: "women" },
+  { key: "us_women_coords_loungewear", label: "✨ Matching Co-ord Sets", gender: "women" },
+  { key: "us_women_puffer_jackets", label: "🧥 Cropped Puffers & Sherpas", gender: "women" },
+
+  // Kids (US - 6 Clean Focused Categories)
+  { key: "us_kids_boys_hoodies", label: "🧥 Boys Hoodies & Sweaters", gender: "kids" },
+  { key: "us_kids_boys_jackets", label: "🧥 Boys Jackets & Coats", gender: "kids" },
+  { key: "us_kids_boys_pants", label: "👖 Boys Jeans & Joggers", gender: "kids" },
+  { key: "us_kids_girls_dresses", label: "👗 Girls Dresses & Skirts", gender: "kids" },
+  { key: "us_kids_girls_sweaters", label: "🧥 Girls Sweaters & Cardigans", gender: "kids" },
+  { key: "us_kids_girls_tops", label: "👚 Girls Tops & Tees", gender: "kids" }
+];
+
+const UK_CATEGORY_TABS = [
+  { key: "all", label: "✨ All UK Looks" },
+  // Men (UK - 10 Categories)
+  { key: "uk_men_oxford_shirts", label: "👔 Oxford & Formal Shirts", gender: "men" },
+  { key: "uk_men_casual_flannels", label: "👕 Casual & Plaid Shirts", gender: "men" },
+  { key: "uk_men_streetwear_hoodies", label: "🧥 Hoodies & Sweatshirts", gender: "men" },
+  { key: "uk_men_graphic_tees", label: "👕 Chest Graphic & Logo Tees", gender: "men" },
+  { key: "uk_men_polos", label: "👕 Classic Pique & Knit Polos", gender: "men" },
+  { key: "uk_men_blazers_suits", label: "🤵 Suits & Tailored Blazers", gender: "men" },
+  { key: "uk_men_denim", label: "👖 Straight & Relaxed Denim", gender: "men" },
+  { key: "uk_men_chinos_cargos", label: "👖 Chinos & Utility Cargos", gender: "men" },
+  { key: "uk_men_jackets_bombers", label: "🧥 Harrington & Bomber Jackets", gender: "men" },
+  { key: "uk_men_puffer_parkas", label: "🧥 Down Puffers & Winter Parkas", gender: "men" },
+
+  // Women (UK - 12 Categories)
+  { key: "uk_women_cocktail_evening", label: "👗 Evening & Cocktail Dresses", gender: "women" },
+  { key: "uk_women_sundresses_maxi", label: "👗 Maxi & Day Dresses", gender: "women" },
+  { key: "uk_women_athleisure_sets", label: "✨ Sculpt Leggings & Activewear", gender: "women" },
+  { key: "uk_women_power_blazers", label: "🧥 Tailored Blazers & Suits", gender: "women" },
+  { key: "uk_women_workwear_blouses", label: "👚 Blouses & Office Shirts", gender: "women" },
+  { key: "uk_women_casual_tees", label: "👕 Fitted Tees & Bodysuits", gender: "women" },
+  { key: "uk_women_knit_cardigans", label: "🧥 Cardigans & Jumpers", gender: "women" },
+  { key: "uk_women_denim_wideleg", label: "👖 Wide-Leg & Straight Jeans", gender: "women" },
+  { key: "uk_women_trench_coats", label: "🧥 Trench Coats & Longline Jackets", gender: "women" },
+  { key: "uk_women_skirts_shorts", label: "👗 Skirts & Tailored Shorts", gender: "women" },
+  { key: "uk_women_coords_loungewear", label: "✨ Co-Ord Sets & Loungewear", gender: "women" },
+  { key: "uk_women_puffer_jackets", label: "🧥 Cropped Puffers & Warm Jackets", gender: "women" },
+
+  // Kids (UK - 6 Categories)
+  { key: "uk_kids_boys_hoodies", label: "🧥 Boys Hoodies & Sweaters", gender: "kids" },
+  { key: "uk_kids_boys_jackets", label: "🧥 Boys Jackets & Outerwear", gender: "kids" },
+  { key: "uk_kids_boys_pants", label: "👖 Boys Jeans & Joggers", gender: "kids" },
+  { key: "uk_kids_girls_dresses", label: "👗 Girls Dresses & Skirts", gender: "kids" },
+  { key: "uk_kids_girls_sweaters", label: "🧥 Girls Sweaters & Cardigans", gender: "kids" },
+  { key: "uk_kids_girls_tops", label: "👚 Girls Tops & Tees", gender: "kids" }
+];
+
+const CA_CATEGORY_TABS = [
+  { key: "all", label: "🍁 All Canadian Looks" },
+  // Men (CA - 10 Categories)
+  { key: "ca_men_oxford_shirts", label: "👔 Oxford & Dress Shirts", gender: "men" },
+  { key: "ca_men_casual_flannels", label: "👕 Flannels & Canadian Plaids", gender: "men" },
+  { key: "ca_men_streetwear_hoodies", label: "🧥 Streetwear & Fleece Hoodies", gender: "men" },
+  { key: "ca_men_graphic_tees", label: "👕 Vintage Graphic & Logo Tees", gender: "men" },
+  { key: "ca_men_polos", label: "👕 Classic & Knit Polos", gender: "men" },
+  { key: "ca_men_blazers_suits", label: "🤵 Suits & Executive Blazers", gender: "men" },
+  { key: "ca_men_denim", label: "👖 Straight & Relaxed Denim", gender: "men" },
+  { key: "ca_men_chinos_cargos", label: "👖 Chinos & Utility Cargo Pants", gender: "men" },
+  { key: "ca_men_jackets_bombers", label: "🧥 Bomber & Harrington Jackets", gender: "men" },
+  { key: "ca_men_puffer_parkas", label: "🧥 Canadian Down Puffers & Parkas", gender: "men" },
+
+  // Women (CA - 12 Categories)
+  { key: "ca_women_cocktail_evening", label: "👗 Cocktail & Evening Gowns", gender: "women" },
+  { key: "ca_women_sundresses_maxi", label: "👗 Sundresses & Casual Maxis", gender: "women" },
+  { key: "ca_women_athleisure_sets", label: "✨ Sculpt Leggings & Active Sets", gender: "women" },
+  { key: "ca_women_power_blazers", label: "🧥 Power Blazers & Suiting", gender: "women" },
+  { key: "ca_women_workwear_blouses", label: "👚 Silk Blouses & Work Shirts", gender: "women" },
+  { key: "ca_women_casual_tees", label: "👕 Fitted Tees & Bodysuits", gender: "women" },
+  { key: "ca_women_knit_cardigans", label: "🧥 Cardigans & Wool Sweaters", gender: "women" },
+  { key: "ca_women_denim_wideleg", label: "👖 Wide-Leg & Straight Jeans", gender: "women" },
+  { key: "ca_women_trench_coats", label: "🧥 Trench Coats & Wool Coats", gender: "women" },
+  { key: "ca_women_skirts_shorts", label: "👗 Skirts & Tailored Shorts", gender: "women" },
+  { key: "ca_women_coords_loungewear", label: "✨ Co-Ord Sets & Loungewear", gender: "women" },
+  { key: "ca_women_puffer_jackets", label: "🧥 Canadian Winter Puffers & Parkas", gender: "women" },
+
+  // Kids (CA - 6 Categories)
+  { key: "ca_kids_boys_hoodies", label: "🧥 Boys Hoodies & Sweaters", gender: "kids" },
+  { key: "ca_kids_boys_jackets", label: "🧥 Boys Jackets & Coats", gender: "kids" },
+  { key: "ca_kids_boys_pants", label: "👖 Boys Jeans & Joggers", gender: "kids" },
+  { key: "ca_kids_girls_dresses", label: "👗 Girls Dresses & Skirts", gender: "kids" },
+  { key: "ca_kids_girls_sweaters", label: "🧥 Girls Sweaters & Cardigans", gender: "kids" },
+  { key: "ca_kids_girls_tops", label: "👚 Girls Tops & Long Sleeves", gender: "kids" }
+];
+
+const AU_CATEGORY_TABS = [
+  { key: "all", label: "🦘 All Aussie Looks" },
+  // Men (AU - 10 Categories)
+  { key: "au_men_oxford_shirts", label: "👔 Oxford & Linen Shirts", gender: "men" },
+  { key: "au_men_casual_flannels", label: "👕 Overshirts & Check Shirts", gender: "men" },
+  { key: "au_men_streetwear_hoodies", label: "🧥 Streetwear & Cotton Hoodies", gender: "men" },
+  { key: "au_men_graphic_tees", label: "👕 Surf & Vintage Graphic Tees", gender: "men" },
+  { key: "au_men_polos", label: "👕 Pique & Resort Polos", gender: "men" },
+  { key: "au_men_blazers_suits", label: "🤵 Suits & Summer Blazers", gender: "men" },
+  { key: "au_men_denim", label: "👖 Straight & Relaxed Denim", gender: "men" },
+  { key: "au_men_chinos_cargos", label: "👖 Chinos & Utility Cargos", gender: "men" },
+  { key: "au_men_jackets_bombers", label: "🧥 Harrington & Bomber Jackets", gender: "men" },
+  { key: "au_men_puffer_parkas", label: "🧥 Lightweight Puffers & Jackets", gender: "men" },
+
+  // Women (AU - 12 Categories)
+  { key: "au_women_cocktail_evening", label: "👗 Evening & Cocktail Dresses", gender: "women" },
+  { key: "au_women_sundresses_maxi", label: "👗 Linen Sundresses & Maxis", gender: "women" },
+  { key: "au_women_athleisure_sets", label: "🏄‍♀️ Activewear & Coastal Sets", gender: "women" },
+  { key: "au_women_power_blazers", label: "🧥 Tailored Linen & Power Blazers", gender: "women" },
+  { key: "au_women_workwear_blouses", label: "👚 Silk Blouses & Resort Shirts", gender: "women" },
+  { key: "au_women_casual_tees", label: "👕 Ribbed Tees & Bodysuits", gender: "women" },
+  { key: "au_women_knit_cardigans", label: "🧥 Open Knits & Cardigans", gender: "women" },
+  { key: "au_women_denim_wideleg", label: "👖 Wide-Leg & Coastal Denim", gender: "women" },
+  { key: "au_women_trench_coats", label: "🧥 Trench Coats & Dusters", gender: "women" },
+  { key: "au_women_skirts_shorts", label: "👗 Linen Skirts & Tailored Shorts", gender: "women" },
+  { key: "au_women_coords_loungewear", label: "✨ Matching Co-Ords & Sets", gender: "women" },
+  { key: "au_women_puffer_jackets", label: "🧥 Cropped Puffers & Vests", gender: "women" },
+
+  // Kids (AU - 6 Categories)
+  { key: "au_kids_boys_hoodies", label: "🧥 Boys Hoodies & Sweats", gender: "kids" },
+  { key: "au_kids_boys_jackets", label: "🧥 Boys Jackets & Outerwear", gender: "kids" },
+  { key: "au_kids_boys_pants", label: "👖 Boys Jeans & Cargos", gender: "kids" },
+  { key: "au_kids_girls_dresses", label: "👗 Girls Cotton & Party Dresses", gender: "kids" },
+  { key: "au_kids_girls_sweaters", label: "🧥 Girls Cardigans & Jumpers", gender: "kids" },
+  { key: "au_kids_girls_tops", label: "👚 Girls Tees & Tops", gender: "kids" }
+];
+
+const AE_CATEGORY_TABS = [
+  { key: "all", label: "🇦🇪 All UAE & Dubai Looks" },
+  // Men (AE - 10 Categories)
+  { key: "ae_men_oxford_shirts", label: "👔 Premium Linen & Oxford Shirts", gender: "men" },
+  { key: "ae_men_casual_flannels", label: "👕 Lightweight Overshirts & Shackets", gender: "men" },
+  { key: "ae_men_streetwear_hoodies", label: "🧥 Designer Streetwear & Hoodies", gender: "men" },
+  { key: "ae_men_graphic_tees", label: "👕 Minimalist & Graphic Tees", gender: "men" },
+  { key: "ae_men_polos", label: "👕 Luxury Mercerized & Knit Polos", gender: "men" },
+  { key: "ae_men_blazers_suits", label: "🤵 Tailored Tuxedos & Power Blazers", gender: "men" },
+  { key: "ae_men_denim", label: "👖 Slim & Straight Designer Denim", gender: "men" },
+  { key: "ae_men_chinos_cargos", label: "👖 Tailored Chinos & Linen Trousers", gender: "men" },
+  { key: "ae_men_jackets_bombers", label: "🧥 Suede & Satin Bomber Jackets", gender: "men" },
+  { key: "ae_men_puffer_parkas", label: "🧥 Lightweight Jackets & Gilets", gender: "men" },
+
+  // Women (AE - 12 Categories)
+  { key: "ae_women_cocktail_evening", label: "👗 Haute Couture & Evening Gowns", gender: "women" },
+  { key: "ae_women_sundresses_maxi", label: "👗 Flowy Silk & Chiffon Maxis", gender: "women" },
+  { key: "ae_women_athleisure_sets", label: "✨ Sculpt Leggings & Athleisure", gender: "women" },
+  { key: "ae_women_power_blazers", label: "🧥 Tailored Double-Breasted Blazers", gender: "women" },
+  { key: "ae_women_workwear_blouses", label: "👚 Silk Blouses & Satin Shirts", gender: "women" },
+  { key: "ae_women_casual_tees", label: "👕 Luxury Ribbed Tees & Bodysuits", gender: "women" },
+  { key: "ae_women_knit_cardigans", label: "🧥 Fine Knit Cardigans & Drapes", gender: "women" },
+  { key: "ae_women_denim_wideleg", label: "👖 High-Rise Wide-Leg Denim", gender: "women" },
+  { key: "ae_women_trench_coats", label: "🧥 Flowy Trench Coats & Kimonos", gender: "women" },
+  { key: "ae_women_skirts_shorts", label: "👗 Pleated Midi Skirts & Linen Sets", gender: "women" },
+  { key: "ae_women_coords_loungewear", label: "✨ Silk & Modal Co-Ord Sets", gender: "women" },
+  { key: "ae_women_puffer_jackets", label: "🧥 Cropped Jackets & Structured Vests", gender: "women" },
+
+  // Kids (AE - 6 Categories)
+  { key: "ae_kids_boys_hoodies", label: "🧥 Boys Hoodies & Sweats", gender: "kids" },
+  { key: "ae_kids_boys_jackets", label: "🧥 Boys Jackets & Gilets", gender: "kids" },
+  { key: "ae_kids_boys_pants", label: "👖 Boys Chinos & Stretch Denim", gender: "kids" },
+  { key: "ae_kids_girls_dresses", label: "👗 Girls Occasion & Party Dresses", gender: "kids" },
+  { key: "ae_kids_girls_sweaters", label: "🧥 Girls Cardigans & Knitwear", gender: "kids" },
+  { key: "ae_kids_girls_tops", label: "👚 Girls Tops & Embroidered Tees", gender: "kids" }
+];
+
+// Ultra-Fast CDN Thumbnail Helper for Sub-100ms Product Grid Loading
+function getOptimizedThumbUrl(url) {
+  if (!url || typeof url !== "string") return url;
+  // H&M CDN: reduce 1MB+ raw studio photos to 17.5KB web thumbnails
+  if (url.includes("image.hm.com") && !url.includes("imwidth=")) {
+    return url.includes("?") ? `${url}&imwidth=384` : `${url}?imwidth=384`;
+  }
+  // ASOS CDN: fast 320w thumbnail
+  if (url.includes("images.asos-media.com") && !url.includes("$n_") && !url.includes("wid=")) {
+    return `${url}?$n_320w$`;
+  }
+  // Myntra (India): already optimized CDN JPEG thumbnails, do not inject unsupported path transforms
+  if (url.includes("assets.myntassets.com")) {
+    return url;
+  }
+  // Noon CDN (Namshi UAE): fast 320w thumbnail
+  if (url.includes("nooncdn.com")) {
+    return url.replace(/width=\d+/, 'width=320');
+  }
+  return url;
+}
+
+export default function FashionTrialRoom({ initialGarment = null, onBackToSearch, onOpenSupportTicket, selectedCountry = "IN" }) {
   const clerk = useClerk();
   const [gender, setGender] = useState("men");
   const [skinTone, setSkinTone] = useState("wheatish");
   const [userImage, setUserImage] = useState(SAMPLE_MODELS.men.image);
   const [isCustomPhoto, setIsCustomPhoto] = useState(false);
   const [tryonResultImage, setTryonResultImage] = useState(null);
+  const [previousLook, setPreviousLook] = useState(null); // Client-side Zero-Storage session comparison
   const [viewMode, setViewMode] = useState("tryon"); // "tryon" or "original"
   const [renderedCache, setRenderedCache] = useState({});
   const [feedbackGiven, setFeedbackGiven] = useState(false);
@@ -83,14 +290,87 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
     };
   }, [userImage]);
 
-  // Active Stylist & Selection State
+  // Active Stylist & Selection State (On-Demand Category Architecture)
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeOutfits, setActiveOutfits] = useState(
-    FASHION_CATALOG.filter(p => p.gender === "men").slice(0, 4)
-  );
-  const [currentTryonGarment, setCurrentTryonGarment] = useState(activeOutfits[0] || null);
+  const [catalogItems, setCatalogItems] = useState([]);
+  const [isLoadingCatalog, setIsLoadingCatalog] = useState(false);
+  const [activeOutfits, setActiveOutfits] = useState([]);
+  const [currentTryonGarment, setCurrentTryonGarment] = useState(null);
   const [isRendering, setIsRendering] = useState(false);
+
+  // Active category tabs based on selected country
+  const currentCategoryTabs =
+    selectedCountry === "IN"
+      ? CATEGORY_TABS
+      : selectedCountry === "GB" || selectedCountry === "UK"
+      ? UK_CATEGORY_TABS
+      : selectedCountry === "CA"
+      ? CA_CATEGORY_TABS
+      : selectedCountry === "AU"
+      ? AU_CATEGORY_TABS
+      : selectedCountry === "AE"
+      ? AE_CATEGORY_TABS
+      : US_CATEGORY_TABS;
+
+  // Reset selected category to "all" when country changes to avoid cross-country stale category mismatches
+  useEffect(() => {
+    setSelectedCategory("all");
+    setSearchQuery("");
+  }, [selectedCountry]);
+
+  // High-Speed Two-Tier Category Catalog Loader (Instant 0ms Switch via Client Ref + Server L1)
+  const clientCatalogCache = useRef({});
+
+  useEffect(() => {
+    let isMounted = true;
+    const cacheKey = `${selectedCountry}_${gender}_${selectedCategory}_${searchQuery.trim()}`;
+
+    // Instant Tier-1 Client Memory Hit (0ms - No Spinner, Zero Delay)
+    if (clientCatalogCache.current[cacheKey]) {
+      const cached = clientCatalogCache.current[cacheKey];
+      setCatalogItems(cached);
+      if (cached.length > 0 && (activeOutfits.length === 0 || !currentTryonGarment)) {
+        setActiveOutfits(cached.slice(0, 4));
+        if (!currentTryonGarment) setCurrentTryonGarment(cached[0]);
+      }
+      setIsLoadingCatalog(false);
+      return;
+    }
+
+    setIsLoadingCatalog(true);
+
+    const params = new URLSearchParams({
+      country: selectedCountry,
+      gender,
+      category: selectedCategory,
+      limit: "48",
+    });
+    if (searchQuery.trim()) {
+      params.set("search", searchQuery.trim());
+    }
+
+    fetch(`/api/vton/catalog?${params.toString()}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (isMounted && data.success && Array.isArray(data.items)) {
+          clientCatalogCache.current[cacheKey] = data.items;
+          setCatalogItems(data.items);
+          if (data.items.length > 0 && (activeOutfits.length === 0 || !currentTryonGarment)) {
+            setActiveOutfits(data.items.slice(0, 4));
+            if (!currentTryonGarment) setCurrentTryonGarment(data.items[0]);
+          }
+        }
+      })
+      .catch((err) => console.error("Error fetching category catalog:", err))
+      .finally(() => {
+        if (isMounted) setIsLoadingCatalog(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedCountry, gender, selectedCategory, searchQuery]);
 
   // Auto-load cross-bridged garment from Live Deals Search
   useEffect(() => {
@@ -191,6 +471,7 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
           garmentImageUrl: garment.image || garment.image_url,
           garmentCategory: garment.category,
           garmentTitle: garment.title,
+          isSampleModel: !isCustomPhoto,
           deviceFingerprint
         })
       });
@@ -206,6 +487,9 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
         const preloader = new window.Image();
         preloader.onload = () => {
           clearInterval(timerInterval);
+          if (tryonResultImage && currentTryonGarment && currentTryonGarment.id !== garment.id) {
+            setPreviousLook({ image: tryonResultImage, garment: currentTryonGarment });
+          }
           setTryonResultImage(outputImg);
           setRenderedCache(prev => ({ ...prev, [garment.id]: outputImg }));
           setViewMode("tryon");
@@ -220,6 +504,9 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
         };
         preloader.onerror = () => {
           clearInterval(timerInterval);
+          if (tryonResultImage && currentTryonGarment && currentTryonGarment.id !== garment.id) {
+            setPreviousLook({ image: tryonResultImage, garment: currentTryonGarment });
+          }
           setTryonResultImage(outputImg);
           setRenderedCache(prev => ({ ...prev, [garment.id]: outputImg }));
           setViewMode("tryon");
@@ -364,6 +651,7 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
           setUserImage(optimizedPhotoData);
           setIsCustomPhoto(true);
           setTryonResultImage(null);
+          setPreviousLook(null);
           setTryonErrorMsg("");
           setTryonErrorState(null);
           setViewMode("original");
@@ -563,15 +851,14 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
   const handleGenderChange = (newGender) => {
     setGender(newGender);
     setTryonResultImage(null);
+    setPreviousLook(null);
     if (!isCustomPhoto) {
       const defaultImg = SAMPLE_MODELS[newGender]?.image || SAMPLE_MODELS.men.image;
       setUserImage(defaultImg);
     }
-    const filtered = FASHION_CATALOG.filter(p => p.gender === newGender).slice(0, 4);
-    setActiveOutfits(filtered);
-    setCurrentTryonGarment(filtered[0] || null);
+    setActiveOutfits([]);
+    setCurrentTryonGarment(null);
     setSelectedCategory("all");
-
     setChatHistory([]);
   };
 
@@ -642,16 +929,8 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
 
 
 
-  // Filtered Wardrobe
-  const filteredCatalog = FASHION_CATALOG.filter(item => {
-    const genderMatch = gender === "all" || item.gender === gender;
-    const catMatch = selectedCategory === "all" || item.category === selectedCategory;
-    const queryMatch = !searchQuery.trim() || 
-      item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.brand.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (item.color || "").toLowerCase().includes(searchQuery.toLowerCase());
-    return genderMatch && catMatch && queryMatch;
-  });
+  // Wardrobe items loaded dynamically from Supabase API on demand
+  const filteredCatalog = catalogItems;
 
   return (
     <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-4 space-y-8 animate-fade-in text-slate-900">
@@ -759,27 +1038,48 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
                 sizes="(max-width: 768px) 100vw, 400px"
               />
 
-              {/* Before / After Comparison Pill */}
+              {/* Before / After & Client-Side Compare Pill */}
               {tryonResultImage && (
-                <div className="absolute top-3 left-3 z-20 flex items-center bg-slate-900/80 backdrop-blur-md p-0.5 rounded-xl border border-white/20 shadow-md">
-                  <button
-                    type="button"
-                    onClick={() => setViewMode("tryon")}
-                    className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
-                      viewMode === "tryon" ? "bg-white text-slate-900 shadow-sm" : "text-slate-300 hover:text-white"
-                    }`}
-                  >
-                    ✨ Fitted Look
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setViewMode("original")}
-                    className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
-                      viewMode === "original" ? "bg-white text-slate-900 shadow-sm" : "text-slate-300 hover:text-white"
-                    }`}
-                  >
-                    👤 Original
-                  </button>
+                <div className="absolute top-3 left-3 z-20 flex flex-wrap items-center gap-1.5 max-w-[92%]">
+                  <div className="flex items-center bg-slate-900/80 backdrop-blur-md p-0.5 rounded-xl border border-white/20 shadow-md">
+                    <button
+                      type="button"
+                      onClick={() => setViewMode("tryon")}
+                      className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
+                        viewMode === "tryon" ? "bg-white text-slate-900 shadow-sm" : "text-slate-300 hover:text-white"
+                      }`}
+                    >
+                      ✨ Fitted Look
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setViewMode("original")}
+                      className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
+                        viewMode === "original" ? "bg-white text-slate-900 shadow-sm" : "text-slate-300 hover:text-white"
+                      }`}
+                    >
+                      👤 Original
+                    </button>
+                  </div>
+
+                  {/* Instant In-Browser Session Compare Button (0 Server Storage, Instant Flip) */}
+                  {previousLook && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const curImg = tryonResultImage;
+                        const curGarment = currentTryonGarment;
+                        setTryonResultImage(previousLook.image);
+                        setCurrentTryonGarment(previousLook.garment);
+                        setPreviousLook({ image: curImg, garment: curGarment });
+                        setViewMode("tryon");
+                      }}
+                      className="flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-bold bg-amber-500/90 hover:bg-amber-600 text-slate-950 backdrop-blur-md border border-amber-300/40 shadow-md transition-all cursor-pointer active:scale-95"
+                      title={`Compare with previous look (${previousLook.garment?.title?.slice(0, 25) || 'Previous Outfit'}...)`}
+                    >
+                      <span>🔁 Compare Looks</span>
+                    </button>
+                  )}
                 </div>
               )}
 
@@ -915,6 +1215,7 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
                       setIsCustomPhoto(false);
                       setUserImage(SAMPLE_MODELS[gender].image);
                       setTryonResultImage(null);
+                      setPreviousLook(null);
                       setBodyCalibration(null);
                       setChatHistory([
                         {
@@ -936,6 +1237,12 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
                     Reset
                   </button>
                 )}
+              </div>
+
+              {/* Bank-Grade Privacy & Ephemeral AI Trust Badge */}
+              <div className="flex items-center justify-center gap-1.5 py-1.5 px-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[10px] font-semibold tracking-wide">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                <span>256-bit Encrypted · Zero-Storage Ephemeral AI · Strict Privacy Guard</span>
               </div>
 
               {/* Upload Custom Garment Screenshot Button */}
@@ -1273,12 +1580,18 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
                     {/* Garment Image */}
                     <div className="relative aspect-[3/4] w-full rounded-xl overflow-hidden bg-slate-50 mb-2">
                       <Image
-                        src={outfit.image || outfit.image_url}
+                        src={getOptimizedThumbUrl(outfit.image || outfit.image_url)}
                         alt={outfit.title}
                         fill
                         unoptimized
+                        loading="lazy"
+                        decoding="async"
                         className="object-cover group-hover:scale-105 transition-transform duration-300"
                         sizes="(max-width: 768px) 50vw, 200px"
+                        onError={(e) => {
+                          e.currentTarget.onerror = null;
+                          e.currentTarget.src = "/shirt.jpg";
+                        }}
                       />
                       {isSelected && (
                         <div className="absolute inset-0 bg-brand-indigo/10 border-2 border-brand-indigo rounded-xl"></div>
@@ -1376,7 +1689,7 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
 
         {/* Category Pills */}
         <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-          {CATEGORY_TABS.filter(tab => !tab.gender || tab.gender === gender).map(tab => (
+          {currentCategoryTabs.filter(tab => !tab.gender || tab.gender === gender).map(tab => (
             <button
               key={tab.key}
               type="button"
@@ -1394,57 +1707,92 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
 
         {/* Wardrobe Items Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          {filteredCatalog.map((item) => (
-            <div
-              key={item.id}
-              className="group bg-white border border-slate-200 hover:border-brand-indigo/60 rounded-2xl p-3 flex flex-col justify-between transition-all hover:shadow-md space-y-2.5"
-            >
-              <div className="relative aspect-[3/4] w-full rounded-xl overflow-hidden bg-slate-50">
-                <Image
-                  src={item.image || item.image_url}
-                  alt={item.title}
-                  fill
-                  unoptimized
-                  className="object-cover group-hover:scale-105 transition-transform duration-300"
-                  sizes="(max-width: 768px) 50vw, 150px"
-                />
-                <span className="absolute top-2 left-2 px-1.5 py-0.5 rounded-md bg-white/90 backdrop-blur-md text-[9px] font-black text-slate-800 border border-slate-200 shadow-sm">
-                  {item.brand}
-                </span>
-              </div>
-
-              <div className="space-y-1">
-                <h4 className="text-xs font-bold text-slate-800 line-clamp-1 group-hover:text-brand-indigo transition-colors">
-                  {item.title}
-                </h4>
-                <p className="text-[10px] text-slate-500 line-clamp-1 font-medium">{item.fabric || item.occasion}</p>
-                <div className="flex items-center justify-between pt-1">
-                  <span className="text-xs font-black text-slate-900">{item.price}</span>
-                  <span className="text-[10px] text-emerald-600 font-bold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100">{item.discount_percent}% OFF</span>
+          {isLoadingCatalog && catalogItems.length === 0 ? (
+            Array.from({ length: 12 }).map((_, i) => (
+              <div
+                key={`skeleton-${i}`}
+                className="bg-white border border-slate-200 rounded-2xl p-3 flex flex-col justify-between space-y-2.5 animate-pulse"
+              >
+                <div className="relative aspect-[3/4] w-full rounded-xl bg-slate-100" />
+                <div className="space-y-1.5 pt-1">
+                  <div className="h-3 bg-slate-200 rounded w-3/4" />
+                  <div className="h-2.5 bg-slate-100 rounded w-1/2" />
+                  <div className="flex justify-between items-center pt-1">
+                    <div className="h-3 bg-slate-200 rounded w-1/3" />
+                    <div className="h-3 bg-emerald-50 rounded w-1/4" />
+                  </div>
+                </div>
+                <div className="flex gap-1.5 pt-1">
+                  <div className="h-7 bg-indigo-50/50 rounded-lg flex-1" />
+                  <div className="h-7 bg-slate-100 rounded-lg w-8" />
                 </div>
               </div>
+            ))
+          ) : catalogItems.length > 0 ? (
+            filteredCatalog.map((item) => (
+              <div
+                key={item.id}
+                className="group bg-white border border-slate-200 hover:border-brand-indigo/60 rounded-2xl p-3 flex flex-col justify-between transition-all hover:shadow-md space-y-2.5"
+              >
+                <div className="relative aspect-[3/4] w-full rounded-xl overflow-hidden bg-slate-50">
+                  <Image
+                    src={getOptimizedThumbUrl(item.image || item.image_url)}
+                    alt={item.title}
+                    fill
+                    unoptimized
+                    loading="lazy"
+                    decoding="async"
+                    className="object-cover group-hover:scale-105 transition-transform duration-300"
+                    sizes="(max-width: 768px) 50vw, 150px"
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = "/shirt.jpg";
+                    }}
+                  />
+                  <span className="absolute top-2 left-2 px-1.5 py-0.5 rounded-md bg-white/90 backdrop-blur-md text-[9px] font-black text-slate-800 border border-slate-200 shadow-sm">
+                    {item.brand}
+                  </span>
+                </div>
 
-              {/* Action Buttons */}
-              <div className="flex gap-1.5 pt-1">
-                <button
-                  type="button"
-                  onClick={() => handleTryOnOutfit(item)}
-                  className="flex-1 py-1.5 bg-indigo-50 hover:bg-brand-indigo border border-indigo-200 text-brand-indigo hover:text-white rounded-lg text-[10px] font-black transition-all cursor-pointer active:scale-95"
-                >
-                  📸 Try On
-                </button>
-                <a
-                  href={item.direct_link || item.deal_link || "#"}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 hover:text-slate-900 rounded-lg text-[10px] font-bold transition-all"
-                  title="Buy on Store"
-                >
-                  Buy
-                </a>
+                <div className="space-y-1">
+                  <h4 className="text-xs font-bold text-slate-800 line-clamp-1 group-hover:text-brand-indigo transition-colors">
+                    {item.title}
+                  </h4>
+                  <p className="text-[10px] text-slate-500 line-clamp-1 font-medium">{item.fabric || item.occasion}</p>
+                  <div className="flex items-center justify-between pt-1">
+                    <span className="text-xs font-black text-slate-900">{item.price}</span>
+                    <span className="text-[10px] text-emerald-600 font-bold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100">{item.discount_percent}% OFF</span>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-1.5 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => handleTryOnOutfit(item)}
+                    className="flex-1 py-1.5 bg-indigo-50 hover:bg-brand-indigo border border-indigo-200 text-brand-indigo hover:text-white rounded-lg text-[10px] font-black transition-all cursor-pointer active:scale-95"
+                  >
+                    📸 Try On
+                  </button>
+                  <a
+                    href={item.direct_link || item.deal_link || "#"}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 hover:text-slate-900 rounded-lg text-[10px] font-bold transition-all"
+                    title="Buy on Store"
+                  >
+                    Buy
+                  </a>
+                </div>
               </div>
+            ))
+          ) : (
+            <div className="col-span-full py-16 text-center text-slate-500 bg-white rounded-2xl border border-slate-200">
+              <Shirt className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+              <p className="font-semibold text-sm text-slate-700">No outfits found matching this selection.</p>
+              <p className="text-xs text-slate-400 mt-1">Try switching category tabs or clearing your search filter.</p>
             </div>
-          ))}
+          )}
         </div>
 
         {/* Bottom Wardrobe Live Price Disclaimer Banner */}

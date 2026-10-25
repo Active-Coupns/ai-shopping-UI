@@ -909,7 +909,7 @@ return 1
 export async function acquireDistributedVtonSlot({
   userId,
   attemptId,
-  maxGlobal = 5,
+  maxGlobal = parseInt(process.env.MAX_VTON_CONCURRENCY || "100", 10),
   leaseTtlSeconds = 240,
   timeoutMs = 2500,
   _client = null

@@ -33,7 +33,6 @@ import {
   Compass
 } from "lucide-react";
 import { SUPPORTED_COUNTRIES } from "@/lib/countryConfig";
-import { getTravelDealsByCountry } from "@/services/travelDealsDatabase";
 
 function getBrandInitials(platformId, platformName) {
   if (platformId === "indigo") return "6E";
@@ -77,6 +76,35 @@ export default function TravelHubView({
   const [dealTypeFilter, setDealTypeFilter] = useState("all");
   const [dealSearchQuery, setDealSearchQuery] = useState("");
 
+  // Live Database Deals State with In-Memory Client Cache
+  const [dbDeals, setDbDeals] = useState([]);
+  const [dealsCache, setDealsCache] = useState({});
+  const [isLoadingDeals, setIsLoadingDeals] = useState(false);
+
+  useEffect(() => {
+    if (dealsCache[country]) {
+      setDbDeals(dealsCache[country]);
+      return;
+    }
+    let isMounted = true;
+    setIsLoadingDeals(true);
+    fetch(`/api/travel/deals?country=${country}&category=all`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (isMounted && data.success && Array.isArray(data.deals)) {
+          setDealsCache((prev) => ({ ...prev, [country]: data.deals }));
+          setDbDeals(data.deals);
+        }
+      })
+      .catch((err) => console.error("Error fetching travel deals:", err))
+      .finally(() => {
+        if (isMounted) setIsLoadingDeals(false);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, [country]);
+
   // On-demand discovery states
   const [onDemandDeals, setOnDemandDeals] = useState([]);
   const [isOnDemandScanning, setIsOnDemandScanning] = useState(false);
@@ -104,7 +132,7 @@ export default function TravelHubView({
       return;
     }
 
-    const localDeals = getTravelDealsByCountry(country, activeTab, "all");
+    const localDeals = dbDeals.filter((d) => activeTab === "all" || d.category === activeTab);
     const exactLocalMatch = localDeals.some(
       (d) =>
         d.platformName.toLowerCase().includes(debouncedQuery.toLowerCase()) ||
@@ -225,7 +253,7 @@ export default function TravelHubView({
   };
 
   const renderDealsSection = (category, sectionTitle, sectionSubtitle) => {
-    const localDeals = getTravelDealsByCountry(country, category, "all");
+    const localDeals = dbDeals.filter((d) => category === "all" || d.category === category);
     const categoryOnDemand = onDemandDeals.filter(
       (d) => d.category === category && (!d.country || d.country === country)
     );

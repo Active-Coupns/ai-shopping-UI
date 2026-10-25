@@ -818,6 +818,7 @@ export default function Home() {
             >
               <FashionTrialRoom
                 initialGarment={trialGarment}
+                selectedCountry={selectedCountry}
                 onBackToSearch={() => {
                   setAppState(products && products.length > 0 ? "results" : "idle");
                 }}

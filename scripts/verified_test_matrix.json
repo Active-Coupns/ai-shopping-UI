@@ -1,0 +1,614 @@
+[
+  {
+    "id": "IN_men_upper",
+    "country": "IN",
+    "gender": "men",
+    "categoryType": "Upper Body",
+    "categoryLabel": "Men Upper (IN)",
+    "modelKey": "men",
+    "garment": {
+      "id": "myntra-40698801",
+      "title": "Snitch Light Blue Stripes Shirt",
+      "brand": "Snitch",
+      "price": "₹649",
+      "image": "https://assets.myntassets.com/assets/images/2026/MARCH/16/3WEymp5j_67e6b0a2694f4efd9f34628da6543b6c.jpg",
+      "category": "upper_body",
+      "gender": "men"
+    }
+  },
+  {
+    "id": "IN_men_lower",
+    "country": "IN",
+    "gender": "men",
+    "categoryType": "Lower Body",
+    "categoryLabel": "Men Lower (IN)",
+    "modelKey": "men",
+    "garment": {
+      "id": "myntra-38810782",
+      "title": "Levis Men 511 Slim Fit Light Fade Jeans",
+      "brand": "Levis",
+      "price": "₹1,749",
+      "image": "https://assets.myntassets.com/assets/images/2026/JUNE/4/PSXJoUVV_13177346e0b04c5ea877acf9ec22fca9.jpg",
+      "category": "lower_body",
+      "gender": "men"
+    }
+  },
+  {
+    "id": "IN_women_upper",
+    "country": "IN",
+    "gender": "women",
+    "categoryType": "Upper Body",
+    "categoryLabel": "Women Upper (IN)",
+    "modelKey": "women",
+    "garment": {
+      "id": "myntra-36255067",
+      "title": "CORSICA Women Floral Shirt Style Top",
+      "brand": "CORSICA",
+      "price": "₹681",
+      "image": "https://assets.myntassets.com/assets/images/2025/AUGUST/6/9TtkiShM_600c6067c72740afb4482c111eeb4629.jpg",
+      "category": "upper_body",
+      "gender": "women"
+    }
+  },
+  {
+    "id": "IN_women_lower",
+    "country": "IN",
+    "gender": "women",
+    "categoryType": "Lower Body",
+    "categoryLabel": "Women Lower (IN)",
+    "modelKey": "women",
+    "garment": {
+      "id": "myntra-26697906",
+      "title": "The Roadster Life Co. Women Wide Leg Light Fade Stretchable Jeans",
+      "brand": "Roadster",
+      "price": "₹701",
+      "image": "https://assets.myntassets.com/assets/images/26697906/2024/3/15/7e927486-15c2-4db5-ac0e-133a831729071710504814556-Roadster-Women-Jeans-1121710504814075-1.jpg",
+      "category": "lower_body",
+      "gender": "women"
+    }
+  },
+  {
+    "id": "IN_kids_boy",
+    "country": "IN",
+    "gender": "kids",
+    "categoryType": "Upper Body",
+    "categoryLabel": "Kids Boy (IN)",
+    "modelKey": "kids_boy",
+    "garment": {
+      "id": "myntra-37973364",
+      "title": "Aj DEZInES Boys Ethnic Motifs Printed Regular Pure Cotton Kurta with Dhoti Pants",
+      "brand": "Aj DEZInES",
+      "price": "₹989",
+      "image": "https://assets.myntassets.com/assets/images/2025/NOVEMBER/14/xPJFRoE6_d3be7191449b48c08de2b61979f0c634.jpg",
+      "category": "upper_body",
+      "gender": "kids"
+    }
+  },
+  {
+    "id": "IN_kids_girl",
+    "country": "IN",
+    "gender": "kids",
+    "categoryType": "Lower Body",
+    "categoryLabel": "Kids Girl (IN)",
+    "modelKey": "kids_girl",
+    "garment": {
+      "id": "myntra-44407753",
+      "title": "NEXT Cotton Blend Top",
+      "brand": "NEXT",
+      "price": "₹844",
+      "image": "https://assets.myntassets.com/assets/images/2026/AUGUST/12/eo9oaAg6_490bcbfbb341433b99765b6e10ee5af5.jpg",
+      "category": "lower_body",
+      "gender": "kids"
+    }
+  },
+  {
+    "id": "US_men_upper",
+    "country": "US",
+    "gender": "men",
+    "categoryType": "Upper Body",
+    "categoryLabel": "Men Upper (US)",
+    "modelKey": "men",
+    "garment": {
+      "id": "asos-210314518",
+      "title": "ASOS DESIGN regular fit brushed oxford shirt in blue",
+      "brand": "ASOS DESIGN",
+      "price": "$37.99",
+      "image": "https://images.asos-media.com/products/asos-design-regular-fit-brushed-oxford-shirt-in-blue/210314518-1-blue",
+      "category": "upper_body",
+      "gender": "men"
+    }
+  },
+  {
+    "id": "US_men_lower",
+    "country": "US",
+    "gender": "men",
+    "categoryType": "Lower Body",
+    "categoryLabel": "Men Lower (US)",
+    "modelKey": "men",
+    "garment": {
+      "id": "asos-207150975",
+      "title": "JJ Rebel slim fit chino pants in navy",
+      "brand": "JJ Rebel",
+      "price": "$27.95",
+      "image": "https://images.asos-media.com/products/jj-rebel-slim-fit-chino-pants-in-navy/207150975-1-navyblazer",
+      "category": "lower_body",
+      "gender": "men"
+    }
+  },
+  {
+    "id": "US_women_upper",
+    "country": "US",
+    "gender": "women",
+    "categoryType": "Upper Body",
+    "categoryLabel": "Women Upper (US)",
+    "modelKey": "women",
+    "garment": {
+      "id": "asos-211549974",
+      "title": "Mango Boreal tailored blazer in black - part of a set",
+      "brand": "Mango",
+      "price": "$89.99",
+      "image": "https://images.asos-media.com/products/mango-boreal-tailored-blazer-in-black-part-of-a-set/211549974-1-black",
+      "category": "upper_body",
+      "gender": "women"
+    }
+  },
+  {
+    "id": "US_women_lower",
+    "country": "US",
+    "gender": "women",
+    "categoryType": "Lower Body",
+    "categoryLabel": "Women Lower (US)",
+    "modelKey": "women",
+    "garment": {
+      "id": "asos-203951944",
+      "title": "Only longline trenchcoat in stone ",
+      "brand": "ONLY",
+      "price": "$94.00",
+      "image": "https://images.asos-media.com/products/only-longline-trenchcoat-in-stone/203951944-1-stone",
+      "category": "lower_body",
+      "gender": "women"
+    }
+  },
+  {
+    "id": "US_kids_boy",
+    "country": "US",
+    "gender": "kids",
+    "categoryType": "Upper Body",
+    "categoryLabel": "Kids Boy (US)",
+    "modelKey": "kids_boy",
+    "garment": {
+      "id": "hm-1340299030",
+      "title": "Printed Brushed-Inside Sweatshirt",
+      "brand": "H&M Kids",
+      "price": "$9.99",
+      "image": "https://image.hm.com/assets/hm/ed/64/ed646990b82ff5541112140827405b0c233f0b1a.jpg",
+      "category": "upper_body",
+      "gender": "kids"
+    }
+  },
+  {
+    "id": "US_kids_girl",
+    "country": "US",
+    "gender": "kids",
+    "categoryType": "Dress",
+    "categoryLabel": "Kids Girl (US)",
+    "modelKey": "kids_girl",
+    "garment": {
+      "id": "hm-1353669005",
+      "title": "Corduroy Dress with Peter Pan Collar",
+      "brand": "H&M Kids",
+      "price": "$29.99",
+      "image": "https://image.hm.com/assets/hm/6f/0a/6f0a9b5f4560a2b58c581664922dbd0da06b0259.jpg",
+      "category": "dresses",
+      "gender": "kids"
+    }
+  },
+  {
+    "id": "UK_men_upper",
+    "country": "UK",
+    "gender": "men",
+    "categoryType": "Upper Body",
+    "categoryLabel": "Men Upper (UK)",
+    "modelKey": "men",
+    "garment": {
+      "id": "asos-uk-211093091",
+      "title": "Tommy Jeans cotton oxford shirt in navy",
+      "brand": "Tommy Jeans",
+      "price": "£42.99",
+      "image": "https://images.asos-media.com/products/tommy-jeans-cotton-oxford-shirt-in-navy/211093091-1-darkblue",
+      "category": "upper_body",
+      "gender": "men"
+    }
+  },
+  {
+    "id": "UK_men_lower",
+    "country": "UK",
+    "gender": "men",
+    "categoryType": "Lower Body",
+    "categoryLabel": "Men Lower (UK)",
+    "modelKey": "men",
+    "garment": {
+      "id": "asos-uk-209715390",
+      "title": "New Look slim fit chinos in stone",
+      "brand": "New Look",
+      "price": "£22.99",
+      "image": "https://images.asos-media.com/products/new-look-slim-fit-chinos-in-stone/209715390-1-stone",
+      "category": "lower_body",
+      "gender": "men"
+    }
+  },
+  {
+    "id": "UK_women_upper",
+    "country": "UK",
+    "gender": "women",
+    "categoryType": "Upper Body",
+    "categoryLabel": "Women Upper (UK)",
+    "modelKey": "women",
+    "garment": {
+      "id": "asos-uk-210659240",
+      "title": "ASOS DESIGN tailored collarless cinch waist blazer in black",
+      "brand": "ASOS DESIGN",
+      "price": "£60.00",
+      "image": "https://images.asos-media.com/products/asos-design-tailored-collarless-cinch-waist-blazer-in-black/210659240-1-black",
+      "category": "upper_body",
+      "gender": "women"
+    }
+  },
+  {
+    "id": "UK_women_lower",
+    "country": "UK",
+    "gender": "women",
+    "categoryType": "Lower Body",
+    "categoryLabel": "Women Lower (UK)",
+    "modelKey": "women",
+    "garment": {
+      "id": "asos-uk-211586145",
+      "title": "Stradivarius Petite d91 low wide-leg jeans in grey denim wash",
+      "brand": "Stradivarius",
+      "price": "£29.99",
+      "image": "https://images.asos-media.com/products/stradivarius-petite-d91-low-wide-leg-jeans-in-grey-denim-wash/211586145-1-greydenimwash",
+      "category": "lower_body",
+      "gender": "women"
+    }
+  },
+  {
+    "id": "UK_kids_boy",
+    "country": "UK",
+    "gender": "kids",
+    "categoryType": "Upper Body",
+    "categoryLabel": "Kids Boy (UK)",
+    "modelKey": "kids_boy",
+    "garment": {
+      "id": "hm-uk-1188865005",
+      "title": "2-piece printed sweatshirt set",
+      "brand": "H&M Kids UK",
+      "price": "£18.99",
+      "image": "https://image.hm.com/assets/hm/c3/68/c368c19a50c88cd74ca965517df2ad2185a5c13d.jpg",
+      "category": "upper_body",
+      "gender": "kids"
+    }
+  },
+  {
+    "id": "UK_kids_girl",
+    "country": "UK",
+    "gender": "kids",
+    "categoryType": "Dress",
+    "categoryLabel": "Kids Girl (UK)",
+    "modelKey": "kids_girl",
+    "garment": {
+      "id": "hm-uk-1343736004",
+      "title": "Long-sleeved tulle-skirt dress",
+      "brand": "H&M Kids",
+      "price": "£9.99",
+      "image": "https://image.hm.com/assets/hm/00/f2/00f248786678a606b62b01a05d9a39140f405d3f.jpg",
+      "category": "dresses",
+      "gender": "kids"
+    }
+  },
+  {
+    "id": "CA_men_upper",
+    "country": "CA",
+    "gender": "men",
+    "categoryType": "Upper Body",
+    "categoryLabel": "Men Upper (CA)",
+    "modelKey": "men",
+    "garment": {
+      "id": "ca_asos_207150806",
+      "title": "JJ Rebel oxford shirt in blue ",
+      "brand": "JJ Rebel",
+      "price": "C$34.43",
+      "image": "https://images.asos-media.com/products/jj-rebel-oxford-shirt-in-blue/207150806-1-blue",
+      "category": "upper_body",
+      "gender": "men"
+    }
+  },
+  {
+    "id": "CA_men_lower",
+    "country": "CA",
+    "gender": "men",
+    "categoryType": "Lower Body",
+    "categoryLabel": "Men Lower (CA)",
+    "modelKey": "men",
+    "garment": {
+      "id": "ca_asos_207150498",
+      "title": "JJ Rebel slim fit chino pants in black",
+      "brand": "JJ Rebel",
+      "price": "C$38.57",
+      "image": "https://images.asos-media.com/products/jj-rebel-slim-fit-chino-pants-in-black/207150498-1-black",
+      "category": "lower_body",
+      "gender": "men"
+    }
+  },
+  {
+    "id": "CA_women_upper",
+    "country": "CA",
+    "gender": "women",
+    "categoryType": "Upper Body",
+    "categoryLabel": "Women Upper (CA)",
+    "modelKey": "women",
+    "garment": {
+      "id": "ca_asos_210693687",
+      "title": "COLLUSION oversized blazer in black",
+      "brand": "Collusion",
+      "price": "C$96.59",
+      "image": "https://images.asos-media.com/products/collusion-oversized-blazer-in-black/210693687-1-black",
+      "category": "upper_body",
+      "gender": "women"
+    }
+  },
+  {
+    "id": "CA_women_lower",
+    "country": "CA",
+    "gender": "women",
+    "categoryType": "Lower Body",
+    "categoryLabel": "Women Lower (CA)",
+    "modelKey": "women",
+    "garment": {
+      "id": "ca_asos_210659183",
+      "title": "ASOS DESIGN baggy wide leg jeans in rinse",
+      "brand": "ASOS DESIGN",
+      "price": "C$82.79",
+      "image": "https://images.asos-media.com/products/asos-design-baggy-wide-leg-jeans-in-rinse/210659183-1-rinseraw",
+      "category": "lower_body",
+      "gender": "women"
+    }
+  },
+  {
+    "id": "CA_kids_boy",
+    "country": "CA",
+    "gender": "kids",
+    "categoryType": "Upper Body",
+    "categoryLabel": "Kids Boy (CA)",
+    "modelKey": "kids_boy",
+    "garment": {
+      "id": "ca_hm_1343222034",
+      "title": "Printed Brushed-Inside Sweatshirt",
+      "brand": "H&M Kids Canada",
+      "price": "C$24.99",
+      "image": "https://image.hm.com/assets/hm/71/28/7128062d907e03ecf47dd0a638f3a799837315d4.jpg",
+      "category": "upper_body",
+      "gender": "kids"
+    }
+  },
+  {
+    "id": "CA_kids_girl",
+    "country": "CA",
+    "gender": "kids",
+    "categoryType": "Dress",
+    "categoryLabel": "Kids Girl (CA)",
+    "modelKey": "kids_girl",
+    "garment": {
+      "id": "ca_hm_1362594001",
+      "title": "Bubble-Hem Dress with Bow Detail",
+      "brand": "H&M Kids Canada",
+      "price": "C$29.99",
+      "image": "https://image.hm.com/assets/hm/48/61/4861ebc9eb22b6327f5ffb500f6a4e9b0dda2b90.jpg",
+      "category": "dresses",
+      "gender": "kids"
+    }
+  },
+  {
+    "id": "AU_men_upper",
+    "country": "AU",
+    "gender": "men",
+    "categoryType": "Upper Body",
+    "categoryLabel": "Men Upper (AU)",
+    "modelKey": "men",
+    "garment": {
+      "id": "au_asos_210741006",
+      "title": "Reclaimed Vintage short sleeve oxford shirt in multi grid check",
+      "brand": "Reclaimed Vintage",
+      "price": "$47.50",
+      "image": "https://images.asos-media.com/products/reclaimed-vintage-short-sleeve-oxford-shirt-in-multi-grid-check/210741006-1-multi",
+      "category": "upper_body",
+      "gender": "men"
+    }
+  },
+  {
+    "id": "AU_men_lower",
+    "country": "AU",
+    "gender": "men",
+    "categoryType": "Lower Body",
+    "categoryLabel": "Men Lower (AU)",
+    "modelKey": "men",
+    "garment": {
+      "id": "au_asos_211049536",
+      "title": "ASOS DESIGN tailored cotton rich relaxed tapered chino pants in brown with coin pocket",
+      "brand": "ASOS DESIGN",
+      "price": "$74.00",
+      "image": "https://images.asos-media.com/products/asos-design-tailored-cotton-rich-relaxed-tapered-chino-pants-in-brown-with-coin-pocket/211049536-1-darkbrown",
+      "category": "lower_body",
+      "gender": "men"
+    }
+  },
+  {
+    "id": "AU_women_upper",
+    "country": "AU",
+    "gender": "women",
+    "categoryType": "Upper Body",
+    "categoryLabel": "Women Upper (AU)",
+    "modelKey": "women",
+    "garment": {
+      "id": "au_asos_210642260",
+      "title": "ASOS DESIGN cinched linen blazer in white",
+      "brand": "ASOS DESIGN",
+      "price": "$76.50",
+      "image": "https://images.asos-media.com/products/asos-design-cinched-linen-blazer-in-white/210642260-1-cream",
+      "category": "upper_body",
+      "gender": "women"
+    }
+  },
+  {
+    "id": "AU_women_lower",
+    "country": "AU",
+    "gender": "women",
+    "categoryType": "Lower Body",
+    "categoryLabel": "Women Lower (AU)",
+    "modelKey": "women",
+    "garment": {
+      "id": "au_asos_209600551",
+      "title": "Topshop Horizon mid rise wide leg jeans in bleach",
+      "brand": "Topshop",
+      "price": "$33.00",
+      "image": "https://images.asos-media.com/products/topshop-horizon-mid-rise-wide-leg-jeans-in-bleach/209600551-1-bleach",
+      "category": "lower_body",
+      "gender": "women"
+    }
+  },
+  {
+    "id": "AU_kids_boy",
+    "country": "AU",
+    "gender": "kids",
+    "categoryType": "Upper Body",
+    "categoryLabel": "Kids Boy (AU)",
+    "modelKey": "kids_boy",
+    "garment": {
+      "id": "au_hm_1238181013",
+      "title": "Waffle-knit Henley Sweater",
+      "brand": "Cotton On Kids / H&M AU",
+      "price": "A$30.38",
+      "image": "https://image.hm.com/assets/hm/1b/2e/1b2e3f4af5737c7d6f7f7f8fe02445ad815a44b0.jpg",
+      "category": "upper_body",
+      "gender": "kids"
+    }
+  },
+  {
+    "id": "AU_kids_girl",
+    "country": "AU",
+    "gender": "kids",
+    "categoryType": "Dress",
+    "categoryLabel": "Kids Girl (AU)",
+    "modelKey": "kids_girl",
+    "garment": {
+      "id": "au_hm_1362594001",
+      "title": "Bubble-Hem Dress with Bow Detail",
+      "brand": "Cotton On Kids / H&M AU",
+      "price": "A$32.99",
+      "image": "https://image.hm.com/assets/hm/48/61/4861ebc9eb22b6327f5ffb500f6a4e9b0dda2b90.jpg",
+      "category": "dresses",
+      "gender": "kids"
+    }
+  },
+  {
+    "id": "AE_men_upper",
+    "country": "AE",
+    "gender": "men",
+    "categoryType": "Upper Body",
+    "categoryLabel": "Men Upper (AE)",
+    "modelKey": "men",
+    "garment": {
+      "id": "ae_men_oxford_shirts_Z031BB2CE128C732998EFZ",
+      "title": "The Souled Store Men Sky Blue Solid Regular Fit Cotton Linen Shirts",
+      "brand": "The Souled Store The Souled Store Men Sky Blue Solid Regular Fit Cotton Linen",
+      "price": "AED 127.00",
+      "image": "https://f.nooncdn.com/p/pzsku/Z031BB2CE128C732998EFZ/45/_/1787810464/780155fb-5e1b-4470-b470-dcab44e7d967.jpg?format=webp&width=800",
+      "category": "upper_body",
+      "gender": "men"
+    }
+  },
+  {
+    "id": "AE_men_lower",
+    "country": "AE",
+    "gender": "men",
+    "categoryType": "Lower Body",
+    "categoryLabel": "Men Lower (AE)",
+    "modelKey": "men",
+    "garment": {
+      "id": "ae_men_chinos_cargos_ZACA0E01C9FE38A58694FZ",
+      "title": "Beige Solid Pocket Detail Wide Leg Joggers",
+      "brand": "Styli Beige Solid Pocket Detail Wide Leg",
+      "price": "AED 72.00",
+      "image": "https://f.nooncdn.com/p/pzsku/ZACA0E01C9FE38A58694FZ/45/_/1787143786/4dda9748-2d35-441d-a35d-03b903cc6625.jpg?format=webp&width=800",
+      "category": "lower_body",
+      "gender": "men"
+    }
+  },
+  {
+    "id": "AE_women_upper",
+    "country": "AE",
+    "gender": "women",
+    "categoryType": "Upper Body",
+    "categoryLabel": "Women Upper (AE)",
+    "modelKey": "women",
+    "garment": {
+      "id": "ae_women_power_blazers_Z91818743FC2F00BD6AD7Z",
+      "title": "Classic Metallic Oversize Tweed Coat",
+      "brand": "Ginger Classic Metallic Oversize Tweed",
+      "price": "AED 229.00",
+      "image": "https://f.nooncdn.com/p/pzsku/Z91818743FC2F00BD6AD7Z/45/_/1791975066/f315791a-1ace-496b-b6f7-8f62e670c3cd.jpg?format=webp&width=800",
+      "category": "upper_body",
+      "gender": "women"
+    }
+  },
+  {
+    "id": "AE_women_lower",
+    "country": "AE",
+    "gender": "women",
+    "categoryType": "Lower Body",
+    "categoryLabel": "Women Lower (AE)",
+    "modelKey": "women",
+    "garment": {
+      "id": "ae_women_denim_wideleg_ZD719DD80242CB6EB3396Z",
+      "title": "Straight Leg Denim Jeans",
+      "brand": "Hiccup Straight Leg Denim",
+      "price": "AED 90.00",
+      "image": "https://f.nooncdn.com/p/pzsku/ZD719DD80242CB6EB3396Z/45/_/1790987085/f6228780-8095-4327-a352-1686266f8f74.jpg?format=webp&width=800",
+      "category": "lower_body",
+      "gender": "women"
+    }
+  },
+  {
+    "id": "AE_kids_boy",
+    "country": "AE",
+    "gender": "kids",
+    "categoryType": "Upper Body",
+    "categoryLabel": "Kids Boy (AE)",
+    "modelKey": "kids_boy",
+    "garment": {
+      "id": "ae_kids_boys_hoodies_VE7103E3615EECEA5B751V",
+      "title": "Youth Seasonals Collegiate Typography Hoodie",
+      "brand": "Adidas Youth Seasonals Collegiate Typography",
+      "price": "AED 164.00",
+      "image": "https://f.nooncdn.com/p/pzsku/ZADE8C9AD0ACBE8D0A0FDZ/45/_/1779087125/83f6e59e-273e-494e-b543-28a41cf10233.jpg?format=webp&width=800",
+      "category": "upper_body",
+      "gender": "kids"
+    }
+  },
+  {
+    "id": "AE_kids_girl",
+    "country": "AE",
+    "gender": "kids",
+    "categoryType": "Dress",
+    "categoryLabel": "Kids Girl (AE)",
+    "modelKey": "kids_girl",
+    "garment": {
+      "id": "ae_kids_girls_dresses_Z7CA83662619D25D9EF77Z",
+      "title": "Tracksuit",
+      "brand": "Puma",
+      "price": "AED 85.00",
+      "image": "https://f.nooncdn.com/p/pzsku/Z7CA83662619D25D9EF77Z/45/_/1780052773/f3ada42a-3c55-4726-a1b2-0e6cc352e4a2.jpg?format=webp&width=800",
+      "category": "dresses",
+      "gender": "kids"
+    }
+  }
+]

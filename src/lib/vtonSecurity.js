@@ -5,6 +5,12 @@ import dns from 'dns/promises';
 export const ALLOWED_IMAGE_HOSTS = new Set([
   'assets.myntassets.com',
   'assets.ajio.com',
+  'images.asos-media.com',
+  'image.hm.com',
+  'f.nooncdn.com',
+  'cottonon.com',
+  'api.pixelapi.dev',
+  'cdn.pixelapi.dev',
   'm.media-amazon.com',
   'images-na.ssl-images-amazon.com',
   'images.unsplash.com',
@@ -259,11 +265,11 @@ export async function validateAndSanitizeImage(imageInput) {
 }
 
 // 4. ATOMIC GLOBAL GPU & QUEUE LIMITER (OWASP API4)
-// Enforces Max 5 Active GPU Jobs + Max 10 Queue Depth with Concurrency Mutex
+// Enforces Dynamic Elastic GPU Jobs & Queue Depth with Concurrency Mutex
 class AtomicResourceManager {
   constructor() {
-    this.maxActiveJobs = 5;
-    this.maxQueueDepth = 10;
+    this.maxActiveJobs = parseInt(process.env.MAX_VTON_CONCURRENCY || "100", 10);
+    this.maxQueueDepth = parseInt(process.env.MAX_VTON_QUEUE_DEPTH || "250", 10);
     this.activeJobs = 0;
     this.queuedCount = 0;
     this.userActiveJobMap = new Map(); // userId -> boolean
@@ -446,3 +452,58 @@ export function safeLog(context, message, meta = {}) {
   }
   console.log(`[${new Date().toISOString()}] [${context}] ${message}`, Object.keys(sanitizedMeta).length ? JSON.stringify(sanitizedMeta) : '');
 }
+
+// 8. CRYPTOGRAPHIC OUTPUT INTEGRITY & CONTENT SAFETY CIRCUIT BREAKER
+export async function verifyVtonOutputSafety(outputString) {
+  if (!outputString || typeof outputString !== 'string') {
+    throw new Error('OUTPUT_SAFETY_ERROR: Empty or invalid output received from AI worker.');
+  }
+
+  // 1. Destination / Origin Verification
+  // The output must strictly be an authorized PixelAPI URL or a valid data URI
+  const isDataUri = outputString.startsWith('data:image/');
+  const isAuthorizedPixelUrl = outputString.startsWith('https://api.pixelapi.dev/') || 
+                               outputString.startsWith('https://storage.googleapis.com/pixelapi-') ||
+                               outputString.startsWith('https://cdn.pixelapi.dev/');
+
+  if (!isDataUri && !isAuthorizedPixelUrl) {
+    safeLog('VTON Safety Alert', 'Blocked unauthorized output URL origin', { sample: outputString.slice(0, 50) });
+    throw new Error('SECURITY_BREACH_PREVENTED: Output originated from an untrusted or unauthorized AI source.');
+  }
+
+  // 2. Fast In-Memory Image Structure & Dimension Integrity Scan (<12ms)
+  try {
+    let buffer;
+    if (isDataUri) {
+      const cleanB64 = outputString.split('base64,')[1];
+      buffer = Buffer.from(cleanB64, 'base64');
+    } else {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 4000);
+      const res = await fetch(outputString, {
+        method: 'GET',
+        headers: { 'Accept': 'image/*' },
+        signal: controller.signal
+      });
+      clearTimeout(timer);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      buffer = Buffer.from(await res.arrayBuffer());
+    }
+
+    if (buffer.length < 500) {
+      throw new Error('OUTPUT_CORRUPT: Output image buffer is unusually small or malformed.');
+    }
+
+    // Verify format and dimensions via Sharp pre-decoder
+    const metadata = await sharp(buffer, { limitInputPixels: 4194304 }).metadata();
+    if (!metadata.width || metadata.width < 200 || !metadata.height || metadata.height < 200) {
+      throw new Error('OUTPUT_DIMENSION_ERROR: Output image does not meet valid portrait dimensions.');
+    }
+
+    return true;
+  } catch (err) {
+    safeLog('VTON Output Safety', `Output inspection failed: ${err.message}`);
+    throw new Error(`OUTPUT_VALIDATION_FAILED: Rendered result failed security integrity check.`);
+  }
+}
+

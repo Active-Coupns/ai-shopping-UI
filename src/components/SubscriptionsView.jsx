@@ -10,7 +10,6 @@ import {
   Layers, Volume2, Shield, Calendar, RefreshCw, CheckCircle2
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { getSubscriptionsCatalog } from "@/data/subscriptionsRegistry";
 import { SUBSCRIPTIONS_SEO_MAP } from "@/data/subscriptionsSeoData";
 import { SUBSCRIPTIONS_SEO_MAP_US } from "@/data/subscriptionsSeoDataUS";
 import { SUBSCRIPTIONS_SEO_MAP_UK } from "@/data/subscriptionsSeoDataUK";
@@ -63,8 +62,9 @@ export default function SubscriptionsView({
   const [isAiChatOpen, setIsAiChatOpen] = useState(false);
   const [copiedCode, setCopiedCode] = useState(null);
 
-  // Dynamic Catalog State (Baseline 25 + any On-Demand ingested brands)
-  const [catalogSubs, setCatalogSubs] = useState(() => getSubscriptionsCatalog(selectedCountry));
+  // Dynamic Catalog State (Baseline from Supabase API + any On-Demand ingested brands)
+  const [catalogSubs, setCatalogSubs] = useState([]);
+  const [subsCache, setSubsCache] = useState({});
   const [isDiscovering, setIsDiscovering] = useState(false);
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [verifiedEntity, setVerifiedEntity] = useState(null);
@@ -127,26 +127,54 @@ export default function SubscriptionsView({
     };
   }, [debouncedQuery, catalogSubs, selectedCountry]);
 
-  // Sync catalog when selectedCountry changes and load on-demand brands for this country
+  // Sync catalog from Supabase API when selectedCountry changes and merge on-demand brands
   useEffect(() => {
-    const baseCatalog = getSubscriptionsCatalog(selectedCountry);
-    setCatalogSubs(baseCatalog);
+    let isMounted = true;
 
-    fetch(`/api/subscriptions/on-demand?country=${selectedCountry}`)
-      .then((r) => r.json())
-      .then((data) => {
-        if (Array.isArray(data?.brands) && data.brands.length > 0) {
+    const loadData = async () => {
+      let baseList = subsCache[selectedCountry] || [];
+
+      if (!subsCache[selectedCountry]) {
+        try {
+          const res = await fetch(`/api/subscriptions/catalog?country=${selectedCountry}`);
+          const json = await res.json();
+          if (json.success && Array.isArray(json.subscriptions)) {
+            baseList = json.subscriptions;
+            if (isMounted) {
+              setSubsCache((prev) => ({ ...prev, [selectedCountry]: baseList }));
+            }
+          }
+        } catch (err) {
+          console.error("Error fetching subscriptions catalog:", err);
+        }
+      }
+
+      if (isMounted) {
+        setCatalogSubs(baseList);
+      }
+
+      // Check for any dynamic on-demand ingested brands
+      try {
+        const onDemandRes = await fetch(`/api/subscriptions/on-demand?country=${selectedCountry}`);
+        const onDemandJson = await onDemandRes.json();
+        if (isMounted && Array.isArray(onDemandJson?.brands) && onDemandJson.brands.length > 0) {
           setCatalogSubs((prev) => {
             const brandMap = new Map(prev.map((s) => [s.id, s]));
-            data.brands.forEach((b) => {
+            onDemandJson.brands.forEach((b) => {
               const current = brandMap.get(b.id);
               brandMap.set(b.id, current ? { ...current, ...b } : b);
             });
             return Array.from(brandMap.values());
           });
         }
-      })
-      .catch(() => {});
+      } catch (_) {}
+    };
+
+    loadData();
+
+    return () => {
+      isMounted = false;
+    };
   }, [selectedCountry]);
 
   const handleDiscoverOnDemand = async (name) => {

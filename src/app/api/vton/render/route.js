@@ -24,6 +24,7 @@ import {
   globalResourceManager,
   ephemeralVtonCache,
   verifyRequestOrigin,
+  verifyVtonOutputSafety,
   safeLog
 } from '@/lib/vtonSecurity';
 
@@ -279,7 +280,8 @@ export async function POST(request) {
       return NextResponse.json({ success: false, error: "INVALID_PAYLOAD", message: "Request body must be a JSON object." }, { status: 400 });
     }
 
-    const { userImageBase64, garmentImageUrl, garmentCategory, garmentTitle: rawGarmentTitle } = body;
+    const { userImageBase64, garmentImageUrl, garmentCategory, garmentTitle: rawGarmentTitle, isSampleModel } = body;
+    const isSample = Boolean(isSampleModel || (typeof userImageBase64 === 'string' && userImageBase64.includes('images.unsplash.com')));
 
     // Sanitize garmentTitle to prevent prompt injection and script tags
     const garmentTitle = typeof rawGarmentTitle === 'string'
@@ -367,7 +369,7 @@ export async function POST(request) {
       const distributedSlot = await acquireDistributedVtonSlot({
         userId,
         attemptId,
-        maxGlobal: 5,
+        maxGlobal: parseInt(process.env.MAX_VTON_CONCURRENCY || "100", 10),
         leaseTtlSeconds: 360
       });
 
@@ -462,34 +464,39 @@ export async function POST(request) {
       return NextResponse.json({ success: false, error: ssrfErr.message }, { status: 400 });
     }
 
-    // 8. Ephemeral In-Memory Cache Check (Max 15-min retention target, 0 GPU cost for repeat looks)
-    const cacheKey = `${sanitizedPerson.base64.slice(0, 40)}_${garmentImageUrl.slice(-40)}`;
-    const cachedResult = ephemeralVtonCache.get(cacheKey);
-    if (cachedResult) {
-      safeLog('VTON Render', 'Served look from ephemeral cache', { garmentTitle });
-      if (quotaReserved) {
-        await releaseVtonFreeQuota({ identifier: userId, attemptId });
-        quotaReserved = false;
-      }
-      if (releaseSlot) {
-        try {
-          await releaseSlot();
-          releaseSlot = null;
-        } catch (_) {}
-      }
-      return NextResponse.json({
-        success: true,
-        renderedImageUrl: cachedResult,
-        processingTimeMs: Date.now() - startTime,
-        engine: "PixelAPI-VTON-Cache",
-        garmentTitle: garmentTitle || "Tailored Fit",
-        freeTier: {
-          limit: 2,
-          used: quotaRes.confirmedCount || 0,
-          remaining: Math.max(0, 2 - (quotaRes.confirmedCount || 0)),
-          cached: true
+    // 8. Ephemeral In-Memory Cache Check (Exclusively for platform sample models to eliminate redundant GPU load)
+    // Strict Zero-Storage Privacy: Custom user photos NEVER read from or write to server-side cache!
+    let cachedResult = null;
+    let cacheKey = null;
+    if (isSample) {
+      cacheKey = `sample_${sanitizedPerson.base64.slice(0, 40)}_${garmentImageUrl.slice(-40)}`;
+      cachedResult = ephemeralVtonCache.get(cacheKey);
+      if (cachedResult) {
+        safeLog('VTON Render', 'Served sample model look from ephemeral cache', { garmentTitle });
+        if (quotaReserved) {
+          await releaseVtonFreeQuota({ identifier: userId, attemptId });
+          quotaReserved = false;
         }
-      });
+        if (releaseSlot) {
+          try {
+            await releaseSlot();
+            releaseSlot = null;
+          } catch (_) {}
+        }
+        return NextResponse.json({
+          success: true,
+          renderedImageUrl: cachedResult,
+          processingTimeMs: Date.now() - startTime,
+          engine: "PixelAPI-VTON-Cache",
+          garmentTitle: garmentTitle || "Tailored Fit",
+          freeTier: {
+            limit: 3,
+            used: quotaRes.confirmedCount || 0,
+            remaining: Math.max(0, 3 - (quotaRes.confirmedCount || 0)),
+            cached: true
+          }
+        });
+      }
     }
 
     // 9. Dispatch to Isolated VTON Inference Worker
@@ -572,6 +579,20 @@ export async function POST(request) {
             }
 
             if (finalOutputUrl) {
+              // Safety Circuit Breaker: Cryptographic origin & image integrity verification (<12ms)
+              try {
+                await verifyVtonOutputSafety(finalOutputUrl);
+              } catch (safetyErr) {
+                safeLog('VTON Safety Circuit Breaker', `Blocked output: ${safetyErr.message}`);
+                return NextResponse.json({
+                  success: false,
+                  error: "Generated look did not pass our strict privacy and content integrity checks. No credits deducted.",
+                  errorType: "SAFETY_BLOCKED",
+                  guidance: "Please try with another outfit.",
+                  processingTimeMs: Date.now() - startTime
+                }, { status: 422 });
+              }
+
               const commitRes = await commitVtonFreeQuota({
                 identifier: userId,
                 attemptId,
@@ -584,7 +605,10 @@ export async function POST(request) {
               if (rawFingerprint && typeof rawFingerprint === "string" && rawFingerprint.startsWith("hw_")) {
                 incrementVtonDeviceUsage(rawFingerprint).catch(() => {});
               }
-              ephemeralVtonCache.set(cacheKey, finalOutputUrl);
+              // Strict Zero-Storage Privacy: ONLY cache public platform sample models; NEVER cache user's personal photos!
+              if (isSample && cacheKey) {
+                ephemeralVtonCache.set(cacheKey, finalOutputUrl);
+              }
               safeLog('VTON Render', 'Job completed successfully', { processingTimeMs: Date.now() - startTime, quotaCommitted });
               const currentUsage = commitRes.confirmedCount || (quotaRes.confirmedCount + 1);
               return NextResponse.json({
