@@ -69,3 +69,6 @@ MASS_VTON_TESTING_AUDIT_REPORT.md
 MASS_VTON_TESTING_AUDIT_REPORT.pdf
 scripts/*personal*
 scripts/rebuild_personal_pdf.mjs
+
+local_docs/
+SYSTEM_FEATURE_MANIFEST.md
