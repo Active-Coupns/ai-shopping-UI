@@ -3,6 +3,12 @@ import { getCouponsForStore } from "@/services/couponService";
 import { isFeatureEnabled } from "@/services/featureFlags";
 import { recordCrashException } from "@/services/crashVault";
 
+export const dynamic = "force-dynamic";
+
+// Global in-memory cache for ultra-fast coupon lookups
+const memoryCouponsCache = new Map();
+const COUPONS_TTL_MS = 60 * 60 * 1000; // 1 Hour
+
 export async function GET(req) {
   try {
     const isScraperEnabled = await isFeatureEnabled("zyteCouponScraper");
@@ -15,11 +21,31 @@ export async function GET(req) {
     }
 
     const { searchParams } = new URL(req.url);
-    const store = searchParams.get("store") || searchParams.get("query") || "zomato";
-    const country = searchParams.get("country") || "IN";
+    const store = (searchParams.get("store") || searchParams.get("query") || "zomato").toLowerCase().trim();
+    const country = (searchParams.get("country") || "IN").toUpperCase();
+
+    const cacheKey = `${country}:${store}`;
+    const cached = memoryCouponsCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < COUPONS_TTL_MS) {
+      return NextResponse.json(cached.data, {
+        headers: {
+          "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",
+          "X-Memory-Cache": "HIT"
+        }
+      });
+    }
 
     const result = await getCouponsForStore(store, country);
-    return NextResponse.json(result);
+
+    if (result && (result.coupons?.length > 0 || result.success)) {
+      memoryCouponsCache.set(cacheKey, { data: result, timestamp: Date.now() });
+    }
+
+    return NextResponse.json(result, {
+      headers: {
+        "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",
+      }
+    });
   } catch (error) {
     console.error("[Coupons API Error]:", error);
     recordCrashException({

@@ -4,9 +4,18 @@ import { getFeatureFlags, updateFeatureFlags, defaultFeatureFlags } from "@/serv
 
 export { getFeatureFlags, defaultFeatureFlags };
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   const flags = await getFeatureFlags();
-  return NextResponse.json({ success: true, features: flags });
+  return NextResponse.json(
+    { success: true, features: flags },
+    {
+      headers: {
+        "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
+      },
+    }
+  );
 }
 
 export async function POST(request) {

@@ -29,44 +29,53 @@ export async function GET(request) {
       });
     }
 
-    // 1. Attempt to fetch from Supabase
+    // 1. Attempt to fetch from Supabase with 400ms anti-hang timeout
     try {
-      let query = supabase
-        .from("fashion_catalog")
-        .select("id, gender, category, category_label, title, brand, color, price, raw_price, original_price, discount_percent, store, direct_link, deal_link, image, fabric, occasion, fit, rating, reviews_count, tryon_compatible, country", { count: "planned" });
+      const supabasePromise = (async () => {
+        let query = supabase
+          .from("fashion_catalog")
+          .select("id, gender, category, category_label, title, brand, color, price, raw_price, original_price, discount_percent, store, direct_link, deal_link, image, fabric, occasion, fit, rating, reviews_count, tryon_compatible, country", { count: "planned" });
 
-      if (country) {
-        if (country === "UK" || country === "GB") {
-          query = query.in("country", ["UK", "GB"]);
-        } else if (country === "UAE" || country === "AE") {
-          query = query.eq("country", "AE");
-        } else {
-          query = query.eq("country", country);
+        if (country) {
+          if (country === "UK" || country === "GB") {
+            query = query.in("country", ["UK", "GB"]);
+          } else if (country === "UAE" || country === "AE") {
+            query = query.eq("country", "AE");
+          } else {
+            query = query.eq("country", country);
+          }
         }
-      }
-      if (gender && gender !== "all") {
-        query = query.eq("gender", gender);
-      }
-      if (category && category !== "all") {
-        query = query.eq("category", category);
-      }
-      if (search) {
-        query = query.ilike("title", `%${search}%`);
-      }
+        if (gender && gender !== "all") {
+          query = query.eq("gender", gender);
+        }
+        if (category && category !== "all") {
+          query = query.eq("category", category);
+        }
+        if (search) {
+          query = query.ilike("title", `%${search}%`);
+        }
 
-      const from = (page - 1) * limit;
-      const to = from + limit - 1;
-      query = query.range(from, to);
+        const from = (page - 1) * limit;
+        const to = from + limit - 1;
+        query = query.range(from, to);
 
-      const { data, count, error } = await query;
+        const { data, count, error } = await query;
+        if (!error && Array.isArray(data) && data.length > 0) {
+          return { data, count: count || data.length };
+        }
+        return null;
+      })();
 
-      if (!error && Array.isArray(data) && data.length > 0) {
+      const timeoutPromise = new Promise(resolve => setTimeout(() => resolve(null), 400));
+      const result = await Promise.race([supabasePromise, timeoutPromise]);
+
+      if (result && Array.isArray(result.data) && result.data.length > 0) {
         const payload = {
           success: true,
           source: "supabase",
           country,
-          items: data,
-          total: count || data.length,
+          items: result.data,
+          total: result.count,
           page,
           limit,
         };
@@ -76,7 +85,7 @@ export async function GET(request) {
 
         return NextResponse.json(payload, {
           headers: {
-            "Cache-Control": "public, max-age=180, stale-while-revalidate=600",
+            "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",
             "x-cache-hit": "MISS"
           },
         });
@@ -85,7 +94,7 @@ export async function GET(request) {
       console.warn("[VTON Catalog API] Supabase query notice:", dbErr.message);
     }
 
-    // 2. Seamless Fallback to local catalog while Supabase table is being initialized
+    // 2. Seamless Fast Fallback to local catalog (0ms)
     const catalogModule = await import("@/data/fashionCatalog");
     const localCatalog = catalogModule.FASHION_CATALOG || [];
 
@@ -102,7 +111,7 @@ export async function GET(request) {
     const startIndex = (page - 1) * limit;
     const items = filtered.slice(startIndex, startIndex + limit);
 
-    return NextResponse.json({
+    const payload = {
       success: true,
       source: "local_catalog",
       country: "IN",
@@ -110,9 +119,14 @@ export async function GET(request) {
       total,
       page,
       limit,
-    }, {
+    };
+
+    // Cache local catalog in memory as well
+    catalogMemoryCache.set(cacheKey, { payload, timestamp: Date.now() });
+
+    return NextResponse.json(payload, {
       headers: {
-        "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",
+        "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",
       },
     });
   } catch (error) {

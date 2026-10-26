@@ -6,6 +6,7 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
+    minimumCacheTTL: 86400,
     remotePatterns: [
       {
         protocol: 'https',
@@ -49,6 +50,15 @@ const nextConfig = {
           {
             key: 'X-XSS-Protection',
             value: '1; mode=block'
+          }
+        ]
+      },
+      {
+        source: '/:all*(svg|jpg|jpeg|png|webp|avif|ico|woff2|woff|ttf)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=86400, stale-while-revalidate=604800'
           }
         ]
       }
