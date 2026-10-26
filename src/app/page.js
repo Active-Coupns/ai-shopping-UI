@@ -238,19 +238,24 @@ export default function Home() {
   // Load saved deals & price alerts from localStorage on client mount & record visit telemetry
   useEffect(() => {
     try {
-      userJourneyTracker.recordVisit();
+      const deferInit = typeof window !== "undefined" && "requestIdleCallback" in window
+        ? window.requestIdleCallback
+        : (cb) => setTimeout(cb, 120);
+      deferInit(() => {
+        try {
+          userJourneyTracker.recordVisit();
+          fetch("/api/admin/features")
+            .then(res => res.json())
+            .then(d => {
+              if (d.success && d.features) setFeatureFlags(d.features);
+            })
+            .catch(() => {});
+        } catch (_) {}
+      });
       const saved = localStorage.getItem("shopsmart_saved_deals");
       if (saved) setSavedDeals(JSON.parse(saved));
       const alerts = localStorage.getItem("shopsmart_price_alerts");
       if (alerts) setSavedAlerts(JSON.parse(alerts));
-
-      // Fetch live kill-switch status
-      fetch("/api/admin/features")
-        .then(res => res.json())
-        .then(d => {
-          if (d.success && d.features) setFeatureFlags(d.features);
-        })
-        .catch(() => {});
     } catch (e) {}
   }, []);
 

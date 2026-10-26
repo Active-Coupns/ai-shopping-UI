@@ -127,47 +127,58 @@ export default function SubscriptionsView({
     };
   }, [debouncedQuery, catalogSubs, selectedCountry]);
 
-  // Sync catalog from Supabase API when selectedCountry changes and merge on-demand brands
+  // Fast Sync catalog: fetches catalog & on-demand in parallel with zero re-render loops
   useEffect(() => {
     let isMounted = true;
 
     const loadData = async () => {
-      let baseList = subsCache[selectedCountry] || [];
+      // 1. Check local in-memory state cache first
+      if (subsCache[selectedCountry] && subsCache[selectedCountry].length > 0) {
+        setCatalogSubs(subsCache[selectedCountry]);
+        return;
+      }
 
-      if (!subsCache[selectedCountry]) {
-        try {
-          const res = await fetch(`/api/subscriptions/catalog?country=${selectedCountry}`);
-          const json = await res.json();
+      try {
+        // Parallel fetch both catalog and on-demand without blocking each other
+        const [catalogRes, onDemandRes] = await Promise.allSettled([
+          fetch(`/api/subscriptions/catalog?country=${selectedCountry}`),
+          fetch(`/api/subscriptions/on-demand?country=${selectedCountry}`)
+        ]);
+
+        let baseList = [];
+        if (catalogRes.status === "fulfilled" && catalogRes.value.ok) {
+          const json = await catalogRes.value.json();
           if (json.success && Array.isArray(json.subscriptions)) {
             baseList = json.subscriptions;
-            if (isMounted) {
-              setSubsCache((prev) => ({ ...prev, [selectedCountry]: baseList }));
-            }
           }
-        } catch (err) {
-          console.error("Error fetching subscriptions catalog:", err);
         }
-      }
 
-      if (isMounted) {
-        setCatalogSubs(baseList);
-      }
-
-      // Check for any dynamic on-demand ingested brands
-      try {
-        const onDemandRes = await fetch(`/api/subscriptions/on-demand?country=${selectedCountry}`);
-        const onDemandJson = await onDemandRes.json();
-        if (isMounted && Array.isArray(onDemandJson?.brands) && onDemandJson.brands.length > 0) {
-          setCatalogSubs((prev) => {
-            const brandMap = new Map(prev.map((s) => [s.id, s]));
-            onDemandJson.brands.forEach((b) => {
-              const current = brandMap.get(b.id);
-              brandMap.set(b.id, current ? { ...current, ...b } : b);
-            });
-            return Array.from(brandMap.values());
-          });
+        let onDemandList = [];
+        if (onDemandRes.status === "fulfilled" && onDemandRes.value.ok) {
+          const onDemandJson = await onDemandRes.value.json();
+          if (Array.isArray(onDemandJson?.brands)) {
+            onDemandList = onDemandJson.brands;
+          }
         }
-      } catch (_) {}
+
+        if (isMounted) {
+          if (baseList.length > 0) {
+            let merged = baseList;
+            if (onDemandList.length > 0) {
+              const brandMap = new Map(baseList.map((s) => [s.id, s]));
+              onDemandList.forEach((b) => {
+                const current = brandMap.get(b.id);
+                brandMap.set(b.id, current ? { ...current, ...b } : b);
+              });
+              merged = Array.from(brandMap.values());
+            }
+            setCatalogSubs(merged);
+            setSubsCache((prev) => ({ ...prev, [selectedCountry]: merged }));
+          }
+        }
+      } catch (err) {
+        console.error("Error loading subscriptions data:", err);
+      }
     };
 
     loadData();
@@ -214,13 +225,46 @@ export default function SubscriptionsView({
   // Global Projection Toggle: "direct" (actual plan price) or "annualized" (1-year projection)
   const [projectionMode, setProjectionMode] = useState("direct");
 
+  const getSubMatchesCategory = (subCat, tabId) => {
+    if (tabId === "all") return true;
+    if (tabId === "video") return subCat === "video";
+    if (tabId === "music") return subCat === "audio" || subCat === "music";
+    if (tabId === "ai_design") return subCat === "ai_creative" || subCat === "ai_design";
+    if (tabId === "cloud_work") return subCat === "cloud_work" || subCat === "cloud" || subCat === "productivity" || subCat === "security";
+    if (tabId === "gaming") return subCat === "gaming";
+    if (tabId === "fitness") return subCat === "fitness";
+    if (tabId === "bundle") return subCat === "combo" || subCat === "bundle" || subCat === "delivery";
+    return subCat === tabId;
+  };
+
+  const categoryDefinitions = useMemo(() => [
+    { id: "all", name: "All Subscriptions", icon: Tv, emoji: "" },
+    { id: "video", name: "OTT & Movies", icon: Film, emoji: "🎬 " },
+    { id: "music", name: "Music & Audio", icon: Volume2, emoji: "🎵 " },
+    { id: "ai_design", name: "AI & Creative", icon: Palette, emoji: "🤖 " },
+    { id: "cloud_work", name: "Work & Cloud", icon: Cloud, emoji: "💼 " },
+    { id: "gaming", name: "Gaming Passes", icon: Gamepad2, emoji: "🎮 " },
+    { id: "fitness", name: "Health & Fitness", icon: Dumbbell, emoji: "💪 " },
+    { id: "bundle", name: "All-in-One Combos", icon: Gift, emoji: "🎁 " }
+  ], []);
+
+  const categoryCounts = useMemo(() => {
+    const counts = { all: catalogSubs.length };
+    categoryDefinitions.forEach(cat => {
+      if (cat.id !== "all") {
+        counts[cat.id] = catalogSubs.filter(s => getSubMatchesCategory(s.category, cat.id)).length;
+      }
+    });
+    return counts;
+  }, [catalogSubs, categoryDefinitions]);
+
   // Filter subscriptions based on search and category
   const filteredSubs = useMemo(() => {
     return catalogSubs.filter((sub) => {
-      const matchCat = selectedCategory === "all" || sub.category === selectedCategory;
+      const matchCat = getSubMatchesCategory(sub.category, selectedCategory);
       if (!searchQuery.trim()) return matchCat;
       const q = searchQuery.toLowerCase();
-      const matchName = sub.name.toLowerCase().includes(q);
+      const matchName = (sub.name || "").toLowerCase().includes(q);
       const matchTag = (sub.tagline || "").toLowerCase().includes(q);
       const matchShows = (sub.popularShows || []).some((s) => s.toLowerCase().includes(q));
       return matchCat && (matchName || matchTag || matchShows);
@@ -451,20 +495,13 @@ export default function SubscriptionsView({
           )}
         </div>
 
-        {/* 7 Category Pills */}
+        {/* Category Pills with Dynamic Country-Verified Counts */}
         <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-          {[
-            { id: "all", label: "All Subscriptions (25)", icon: Tv },
-            { id: "video", label: "🎬 OTT & Movies (8)", icon: Film },
-            { id: "music", label: "🎵 Music & Audio (4)", icon: Volume2 },
-            { id: "ai_design", label: "🤖 AI & Creative (4)", icon: Palette },
-            { id: "cloud_work", label: "💼 Work & Cloud (3)", icon: Cloud },
-            { id: "gaming", label: "🎮 Gaming Passes (2)", icon: Gamepad2 },
-            { id: "fitness", label: "💪 Health & Fitness (2)", icon: Dumbbell },
-            { id: "bundle", label: "🎁 All-in-One Combos (2)", icon: Gift }
-          ].map((cat) => {
+          {categoryDefinitions.map((cat) => {
             const Icon = cat.icon;
             const isSelected = selectedCategory === cat.id;
+            const count = categoryCounts[cat.id] ?? 0;
+            const label = `${cat.emoji}${cat.name} (${count})`;
             return (
               <button
                 key={cat.id}
@@ -477,7 +514,7 @@ export default function SubscriptionsView({
                 }`}
               >
                 <Icon className={`w-3.5 h-3.5 ${isSelected ? "text-amber-400" : "text-slate-400"}`} />
-                <span>{cat.label}</span>
+                <span>{label}</span>
               </button>
             );
           })}
@@ -892,8 +929,34 @@ export default function SubscriptionsView({
                 </div>
               )}
             </div>
+          ) : !searchQuery.trim() ? (
+            /* 4a. NO SUBSCRIPTIONS IN SELECTED CATEGORY */
+            <div className="p-6 sm:p-8 rounded-3xl bg-white border border-slate-200 shadow-2xs space-y-4 text-center sm:text-left">
+              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-3.5">
+                <div className="w-12 h-12 rounded-2xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500 shrink-0 shadow-inner">
+                  <Tv className="w-6 h-6" />
+                </div>
+                <div className="space-y-1.5">
+                  <h4 className="text-base font-extrabold text-slate-900">
+                    No Subscriptions in This Category
+                  </h4>
+                  <p className="text-xs text-slate-500 font-medium leading-relaxed max-w-xl">
+                    There are currently no active subscriptions listed under this category for {regionName}.
+                  </p>
+                </div>
+              </div>
+              <div className="pt-2 border-t border-slate-100 flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedCategory("all")}
+                  className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors cursor-pointer"
+                >
+                  View All Subscriptions
+                </button>
+              </div>
+            </div>
           ) : (
-            /* 4. PLATFORM NOT AVAILABLE IN DIRECTORY CARD */
+            /* 4b. PLATFORM NOT AVAILABLE IN DIRECTORY CARD (When searched) */
             <div className="p-6 sm:p-8 rounded-3xl bg-white border border-slate-200 shadow-2xs space-y-4">
               <div className="flex flex-col sm:flex-row items-center sm:items-start gap-3.5">
                 <div className="w-12 h-12 rounded-2xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500 shrink-0 shadow-inner">

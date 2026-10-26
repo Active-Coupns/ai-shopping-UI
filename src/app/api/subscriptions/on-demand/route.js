@@ -18,6 +18,11 @@ if (UPSTASH_REDIS_REST_URL && UPSTASH_REDIS_REST_TOKEN) {
 // In-memory fallback if Redis is unreachable
 const memoryOnDemandCatalog = new Map();
 
+// In-memory module cache for on-demand brands by country (0ms warm response)
+const memoryOnDemandCache = new Map();
+
+export const dynamic = "force-dynamic";
+
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -30,18 +35,34 @@ export async function GET(request) {
     const setKey = isAE ? "ondemand_slugs_set_ae" : (isAU ? "ondemand_slugs_set_au" : (isCA ? "ondemand_slugs_set_ca" : (isUK ? "ondemand_slugs_set_gb" : (isUS ? "ondemand_slugs_set_us" : "ondemand_slugs_set"))));
     const keyPrefix = isAE ? "ondemand_sub_ae_" : (isAU ? "ondemand_sub_au_" : (isCA ? "ondemand_sub_ca_" : (isUK ? "ondemand_sub_gb_" : (isUS ? "ondemand_sub_us_" : "ondemand_sub_"))));
 
+    if (memoryOnDemandCache.has(country)) {
+      return NextResponse.json(memoryOnDemandCache.get(country), {
+        headers: {
+          "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",
+          "X-Memory-Cache": "HIT"
+        }
+      });
+    }
+
     let onDemandSubs = [];
     if (redisClient) {
-      const keys = await redisClient.smembers(setKey).catch(() => []);
-      if (Array.isArray(keys) && keys.length > 0) {
-        for (const slug of keys) {
-          const raw = await redisClient.get(`${keyPrefix}${slug}`).catch(() => null);
-          if (raw) {
-            const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
-            onDemandSubs.push(parsed);
+      try {
+        const redisFetchPromise = (async () => {
+          const keys = await redisClient.smembers(setKey).catch(() => []);
+          if (Array.isArray(keys) && keys.length > 0) {
+            const rawItems = await Promise.all(
+              keys.map(slug => redisClient.get(`${keyPrefix}${slug}`).catch(() => null))
+            );
+            return rawItems
+              .filter(Boolean)
+              .map(raw => (typeof raw === "string" ? JSON.parse(raw) : raw));
           }
-        }
-      }
+          return [];
+        })();
+
+        const timeoutPromise = new Promise(resolve => setTimeout(() => resolve([]), 500));
+        onDemandSubs = await Promise.race([redisFetchPromise, timeoutPromise]);
+      } catch (_) {}
     }
 
     if (onDemandSubs.length === 0 && memoryOnDemandCatalog.size > 0) {
@@ -53,10 +74,17 @@ export async function GET(request) {
       );
     }
 
-    return NextResponse.json({
+    const payload = {
       success: true,
       count: onDemandSubs.length,
       brands: onDemandSubs
+    };
+    memoryOnDemandCache.set(country, payload);
+
+    return NextResponse.json(payload, {
+      headers: {
+        "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400"
+      }
     });
   } catch (err) {
     console.error("[On-Demand Subscriptions] GET Error:", err);
