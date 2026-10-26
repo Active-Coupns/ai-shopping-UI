@@ -1,15 +1,26 @@
 "use client";
 
 import React, { useState } from "react";
-import { Check, Copy, ExternalLink, Tag, Eye } from "lucide-react";
+import { Check, Copy, ExternalLink, Tag, Eye, Lock } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useUser, useClerk } from "@clerk/nextjs";
 
 export default function CouponCard({ coupon }) {
+  const { isSignedIn } = useUser();
+  const { openSignIn } = useClerk();
   const [copied, setCopied] = useState(false);
   const [isRevealed, setIsRevealed] = useState(false);
   const [particles, setParticles] = useState([]);
 
   const handleRevealAndCopy = async () => {
+    // 1-Tap Sign-In Action Gate: Browsing is 100% open, but revealing/copying triggers Sign-In
+    if (!isSignedIn) {
+      if (typeof openSignIn === "function") {
+        openSignIn();
+      }
+      return;
+    }
+
     if (!isRevealed) {
       // 1. Silent cookie dropper injection via background iframe (only for valid external links)
       if (coupon.link && coupon.link.startsWith("http")) {
@@ -126,8 +137,10 @@ export default function CouponCard({ coupon }) {
           }`}
         >
           <span className="font-bold uppercase tracking-wider flex items-center gap-2">
-            {!isRevealed && <Eye className="w-3.5 h-3.5 text-brand-indigo" />}
-            {isRevealed ? coupon.code : "REVEAL CODE"}
+            {!isRevealed && (
+              !isSignedIn ? <Lock className="w-3.5 h-3.5 text-brand-indigo" /> : <Eye className="w-3.5 h-3.5 text-brand-indigo" />
+            )}
+            {isRevealed ? coupon.code : (!isSignedIn ? "REVEAL CODE 🔒" : "REVEAL CODE")}
           </span>
           {copied ? (
             <span className="text-[10px] text-emerald-600 flex items-center gap-1 font-sans font-extrabold">
@@ -144,7 +157,14 @@ export default function CouponCard({ coupon }) {
           href={coupon.link}
           target="_blank"
           rel="noopener noreferrer"
-          onClick={() => {
+          onClick={(e) => {
+            if (!isSignedIn) {
+              e.preventDefault();
+              if (typeof openSignIn === "function") {
+                openSignIn();
+              }
+              return;
+            }
             fetch("/api/telemetry/click", { method: "POST" }).catch(() => {});
           }}
           className="p-2.5 rounded-xl bg-gradient-to-r from-brand-indigo to-brand-violet text-white hover:opacity-90 active:scale-95 transition-all shadow-md flex items-center justify-center cursor-pointer shrink-0"

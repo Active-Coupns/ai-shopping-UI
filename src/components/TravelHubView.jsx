@@ -33,6 +33,7 @@ import {
   Compass
 } from "lucide-react";
 import { SUPPORTED_COUNTRIES } from "@/lib/countryConfig";
+import { useUser, useClerk } from "@clerk/nextjs";
 
 function getBrandInitials(platformId, platformName) {
   if (platformId === "indigo") return "6E";
@@ -71,6 +72,8 @@ export default function TravelHubView({
   country = "IN",
   onOpenAdvisor
 }) {
+  const { isSignedIn } = useUser();
+  const { openSignIn } = useClerk();
   const [activeTab, setActiveTab] = useState("flights"); // "flights" | "hotels" | "events"
   const [copiedCode, setCopiedCode] = useState(null);
   const [dealTypeFilter, setDealTypeFilter] = useState("all");
@@ -190,6 +193,12 @@ export default function TravelHubView({
   };
 
   const handleTriggerOnDemand = async (brandQuery, targetCategory) => {
+    if (!isSignedIn) {
+      if (typeof openSignIn === "function") {
+        openSignIn();
+      }
+      return;
+    }
     const cleanBrand = (brandQuery || "").trim();
     if (!cleanBrand || cleanBrand.length < 2) return;
 
@@ -247,9 +256,27 @@ export default function TravelHubView({
   const currentCountryMeta = SUPPORTED_COUNTRIES[country] || SUPPORTED_COUNTRIES.IN;
 
   const handleCopy = (code) => {
+    if (!isSignedIn) {
+      if (typeof openSignIn === "function") {
+        openSignIn();
+      }
+      return;
+    }
     navigator.clipboard?.writeText(code);
     setCopiedCode(code);
     setTimeout(() => setCopiedCode(null), 2500);
+  };
+
+  const handleOpenAdvisorSecurely = (category, query) => {
+    if (!isSignedIn) {
+      if (typeof openSignIn === "function") {
+        openSignIn();
+      }
+      return;
+    }
+    if (typeof onOpenAdvisor === "function") {
+      onOpenAdvisor(category, query);
+    }
   };
 
   const renderDealsSection = (category, sectionTitle, sectionSubtitle) => {
@@ -630,7 +657,7 @@ export default function TravelHubView({
                         ) : (
                           <>
                             <Copy className="w-3 h-3" />
-                            <span>COPY CODE</span>
+                            <span>{!isSignedIn ? "SIGN IN TO COPY" : "COPY CODE"}</span>
                           </>
                         )}
                       </button>
@@ -642,6 +669,15 @@ export default function TravelHubView({
                         href={deal.directUrl}
                         target="_blank"
                         rel="noopener noreferrer nofollow"
+                        onClick={(e) => {
+                          if (!isSignedIn) {
+                            e.preventDefault();
+                            if (typeof openSignIn === "function") {
+                              openSignIn();
+                            }
+                            return;
+                          }
+                        }}
                         className="text-[11px] font-bold text-slate-600 hover:text-slate-900 flex items-center gap-1 cursor-pointer transition-colors"
                       >
                         <span>Visit Official Portal</span>
@@ -650,7 +686,7 @@ export default function TravelHubView({
 
                       <button
                         type="button"
-                        onClick={() => onOpenAdvisor && onOpenAdvisor(category, `How do I claim the ${deal.promoCode} deal on ${deal.platformName}?`)}
+                        onClick={() => handleOpenAdvisorSecurely(category, `How do I claim the ${deal.promoCode} deal on ${deal.platformName}?`)}
                         className="text-[11px] font-extrabold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 cursor-pointer transition-colors"
                       >
                         <Sparkles className="w-3 h-3 text-amber-500 animate-pulse" />
@@ -706,7 +742,7 @@ export default function TravelHubView({
           <div className="pt-2 flex flex-col sm:flex-row sm:items-center gap-3">
             <button
               type="button"
-              onClick={() => onOpenAdvisor && onOpenAdvisor(activeTab)}
+              onClick={() => handleOpenAdvisorSecurely(activeTab)}
               className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-gradient-to-r from-indigo-500 via-indigo-600 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white text-xs sm:text-sm font-black shadow-lg shadow-indigo-500/30 flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-95 group"
             >
               <Sparkles className="w-4 h-4 text-amber-300 animate-pulse shrink-0" />
@@ -723,21 +759,21 @@ export default function TravelHubView({
             <span className="text-slate-400 font-bold">Try asking:</span>
             <button
               type="button"
-              onClick={() => onOpenAdvisor && onOpenAdvisor("flights", "Delhi to Goa flight with luggage, how to save money?")}
+              onClick={() => handleOpenAdvisorSecurely("flights", "Delhi to Goa flight with luggage, how to save money?")}
               className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-slate-200 border border-white/10 transition-colors cursor-pointer"
             >
               🛫 Delhi to Goa flight with luggage?
             </button>
             <button
               type="button"
-              onClick={() => onOpenAdvisor && onOpenAdvisor("hotels", "Booking London hotel, how to unlock mobile app discount?")}
+              onClick={() => handleOpenAdvisorSecurely("hotels", "Booking London hotel, how to unlock mobile app discount?")}
               className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-slate-200 border border-white/10 transition-colors cursor-pointer"
             >
               🏨 Hotel mobile discount strategy?
             </button>
             <button
               type="button"
-              onClick={() => onOpenAdvisor && onOpenAdvisor("events", "BookMyShow movie ticket with ICICI card, how to claim BOGO?")}
+              onClick={() => handleOpenAdvisorSecurely("events", "BookMyShow movie ticket with ICICI card, how to claim BOGO?")}
               className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-slate-200 border border-white/10 transition-colors cursor-pointer"
             >
               🎟️ Movie BOGO quota timing?

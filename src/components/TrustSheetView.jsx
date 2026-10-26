@@ -41,6 +41,7 @@ import {
 } from "lucide-react";
 import { searchProducts } from "@/services/api";
 import { getCountryMeta, formatCountryPrice } from "@/lib/countryConfig";
+import { useUser, useClerk } from "@clerk/nextjs";
 
 const DEMO_GADGETS_IN = [
   { label: "🧺 LG 8 Kg 5 Star Front Load", query: "LG 8 Kg 5 Star Inverter Direct Drive Front Load Washing Machine" },
@@ -64,6 +65,8 @@ export default function TrustSheetView({
   onBack,
   onTriggerSearch
 }) {
+  const { isSignedIn } = useUser();
+  const { openSignIn } = useClerk();
   const countryMeta = getCountryMeta(country);
   const isUS = (country || "IN").toUpperCase() === "US";
   const demoGadgets = isUS ? DEMO_GADGETS_US : DEMO_GADGETS_IN;
@@ -102,6 +105,12 @@ export default function TrustSheetView({
 
   // Phase 1: Identify Product (URL via Zyte or Name via Search)
   const handleIdentify = async (targetInput, existingProduct = null) => {
+    if (!isSignedIn) {
+      if (typeof openSignIn === "function") {
+        openSignIn();
+      }
+      return;
+    }
     const clean = String(typeof targetInput === "string" ? targetInput : inputVal || "").trim();
     if (!clean && !existingProduct) return;
 
@@ -178,6 +187,12 @@ export default function TrustSheetView({
 
   // Phase 2: Generate Trust Sheet Dossier
   const handleGenerateDossier = async (customAnswers = null) => {
+    if (!isSignedIn) {
+      if (typeof openSignIn === "function") {
+        openSignIn();
+      }
+      return;
+    }
     if (!identifiedProduct) return;
 
     setError(null);
@@ -218,6 +233,12 @@ export default function TrustSheetView({
 
   // Phase 3: In-Feature Search for Matching Deals (User Initiated, 2-3 Curated Alternatives)
   const handleSearchMatching = async (searchQuery) => {
+    if (!isSignedIn) {
+      if (typeof openSignIn === "function") {
+        openSignIn();
+      }
+      return;
+    }
     let query = String(searchQuery || "").trim();
     if (!query) return;
 
@@ -247,6 +268,12 @@ export default function TrustSheetView({
 
   // Task 3: Ask Hardware Engineer Assistant
   const handleAskAssistant = async (customQ = null) => {
+    if (!isSignedIn) {
+      if (typeof openSignIn === "function") {
+        openSignIn();
+      }
+      return;
+    }
     const q = String(customQ || assistantQuestion || "").trim();
     if (!q || isAssistantLoading) return;
 

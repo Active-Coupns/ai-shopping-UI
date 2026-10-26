@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import { Sparkles, Shirt, Camera, RefreshCw, ExternalLink, Check, ChevronRight, Send, ArrowLeft, Lock, X, LifeBuoy, ShieldCheck } from "lucide-react";
-import { useClerk } from "@clerk/nextjs";
+import { useClerk, useUser } from "@clerk/nextjs";
 import { getDeviceFingerprint } from "@/lib/deviceFingerprint";
 
 const SAMPLE_MODELS = {
@@ -269,6 +269,7 @@ function getOptimizedThumbUrl(url) {
 
 export default function FashionTrialRoom({ initialGarment = null, onBackToSearch, onOpenSupportTicket, selectedCountry = "IN" }) {
   const clerk = useClerk();
+  const { isSignedIn } = useUser();
   const [gender, setGender] = useState("men");
   const [skinTone, setSkinTone] = useState("wheatish");
   const [userImage, setUserImage] = useState(SAMPLE_MODELS.men.image);
@@ -426,8 +427,34 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
     return () => { isMounted = false; };
   }, []);
 
+  const handleRequestPhotoUpload = () => {
+    if (!isSignedIn) {
+      if (clerk && typeof clerk.openSignIn === "function") {
+        clerk.openSignIn();
+      }
+      return;
+    }
+    fileInputRef.current?.click();
+  };
+
+  const handleRequestGarmentUpload = () => {
+    if (!isSignedIn) {
+      if (clerk && typeof clerk.openSignIn === "function") {
+        clerk.openSignIn();
+      }
+      return;
+    }
+    garmentFileInputRef.current?.click();
+  };
+
   // Function to execute photorealistic AI try-on via PixelAPI with session cache
   const handleTryOnOutfit = async (garment) => {
+    if (!isSignedIn) {
+      if (clerk && typeof clerk.openSignIn === "function") {
+        clerk.openSignIn();
+      }
+      return;
+    }
     if (!garment) return;
     setCurrentTryonGarment(garment);
 
@@ -1195,7 +1222,7 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
               <div className="flex gap-2">
                 <button
                   type="button"
-                  onClick={() => fileInputRef.current?.click()}
+                  onClick={handleRequestPhotoUpload}
                   className="flex-1 py-2.5 px-3 rounded-xl bg-gradient-to-r from-brand-indigo to-brand-violet hover:from-indigo-600 hover:to-purple-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md shadow-brand-indigo/20 transition-all cursor-pointer active:scale-95"
                 >
                   <Camera className="w-3.5 h-3.5" />
@@ -1248,7 +1275,7 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
               {/* Upload Custom Garment Screenshot Button */}
               <button
                 type="button"
-                onClick={() => garmentFileInputRef.current?.click()}
+                onClick={handleRequestGarmentUpload}
                 className="w-full py-2 px-3 rounded-xl bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-900 font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-95"
               >
                 <Shirt className="w-3.5 h-3.5 text-purple-600" />
@@ -1409,7 +1436,7 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
                   )}
                   <button
                     type="button"
-                    onClick={() => fileInputRef.current?.click()}
+                    onClick={handleRequestPhotoUpload}
                     className="w-full py-2 px-3 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-xs active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-2"
                   >
                     <Camera className="w-3.5 h-3.5" />
@@ -1463,7 +1490,7 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
                     </button>
                     <button
                       type="button"
-                      onClick={() => fileInputRef.current?.click()}
+                      onClick={handleRequestPhotoUpload}
                       className="py-2 px-3 rounded-xl bg-white hover:bg-amber-100/70 text-slate-700 border border-amber-200 font-bold text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5"
                     >
                       <Camera className="w-3.5 h-3.5 text-slate-600" />

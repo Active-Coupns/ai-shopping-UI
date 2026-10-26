@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useClerk } from "@clerk/nextjs";
+import { useClerk, useUser } from "@clerk/nextjs";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   ArrowUpRight, Star, CheckCircle, Sparkles, ChevronDown, ChevronUp, 
@@ -189,6 +189,7 @@ export default function ProductCard({
 
   // On-Demand Price Comparison State (Min 3, Max 4 stores with Anchor Lowest)
   const { openSignIn } = useClerk();
+  const { isSignedIn } = useUser();
   const [isCompareOpen, setIsCompareOpen] = useState(false);
   const [isFetchingStores, setIsFetchingStores] = useState(false);
   const [liveStores, setLiveStores] = useState(null);
@@ -196,6 +197,12 @@ export default function ProductCard({
   const [compareQuotaExceeded, setCompareQuotaExceeded] = useState(false);
 
   const handleToggleCompare = async () => {
+    if (!isSignedIn) {
+      if (typeof openSignIn === "function") {
+        openSignIn();
+      }
+      return;
+    }
     const nextState = !isCompareOpen;
     setIsCompareOpen(nextState);
 

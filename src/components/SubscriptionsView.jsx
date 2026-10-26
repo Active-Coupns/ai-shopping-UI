@@ -17,11 +17,14 @@ import { SUBSCRIPTIONS_SEO_MAP_CA } from "@/data/subscriptionsSeoDataCA";
 import { SUBSCRIPTIONS_SEO_MAP_AU } from "@/data/subscriptionsSeoDataAU";
 import { SUBSCRIPTIONS_SEO_MAP_AE } from "@/data/subscriptionsSeoDataAE";
 import SubscriptionAiChatModal from "@/components/SubscriptionAiChatModal";
+import { useUser, useClerk } from "@clerk/nextjs";
 
 export default function SubscriptionsView({ 
   onBack,
   selectedCountry = "IN" 
 }) {
+  const { isSignedIn } = useUser();
+  const { openSignIn } = useClerk();
   const isUS = selectedCountry === "US";
   const isUK = selectedCountry === "GB" || selectedCountry === "UK";
   const isCA = selectedCountry === "CA";
@@ -189,6 +192,12 @@ export default function SubscriptionsView({
   }, [selectedCountry]);
 
   const handleDiscoverOnDemand = async (name) => {
+    if (!isSignedIn) {
+      if (typeof openSignIn === "function") {
+        openSignIn();
+      }
+      return;
+    }
     const cleanName = (name || searchQuery).trim();
     if (!cleanName || isDiscovering) return;
     setIsDiscovering(true);
@@ -272,9 +281,25 @@ export default function SubscriptionsView({
   }, [catalogSubs, searchQuery, selectedCategory]);
 
   const handleCopyCode = (code) => {
+    if (!isSignedIn) {
+      if (typeof openSignIn === "function") {
+        openSignIn();
+      }
+      return;
+    }
     navigator.clipboard?.writeText(code);
     setCopiedCode(code);
     setTimeout(() => setCopiedCode(null), 2500);
+  };
+
+  const handleOpenAiAdvisor = () => {
+    if (!isSignedIn) {
+      if (typeof openSignIn === "function") {
+        openSignIn();
+      }
+      return;
+    }
+    setIsAiChatOpen(true);
   };
 
   const handlePlanSelect = (subId, planIdx) => {
@@ -292,6 +317,12 @@ export default function SubscriptionsView({
   };
 
   const handleVerifyLiveOffers = async (sub) => {
+    if (!isSignedIn) {
+      if (typeof openSignIn === "function") {
+        openSignIn();
+      }
+      return;
+    }
     setLiveVerificationMap(prev => ({
       ...prev,
       [sub.id]: { loading: true }
@@ -464,7 +495,7 @@ export default function SubscriptionsView({
 
         <button
           type="button"
-          onClick={() => setIsAiChatOpen(true)}
+          onClick={handleOpenAiAdvisor}
           className="w-full md:w-auto px-5 py-2.5 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs shadow-md flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-95 shrink-0"
         >
           <Bot className="w-4 h-4 fill-slate-950" />
@@ -1254,7 +1285,7 @@ export default function SubscriptionsView({
       {/* Floating Ask AI Button for Instant Access */}
       <button
         type="button"
-        onClick={() => setIsAiChatOpen(true)}
+        onClick={handleOpenAiAdvisor}
         className="fixed bottom-6 right-6 z-40 px-4 py-3 rounded-full bg-gradient-to-r from-indigo-600 via-indigo-700 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-black text-xs shadow-2xl flex items-center gap-2.5 hover:scale-105 active:scale-95 transition-all border border-white/20 cursor-pointer group"
       >
         <Sparkles className="w-4 h-4 text-amber-300 animate-pulse group-hover:rotate-12 transition-transform" />

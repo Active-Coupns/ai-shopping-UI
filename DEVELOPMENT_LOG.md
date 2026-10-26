@@ -18,6 +18,40 @@
 
 ## 📅 Daily Changelog & Feature Timeline
 
+### 🗓️ 2026-10-26 (Production Release: Unified 10-Daily AI Operations Quota & Smart Action Gates across all features)
+
+* **Git Commit**: `553a52c`
+* **Commit Message**: `feat: unified 10-daily AI quota & smart action gates for SEO discovery`
+* **Status**: ✅ 100% Tested, Verified (190/190 static/dynamic routes passing with 0 build errors) & Pushed to GitHub `main`
+* **Rationale & Architecture**:
+  1. **"Read Open, Act Protected" Smart Action Gates (Zero SEO penalty)**:
+     - Preserves 100% open browsing and search engine indexing for Googlebot and unauthenticated visitors on Coupons, Subscriptions, and Travel deals.
+     - Intercepts only high-value write/interaction hooks with Clerk's instant 1-tap modal (`openSignIn()`):
+       - **🎟️ Coupons (`CouponCard.jsx`)**: Masked "REVEAL CODE 🔒" and "Redeem" require sign-in; revealing triggers confetti and auto-copy.
+       - **📺 OTT Subscriptions (`SubscriptionsView.jsx`)**: Gated "Chat with AI OTT Advisor", "Copy Promo Code", "Verify Live Grounding", and on-demand discovery.
+       - **✈️ Travel Hub (`TravelHubView.jsx`)**: Gated "SIGN IN TO COPY", "Talk to AI Booking Strategy Advisor", "Ask AI Strategy", and on-demand radar scan.
+       - **👗 Fashion Virtual Try-On (`FashionTrialRoom.jsx`)**: Gated photo upload, outfit upload, and trial room render.
+       - **🛍️ Retail Search & Compare (`page.js`, `ProductCard.jsx`)**: Gated query submission, "Compare Live Across 4 Stores", and Price Drop Alert.
+       - **🛡️ AI Trust Sheet (`TrustSheetView.jsx`)**: Gated URL identification, dossier generation, and hardware engineer assistant.
+  2. **Unified 10-Operation Daily AI Quota Engine**:
+     - Standardized the daily limit to 10 AI operations across Search, Travel Advisor, and Trust Sheet dossier generation via `checkUnifiedApiQuota({ limit: 10 })`.
+     - Static and cached lookups (browsing coupons, viewing subscription plans, travel deals) remain completely unmetered (0 credits consumed).
+     - Virtual Try-On retains its isolated 3-lifetime free quota with hardware fingerprint and IP abuse protections intact.
+     - Updated UI counters and QuotaModal messaging to display "🪙 X / 10 AI Credits Today (Resets 12:00 AM IST)".
+
+#### 📂 Files Modified:
+- `src/app/api/travel/advisor/route.js` *(Integrated unified 10-credit quota check)*
+- `src/app/api/trust-sheet/route.js` *(Integrated unified 10-credit quota check on generate)*
+- `src/app/page.js` *(Sign-in gate on search/alerts/advisor, 10 AI credit counter)*
+- `src/components/CouponCard.jsx` *(Sign-in gate on Reveal & Redeem)*
+- `src/components/FashionTrialRoom.jsx` *(Sign-in gate on photo upload & try-on)*
+- `src/components/ProductCard.jsx` *(Sign-in gate on live 4-store compare)*
+- `src/components/QuotaModal.jsx` *(Updated copy to 10 unified daily AI operations)*
+- `src/components/SubscriptionsView.jsx` *(Sign-in gate on OTT advisor & promo codes)*
+- `src/components/TravelHubView.jsx` *(Sign-in gate on travel advisor, copy code & radar)*
+- `src/components/TrustSheetView.jsx` *(Sign-in gate on dossier generation & hardware assistant)*
+- `DEVELOPMENT_LOG.md` *(Updated release log)*
+
 ### 🗓️ 2026-10-25 (Production Release: Supabase Multi-Country Catalog, Two-Tier Sub-10ms Cache Engine, Full-Body Studio VTON Models & Privacy Hardening)
 
 * **Git Commit**: `1951dc3`

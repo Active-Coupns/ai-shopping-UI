@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { identifyProduct, generateTrustSheet, askHardwareAssistant } from "@/services/trustSheetService";
-import { extractTrustedClientIp } from "@/services/rateLimiter";
+import { getAuth } from "@clerk/nextjs/server";
+import { extractTrustedClientIp, checkUnifiedApiQuota } from "@/services/rateLimiter";
 import { applyAdaptiveSlowdown } from "@/services/securityRadar";
 
 export async function POST(request) {
@@ -37,6 +38,26 @@ export async function POST(request) {
 
     // 2. Generate Final Trust Sheet Dossier Phase
     if (action === "generate") {
+      let userId = null;
+      try {
+        const authObj = getAuth(request);
+        userId = authObj?.userId || null;
+      } catch (_) {}
+
+      const quotaResult = await checkUnifiedApiQuota({
+        userId,
+        clientIp,
+        isCacheHit: false,
+        limit: 10
+      });
+
+      if (!quotaResult.allowed) {
+        return NextResponse.json({
+          success: false,
+          error: "DAILY_QUOTA_EXHAUSTED",
+          message: quotaResult.message || "Daily limit reached (10/10 AI operations). Your quota resets tomorrow at 12:00 AM IST!"
+        }, { status: 429 });
+      }
       if (!product || !product.title) {
         return NextResponse.json(
           { success: false, error: "Product information is required to generate Trust Sheet." },

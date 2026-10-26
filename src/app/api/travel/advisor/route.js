@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
+import { getAuth } from "@clerk/nextjs/server";
 import { sanitizeAiPrompt, checkSearchContentSafety, clampString } from "@/services/securityShield";
+import { extractTrustedClientIp, checkUnifiedApiQuota } from "@/services/rateLimiter";
 
 const GROQ_API_KEY = process.env.GROQ_API_KEY || "";
 
@@ -34,6 +36,29 @@ export async function POST(req) {
     }
 
     const sanitizedUserMessage = promptSecurity.cleanText;
+
+    // 4. Enforce Unified 10-Call Daily AI Quota (Consumes 1 credit from daily wallet)
+    let userId = null;
+    try {
+      const authObj = getAuth(req);
+      userId = authObj?.userId || null;
+    } catch (_) {}
+    const clientIp = extractTrustedClientIp(req);
+
+    const quotaResult = await checkUnifiedApiQuota({
+      userId,
+      clientIp,
+      isCacheHit: false,
+      limit: 10
+    });
+
+    if (!quotaResult.allowed) {
+      return NextResponse.json({
+        success: false,
+        error: "DAILY_QUOTA_EXHAUSTED",
+        message: quotaResult.message || "Daily limit reached (10/10 AI operations). Your quota resets tomorrow at 12:00 AM IST!"
+      }, { status: 429 });
+    }
 
     const isIN = country === "IN";
     const isUS = country === "US";

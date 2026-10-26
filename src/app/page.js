@@ -471,8 +471,10 @@ export default function Home() {
   };
 
   const handleSearchSubmit = async (query, bypassGuide = false, isExactMatch = false, forceTerminal = false) => {
-    if (!isSignedIn && process.env.NODE_ENV === "production") {
-      openSignIn();
+    if (!isSignedIn) {
+      if (typeof openSignIn === "function") {
+        openSignIn();
+      }
       return;
     }
 
@@ -488,8 +490,10 @@ export default function Home() {
   };
 
   const handleDirectSearch = async (query, isUrlLookup = false, sourceStore = null, sourceUrl = null, isExactMatch = false) => {
-    if (!isSignedIn && process.env.NODE_ENV === "production") {
-      openSignIn();
+    if (!isSignedIn) {
+      if (typeof openSignIn === "function") {
+        openSignIn();
+      }
       return;
     }
 
@@ -978,6 +982,12 @@ export default function Home() {
               <TravelHubView
                 country={selectedCountry}
                 onOpenAdvisor={(cat, query) => {
+                  if (!isSignedIn) {
+                    if (typeof openSignIn === "function") {
+                      openSignIn();
+                    }
+                    return;
+                  }
                   setTravelAdvisorCategory(cat || "flights");
                   setTravelAdvisorInitialQuery(query || "");
                   setIsTravelAdvisorOpen(true);
@@ -1047,7 +1057,7 @@ export default function Home() {
                   {isSignedIn && (
                     <div className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-indigo-50 border border-indigo-200 text-xs font-bold text-brand-indigo shadow-sm">
                       <Coins className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-brand-indigo animate-pulse shrink-0" />
-                      <span>{searchesLeft} / 10 <span className="hidden sm:inline">Searches Left Today</span><span className="sm:hidden">Left</span></span>
+                      <span>{searchesLeft} / 10 <span className="hidden sm:inline">AI Credits Today</span><span className="sm:hidden">Credits</span></span>
                     </div>
                   )}
                   <button
@@ -1134,6 +1144,12 @@ export default function Home() {
                               isBookmarked={isBookmarked}
                               onToggleBookmark={handleToggleBookmark}
                               onOpenPriceAlert={(p) => {
+                                if (!isSignedIn) {
+                                  if (typeof openSignIn === "function") {
+                                    openSignIn();
+                                  }
+                                  return;
+                                }
                                 setSelectedAlertProduct(p);
                                 setIsPriceAlertModalOpen(true);
                               }}
