@@ -909,6 +909,7 @@ export default function Home() {
                 onOpenTrustSheet={handleOpenTrustSheet}
                 onSelectCategoryDeal={handleSelectCategoryDeal}
                 onOpenSubscriptions={() => setAppState("subscriptions")}
+                onOpenTravel={() => setAppState("travel")}
               />
             </motion.div>
           )}

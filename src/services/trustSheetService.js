@@ -956,7 +956,7 @@ Respond ONLY with valid, raw JSON (no markdown formatting, no backticks, no comm
   if (product.image) {
     jsonResult.product.image = product.image;
   }
-  if (product.price && (!jsonResult.product.estimatedPrice || jsonResult.product.estimatedPrice.includes("XX"))) {
+  if (product.price && (!jsonResult.product.estimatedPrice || String(jsonResult.product.estimatedPrice).includes("XX"))) {
     jsonResult.product.estimatedPrice = product.price;
   }
   if (product.url) {

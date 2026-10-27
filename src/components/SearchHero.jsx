@@ -18,7 +18,8 @@ import {
   Camera,
   Flame,
   ShieldCheck,
-  Tv
+  Tv,
+  Plane
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { userJourneyTracker } from "@/services/userJourneyTracker";
@@ -174,7 +175,8 @@ export default function SearchHero({
   onOpenConcierge,
   onOpenTrustSheet,
   onSelectCategoryDeal,
-  onOpenSubscriptions
+  onOpenSubscriptions,
+  onOpenTravel
 }) {
   const [activeTab, setActiveTab] = useState(
     initialTab === "COUPONS" || initialTab === "coupons"
@@ -582,6 +584,22 @@ export default function SearchHero({
           <Tv className="w-3.5 h-3.5 text-indigo-500" />
           <span className="hidden sm:inline">OTT &amp; Subs</span>
           <span className="sm:hidden">OTT</span>
+        </button>
+
+        {/* 6. Travel & Stays Tab */}
+        <button
+          type="button"
+          suppressHydrationWarning
+          onClick={() => {
+            if (onOpenTravel) {
+              onOpenTravel();
+            }
+          }}
+          className="flex-1 flex items-center justify-center gap-1 sm:gap-1.5 py-1.5 px-2 sm:px-2.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all cursor-pointer whitespace-nowrap text-slate-500 hover:text-emerald-600 hover:bg-emerald-50/50"
+        >
+          <Plane className="w-3.5 h-3.5 text-emerald-500" />
+          <span className="hidden sm:inline">Travel &amp; Stays</span>
+          <span className="sm:hidden">Travel</span>
         </button>
       </div>
 
