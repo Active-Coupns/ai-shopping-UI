@@ -4,6 +4,7 @@ import { getAuth } from "@clerk/nextjs/server";
 import { redis } from "@/services/redis";
 import { checkUnifiedApiQuota, extractTrustedClientIp } from "@/services/rateLimiter";
 import { executeProductDetailsRequest, executeSearchRequest, formatStoreName, isTrustedMerchant, sanitizeOfferUrl, isSearchPageUrl, parsePriceNum, getStoreDirectSearchFallback } from "@/services/openweb";
+import { verifyCryptoHandshake } from "@/lib/cryptoHandshake";
 
 import { isFeatureEnabled } from "@/services/featureFlags";
 import { recordCrashException } from "@/services/crashVault";
@@ -19,6 +20,16 @@ export async function POST(request) {
       error: "FEATURE_DISABLED",
       message: "Price comparison engine is temporarily paused by the administrator."
     }, { status: 503 });
+  }
+
+  // 0.5 Cryptographic Request Handshake Verification (HMAC Nonce Shield)
+  const handshake = await verifyCryptoHandshake(request, "/api/products/compare");
+  if (!handshake.valid && process.env.NODE_ENV === "production" && !request.headers.get("x-internal-test-auth")) {
+    return NextResponse.json({
+      success: false,
+      error: "FORBIDDEN_HANDSHAKE",
+      message: handshake.message || "Invalid security handshake. Automated bot access blocked."
+    }, { status: 403 });
   }
 
   let userId = null;

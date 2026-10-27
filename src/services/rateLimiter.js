@@ -1241,3 +1241,58 @@ export async function incrementVtonIpUsage(clientIp) {
     await redis.set(ipKey, String(count), { ex: 2592000 }); // 30-day rolling window
   } catch {}
 }
+
+/**
+ * Global Daily Financial Spend Circuit Breaker
+ * 
+ * Prevents downstream API wallet exhaustion (e.g. OpenWeb Ninja, RapidAPI).
+ * Capped per UTC day. Once the daily threshold (e.g. 200 calls) is hit,
+ * trips the breaker and signals the caller to switch to graceful local cache / AI shopkeeper.
+ */
+export async function checkDailySpendCircuitBreaker({ service = "openweb", limit = 200 } = {}) {
+  const dateStr = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+  const breakerKey = `circuit_breaker:spend:${service}:${dateStr}`;
+
+  try {
+    const raw = await redis.get(breakerKey);
+    const count = parseInt(raw || "0", 10);
+
+    if (count >= limit) {
+      return {
+        allowed: false,
+        tripped: true,
+        count,
+        limit,
+        message: `Daily spending ceiling for ${service} reached (${count}/${limit}). Engaging cached shopkeeper mode.`
+      };
+    }
+
+    return {
+      allowed: true,
+      tripped: false,
+      count,
+      limit,
+      remaining: Math.max(0, limit - count)
+    };
+  } catch (err) {
+    console.warn(`[CircuitBreaker] Error checking spend breaker for ${service}:`, err);
+    return { allowed: true, tripped: false, count: 0, limit, remaining: limit };
+  }
+}
+
+export async function incrementDailySpendCircuitBreaker({ service = "openweb" } = {}) {
+  const dateStr = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+  const breakerKey = `circuit_breaker:spend:${service}:${dateStr}`;
+
+  try {
+    const count = await redis.incr(breakerKey);
+    if (count === 1) {
+      await redis.expire(breakerKey, 172800); // 48 hours TTL
+    }
+    return count;
+  } catch (err) {
+    console.warn(`[CircuitBreaker] Error incrementing spend breaker for ${service}:`, err);
+    return 0;
+  }
+}
+

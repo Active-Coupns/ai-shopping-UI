@@ -62,5 +62,39 @@ The entire user journey must consume **at most 2 external API calls** to RapidAP
 | **Total Session Cost** | Search + 1 Comparison + Clicks | **0 to Flat 2 Calls** |
 
 ---
+
+## 5. Unified 10-Daily AI Rate Limiting & "Read Open, Act Protected" Architecture
+
+### 5.1 "Read Open, Act Protected" Smart Action Gates (Zero SEO Drop)
+- **100% Unmetered Public Browsing**:
+  - Googlebot, search engine crawlers, and unauthenticated visitors can browse all coupon listings, store discounts, OTT subscription plan matrices, and travel deals without hitting a login gate or consuming AI credits.
+  - Ensures zero drop in organic SEO visibility, CTR, and indexing speed.
+- **Action-Gated Protection**:
+  - High-value write operations and expensive backend actions are intercepted by Clerk's instant 1-tap Google/Email modal (`openSignIn()`) without redirecting the user away:
+    - **Store Coupons (`CouponCard.jsx`)**: Masked "REVEAL CODE 🔒" button and "Redeem Deal" link require sign-in; revealing code triggers confetti burst and automatic clipboard copy.
+    - **OTT Subscriptions (`SubscriptionsView.jsx`)**: "Chat with AI OTT Advisor", "Copy Promo Code", "Verify Live Grounding", and on-demand brand ingestion require sign-in.
+    - **Travel & Events Hub (`TravelHubView.jsx`)**: "SIGN IN TO COPY", "Talk to AI Booking Strategy Advisor", "Ask AI Strategy", and on-demand live radar scans require sign-in.
+    - **Fashion Virtual Try-On (`FashionTrialRoom.jsx`)**: Photo upload, outfit screenshot upload, and neural virtual try-on render trigger immediate sign-in.
+    - **Product Search & Comparison (`ProductCard.jsx`, `page.js`)**: Search bar submission, Price Drop Alert bell icon, and "Compare Live Across 4 Stores" require sign-in.
+    - **AI Hardware Trust Sheet (`TrustSheetView.jsx`)**: Product URL verification, Dossier generation, and Hardware Engineer Assistant chat require sign-in.
+
+### 5.2 Unified 10-Daily AI Credit Quota Engine
+- **Centralized Metering Utility (`checkUnifiedApiQuota({ limit: 10 })`)**:
+  - Governs all external AI and scrape API calls across the platform using Upstash Redis sliding window counters (`unified:ai_quota:<user_id>:<YYYY-MM-DD>`).
+  - Standardized daily limit: **10 AI operations** resetting daily at 12:00 AM IST.
+- **Operations That Consume Credits**:
+  1. Live Retail Product Search (`/api/search` via OpenWeb Ninja / Zyte) = 1 credit.
+  2. Travel AI Itinerary Advisor (`/api/travel/advisor` via Gemini 2.5 Flash) = 1 credit.
+  3. AI Hardware Trust Sheet Dossier Generation (`/api/trust-sheet` action `generate` via Gemini 2.5 Flash) = 1 credit.
+- **Operations Exempt from Credit Deduction (0 Credits - Unmetered)**:
+  - Cache hits (products loaded from Redis or in-memory).
+  - Browsing existing scraped coupons and revealing codes.
+  - Viewing catalog OTT plans and bundled telecom matrices.
+  - Browsing curated flights, hotel deals, and booking strategy guides.
+- **Virtual Try-On Isolation**:
+  - VTON remains on its dedicated **3 lifetime free trials** policy per device/account.
+  - Enforced via SHA-256 hardware fingerprints and IP-level abuse detectors in Redis (`vton:free_quota:account_lifetime:<id>`).
+
+---
 **DO NOT ALTER THESE SPECIFICATIONS WITHOUT EXPLICIT USER APPROVAL.**
 

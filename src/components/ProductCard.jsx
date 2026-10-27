@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { userJourneyTracker } from "@/services/userJourneyTracker";
 import { getCountryMeta } from "@/lib/countryConfig";
+import { generateHandshakeHeaders } from "@/lib/cryptoHandshake";
 
 const formatPrice = (val, currency, countryCode) => {
   if (val === undefined || val === null || val === "" || String(val).toLowerCase().includes("nan")) return "";
@@ -209,9 +210,17 @@ export default function ProductCard({
     if (nextState && (!liveStores || liveStores.length <= 1)) {
       setIsFetchingStores(true);
       try {
+        let handshakeHeaders = {};
+        try {
+          handshakeHeaders = await generateHandshakeHeaders("/api/products/compare");
+        } catch (_) {}
+
         const res = await fetch("/api/products/compare", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            ...handshakeHeaders
+          },
           body: JSON.stringify({
             productId: product.product_id,
             title: product.title,

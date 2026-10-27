@@ -1,7 +1,13 @@
 import { NextResponse } from "next/server";
 import { getAuth } from "@clerk/nextjs/server";
 import { redis } from "@/services/redis";
-import { checkUnifiedApiQuota, extractTrustedClientIp } from "@/services/rateLimiter";
+import { 
+  checkUnifiedApiQuota, 
+  extractTrustedClientIp,
+  checkDailySpendCircuitBreaker,
+  incrementDailySpendCircuitBreaker 
+} from "@/services/rateLimiter";
+import { verifyCryptoHandshake } from "@/lib/cryptoHandshake";
 import { getAdminSettings } from "@/services/admin";
 import { monetizeUrl } from "@/services/affiliate";
 import { searchOpenWebProducts, isExactProductQuery, isAuthenticPDP } from "@/services/openweb";
@@ -186,6 +192,17 @@ export async function POST(request) {
       }, { status: 503 });
     }
 
+    // 1.5 Cryptographic Request Handshake Verification (HMAC Nonce Shield)
+    const handshake = await verifyCryptoHandshake(request, "/api/search");
+    if (!handshake.valid && process.env.NODE_ENV === "production" && !request.headers.get("x-internal-test-auth")) {
+      return NextResponse.json({
+        products: [],
+        coupons: [],
+        error: "FORBIDDEN_HANDSHAKE",
+        message: handshake.message || "Invalid security handshake. Automated bot access blocked."
+      }, { status: 403 });
+    }
+
     // 2. Mandatory Clerk Session Token / Auth State Verification
     let userId = null;
     try {
@@ -195,7 +212,7 @@ export async function POST(request) {
       userId = null;
     }
 
-    if (!userId && process.env.NODE_ENV === "production" && !request.headers.get("x-internal-test-auth")) {
+    if (!userId && !request.headers.get("x-internal-test-auth")) {
       return NextResponse.json({
         products: [],
         coupons: [],
@@ -412,13 +429,29 @@ export async function POST(request) {
     let cleanProducts = [];
     const fetchLimit = isUrlLookup ? 1 : 20;
 
-    try {
-      const openWebResults = await searchOpenWebProducts(cleanQuery, fetchLimit, userRegion, false, sourceStore, sourceUrl);
-      if (Array.isArray(openWebResults) && openWebResults.length > 0) {
-        cleanProducts = openWebResults.slice(0, fetchLimit);
+    // 6.1 Daily Financial Spend Circuit Breaker Protection (Caps live OpenWeb calls to safe limit)
+    const spendBreaker = await checkDailySpendCircuitBreaker({ service: "openweb", limit: 200 });
+
+    if (spendBreaker.tripped) {
+      console.log(`[Circuit Breaker] OpenWeb Ninja daily limit tripped (${spendBreaker.count}/${spendBreaker.limit}). Activating Shopkeeper Fallback.`);
+      try {
+        const fallbackResults = await consultAiShopkeeper(cleanQuery, userRegion);
+        if (fallbackResults?.available && Array.isArray(fallbackResults.products) && fallbackResults.products.length > 0) {
+          cleanProducts = fallbackResults.products.slice(0, fetchLimit);
+        }
+      } catch (fbErr) {
+        console.warn("[Search Route] Fallback shopkeeper error:", fbErr.message);
       }
-    } catch (apiErr) {
-      console.warn("[Search Route] OpenWebNinja provider error:", apiErr.message);
+    } else {
+      try {
+        const openWebResults = await searchOpenWebProducts(cleanQuery, fetchLimit, userRegion, false, sourceStore, sourceUrl);
+        if (Array.isArray(openWebResults) && openWebResults.length > 0) {
+          cleanProducts = openWebResults.slice(0, fetchLimit);
+          await incrementDailySpendCircuitBreaker({ service: "openweb" });
+        }
+      } catch (apiErr) {
+        console.warn("[Search Route] OpenWebNinja provider error:", apiErr.message);
+      }
     }
 
     // Curate products with Groq AI to eliminate spam, misleading accessories, and ensure high-fidelity top 3

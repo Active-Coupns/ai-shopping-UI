@@ -7,14 +7,10 @@
 import { redis } from "@/services/redis";
 import { executeWithCircuitBreaker } from "@/services/circuitBreaker";
 import { getCountryMeta, getAmazonBaseUrl } from "@/lib/countryConfig";
+import { keyVault } from "@/services/keyVault";
 
 export function getOpenWebNinjaKey() {
-  const envVal = (process.env.OPENWEBNINJA_API_KEY || "").trim();
-  if (envVal) return envVal;
-  const rawKey = (process.env.RAPIDAPI_KEY || "").trim();
-  if (rawKey.startsWith("ak_")) return rawKey;
-  const fromList = (process.env.RAPIDAPI_KEYS || "").split(",").map(k => k.trim()).find(k => k.startsWith("ak_"));
-  return fromList || "";
+  return keyVault.getKey("openweb_ninja");
 }
 
 export async function executeSearchRequest(query, countryCode = "in") {

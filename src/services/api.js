@@ -1,5 +1,6 @@
 import { getDeviceFingerprint } from "@/lib/deviceFingerprint";
 import { getCountryMeta } from "@/lib/countryConfig";
+import { generateHandshakeHeaders } from "@/lib/cryptoHandshake";
 
 function getDefaultSpecs(title = "", store = "Online Store") {
   return [
@@ -14,10 +15,15 @@ export async function searchProducts(query, country = "IN", isUrlLookup = false,
   try {
     let fp = null;
     let isBot = false;
+    let handshakeHeaders = {};
     try {
       const fpRes = await getDeviceFingerprint();
       fp = fpRes?.fingerprint || null;
       isBot = !!fpRes?.isBot;
+    } catch (_) {}
+
+    try {
+      handshakeHeaders = await generateHandshakeHeaders("/api/search");
     } catch (_) {}
 
     const response = await fetch("/api/search", {
@@ -26,6 +32,7 @@ export async function searchProducts(query, country = "IN", isUrlLookup = false,
         "Content-Type": "application/json",
         ...(fp ? { "x-device-fingerprint": fp } : {}),
         "x-bot-detected": String(isBot),
+        ...handshakeHeaders,
       },
       body: JSON.stringify({
         query,
