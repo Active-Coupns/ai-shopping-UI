@@ -7,7 +7,7 @@
 export function isProductUrl(input = "") {
   const text = String(input).trim();
   if (!text) return false;
-  return /\b(amazon\.|amzn\.|flipkart\.|fkrt\.|croma\.|reliancedigital\.|samsung\.|apple\.|myntra\.|1mg\.|apollopharmacy\.|nykaa\.|ajio\.|tatacliq\.|vijaysales\.)/i.test(text);
+  return /\b(amazon\.|amzn\.|flipkart\.|fkrt\.|croma\.|reliancedigital\.|samsung\.|apple\.|myntra\.|1mg\.|apollopharmacy\.|nykaa\.|ajio\.|tatacliq\.|vijaysales\.|walmart\.|bestbuy\.|target\.|argos\.|currys\.|boots\.|johnlewis\.|jbhifi\.|harveynorman\.|chemistwarehouse\.|canadiantire\.|noon\.|sharafdg\.)/i.test(text);
 }
 
 export function extractProductInfoFromUrl(url = "") {
@@ -30,9 +30,15 @@ export function extractProductInfoFromUrl(url = "") {
     let canonicalUrl = cleanUrl;
     let asin = null;
 
-    // 1. AMAZON (.in, .com, amzn.in, amzn.to, etc.)
+    // 1. AMAZON (Multi-Country: .in, .com, .co.uk, .ca, .com.au, .ae)
     if (host.includes("amazon.") || host.includes("amzn.")) {
-      store = host.includes(".com") && !host.includes(".in") ? "Amazon.com" : "Amazon.in";
+      if (host.includes(".co.uk")) store = "Amazon.co.uk";
+      else if (host.includes(".ca")) store = "Amazon.ca";
+      else if (host.includes(".com.au")) store = "Amazon.com.au";
+      else if (host.includes(".ae")) store = "Amazon.ae";
+      else if (host.includes(".com") && !host.includes(".in")) store = "Amazon.com";
+      else store = "Amazon.in";
+
       const asinMatch = pathname.match(/\/dp\/([A-Z0-9]{10})/i) || pathname.match(/\/gp\/product\/([A-Z0-9]{10})/i) || pathname.match(/\/d\/([A-Z0-9]{10})/i);
       if (asinMatch) {
         asin = asinMatch[1];
@@ -48,6 +54,26 @@ export function extractProductInfoFromUrl(url = "") {
         }
       }
     } 
+    // 1b. UK RETAILERS (Argos, Currys, Boots, John Lewis)
+    else if (host.includes("argos.co.uk") || host.includes("currys.co.uk") || host.includes("boots.com") || host.includes("johnlewis.com")) {
+      store = host.includes("argos") ? "Argos" : host.includes("currys") ? "Currys" : host.includes("boots") ? "Boots" : "John Lewis";
+      canonicalUrl = cleanUrl;
+    }
+    // 1c. CANADIAN RETAILERS (Best Buy CA, Walmart CA, Canadian Tire)
+    else if (host.includes("bestbuy.ca") || host.includes("walmart.ca") || host.includes("canadiantire.ca")) {
+      store = host.includes("bestbuy") ? "Best Buy CA" : host.includes("walmart") ? "Walmart CA" : "Canadian Tire";
+      canonicalUrl = cleanUrl;
+    }
+    // 1d. AUSTRALIAN RETAILERS (JB Hi-Fi, Harvey Norman, Chemist Warehouse, The Good Guys)
+    else if (host.includes("jbhifi.com.au") || host.includes("harveynorman.com.au") || host.includes("chemistwarehouse.com.au") || host.includes("thegoodguys.com.au")) {
+      store = host.includes("jbhifi") ? "JB Hi-Fi" : host.includes("harveynorman") ? "Harvey Norman" : host.includes("chemistwarehouse") ? "Chemist Warehouse" : "The Good Guys";
+      canonicalUrl = cleanUrl;
+    }
+    // 1e. UAE RETAILERS (Noon, Sharaf DG)
+    else if (host.includes("noon.com") || host.includes("sharafdg.com")) {
+      store = host.includes("noon") ? "Noon" : "Sharaf DG";
+      canonicalUrl = cleanUrl;
+    }
     // 2. FLIPKART
     else if (host.includes("flipkart.")) {
       store = "Flipkart";

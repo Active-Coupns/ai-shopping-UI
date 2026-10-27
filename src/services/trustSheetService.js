@@ -70,8 +70,9 @@ export function validateECommerceUrl(rawUrl = "") {
 
   // Supported e-commerce retailers & electronics/appliance OEM brands
   const domainPatterns = [
-    { pattern: /amazon\.(in|com)/, name: "Amazon" },
-    { pattern: /amzn\.(to|in)/, name: "Amazon" },
+    // Supported Amazon domains worldwide
+    { pattern: /amazon\.(in|com|co\.uk|ca|com\.au|ae)/, name: "Amazon" },
+    { pattern: /amzn\.(to|in|eu|asia)/, name: "Amazon" },
     { pattern: /flipkart\.com/, name: "Flipkart" },
     { pattern: /fkrt\.(it|co)/, name: "Flipkart" },
     { pattern: /croma\.com/, name: "Croma" },
@@ -87,13 +88,13 @@ export function validateECommerceUrl(rawUrl = "") {
     { pattern: /sangeethamobil\.es/, name: "Sangeetha" },
     { pattern: /samsung\.com/, name: "Samsung" },
     { pattern: /apple\.com/, name: "Apple" },
-    { pattern: /oneplus\.(in|com)/, name: "OnePlus" },
+    { pattern: /oneplus\.(in|com|co\.uk)/, name: "OnePlus" },
     { pattern: /mi\.com|xiaomi\.com/, name: "Xiaomi" },
     { pattern: /realme\.com/, name: "Realme" },
     { pattern: /iqoo\.com/, name: "iQOO" },
     { pattern: /vivo\.com/, name: "Vivo" },
     { pattern: /oppo\.com/, name: "Oppo" },
-    { pattern: /motorola\.(in|com)/, name: "Motorola" },
+    { pattern: /motorola\.(in|com|co\.uk)/, name: "Motorola" },
     { pattern: /boat-lifestyle\.com/, name: "boAt" },
     { pattern: /gonoise\.com|noisefit\.com/, name: "Noise" },
     { pattern: /boultaudio\.com/, name: "Boult" },
@@ -105,26 +106,47 @@ export function validateECommerceUrl(rawUrl = "") {
     { pattern: /lenovo\.com/, name: "Lenovo" },
     { pattern: /asus\.com/, name: "ASUS" },
     { pattern: /acer\.com/, name: "Acer" },
-    { pattern: /sony\.(co\.in|com)/, name: "Sony" },
+    { pattern: /sony\.(co\.in|com|co\.uk)/, name: "Sony" },
     { pattern: /lg\.com/, name: "LG" },
-    { pattern: /whirlpoolindia\.com/, name: "Whirlpool" },
+    { pattern: /whirlpoolindia\.com|whirlpool\.(com|co\.uk)/, name: "Whirlpool" },
     { pattern: /ifbappliances\.com/, name: "IFB" },
-    { pattern: /bosch-home\.in/, name: "Bosch" },
+    { pattern: /bosch-home\.(in|co\.uk|com)/, name: "Bosch" },
     { pattern: /voltas\.com/, name: "Voltas" },
-    { pattern: /daikinindia\.com/, name: "Daikin" },
+    { pattern: /daikinindia\.com|daikin\.(com|co\.uk)/, name: "Daikin" },
     { pattern: /godrej\.com/, name: "Godrej" },
     { pattern: /haier\.com/, name: "Haier" },
     { pattern: /panasonic\.com/, name: "Panasonic" },
-    { pattern: /philips\.co\.in/, name: "Philips" },
+    { pattern: /philips\.(co\.in|co\.uk|com)/, name: "Philips" },
     // Major US verified e-commerce retailers & electronics stores
-    { pattern: /walmart\.com/, name: "Walmart" },
-    { pattern: /bestbuy\.com/, name: "Best Buy" },
+    { pattern: /walmart\.(com|ca)/, name: "Walmart" },
+    { pattern: /bestbuy\.(com|ca)/, name: "Best Buy" },
     { pattern: /target\.com/, name: "Target" },
-    { pattern: /newegg\.com/, name: "Newegg" },
+    { pattern: /newegg\.(com|ca)/, name: "Newegg" },
     { pattern: /bhphotovideo\.com/, name: "B&H Photo Video" },
-    { pattern: /homedepot\.com/, name: "The Home Depot" },
-    { pattern: /costco\.com/, name: "Costco" },
-    { pattern: /ebay\.com/, name: "eBay" }
+    { pattern: /homedepot\.(com|ca)/, name: "The Home Depot" },
+    { pattern: /costco\.(com|ca|com\.au)/, name: "Costco" },
+    { pattern: /ebay\.(com|co\.uk|ca|com\.au)/, name: "eBay" },
+    // Major UK verified e-commerce retailers & electronics/pharmacy stores
+    { pattern: /currys\.co\.uk/, name: "Currys" },
+    { pattern: /argos\.co\.uk/, name: "Argos" },
+    { pattern: /johnlewis\.com/, name: "John Lewis" },
+    { pattern: /boots\.com/, name: "Boots" },
+    { pattern: /superdrug\.com/, name: "Superdrug" },
+    { pattern: /ao\.com/, name: "AO.com" },
+    { pattern: /very\.co\.uk/, name: "Very" },
+    // Major Canadian verified e-commerce retailers
+    { pattern: /canadiantire\.ca/, name: "Canadian Tire" },
+    { pattern: /canadacomputers\.com/, name: "Canada Computers" },
+    // Major Australian verified e-commerce retailers
+    { pattern: /jbhifi\.com\.au/, name: "JB Hi-Fi" },
+    { pattern: /harveynorman\.com\.au/, name: "Harvey Norman" },
+    { pattern: /thegoodguys\.com\.au/, name: "The Good Guys" },
+    { pattern: /chemistwarehouse\.com\.au/, name: "Chemist Warehouse" },
+    { pattern: /officeworks\.com\.au/, name: "Officeworks" },
+    // Major UAE verified e-commerce retailers
+    { pattern: /noon\.com/, name: "Noon" },
+    { pattern: /sharafdg\.com/, name: "Sharaf DG" },
+    { pattern: /carrefouruae\.com/, name: "Carrefour UAE" }
   ];
 
   const matched = domainPatterns.find(d => d.pattern.test(hostname));
@@ -174,7 +196,13 @@ export function extractProductFromInput(rawInput = "") {
   let extractedTitle = "";
 
   if (hostname.includes("amazon") || hostname.includes("amzn")) {
-    store = "Amazon";
+    if (hostname.includes(".co.uk")) store = "Amazon.co.uk";
+    else if (hostname.includes(".ca")) store = "Amazon.ca";
+    else if (hostname.includes(".com.au")) store = "Amazon.com.au";
+    else if (hostname.includes(".ae")) store = "Amazon.ae";
+    else if (hostname.includes(".com")) store = "Amazon.com";
+    else store = "Amazon.in";
+
     const pathParts = parsedUrl.pathname.split("/").filter(Boolean);
     const dpIndex = pathParts.findIndex(p => p.toLowerCase() === "dp");
     if (dpIndex > 0) {
@@ -182,6 +210,52 @@ export function extractProductFromInput(rawInput = "") {
     } else if (pathParts.length > 0 && pathParts[0] !== "dp") {
       extractedTitle = pathParts[0].replace(/-/g, " ");
     }
+  } else if (hostname.includes("currys")) {
+    store = "Currys";
+    const pathParts = parsedUrl.pathname.split("/").filter(Boolean);
+    if (pathParts.length > 0) extractedTitle = pathParts[pathParts.length - 1].replace(/-/g, " ");
+  } else if (hostname.includes("argos")) {
+    store = "Argos";
+    const pathParts = parsedUrl.pathname.split("/").filter(Boolean);
+    if (pathParts.length > 0) extractedTitle = pathParts[pathParts.length - 1].replace(/-/g, " ");
+  } else if (hostname.includes("boots")) {
+    store = "Boots";
+    const pathParts = parsedUrl.pathname.split("/").filter(Boolean);
+    if (pathParts.length > 0) extractedTitle = pathParts[pathParts.length - 1].replace(/-/g, " ");
+  } else if (hostname.includes("johnlewis")) {
+    store = "John Lewis";
+    const pathParts = parsedUrl.pathname.split("/").filter(Boolean);
+    if (pathParts.length > 0) extractedTitle = pathParts[pathParts.length - 1].replace(/-/g, " ");
+  } else if (hostname.includes("canadiantire")) {
+    store = "Canadian Tire";
+    const pathParts = parsedUrl.pathname.split("/").filter(Boolean);
+    if (pathParts.length > 0) extractedTitle = pathParts[pathParts.length - 1].replace(/-/g, " ");
+  } else if (hostname.includes("jbhifi")) {
+    store = "JB Hi-Fi";
+    const pathParts = parsedUrl.pathname.split("/").filter(Boolean);
+    if (pathParts.length > 0) extractedTitle = pathParts[pathParts.length - 1].replace(/-/g, " ");
+  } else if (hostname.includes("harveynorman")) {
+    store = "Harvey Norman";
+    const pathParts = parsedUrl.pathname.split("/").filter(Boolean);
+    if (pathParts.length > 0) extractedTitle = pathParts[pathParts.length - 1].replace(/-/g, " ");
+  } else if (hostname.includes("chemistwarehouse")) {
+    store = "Chemist Warehouse";
+    const pathParts = parsedUrl.pathname.split("/").filter(Boolean);
+    if (pathParts.length > 0) extractedTitle = pathParts[pathParts.length - 1].replace(/-/g, " ");
+  } else if (hostname.includes("noon")) {
+    store = "Noon";
+    const pathParts = parsedUrl.pathname.split("/").filter(Boolean);
+    if (pathParts.length > 0) extractedTitle = pathParts[pathParts.length - 1].replace(/-/g, " ");
+  } else if (hostname.includes("sharafdg")) {
+    store = "Sharaf DG";
+    const pathParts = parsedUrl.pathname.split("/").filter(Boolean);
+    if (pathParts.length > 0) extractedTitle = pathParts[pathParts.length - 1].replace(/-/g, " ");
+  } else if (hostname.includes("walmart")) {
+    store = hostname.includes(".ca") ? "Walmart Canada" : "Walmart";
+  } else if (hostname.includes("bestbuy")) {
+    store = hostname.includes(".ca") ? "Best Buy Canada" : "Best Buy";
+  } else if (hostname.includes("target")) {
+    store = "Target";
   } else if (hostname.includes("flipkart") || hostname.includes("fkrt")) {
     store = "Flipkart";
     const pathParts = parsedUrl.pathname.split("/").filter(Boolean);
@@ -624,6 +698,109 @@ export async function identifyProduct(input, country = "IN", existingProduct = n
 }
 
 /**
+ * Universal Regional Configuration Hub for ShopSmart AI
+ * Supports 6 Tier-1 Countries: IN, US, GB, CA, AU, AE
+ */
+export const REGIONAL_PROFILES = {
+  IN: {
+    code: "IN",
+    name: "India",
+    currency: "INR",
+    symbol: "₹",
+    voltage: "230V / 50Hz Indian standard",
+    title: "Indian Operating Reality (Water Hardness, Voltage & Service)",
+    appliancesFocus: "Water hardness/scaling (Borewell/Tanker TDS), low water pressure handling & voltage fluctuation tolerance, Tier-2/3 technician & spare parts network.",
+    gadgetsFocus: "Outdoor sunlight legibility (nits), 35°C+ summer heat dissipation, Tier-2/3 repair accessibility and local service centers.",
+    warrantyLegal: "Standard 1-Year brand warranty with authorized service centers across metros and Tier-2/3 district hubs.",
+    sampleDailyCost: "₹14 / day",
+    sampleBudget: "Target Budget: Under ₹35,000",
+    washingQuery: "Front load 8kg 5 star inverter washing machine heater under 35000",
+    phoneQuery: "Gaming phone 5G under 30000"
+  },
+  US: {
+    code: "US",
+    name: "United States",
+    currency: "USD",
+    symbol: "$",
+    voltage: "120V / 60Hz US electrical wiring standard (GFCI breaker tolerance)",
+    title: "US Operating Reality (120V Grid, Climate & Warranty/RMA Network)",
+    appliancesFocus: "120V/60Hz wiring, winter freeze & pipe freezing protection, High-Efficiency (HE) detergent compatibility, Energy Star tier compliance, US manufacturer RMA logistics.",
+    gadgetsFocus: "UL/FCC electrical safety compliance, 120V fast charging, outdoor sunlight legibility & winter/summer battery endurance, Apple Store / Best Buy Geek Squad repair network.",
+    warrantyLegal: "1-Year US manufacturer limited warranty with mail-in RMA logistics and Best Buy / authorized repair accessibility nationwide.",
+    sampleDailyCost: "$0.20 / day",
+    sampleBudget: "Target Budget: Under $800",
+    washingQuery: "Front load inverter washing machine steam heater under 800",
+    phoneQuery: "Flagship gaming phone 5G long battery"
+  },
+  GB: {
+    code: "GB",
+    name: "United Kingdom",
+    currency: "GBP",
+    symbol: "£",
+    voltage: "230V / 50Hz Type-G 3-pin fused plug standard",
+    title: "UK Operating Reality (230V Type-G Grid, British Climate & Consumer Rights Warranty)",
+    appliancesFocus: "230V/50Hz Type-G standard, UK limescale/hard water resilience in Southern England, cold damp winter climate tolerance, UK Energy Label (A-G scale), Currys / Argos repair logistics.",
+    gadgetsFocus: "UKCA/CE compliance, 230V fast charging, overcast UK daylight legibility & indoor glare reduction, Apple Store / Currys Care authorised repair accessibility across England, Scotland, Wales & NI.",
+    warrantyLegal: "UK Consumer Rights Act (up to 6-year statutory warranty against inherent faults) alongside brand standard warranties.",
+    sampleDailyCost: "£0.20 / day",
+    sampleBudget: "Target Budget: Under £600",
+    washingQuery: "Front load inverter washing machine under 600",
+    phoneQuery: "Gaming phone 5G under 500"
+  },
+  CA: {
+    code: "CA",
+    name: "Canada",
+    currency: "CAD",
+    symbol: "C$",
+    voltage: "120V / 60Hz CSA electrical standard",
+    title: "Canadian Operating Reality (120V CSA Grid, Extreme Cold & Consumer Protection)",
+    appliancesFocus: "120V/60Hz CSA compliance, extreme sub-zero (-20°C to -40°C) winter pipe resilience & indoor central heating humidity balance, Energy Star Canada ratings, Best Buy Canada / Canadian Tire service support.",
+    gadgetsFocus: "CSA/IC compliance, sub-zero lithium-ion battery endurance in freezing winters, bright snow-glare outdoor legibility, Best Buy Canada Geek Squad & brand warranty centers across provinces.",
+    warrantyLegal: "Provincial Consumer Protection Acts (e.g. Quebec Consumer Protection Act legal warranty) & standard 1-year Canadian manufacturer warranty.",
+    sampleDailyCost: "C$0.28 / day",
+    sampleBudget: "Target Budget: Under C$900",
+    washingQuery: "Front load inverter washing machine under 900",
+    phoneQuery: "Gaming phone 5G under 700"
+  },
+  AU: {
+    code: "AU",
+    name: "Australia",
+    currency: "AUD",
+    symbol: "A$",
+    voltage: "230V / 50Hz Type-I AS/NZS 3112 standard",
+    title: "Australian Operating Reality (230V Type-I Grid, High UV/Heat & ACL Warranty)",
+    appliancesFocus: "230V/50Hz Type-I wiring standard, resilience to hard Australian bore/municipal water, high summer ambient heat dissipation, WELS water & energy star ratings, Harvey Norman / JB Hi-Fi servicing.",
+    gadgetsFocus: "RCM / AS/NZS electrical compliance, extreme UV & 40°C+ summer heat dissipation (preventing thermal throttling), high outdoor sunlight legibility (1000+ nits), nationwide JB Hi-Fi / authorized tech network.",
+    warrantyLegal: "Australian Consumer Law (ACL) statutory consumer guarantees (automatic right to repair, replacement or refund for reasonable product life regardless of manufacturer warranty duration).",
+    sampleDailyCost: "A$0.32 / day",
+    sampleBudget: "Target Budget: Under A$950",
+    washingQuery: "Front load inverter washing machine under 950",
+    phoneQuery: "Gaming phone 5G under 750"
+  },
+  AE: {
+    code: "AE",
+    name: "United Arab Emirates",
+    currency: "AED",
+    symbol: "AED",
+    voltage: "230V / 50Hz Type-G 3-pin standard (ESMA compliant)",
+    title: "UAE Operating Reality (230V Grid, 45°C+ Desert Heat & ESMA Compliance)",
+    appliancesFocus: "230V/50Hz Type-G ESMA compliance, desalinated municipal water compatibility, ultra-high ambient desert heat (45°C+) condenser cooling, Sharaf DG / Carrefour service centers.",
+    gadgetsFocus: "TRA / ESMA wireless compliance, ultra-high summer heat endurance (preventing battery swelling & thermal shutdown), high brightness display for bright desert sun, official brand service centers in Dubai & Abu Dhabi.",
+    warrantyLegal: "UAE Consumer Protection Law (Federal Law No. 15) ensuring minimum 1-year authorized distributor warranty and genuine spare parts availability.",
+    sampleDailyCost: "AED 1.10 / day",
+    sampleBudget: "Target Budget: Under AED 2,500",
+    washingQuery: "Front load inverter washing machine under 2000",
+    phoneQuery: "Flagship gaming phone 5G under 2500"
+  }
+};
+
+export function getRegionProfile(countryCode = "IN") {
+  const code = String(countryCode || "IN").toUpperCase();
+  if (code === "UK") return REGIONAL_PROFILES.GB;
+  return REGIONAL_PROFILES[code] || REGIONAL_PROFILES.IN;
+}
+
+/**
  * Step 2: Generate Trust Sheet Dossier based on identified product & answers
  */
 export async function generateTrustSheet({
@@ -632,18 +809,18 @@ export async function generateTrustSheet({
   country = "IN"
 }) {
   const userCountry = String(country || product.country || "IN").toUpperCase();
-  const isUS = userCountry === "US";
-  const currencySymbol = isUS ? "$" : "₹";
+  const regionProfile = getRegionProfile(userCountry);
+  const currencySymbol = regionProfile.symbol;
   const title = product.title || "Product";
   const category = product.category || detectProductCategory(title);
-  const store = product.store || (isUS ? "US Online Store" : "Online Store");
+  const store = product.store || `${regionProfile.name} Online Store`;
   const price = product.price || "";
   const rawUrl = product.url || "";
   const specs = Array.isArray(product.specifications) ? product.specifications.slice(0, 15) : [];
 
-  // Check Cache (v6 with region isolation)
+  // Check Cache (v9 with un-nested region isolation)
   const answerHash = Object.values(answers).join("-") || "default";
-  const cacheKey = `cache:trust_sheet:v6:${userCountry.toLowerCase()}:${title.toLowerCase().replace(/[^a-z0-9]/g, "-").slice(0, 50)}:${answerHash}`;
+  const cacheKey = `cache:trust_sheet:v9:${userCountry.toLowerCase()}:${title.toLowerCase().replace(/[^a-z0-9]/g, "-").slice(0, 50)}:${answerHash}`;
   try {
     const cached = await redis.get(cacheKey);
     if (cached) {
@@ -657,28 +834,25 @@ export async function generateTrustSheet({
   // Build Answer Context
   const answerContextLines = Object.entries(answers).map(([k, v]) => `User Requirement [${k}]: ${v}`).join("\n");
 
-  const regionalRealityInstructions = isUS
-    ? `6. KILLER HOOK 3: US Real-World Reality Check:
-   - For Appliances: 120V / 60Hz US electrical wiring standard (GFCI breaker tolerance), cold weather & winter pipe freezing considerations, high-efficiency (HE) detergent compatibility, Energy Star rating, US manufacturer limited warranty & repair/RMA logistics across US states.
-   - For Gadgets / Electronics: UL / FCC electrical safety compliance, 120V fast chargers, outdoor sunlight legibility & winter/summer battery endurance, Apple Store / Best Buy Geek Squad / manufacturer mail-in RMA logistics.`
-    : `6. KILLER HOOK 3: Indian Real-World Reality Check:
-   - For Appliances: Water hardness/scaling, low water pressure & voltage fluctuations, Tier-2/3 technician & spare parts network.
-   - For Gadgets: Outdoor sunlight legibility (nits), 35°C+ summer heat dissipation, Tier-2/3 repair accessibility.`;
+  const regionalRealityInstructions = `6. KILLER HOOK 3: ${regionProfile.name} Real-World Reality Check:
+   - For Appliances: ${regionProfile.appliancesFocus}
+   - For Gadgets / Electronics: ${regionProfile.gadgetsFocus}
+   - Regional Warranty & Authorized Service Network: ${regionProfile.warrantyLegal}`;
 
-  const dailyCostExample = isUS ? "$0.20 / day" : "₹14 / day";
-  const betterQueryExample = isUS
-    ? (category === "washing_machine" ? "Front load inverter washing machine steam heater under 800" : "Flagship gaming phone 5G long battery")
-    : (category === "washing_machine" ? "Front load 8kg 5 star inverter washing machine heater under 35000" : "Gaming phone 5G under 30000");
-  const budgetExample = isUS ? "Target Budget: Under $800" : "Target Budget: Under ₹35,000";
+  const dailyCostExample = regionProfile.sampleDailyCost;
+  const betterQueryExample = category === "washing_machine" 
+    ? regionProfile.washingQuery 
+    : (category === "smartphone" ? regionProfile.phoneQuery : `${category} high rating`);
+  const budgetExample = regionProfile.sampleBudget;
 
   const prompt = `You are ShopSmart AI's Chief Hardware Reliability Engineer and Consumer Advocate.
-Analyze this product with strictly spec-grounded honesty for a consumer in ${isUS ? "the United States (USD currency, 120V electrical grid, US retailer ecosystem)" : "India (INR currency, 230V electrical grid, Indian retailer ecosystem)"}:
+Analyze this product with strictly spec-grounded honesty for a consumer in ${regionProfile.name} (${regionProfile.currency} ${regionProfile.symbol} currency, ${regionProfile.voltage}, local retail ecosystem):
 
 PRODUCT: "${title}"
 CATEGORY: "${category}"
 PRICE: "${price}"
 STORE / SOURCE: "${store}" ${rawUrl ? `(${rawUrl})` : ""}
-TARGET MARKET REGION: ${isUS ? "UNITED STATES (USD $)" : "INDIA (INR ₹)"}
+TARGET MARKET REGION: ${regionProfile.name.toUpperCase()} (${regionProfile.currency} ${regionProfile.symbol})
 ${specs.length > 0 ? `LIVE SCRAPED SPECIFICATIONS:\n${specs.map(s => `• ${s.name || s.key}: ${s.value}`).join("\n")}` : ""}
 
 ${answerContextLines ? `USER'S PERSONAL PREFERENCES & WORKLOAD:\n${answerContextLines}` : "USER HAS SKIPPED SPECIFIC QUESTIONS: Provide a comprehensive, balanced general hardware evaluation."}
@@ -703,7 +877,7 @@ ${regionalRealityInstructions}
      * For Washing Machines: Use "Front load inverter washing machine heater".
      * For Laptops: Use "Gaming laptop RTX" or "Thin and light laptop 16GB".
      * For Audio: Use "ANC earbuds long battery" or "Over-ear noise cancelling headphones".
-   - Keep budget phrases concise: e.g. "${isUS ? "under 800" : "under 50000"}" or omit budget if flagship category.
+   - Keep budget phrases concise: e.g. "${regionProfile.sampleBudget}" or omit budget if flagship category.
    Provide 3 crisp bullet points on how this query targets models solving their specific bottleneck.
 
 Respond ONLY with valid, raw JSON (no markdown formatting, no backticks, no comments) using this schema:
@@ -712,7 +886,7 @@ Respond ONLY with valid, raw JSON (no markdown formatting, no backticks, no comm
     "title": "${title}",
     "brand": "${product.brand || "Brand"}",
     "category": "${category}",
-    "estimatedPrice": "${price || (isUS ? "$XX.XX" : "₹XX,XXX")}",
+    "estimatedPrice": "${price || (regionProfile.symbol + "XX.XX")}",
     "store": "${store}",
     "image": "${product.image || ""}"
   },
@@ -743,16 +917,16 @@ Respond ONLY with valid, raw JSON (no markdown formatting, no backticks, no comm
     "calculationBasis": "Calculated across its realistic 6-7 year operational lifespan"
   },
   "regionalRealityCheck": {
-    "region": "${isUS ? "US" : "IN"}",
-    "title": "${isUS ? "US Operating Reality (120V Grid, Climate & Warranty/RMA Network)" : "Indian Operating Reality (Water Hardness, Voltage & Service)"}",
-    "sunlightLegibility": "${isUS ? "Direct sunlight outdoor readability (or Winter freeze & HE detergent efficiency for appliances)" : "Direct sunlight readability (or Hard Water Scaling resistance for appliances)"}",
-    "summerHeatTolerance": "${isUS ? "120V 60Hz electrical grid & sub-zero winter / indoor HVAC endurance" : "Sustained performance in 35°C+ summer heat (or Voltage Fluctuation & low water pressure handling for appliances)"}",
-    "serviceNetworkTier2Tier3": "${isUS ? "1-Year US manufacturer limited warranty, mail-in RMA logistics & Best Buy / authorized repair accessibility" : "Authorized repair technician accessibility & spare parts availability in Tier-2 and Tier-3 Indian cities."}"
+    "region": "${regionProfile.code}",
+    "title": "${regionProfile.title}",
+    "sunlightLegibility": "Direct sunlight outdoor readability & glare reduction tailored for ${regionProfile.name}",
+    "summerHeatTolerance": "Operating endurance under ${regionProfile.voltage} and local ${regionProfile.name} climate conditions",
+    "serviceNetworkTier2Tier3": "${regionProfile.warrantyLegal}"
   },
   "indianRealityCheck": {
-    "sunlightLegibility": "${isUS ? "Direct sunlight outdoor readability" : "Direct sunlight readability (or Hard Water Scaling resistance for appliances)"}",
-    "summerHeatTolerance": "${isUS ? "120V 60Hz electrical grid & sub-zero winter / indoor HVAC endurance" : "Sustained performance in 35°C+ summer heat"}",
-    "serviceNetworkTier2Tier3": "${isUS ? "1-Year US manufacturer warranty & mail-in RMA logistics" : "Authorized repair technician accessibility & spare parts availability in Tier-2 and Tier-3 Indian cities."}"
+    "sunlightLegibility": "Direct sunlight outdoor readability & glare reduction tailored for ${regionProfile.name}",
+    "summerHeatTolerance": "Operating endurance under ${regionProfile.voltage} and local ${regionProfile.name} climate conditions",
+    "serviceNetworkTier2Tier3": "${regionProfile.warrantyLegal}"
   },
   "keySpecs": [
     { "label": "Key Component 1", "value": "Exact spec" },
@@ -926,20 +1100,20 @@ Respond ONLY with valid, raw JSON (no markdown formatting, no backticks, no comm
         ]
       },
       dailyCost: {
-        costPerDay: isUS ? "$0.35 / day" : "₹35 / day",
+        costPerDay: regionProfile.sampleDailyCost,
         calculationBasis: `Estimated daily cost across its expected ${expectedYears} life cycle`
       },
       regionalRealityCheck: {
-        region: isUS ? "US" : "IN",
-        title: isUS ? "US Operating Reality (120V Grid, Climate & Warranty/RMA Network)" : "Indian Operating Reality (Water Hardness, Voltage & Service)",
-        sunlightLegibility: isUS ? "Optimal indoor and outdoor visibility; tested for US daylight standards." : "Standard panel brightness; readable indoors, may require shading under direct bright afternoon sun.",
-        summerHeatTolerance: isUS ? "Operates smoothly on standard US 120V circuits with winter HVAC stability." : "Moderate thermal dissipation; optimal in fan/AC environments, mild fan noise in peak 35°C+ summer.",
-        serviceNetworkTier2Tier3: isUS ? "1-Year US limited warranty with mail-in RMA logistics & Best Buy / brand partner support nationwide." : "Authorized brand partner centers available in major metros and select Tier-2 district hubs."
+        region: userCountry,
+        title: regionProfile.title,
+        sunlightLegibility: `Tuned for ${regionProfile.name} sunlight standards and display glare reduction.`,
+        summerHeatTolerance: `Optimized for ${regionProfile.voltage} and local ${regionProfile.name} climate conditions.`,
+        serviceNetworkTier2Tier3: regionProfile.warrantyLegal
       },
       indianRealityCheck: {
-        sunlightLegibility: isUS ? "Optimal indoor and outdoor visibility; tested for US daylight standards." : "Standard panel brightness; readable indoors, may require shading under direct bright afternoon sun.",
-        summerHeatTolerance: isUS ? "Operates smoothly on standard US 120V circuits with winter HVAC stability." : "Moderate thermal dissipation; optimal in fan/AC environments, mild fan noise in peak 35°C+ summer.",
-        serviceNetworkTier2Tier3: isUS ? "1-Year US limited warranty with mail-in RMA logistics & Best Buy / brand partner support nationwide." : "Authorized brand partner centers available in major metros and select Tier-2 district hubs."
+        sunlightLegibility: `Tuned for ${regionProfile.name} sunlight standards and display glare reduction.`,
+        summerHeatTolerance: `Optimized for ${regionProfile.voltage} and local ${regionProfile.name} climate conditions.`,
+        serviceNetworkTier2Tier3: regionProfile.warrantyLegal
       },
       betterAlternative: {
         hasAlternative: false,
@@ -976,11 +1150,48 @@ Respond ONLY with valid, raw JSON (no markdown formatting, no backticks, no comm
   }
   jsonResult.country = userCountry;
 
-  // Ensure regionalRealityCheck is present
-  if (!jsonResult.regionalRealityCheck && jsonResult.indianRealityCheck) {
+  // Flatten potential LLM schema mis-nesting (e.g. dailyCost or regionalRealityCheck placed inside shelfLife)
+  if (jsonResult.shelfLife && typeof jsonResult.shelfLife === "object") {
+    if (!jsonResult.dailyCost && jsonResult.shelfLife.dailyCost) {
+      jsonResult.dailyCost = jsonResult.shelfLife.dailyCost;
+      delete jsonResult.shelfLife.dailyCost;
+    }
+    if (!jsonResult.regionalRealityCheck && jsonResult.shelfLife.regionalRealityCheck) {
+      jsonResult.regionalRealityCheck = jsonResult.shelfLife.regionalRealityCheck;
+      delete jsonResult.shelfLife.regionalRealityCheck;
+    }
+    if (!jsonResult.indianRealityCheck && jsonResult.shelfLife.indianRealityCheck) {
+      jsonResult.indianRealityCheck = jsonResult.shelfLife.indianRealityCheck;
+      delete jsonResult.shelfLife.indianRealityCheck;
+    }
+    if (!jsonResult.keySpecs && jsonResult.shelfLife.keySpecs) {
+      jsonResult.keySpecs = jsonResult.shelfLife.keySpecs;
+      delete jsonResult.shelfLife.keySpecs;
+    }
+    if (!jsonResult.betterAlternative && jsonResult.shelfLife.betterAlternative) {
+      jsonResult.betterAlternative = jsonResult.shelfLife.betterAlternative;
+      delete jsonResult.shelfLife.betterAlternative;
+    }
+  }
+
+  // Ensure dailyCost is present and formatted
+  if (!jsonResult.dailyCost) {
+    jsonResult.dailyCost = {
+      costPerDay: regionProfile.sampleDailyCost,
+      calculationBasis: `Estimated daily cost across its operational life cycle`
+    };
+  }
+
+  // Ensure regionalRealityCheck is present and matches the target region
+  if (jsonResult.regionalRealityCheck) {
+    jsonResult.regionalRealityCheck.region = userCountry;
+    if (!jsonResult.regionalRealityCheck.title || (!jsonResult.regionalRealityCheck.title.includes(regionProfile.code) && !jsonResult.regionalRealityCheck.title.includes(regionProfile.name))) {
+      jsonResult.regionalRealityCheck.title = regionProfile.title;
+    }
+  } else if (jsonResult.indianRealityCheck) {
     jsonResult.regionalRealityCheck = {
       region: userCountry,
-      title: isUS ? "US Operating Reality (120V Grid, Climate & Warranty/RMA Network)" : "Indian Operating Reality (Water Hardness, Voltage & Service)",
+      title: regionProfile.title,
       ...jsonResult.indianRealityCheck
     };
   }
@@ -1047,7 +1258,7 @@ Analyze the consumer's inquiry about the shortlisted product with strictly spec-
 PRODUCT: "${title}" (${category})
 KNOWN HARDWARE PROS: ${excels || "Standard OEM specifications"}
 KNOWN HARDWARE LIMITS / FINE PRINT: ${tradeoffs || "Standard limitations"}
-OPERATING REGION: ${isUS ? "UNITED STATES (USD currency, 120V/60Hz grid, UL/FCC standards, 1-yr US manufacturer warranty, mail-in RMA logistics & Best Buy repair network)" : "INDIA (INR currency, 230V/50Hz grid, hard water / borewell conditions, tropical summer heat, Tier-2/3 local technician network)"}
+OPERATING REGION: ${isUS ? "UNITED STATES (USD currency, 120V/60Hz grid, UL/FCC standards, 1-yr US manufacturer warranty, mail-in RMA logistics & Best Buy repair network)" : (userCountry === "GB" || userCountry === "UK") ? "UNITED KINGDOM (GBP £ currency, 230V/50Hz Type-G plug, UK Consumer Rights Act, British climate, Currys / Argos / John Lewis network)" : "INDIA (INR currency, 230V/50Hz grid, hard water / borewell conditions, tropical summer heat, Tier-2/3 local technician network)"}
 REGIONAL REAL-WORLD REALITY: ${regionalCheck || (isUS ? "Standard US operating conditions" : "Standard Indian operating conditions")}
 RAW SCRAPED SPECIFICATIONS: ${specs.map(s => `${s.name || s.key}: ${s.value}`).join(", ") || "Standard OEM specs"}
 
