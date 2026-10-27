@@ -18,6 +18,25 @@
 
 ## 📅 Daily Changelog & Feature Timeline
 
+### 🗓️ 2026-10-27 (UI & Mobile Accessibility: Travel & Stays Search Carousel Integration & TrustSheet Price Hardening)
+
+* **Git Commit**: `f342f7d`
+* **Commit Message**: `feat: add Travel & Stays to search carousel and fix numeric price normalization in TrustSheet`
+* **Status**: ✅ 100% Tested, Verified & Pushed to GitHub `main`
+* **Purpose & Architecture of this Commit**:
+  1. **Mobile UX Parity & Feature Discoverability (`SearchHero.jsx` & `page.js`)**:
+     - **Issue Addressed**: The desktop header displayed "Travel & Stays" alongside AI Trust Sheet, Trial Room, and OTT & Subs, but on mobile devices top-level header tabs collapse, hiding Travel & Stays from mobile shoppers.
+     - **Architectural Solution**: Added "Travel & Stays" directly into the homepage hero category carousel above the search bar as the 6th tab (`[Shopping]` `[Pharmacy]` `[Coupons]` `[Today's Deals]` `[OTT & Subs]` `[✈️ Travel & Stays]`).
+     - **UX Implementation**: Built with `overflow-x-auto no-scrollbar` for smooth horizontal finger swiping on mobile, responsive labels (`Travel & Stays` on desktop, `Travel` on mobile viewports), emerald theme styling, and connected `onOpenTravel={() => setAppState("travel")}` to immediately transition users into the Travel Hub.
+  2. **AI TrustSheet Integer Price Robustness (`trustSheetService.js`)**:
+     - **Issue Addressed**: During Feature 3 automated runtime testing, when LLM inference returned a numeric integer for `estimatedPrice` (e.g. `124999`) instead of a string, calling `estimatedPrice.includes("XX")` resulted in an unhandled `TypeError: .includes is not a function`.
+     - **Architectural Solution**: Wrapped the price evaluation in `String(jsonResult.product.estimatedPrice).includes("XX")`, ensuring seamless price normalization whether the model returns an integer number or a currency-formatted string.
+
+#### 📂 Files Modified:
+- `src/components/SearchHero.jsx` *(Added Plane icon, onOpenTravel prop, and 6th Travel & Stays segmented tab)*
+- `src/app/page.js` *(Passed onOpenTravel={() => setAppState("travel")} to SearchHero)*
+- `src/services/trustSheetService.js` *(Safely normalized numeric estimatedPrice with String() wrapper)*
+
 ### 🗓️ 2026-10-27 (Security Hardening: Cryptographic HMAC Handshake, Key Vault & Daily Financial Circuit Breaker)
 
 * **Git Commit**: `e3b408c`
