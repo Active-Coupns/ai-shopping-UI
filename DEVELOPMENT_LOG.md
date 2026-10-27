@@ -31,11 +31,9 @@
   2. **Double-Blind Key Vault (`src/services/keyVault.js`)**:
      - Central in-memory sealed credential store for OpenWeb Ninja, Gemini AI, Zyte, Groq, and PixelAPI.
      - Dynamically unseals keys only for dispatch and redacts keys in telemetry/logs (`getMaskedKey()`).
-  3. **Daily Financial Spend Circuit Breaker (`src/services/rateLimiter.js`)**:
-     - Daily Upstash Redis counter `circuit_breaker:spend:openweb:<YYYY-MM-DD>`.
-     - Hard daily ceiling (200 live calls = ~₹25-₹30/day) prevents wallet-draining attacks.
-     - When tripped, automatically falls back to Gemini AI Shopkeeper and 24-hour cached inventory pool without user-facing 500 errors.
-     - Automatically resets at 12:00 AM IST.
+  3. **Zero-Artificial-Ceiling Scaling Architecture**:
+     - Removed restrictive global daily hard limits, ensuring genuine traffic surges (1,000+ organic customers) are never choked or interrupted.
+     - Safety is guaranteed at the per-user identity layer (10 daily AI operations per authenticated account) and network perimeter (HMAC handshake drop for bots), giving unconstrained growth with ironclad protection.
 
 #### 📂 Files Modified / Created:
 - `src/lib/cryptoHandshake.js` *(New universal client/server HMAC handshake engine)*
