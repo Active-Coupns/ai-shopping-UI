@@ -85,7 +85,7 @@ The entire user journey must consume **at most 2 external API calls** to RapidAP
 - **Operations That Consume Credits**:
   1. Live Retail Product Search (`/api/search` via OpenWeb Ninja / Zyte) = 1 credit.
   2. Travel AI Itinerary Advisor (`/api/travel/advisor` via Gemini 2.5 Flash) = 1 credit.
-  3. AI Hardware Trust Sheet Dossier Generation (`/api/trust-sheet` action `generate` via Gemini 2.5 Flash) = 1 credit.
+  3. AI Hardware Trust Sheet 1-Shot Dossier Generation (`/api/trust-sheet` action `direct`/`generate` via Groq Qwen 2.5 / OpenAI GPT-OSS with OpenRouter fallback) = 1 credit (fresh live generation only; Redis cache hit = 0 credits).
 - **Operations Exempt from Credit Deduction (0 Credits - Unmetered)**:
   - Cache hits (products loaded from Redis or in-memory).
   - Browsing existing scraped coupons and revealing codes.

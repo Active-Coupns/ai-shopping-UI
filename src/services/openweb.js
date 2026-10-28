@@ -175,6 +175,7 @@ function cleanTitleForQuery(title) {
     .replace(/\[[^\]]*\]/g, " ")
     .replace(/\([^)]*\)/g, " ")
     .replace(/Sponsored Ad - /gi, " ")
+    .replace(/\b(online at best price in india|best price in india|free delivery|buy online|with exchange|cash on delivery)\b/gi, " ")
     .replace(/[^a-zA-Z0-9\s-]/g, " ")
     .replace(/\s+/g, " ")
     .trim() || "product";
@@ -346,33 +347,52 @@ export function sanitizeOfferUrl(rawUrl, storeName, productTitle = "", country =
 
   const isUS = String(country).toUpperCase() === "US";
 
-  // 1. Amazon ASIN Canonicalization (100% Direct Product Page)
-  const asinMatch = rawUrl.match(/\/dp\/([A-Z0-9]{10})/i) || rawUrl.match(/\/gp\/product\/([A-Z0-9]{10})/i);
-  if (asinMatch) {
-    return `${getAmazonBaseUrl(country)}/dp/${asinMatch[1]}`;
-  }
-
-  // 1b. Flipkart FSN Canonicalization (100% Direct Product Page)
-  const fsnMatch = rawUrl.match(/\/p\/itm([a-zA-Z0-9]+)/i);
-  if (fsnMatch && fsnMatch[1]) {
-    return `https://www.flipkart.com/p/itm${fsnMatch[1]}`;
-  }
-
-  // 2. Unroll embedded URL if present inside Google redirect
+  // 1. Unroll embedded URL if present inside Google redirect or tracking aggregator (FIRST)
   try {
-    if (rawUrl.includes("google.com") || rawUrl.includes("google.co.in")) {
-      const u = new URL(rawUrl);
-      const embeddedUrl = u.searchParams.get("url") || u.searchParams.get("dest");
-      if (embeddedUrl && embeddedUrl.startsWith("http") && !embeddedUrl.includes("google.com") && !embeddedUrl.includes("google.co.in")) {
-        const dest = new URL(embeddedUrl);
-        const tracking = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'srsltid', 'cmpid', 'source', 'ref_', 'gclid', 'fbclid'];
-        tracking.forEach(p => dest.searchParams.delete(p));
-        return dest.toString();
+    if (rawUrl.includes("google.com") || rawUrl.includes("google.co.in") || rawUrl.includes("googleadservices") || rawUrl.includes("ibp=")) {
+      const u = new URL(rawUrl.startsWith("http") ? rawUrl : `https://${rawUrl}`);
+      const trackingKeys = ["url", "dest", "q", "target", "redirect", "link", "u", "adurl"];
+      for (const param of trackingKeys) {
+        const val = u.searchParams.get(param);
+        if (val && val.startsWith("http") && !val.includes("google.com") && !val.includes("google.co.in")) {
+          return sanitizeOfferUrl(val, storeName, productTitle, country);
+        }
       }
     }
   } catch (e) {}
 
-  // 3. Direct clean merchant URL (BLOCK any google domains or ibp aggregator URLs)
+  // 2. Amazon ASIN Canonicalization (100% Direct Product Page)
+  const asinMatch = rawUrl.match(/\/(?:dp|gp\/product|gp\/aw\/d)\/([A-Z0-9]{10})/i);
+  if (asinMatch) {
+    return `${getAmazonBaseUrl(country)}/dp/${asinMatch[1]}`;
+  }
+
+  // 3. Flipkart Direct PDP Canonicalization (Preserves full product slug + PID so PDP NEVER 404s)
+  if (rawUrl.includes("flipkart.com")) {
+    try {
+      const u = new URL(rawUrl.startsWith("http") ? rawUrl : `https://${rawUrl}`);
+      if (u.pathname.includes("/p/itm") || u.searchParams.has("pid")) {
+        const pid = u.searchParams.get("pid");
+        const lid = u.searchParams.get("lid");
+        const cleanParams = new URLSearchParams();
+        if (pid) cleanParams.set("pid", pid);
+        if (lid) cleanParams.set("lid", lid);
+        const qStr = cleanParams.toString();
+        return `https://www.flipkart.com${u.pathname}${qStr ? `?${qStr}` : ""}`;
+      }
+    } catch (_) {}
+
+    const fsnMatch = rawUrl.match(/\/p\/itm([a-zA-Z0-9]+)/i);
+    const pidMatch = rawUrl.match(/[?&]pid=([a-zA-Z0-9]+)/i);
+    const slugMatch = rawUrl.match(/flipkart\.com\/([a-zA-Z0-9-_]+)\/p\/itm/i);
+    if (fsnMatch && fsnMatch[1]) {
+      const slug = slugMatch ? slugMatch[1] : "product";
+      const pidQuery = pidMatch ? `?pid=${pidMatch[1]}` : "";
+      return `https://www.flipkart.com/${slug}/p/itm${fsnMatch[1]}${pidQuery}`;
+    }
+  }
+
+  // 4. Direct clean merchant URL (BLOCK any google domains or ibp aggregator URLs)
   if (rawUrl.startsWith('http') && !rawUrl.includes('google.com') && !rawUrl.includes('google.co.in') && !rawUrl.includes('ibp=')) {
     try {
       const u = new URL(rawUrl);

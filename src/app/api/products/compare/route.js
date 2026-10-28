@@ -4,6 +4,7 @@ import { getAuth } from "@clerk/nextjs/server";
 import { redis } from "@/services/redis";
 import { checkUnifiedApiQuota, extractTrustedClientIp } from "@/services/rateLimiter";
 import { executeProductDetailsRequest, executeSearchRequest, formatStoreName, isTrustedMerchant, sanitizeOfferUrl, isSearchPageUrl, parsePriceNum, getStoreDirectSearchFallback } from "@/services/openweb";
+import { extractBrandAndModel } from "@/services/autoHealingSentinel";
 import { verifyCryptoHandshake } from "@/lib/cryptoHandshake";
 
 import { isFeatureEnabled } from "@/services/featureFlags";
@@ -54,11 +55,26 @@ export async function POST(request) {
       return NextResponse.json({ success: false, error: "INVALID_PAYLOAD", message: "Request body must be a JSON object." }, { status: 400 });
     }
 
-    const { productId, title = "", basePrice = 0, baseStore = "Online Store", baseLink = "", country = "IN" } = body;
+    const { productId, title = "", basePrice = 0, baseStore = "Online Store", baseLink = "", country = "IN", brand = "", cleanModel = "" } = body;
     const meta = getCountryMeta(country);
     const cleanCountry = (meta.apiCode || "in").toLowerCase();
-    const cleanPId = String(productId || "").slice(-50).replace(/[^a-zA-Z0-9]/g, "");
-    const compCacheKey = `cache:comp:v7:${cleanPId}:${cleanCountry}`;
+    
+    const rawTitle = typeof title === "string" ? title.trim() : "";
+    const cleanTitle = (rawTitle && rawTitle !== "null" && rawTitle !== "undefined") ? rawTitle : "product";
+
+    // Build the exact concise search query: Brand + Model without marketing noise
+    let searchTarget = cleanModel || "";
+    if (!searchTarget || searchTarget.length < 3) {
+      searchTarget = extractBrandAndModel(cleanTitle);
+      if (brand && !searchTarget.toLowerCase().includes(brand.toLowerCase())) {
+        searchTarget = `${brand} ${searchTarget}`.trim();
+      }
+    }
+    const cleanSearchQuery = searchTarget || cleanTitle;
+
+    const fallbackKeySlug = cleanSearchQuery.slice(0, 40).toLowerCase().replace(/[^a-z0-9]/g, "");
+    const cleanPId = String(productId || fallbackKeySlug).slice(-50).replace(/[^a-zA-Z0-9]/g, "");
+    const compCacheKey = `cache:comp:v8:${cleanPId}:${cleanCountry}`;
 
     // 1. Check Redis Cache First (0.01ms - Costs ₹0)
     let cachedStores = null;
@@ -109,14 +125,12 @@ export async function POST(request) {
       }, { status: 429 });
     }
 
-    // 3. Fetch Live Multi-Store Offers (Exact merchant PDPs via OpenWebNinja)
+    // 3. Fetch Live Multi-Store Offers using exact clean Brand + Model query
     let resolvedProductId = productId;
-    const rawTitle = typeof title === "string" ? title.trim() : "";
-    const cleanTitle = (rawTitle && rawTitle !== "null" && rawTitle !== "undefined") ? rawTitle : "product";
 
-    if (!resolvedProductId && cleanTitle && cleanTitle !== "product") {
+    if (!resolvedProductId && cleanSearchQuery && cleanSearchQuery !== "product") {
       try {
-        const searchProds = await executeSearchRequest(cleanTitle, cleanCountry);
+        const searchProds = await executeSearchRequest(cleanSearchQuery, cleanCountry);
         if (Array.isArray(searchProds) && searchProds.length > 0 && searchProds[0]?.product_id) {
           resolvedProductId = searchProds[0].product_id;
         }
@@ -143,7 +157,7 @@ export async function POST(request) {
     const baseStoreKey = cleanBaseStore.toLowerCase();
 
     // 4. ANCHOR LOWEST: Base Store is Store 1 with is_lowest = true
-    const safeBaseLink = sanitizeOfferUrl(baseLink, cleanBaseStore, cleanTitle, country) || getStoreDirectSearchFallback(cleanBaseStore, cleanTitle, country);
+    const safeBaseLink = sanitizeOfferUrl(baseLink, cleanBaseStore, cleanSearchQuery, country) || getStoreDirectSearchFallback(cleanBaseStore, cleanSearchQuery, country);
     storeMap.set(baseStoreKey, {
       store_name: cleanBaseStore,
       price: parsedBasePrice,
@@ -162,7 +176,7 @@ export async function POST(request) {
       // Upgrade base store deal_link if exact verified PDP offer is found
       if (sKey === baseStoreKey) {
         const rawUrl = offer.product_page_url || offer.offer_page_url || offer.link;
-        const cleanUrl = sanitizeOfferUrl(rawUrl, formattedStore, cleanTitle, country);
+        const cleanUrl = sanitizeOfferUrl(rawUrl, formattedStore, cleanSearchQuery, country);
         if (cleanUrl && !cleanUrl.includes("google.com") && !cleanUrl.includes("ibp=") && !isSearchPageUrl(cleanUrl)) {
           storeMap.get(baseStoreKey).deal_link = cleanUrl;
         }
@@ -177,7 +191,7 @@ export async function POST(request) {
       if (!offerPrice) return;
 
       const rawUrl = offer.product_page_url || offer.offer_page_url || offer.link;
-      const cleanUrl = sanitizeOfferUrl(rawUrl, formattedStore, cleanTitle, country);
+      const cleanUrl = sanitizeOfferUrl(rawUrl, formattedStore, cleanSearchQuery, country);
       if (!cleanUrl || cleanUrl.includes("google.com") || cleanUrl.includes("ibp=")) return;
 
       if (!storeMap.has(sKey) || storeMap.get(sKey).price > offerPrice) {
@@ -194,9 +208,9 @@ export async function POST(request) {
     });
 
     // If Google Shopping details returned no competitors, check real Google Shopping search results for this title
-    if (storeMap.size < 2 && cleanTitle && cleanTitle !== "product") {
+    if (storeMap.size < 2 && cleanSearchQuery && cleanSearchQuery !== "product") {
       try {
-        const fallbackSearchPromise = executeSearchRequest(cleanTitle, cleanCountry);
+        const fallbackSearchPromise = executeSearchRequest(cleanSearchQuery, cleanCountry);
         const fallbackTimeout = new Promise(resolve => setTimeout(() => resolve([]), 4000));
         const searchProds = await Promise.race([fallbackSearchPromise, fallbackTimeout]);
         (searchProds || []).forEach(p => {
@@ -210,7 +224,7 @@ export async function POST(request) {
           if (!pPrice || pPrice <= 0) return;
 
           const rawUrl = p.product_page_url || p.offer?.product_page_url;
-          const cleanUrl = sanitizeOfferUrl(rawUrl, formattedStore, cleanTitle, country);
+          const cleanUrl = sanitizeOfferUrl(rawUrl, formattedStore, cleanSearchQuery, country);
           if (!cleanUrl || cleanUrl.includes("google.com") || cleanUrl.includes("ibp=")) return;
 
           if (!storeMap.has(sKey)) {
@@ -257,6 +271,16 @@ export async function POST(request) {
       try {
         await redis.set(compCacheKey, JSON.stringify(finalStores), { ex: 86400 });
       } catch (e) {}
+    }
+
+    if (finalStores.length === 0) {
+      return NextResponse.json({
+        success: false,
+        stores: [],
+        count: 0,
+        message: "This product is currently exclusive to this store or not tracked across other verified marketplaces.",
+        remaining: quotaResult.remaining
+      });
     }
 
     return NextResponse.json({

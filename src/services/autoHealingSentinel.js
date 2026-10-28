@@ -110,6 +110,7 @@ export function extractBrandAndModel(title = "") {
 
 /**
  * Deep unwrap and sanitize any merchant link into an authentic Product Display Page (PDP)
+ * Integrates dynamic rules from Redis (sentinel:dynamic_rules) learned by heal-sentinel cron
  */
 export async function sanitizeMerchantUrl(rawUrl, storeName = "", productTitle = "", country = "IN") {
   if (!rawUrl || typeof rawUrl !== "string") {
@@ -118,24 +119,21 @@ export async function sanitizeMerchantUrl(rawUrl, storeName = "", productTitle =
 
   let targetUrl = rawUrl.trim();
 
-  // 1. Amazon Direct ASIN Harvester (100% Direct Product Page)
-  const asinMatch = targetUrl.match(/\/(?:dp|gp\/product|gp\/aw\/d)\/([A-Z0-9]{10})/i);
-  if (asinMatch && asinMatch[1]) {
-    return `${getAmazonBaseUrl(country)}/dp/${asinMatch[1]}`;
-  }
-
-  // 2. Flipkart Direct FSN / Product Page Harvester
-  const flipkartMatch = targetUrl.match(/\/p\/itm([a-zA-Z0-9]+)/i);
-  if (flipkartMatch && flipkartMatch[1]) {
-    return `https://www.flipkart.com/p/itm${flipkartMatch[1]}`;
-  }
-
-  // 3. Deep Unwrapping of Google / External Tracking Wrappers
-  if (targetUrl.includes("google.com") || targetUrl.includes("google.co.in") || targetUrl.includes("googleadservices")) {
+  // 1. Deep Unwrapping of Google / Aggregator Tracking Wrappers (Checked FIRST)
+  if (targetUrl.includes("google.com") || targetUrl.includes("google.co.in") || targetUrl.includes("googleadservices") || targetUrl.includes("ibp=")) {
     try {
       const parsed = new URL(targetUrl.startsWith("http") ? targetUrl : `https://${targetUrl}`);
       
-      for (const param of DEFAULT_PARAM_KEYS) {
+      // Merge static default keys with dynamic Redis rules learned by heal-sentinel cron
+      let dynamicKeys = [];
+      try {
+        const stored = await redis.smembers(SENTINEL_RULES_KEY);
+        if (Array.isArray(stored)) dynamicKeys = stored;
+      } catch (_) {}
+
+      const allKeys = [...new Set([...DEFAULT_PARAM_KEYS, ...dynamicKeys])];
+
+      for (const param of allKeys) {
         const val = parsed.searchParams.get(param);
         if (val && val.startsWith("http") && !val.includes("google.com") && !val.includes("google.co.in")) {
           return sanitizeMerchantUrl(val, storeName, productTitle, country);
@@ -146,7 +144,39 @@ export async function sanitizeMerchantUrl(rawUrl, storeName = "", productTitle =
     return buildStoreSearchUrl(storeName, productTitle, country);
   }
 
-  // 4. Strip Tracking UTMs while preserving genuine product slug
+  // 2. Amazon Direct ASIN Harvester (100% Direct Product Page)
+  const asinMatch = targetUrl.match(/\/(?:dp|gp\/product|gp\/aw\/d)\/([A-Z0-9]{10})/i);
+  if (asinMatch && asinMatch[1]) {
+    return `${getAmazonBaseUrl(country)}/dp/${asinMatch[1]}`;
+  }
+
+  // 3. Flipkart Direct PDP Harvester (Preserves full product slug + PID so PDP NEVER 404s)
+  if (targetUrl.includes("flipkart.com")) {
+    try {
+      const u = new URL(targetUrl.startsWith("http") ? targetUrl : `https://${targetUrl}`);
+      if (u.pathname.includes("/p/itm") || u.searchParams.has("pid")) {
+        const pid = u.searchParams.get("pid");
+        const lid = u.searchParams.get("lid");
+        const cleanParams = new URLSearchParams();
+        if (pid) cleanParams.set("pid", pid);
+        if (lid) cleanParams.set("lid", lid);
+        const qStr = cleanParams.toString();
+        return `https://www.flipkart.com${u.pathname}${qStr ? `?${qStr}` : ""}`;
+      }
+    } catch (_) {}
+
+    // Regex fallback for non-standard path strings
+    const itmMatch = targetUrl.match(/\/p\/itm([a-zA-Z0-9]+)/i);
+    const pidMatch = targetUrl.match(/[?&]pid=([a-zA-Z0-9]+)/i);
+    const slugMatch = targetUrl.match(/flipkart\.com\/([a-zA-Z0-9-_]+)\/p\/itm/i);
+    if (itmMatch && itmMatch[1]) {
+      const slug = slugMatch ? slugMatch[1] : "product";
+      const pidQuery = pidMatch ? `?pid=${pidMatch[1]}` : "";
+      return `https://www.flipkart.com/${slug}/p/itm${itmMatch[1]}${pidQuery}`;
+    }
+  }
+
+  // 4. Strip Tracking UTMs while preserving genuine merchant product slug
   if (targetUrl.startsWith("http")) {
     try {
       const u = new URL(targetUrl);

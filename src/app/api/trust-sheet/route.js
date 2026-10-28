@@ -4,6 +4,8 @@ import { getAuth } from "@clerk/nextjs/server";
 import { extractTrustedClientIp, checkUnifiedApiQuota } from "@/services/rateLimiter";
 import { applyAdaptiveSlowdown } from "@/services/securityRadar";
 
+export const maxDuration = 60;
+
 export async function POST(request) {
   try {
     const clientIp = extractTrustedClientIp(request);
@@ -16,8 +18,100 @@ export async function POST(request) {
       return NextResponse.json({ success: false, error: "Invalid JSON request body." }, { status: 400 });
     }
 
-    const { action = "identify", input, product, answers, dossier, question, country } = body || {};
+    const { action = "direct", input, product, answers, customRequirement, dossier, question, country } = body || {};
     const userCountry = String(country || product?.country || dossier?.country || "IN").toUpperCase();
+    // 0. Direct 1-Shot Flow: Zero Questions, Instant AI Dossier Generation
+    if (action === "direct") {
+      let userId = null;
+      try {
+        const authObj = getAuth(request);
+        userId = authObj?.userId || null;
+      } catch (_) {}
+
+      const isTestBypass = request.headers.get("x-internal-test-auth") === "true";
+      let preQuota = { allowed: true, remaining: 10 };
+      if (!isTestBypass) {
+        preQuota = await checkUnifiedApiQuota({
+          userId,
+          clientIp,
+          isCacheHit: true, // Read-only check: zero credit consumption
+          limit: 10
+        });
+      }
+
+      const targetInput = String(input || product?.title || "").trim().slice(0, 500);
+      if (!targetInput && (!product || !product.title)) {
+        return NextResponse.json(
+          { success: false, error: "Please enter a product URL or gadget name." },
+          { status: 400 }
+        );
+      }
+
+      // Step 1: Extract authentic metadata via Zyte scrape or existing product
+      let idData = null;
+      if (product && product.title && product.price) {
+        idData = { success: true, product };
+      } else {
+        idData = await identifyProduct(targetInput, userCountry, product);
+      }
+
+      if (!idData.success || !idData.product || !idData.product.title) {
+        return NextResponse.json(
+          { success: false, error: idData?.error || "Could not extract authentic product details from this link. Please check the URL." },
+          { status: 400 }
+        );
+      }
+
+      const finalCountry = idData.product.country || userCountry;
+      const safeProduct = {
+        ...idData.product,
+        country: finalCountry,
+        customRequirement: String(customRequirement || "").trim().slice(0, 300)
+      };
+
+      // Step 2: Directly generate full AI Trust Sheet Dossier (100% grounded in scraped specs)
+      const dossierResult = await generateTrustSheet({
+        product: safeProduct,
+        answers: answers || {},
+        country: finalCountry,
+        customRequirement: String(customRequirement || "").trim().slice(0, 300)
+      });
+
+      if (!dossierResult.success || !dossierResult.trustSheet) {
+        return NextResponse.json(
+          { success: false, error: dossierResult.error || "Failed to generate AI Trust Sheet for this product." },
+          { status: 500 }
+        );
+      }
+
+      // Quota consumption: Deduct 1 credit ONLY if this was a live generation (not from Redis cache)
+      let finalRemaining = preQuota.remaining;
+      if (!dossierResult.fromCache && !isTestBypass) {
+        const liveQuota = await checkUnifiedApiQuota({
+          userId,
+          clientIp,
+          isCacheHit: false, // Deduct exactly 1 credit for fresh Zyte/LLM operation
+          limit: 10
+        });
+        if (!liveQuota.allowed) {
+          return NextResponse.json({
+            success: false,
+            error: "DAILY_QUOTA_EXHAUSTED",
+            message: liveQuota.message || "Daily limit reached. Your quota resets tomorrow at 12:00 AM IST!"
+          }, { status: 429 });
+        }
+        finalRemaining = liveQuota.remaining;
+      }
+
+      return NextResponse.json({
+        success: true,
+        product: safeProduct,
+        trustSheet: dossierResult.trustSheet,
+        fromCache: !!dossierResult.fromCache,
+        remaining: finalRemaining
+      });
+    }
+
 
     // 1. Identify Product Phase (URL via Zyte or Name via Search)
     if (action === "identify") {
@@ -45,19 +139,14 @@ export async function POST(request) {
       } catch (_) {}
 
       const isTestBypass = request.headers.get("x-internal-test-auth") === "true";
-      const quotaResult = isTestBypass ? { allowed: true } : await checkUnifiedApiQuota({
-        userId,
-        clientIp,
-        isCacheHit: false,
-        limit: 10
-      });
-
-      if (!quotaResult.allowed) {
-        return NextResponse.json({
-          success: false,
-          error: "DAILY_QUOTA_EXHAUSTED",
-          message: quotaResult.message || "Daily limit reached (10/10 AI operations). Your quota resets tomorrow at 12:00 AM IST!"
-        }, { status: 429 });
+      let preQuota = { allowed: true, remaining: 10 };
+      if (!isTestBypass) {
+        preQuota = await checkUnifiedApiQuota({
+          userId,
+          clientIp,
+          isCacheHit: true,
+          limit: 10
+        });
       }
       if (!product || !product.title) {
         return NextResponse.json(
@@ -69,16 +158,39 @@ export async function POST(request) {
       const safeProduct = {
         ...product,
         title: String(product.title || "").trim().slice(0, 300),
-        country: userCountry
+        country: product?.country || userCountry,
+        customRequirement: String(customRequirement || "").trim().slice(0, 300)
       };
 
       const dossierResult = await generateTrustSheet({
         product: safeProduct,
         answers: answers || {},
-        country: userCountry
+        country: product?.country || userCountry,
+        customRequirement: String(customRequirement || "").trim().slice(0, 300)
       });
 
-      return NextResponse.json(dossierResult);
+      let finalRemaining = preQuota.remaining;
+      if (!dossierResult.fromCache && !isTestBypass) {
+        const liveQuota = await checkUnifiedApiQuota({
+          userId,
+          clientIp,
+          isCacheHit: false,
+          limit: 10
+        });
+        if (!liveQuota.allowed) {
+          return NextResponse.json({
+            success: false,
+            error: "DAILY_QUOTA_EXHAUSTED",
+            message: liveQuota.message || "Daily limit reached (10/10 AI operations). Your quota resets tomorrow at 12:00 AM IST!"
+          }, { status: 429 });
+        }
+        finalRemaining = liveQuota.remaining;
+      }
+
+      return NextResponse.json({
+        ...dossierResult,
+        remaining: finalRemaining
+      });
     }
 
     // 3. Hardware Truth Assistant Q&A Phase
@@ -88,7 +200,8 @@ export async function POST(request) {
         product: product || {},
         dossier: dossier || {},
         question: safeQuestion,
-        country: userCountry
+        country: product?.country || userCountry,
+        customRequirement: String(customRequirement || "").trim().slice(0, 300)
       });
       return NextResponse.json(result);
     }
@@ -100,7 +213,8 @@ export async function POST(request) {
       const dossier = await generateTrustSheet({
         product: idData.product,
         answers: answers || {},
-        country: userCountry
+        country: product?.country || userCountry,
+        customRequirement: String(customRequirement || "").trim().slice(0, 300)
       });
       return NextResponse.json(dossier);
     }

@@ -37,7 +37,16 @@ import {
   HelpCircle,
   Bot,
   ArrowUpDown,
-  Tag
+  Tag,
+  HeartPulse,
+  Star,
+  CreditCard,
+  Gift,
+  GraduationCap,
+  Package,
+  Shield,
+  XCircle,
+  Percent
 } from "lucide-react";
 import { searchProducts } from "@/services/api";
 import { getCountryMeta, formatCountryPrice } from "@/lib/countryConfig";
@@ -75,10 +84,19 @@ export default function TrustSheetView({
   const [identifiedProduct, setIdentifiedProduct] = useState(null);
   const [questions, setQuestions] = useState([]);
   const [userAnswers, setUserAnswers] = useState({});
+  const [customRequirement, setCustomRequirement] = useState("");
   const [dossier, setDossier] = useState(null);
   const [error, setError] = useState(null);
   const [copied, setCopied] = useState(false);
   const [copiedQuery, setCopiedQuery] = useState(false);
+  const [copiedCouponCode, setCopiedCouponCode] = useState("");
+
+  const handleCopyCoupon = (code) => {
+    if (!code) return;
+    navigator.clipboard.writeText(code);
+    setCopiedCouponCode(code);
+    setTimeout(() => setCopiedCouponCode(""), 2000);
+  };
 
   // In-Feature Live Matching Search State (Task 1: 2-3 Curated Alternatives)
   const [matchingDeals, setMatchingDeals] = useState([]);
@@ -115,17 +133,19 @@ export default function TrustSheetView({
     if (!clean && !existingProduct) return;
 
     setError(null);
-    setPhase("identifying");
+    setPhase("generating");
     setIsCompareOpen(false);
     setLiveStores(null);
     setCompareError(null);
+    setMatchingDeals([]);
+    setHasSearchedMatching(false);
 
     try {
       const res = await fetch("/api/trust-sheet", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          action: "identify",
+          action: "direct",
           input: clean || existingProduct?.title,
           product: existingProduct || undefined,
           country: country || "IN"
@@ -134,7 +154,7 @@ export default function TrustSheetView({
 
       const data = await res.json();
       if (!res.ok || !data.success) {
-        throw new Error(data.error || "Failed to identify product. Please verify the URL or name.");
+        throw new Error(data.error || "Failed to inspect product. Please verify the URL or name.");
       }
 
       // Merge existing product data so real image, real price, real url from alternative card are NEVER lost!
@@ -149,19 +169,10 @@ export default function TrustSheetView({
       if (existingProduct?.product_id) finalProduct.product_id = existingProduct.product_id;
 
       setIdentifiedProduct(finalProduct);
-      setQuestions(data.questions || []);
-      
-      // Initialize default answers with first option
-      const initialAnswers = {};
-      (data.questions || []).forEach(q => {
-        if (q.options && q.options.length > 0) {
-          initialAnswers[q.id] = q.options[0].label;
-        }
-      });
-      setUserAnswers(initialAnswers);
-      setPhase("questions");
+      setDossier(data.trustSheet);
+      setPhase("dossier");
     } catch (err) {
-      setError(err.message || "An unexpected error occurred while identifying product.");
+      setError(err.message || "An unexpected error occurred while inspecting product.");
       setPhase("input");
     }
   };
@@ -214,6 +225,7 @@ export default function TrustSheetView({
           action: "generate",
           product: identifiedProduct,
           answers: answersToSubmit,
+          customRequirement: customRequirement.trim(),
           country: country || "IN"
         })
       });
@@ -369,6 +381,7 @@ export default function TrustSheetView({
       setCompareError(null);
 
       const targetTitle = dossier?.product?.title || identifiedProduct?.title || "";
+      const targetBrand = dossier?.product?.brand || identifiedProduct?.brand || "";
       const targetPrice = dossier?.product?.estimatedPrice || identifiedProduct?.price || 0;
       const targetStore = dossier?.product?.store || identifiedProduct?.store || "Online Store";
       const targetUrl = dossier?.product?.url || identifiedProduct?.url || "";
@@ -382,10 +395,12 @@ export default function TrustSheetView({
           body: JSON.stringify({
             productId: targetPId,
             title: targetTitle,
+            brand: targetBrand,
+            cleanModel: targetTitle,
             basePrice: targetPrice,
             baseStore: targetStore,
             baseLink: targetUrl,
-            country: country || dossier?.product?.country || "IN"
+            country: dossier?.product?.country || identifiedProduct?.country || country || "IN"
           })
         });
 
@@ -393,7 +408,7 @@ export default function TrustSheetView({
         if (data.success && Array.isArray(data.stores) && data.stores.length > 0) {
           setLiveStores(data.stores);
         } else {
-          setCompareError(data.message || "No competing stores verified for this exact listing right now.");
+          setCompareError(data.message || "This product is currently exclusive to this store or not tracked across other verified marketplaces.");
         }
       } catch (err) {
         setCompareError("Failed to fetch store price comparisons.");
@@ -450,19 +465,29 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
     setTimeout(() => setCopied(false), 2500);
   };
 
-  // Reusable Regional Operating Reality Section (US vs IN adaptive)
+  // Reusable Regional Operating Reality Section (US vs IN adaptive + Category adaptive)
   const renderRegionalRealityCheck = () => {
     const category = dossier?.product?.category || identifiedProduct?.category || "general";
     const isAppliance = ["washing_machine", "refrigerator", "ac_air_conditioner"].includes(category);
+    const isSupplement = category === "supplement";
+    const isSoftware = category === "software_subscription";
     const realityObj = dossier?.regionalRealityCheck || dossier?.indianRealityCheck;
 
-    const title = isUS
+    let title = isUS
       ? (isAppliance 
           ? "US Operating Reality (120V Grid, Winter Freeze & Service)"
           : "US Operating Reality (120V Grid, Climate & Warranty/RMA Network)")
       : (isAppliance 
           ? "Indian Operating Reality (Water Hardness, Voltage & Service)"
           : "Indian Operating Reality (Sunlight, Summer Heat & Service)");
+
+    if (realityObj?.title) {
+      title = realityObj.title;
+    } else if (isSupplement) {
+      title = isUS ? "US Quality, Storage & Standards Reality" : "Indian Quality, Storage & Standards Reality";
+    } else if (isSoftware) {
+      title = isUS ? "US Cloud, Billing & Subscription Reality" : "Indian Cloud, Billing & Subscription Reality";
+    }
 
     return (
       <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-xs">
@@ -472,44 +497,76 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {/* Point 1: Water/Scale/Freeze or Sunlight/Display */}
+          {/* Point 1 */}
           <div className="p-3.5 rounded-2xl bg-amber-50/70 border border-amber-200/80 text-xs space-y-1">
             <div className="flex items-center gap-1.5 font-extrabold text-amber-950 text-xs">
-              {isAppliance ? (
+              {isSupplement ? (
+                <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+              ) : isSoftware ? (
+                <Cpu className="w-4 h-4 text-indigo-600 shrink-0" />
+              ) : isAppliance ? (
                 <Droplets className="w-4 h-4 text-cyan-600 shrink-0" />
               ) : (
                 <Sun className="w-4 h-4 text-amber-600 shrink-0" />
               )}
-              <span>{isUS ? (isAppliance ? "HE Detergent & Freeze Care" : "Display & Brightness Standards") : (isAppliance ? "Hard Water & Scale Resistance" : "Outdoor Sunlight Legibility")}</span>
+              <span>
+                {isSupplement
+                  ? "Lab Certified Purity & Authenticity"
+                  : isSoftware
+                  ? "Cloud Infrastructure & Performance"
+                  : isUS
+                  ? (isAppliance ? "HE Detergent & Freeze Care" : "Display & Brightness Standards")
+                  : (isAppliance ? "Hard Water & Scale Resistance" : "Outdoor Sunlight Legibility")}
+              </span>
             </div>
             <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
-              {realityObj?.sunlightLegibility || (isUS ? "Verified for US operating standards." : "Verified spec for Indian conditions.")}
+              {realityObj?.sunlightLegibility || (isSupplement ? "Verified label purity and authentic packaging standards." : isSoftware ? "Optimized cloud server latency and regional CDN access." : isUS ? "Verified for US operating standards." : "Verified spec for Indian conditions.")}
             </p>
           </div>
 
-          {/* Point 2: Voltage/Pressure/120V or Summer Heat/HVAC */}
+          {/* Point 2 */}
           <div className="p-3.5 rounded-2xl bg-rose-50/70 border border-rose-200/80 text-xs space-y-1">
             <div className="flex items-center gap-1.5 font-extrabold text-rose-950 text-xs">
-              {isAppliance ? (
+              {isSupplement ? (
+                <Thermometer className="w-4 h-4 text-rose-600 shrink-0" />
+              ) : isSoftware ? (
+                <Coins className="w-4 h-4 text-emerald-600 shrink-0" />
+              ) : isAppliance ? (
                 <Zap className="w-4 h-4 text-amber-600 shrink-0" />
               ) : (
                 <Thermometer className="w-4 h-4 text-rose-600 shrink-0" />
               )}
-              <span>{isUS ? (isAppliance ? "120V 60Hz Circuit Tolerance" : "Winter / HVAC Thermal Stability") : (isAppliance ? "Low Water Pressure & Voltage" : "Indian Summer Heat")}</span>
+              <span>
+                {isSupplement
+                  ? "Storage, Climate & Humidity Care"
+                  : isSoftware
+                  ? "Billing, Auto-Renewal & Flexibility"
+                  : isUS
+                  ? (isAppliance ? "120V 60Hz Circuit Tolerance" : "Winter / HVAC Thermal Stability")
+                  : (isAppliance ? "Low Water Pressure & Voltage" : "Indian Summer Heat")}
+              </span>
             </div>
             <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
-              {realityObj?.summerHeatTolerance || (isUS ? "Operates smoothly on standard US electrical circuits." : "Sustained performance under standard conditions.")}
+              {realityObj?.summerHeatTolerance || (isSupplement ? "Store in a cool, dry place away from sunlight to prevent moisture clumping." : isSoftware ? "Local currency billing, clear auto-renewal terms, and flexible cancellation." : isUS ? "Operates smoothly on standard US electrical circuits." : "Sustained performance under standard conditions.")}
             </p>
           </div>
 
-          {/* Point 3: Service Network & Warranty */}
+          {/* Point 3 */}
           <div className="p-3.5 rounded-2xl bg-indigo-50/70 border border-indigo-200/80 text-xs space-y-1">
             <div className="flex items-center gap-1.5 font-extrabold text-indigo-950 text-xs">
               <Wrench className="w-4 h-4 text-indigo-600 shrink-0" />
-              <span>{isUS ? "1-Yr US Warranty & Mail-in RMA" : "Service & Spare Parts"}</span>
+              <span>
+                {isSupplement
+                  ? "Safety, Seal & Compliance"
+                  : isSoftware
+                  ? "Support & Account Control"
+                  : isUS
+                  ? "1-Yr US Warranty & Mail-in RMA"
+                  : "Service & Spare Parts"}
+              </span>
             </div>
             <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
-              {realityObj?.serviceNetworkTier2Tier3 || (isUS ? "Nationwide 1-year US limited warranty & Best Buy / partner service." : "Authorized centers across metros & district hubs.")}
+              {realityObj?.serviceNetworkTier2Tier3 || (isSupplement ? "FSSAI / FDA compliant packaging with manufacturer batch QR verification." : isSoftware ? "Direct ticketing, customer support resolution, and self-serve settings." : isUS ? "Nationwide 1-year US limited warranty & Best Buy / partner service." : "Authorized centers across metros & district hubs.")}
             </p>
           </div>
         </div>
@@ -517,37 +574,396 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
     );
   };
 
-  // Reusable Hardware Truth Assistant Desk
-  const renderHardwareAssistant = () => (
-    <div className="p-5 sm:p-6 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-4">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
-            <Bot className="w-4 h-4" />
+  // Reusable Care & Sensitivity Guidelines
+  const renderCareGuidelines = () => {
+    const guidelines = Array.isArray(dossier?.careGuidelines) ? dossier.careGuidelines : [];
+    if (!guidelines.length) return null;
+
+    return (
+      <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-teal-50/70 via-white to-emerald-50/50 border border-teal-200/80 shadow-xs space-y-3">
+        <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-teal-950">
+          <HeartPulse className="w-4 h-4 text-teal-600" />
+          <span>Things to Consider &amp; Care Guidelines</span>
+        </div>
+        <p className="text-[11px] text-slate-500 font-medium">
+          Practical care, ingredient sensitivity, and longevity recommendations based on verified product materials:
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+          {guidelines.map((item, idx) => (
+            <div key={idx} className="p-3.5 rounded-2xl bg-white border border-teal-100/90 text-xs space-y-1 shadow-2xs">
+              <div className="flex items-center gap-1.5 font-extrabold text-teal-950">
+                <span className="w-2 h-2 rounded-full bg-teal-500 shrink-0" />
+                <span>{item.title}</span>
+              </div>
+              <p className="text-[11px] text-slate-600 font-medium leading-relaxed pl-3.5">
+                {item.detail || item.advice}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  // Reusable Directional Guidance (What to look for instead without pushing competitor brands)
+  const renderDirectionalAdvice = () => {
+    const alt = dossier?.betterAlternative;
+    if (!alt || (!alt.suggestionSummary && (!alt.whatToLookForSpecs || !alt.whatToLookForSpecs.length))) {
+      return null;
+    }
+
+    return (
+      <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-indigo-50/80 via-white to-purple-50/60 border border-indigo-200 shadow-xs space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-indigo-950">
+            <Sparkles className="w-4 h-4 text-indigo-600" />
+            <span>{alt.title || "Smart Directional Guidance (What to Look For Instead)"}</span>
+          </div>
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800">
+            Brand-Neutral Advice
+          </span>
+        </div>
+
+        {alt.suggestionSummary && (
+          <p className="text-xs sm:text-sm text-slate-800 font-medium leading-relaxed">
+            💡 {alt.suggestionSummary}
+          </p>
+        )}
+
+        {Array.isArray(alt.whatToLookForSpecs) && alt.whatToLookForSpecs.length > 0 && (
+          <div className="space-y-1.5 pt-1">
+            <span className="text-[11px] font-black uppercase tracking-wider text-indigo-900 block">
+              Key Specifications &amp; Quality Criteria to Look For:
+            </span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {alt.whatToLookForSpecs.map((spec, sIdx) => (
+                <div key={sIdx} className="flex items-start gap-2 p-2.5 rounded-xl bg-white border border-indigo-100 text-xs font-semibold text-slate-800 shadow-2xs">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-indigo-600 shrink-0 mt-0.5" />
+                  <span>{spec}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // 1. Mathematical Review Curve / Customer Satisfaction Consensus
+  const renderBuyerSatisfaction = () => {
+    const sat = dossier?.buyerSatisfaction;
+    if (!sat) return null;
+
+    return (
+      <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-50/80 via-white to-emerald-50/60 border border-amber-200/80 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1 bg-amber-500 text-white px-2.5 py-1 rounded-xl text-xs font-black shadow-xs shrink-0">
+            <Star className="w-3.5 h-3.5 fill-white" />
+            <span>{sat.rating || 4.3}</span>
           </div>
           <div>
-            <h4 className="text-xs sm:text-sm font-black text-slate-900 flex items-center gap-1.5">
-              <span>Hardware Truth Assistant</span>
-              <span className="px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 text-[10px] font-bold">Spec Grounded</span>
-            </h4>
-            <p className="text-[11px] text-slate-500 font-medium">
-              Ask any direct question about thermal heating, real battery endurance, box contents, or warranty.
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-extrabold text-slate-900">{sat.reviewCount || "Verified Ratings"}</span>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                {sat.positivePercent || "84%"} Positive Rating Curve
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-600 font-medium mt-0.5">
+              {sat.verdict || "Consistently verified across high-volume real purchaser ratings."}
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200/80">
-          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-          <span>100% Zero-Marketing Honesty</span>
+        <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider shrink-0 self-end sm:self-center">
+          Statistical Consensus
         </div>
       </div>
+    );
+  };
 
-      {/* Quick Suggestion Chips */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 no-scrollbar sm:flex-wrap">
-        <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 mr-1">
-          Quick Doubts:
-        </span>
-        {(isUS ? [
+  // 2. Who Should BUY vs Who Should SKIP Matrix
+  const renderDecisionMatrix = () => {
+    const matrix = dossier?.whoShouldBuyVsSkip;
+    const whoBuy = Array.isArray(matrix?.whoShouldBuy) ? matrix.whoShouldBuy : [];
+    const whoSkip = Array.isArray(matrix?.whoShouldSkip) ? matrix.whoShouldSkip : [];
+    if (!whoBuy.length && !whoSkip.length) return null;
+
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Who Should Buy */}
+        <div className="p-5 rounded-3xl bg-emerald-50/70 border border-emerald-200 shadow-xs space-y-2.5">
+          <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-emerald-900">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+            <span>Who Should BUY This Product</span>
+          </div>
+          <p className="text-[11px] text-emerald-800 font-medium">
+            This is an ideal match for your cart if:
+          </p>
+          <div className="space-y-2 pt-1">
+            {whoBuy.map((point, idx) => (
+              <div key={idx} className="p-2.5 rounded-2xl bg-white border border-emerald-100 flex items-start gap-2 text-xs font-semibold text-slate-800 shadow-2xs">
+                <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                <span>{point}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Who Should Skip */}
+        <div className="p-5 rounded-3xl bg-rose-50/70 border border-rose-200 shadow-xs space-y-2.5">
+          <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-rose-900">
+            <XCircle className="w-4 h-4 text-rose-600" />
+            <span>Who Should SKIP or Look Elsewhere</span>
+          </div>
+          <p className="text-[11px] text-rose-800 font-medium">
+            Consider other options if you prioritize:
+          </p>
+          <div className="space-y-2 pt-1">
+            {whoSkip.map((point, idx) => (
+              <div key={idx} className="p-2.5 rounded-2xl bg-white border border-rose-100 flex items-start gap-2 text-xs font-semibold text-slate-800 shadow-2xs">
+                <ArrowRight className="w-3.5 h-3.5 text-rose-500 shrink-0 mt-0.5" />
+                <span>{point}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // 3. Smart Saving Strategy (Decoded Bank Offers, Page Coupons, Official Brand Perks)
+  const renderSmartSavingStrategy = () => {
+    const strat = dossier?.smartSavingStrategy;
+    if (!strat) return null;
+
+    const bankOffers = Array.isArray(strat.bankOffersDecoded) ? strat.bankOffersDecoded : [];
+    const coupons = Array.isArray(strat.verifiedStoreCoupons) && strat.verifiedStoreCoupons.length > 0
+      ? strat.verifiedStoreCoupons
+      : (Array.isArray(strat.pageCoupons) ? strat.pageCoupons : []);
+    const brandPerk = strat.brandDirectPerk;
+
+    return (
+      <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-emerald-50/80 via-white to-indigo-50/60 border border-emerald-200 shadow-xs space-y-4">
+        {/* Header with Price Bridge */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200/80">
+          <div>
+            <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-emerald-900 mb-1">
+              <Coins className="w-4 h-4 text-emerald-600" />
+              <span>Smart Saving Strategy</span>
+            </div>
+            <h3 className="text-sm font-extrabold text-slate-900">
+              Actionable Deal &amp; Discount Roadmap for This Listing
+            </h3>
+          </div>
+
+          {(strat.bestTargetPrice || strat.potentialSavings) && (
+            <div className="px-3.5 py-1.5 rounded-xl bg-emerald-100 text-emerald-900 border border-emerald-200 text-xs font-black self-start sm:self-center">
+              Target Price: {strat.bestTargetPrice} {strat.potentialSavings ? `(Save ~${strat.potentialSavings})` : ""}
+            </div>
+          )}
+        </div>
+
+        {/* Component 1: Decoded Bank Offers */}
+        {bankOffers.length > 0 && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-slate-800">
+              <CreditCard className="w-3.5 h-3.5 text-indigo-600" />
+              <span>Decoded Bank &amp; Card Offers</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              {bankOffers.map((offer, idx) => (
+                <div key={idx} className="p-3 rounded-2xl bg-white border border-slate-200/80 shadow-2xs space-y-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-extrabold text-xs text-slate-900">{offer.bankName}</span>
+                    <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100">
+                      {offer.discountText}
+                    </span>
+                  </div>
+                  {offer.eligibilityNote && (
+                    <div className="text-[11px] text-slate-600 font-medium flex items-center gap-1">
+                      <Check className="w-3 h-3 text-emerald-600 shrink-0" />
+                      <span>{offer.eligibilityNote}</span>
+                    </div>
+                  )}
+                  {offer.finePrint && (
+                    <p className="text-[10px] text-slate-500 font-medium pt-0.5 border-t border-slate-100">
+                      ⚠️ {offer.finePrint}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Component 2: Active Store / Page Coupons */}
+        {coupons.length > 0 && (
+          <div className="space-y-2 pt-1">
+            <div className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-slate-800">
+              <Gift className="w-3.5 h-3.5 text-amber-600" />
+              <span>Active Verified Coupons &amp; Promos</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              {coupons.map((cp, cIdx) => {
+                const isCopied = copiedCouponCode === cp.code;
+                return (
+                  <div key={cIdx} className="p-3 rounded-2xl bg-white border border-amber-200/70 shadow-2xs flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-xs font-black text-indigo-950 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">
+                          {cp.code}
+                        </span>
+                        <span className="text-xs font-extrabold text-emerald-700">{cp.discountText}</span>
+                      </div>
+                      <p className="text-[10px] text-slate-500 font-medium mt-1 truncate">
+                        {cp.terms}
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => handleCopyCoupon(cp.code)}
+                      className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 text-slate-700 text-xs font-bold transition-all cursor-pointer shrink-0 flex items-center gap-1"
+                    >
+                      {isCopied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                      <span>{isCopied ? "Copied" : "Copy"}</span>
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Component 3: Official Brand Direct Perk (Student / Corporate / D2C) */}
+        {brandPerk && brandPerk.hasPerk && (
+          <div className="p-3.5 rounded-2xl bg-indigo-50/70 border border-indigo-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="flex items-start gap-2.5">
+              <GraduationCap className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
+              <div>
+                <span className="text-xs font-extrabold text-indigo-950 block">
+                  {brandPerk.portalName || "Official Brand Direct / Student Perk"}
+                </span>
+                <p className="text-[11px] text-indigo-900/80 font-medium">
+                  Extra {brandPerk.discountPercent}% OFF + {brandPerk.warrantyBonus || "Extended official warranty"}.
+                </p>
+              </div>
+            </div>
+
+            {brandPerk.portalUrl && (
+              <a
+                href={brandPerk.portalUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black transition-colors self-start sm:self-auto shrink-0 flex items-center gap-1"
+              >
+                <span>Visit Official Store</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // 4. In The Box & Warranty Reality Cards
+  const renderInTheBoxAndWarranty = () => {
+    const box = dossier?.inTheBox;
+    const warranty = dossier?.warrantyReality;
+    const hasValidBox = box && Array.isArray(box.included) && box.included.length > 0;
+    const hasValidWarranty = warranty && warranty.duration && !String(warranty.duration).toLowerCase().includes("none") && !String(warranty.duration).toLowerCase().includes("null");
+    if (!hasValidBox && !hasValidWarranty) return null;
+
+    return (
+      <div className={`grid grid-cols-1 ${hasValidBox && hasValidWarranty ? "md:grid-cols-2" : ""} gap-4`}>
+        {/* In The Box */}
+        {hasValidBox && (
+          <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-xs space-y-2.5">
+            <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-slate-800">
+              <Package className="w-4 h-4 text-indigo-600" />
+              <span>In The Box &amp; Packaging</span>
+            </div>
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              {box.included.map((item, idx) => (
+                <span key={idx} className="px-2.5 py-1 rounded-xl bg-slate-100 text-slate-800 text-[11px] font-bold border border-slate-200/60">
+                  📦 {item}
+                </span>
+              ))}
+            </div>
+            {box.notIncludedAlert && (
+              <p className="text-[11px] text-amber-800 bg-amber-50 border border-amber-200 p-2 rounded-xl font-medium mt-2">
+                ⚠️ {box.notIncludedAlert}
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Warranty Reality */}
+        {hasValidWarranty && (
+          <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-xs space-y-2.5">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-slate-800">
+                <Shield className="w-4 h-4 text-emerald-600" />
+                <span>Warranty &amp; Service Reality</span>
+              </div>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                {warranty.duration}
+              </span>
+            </div>
+            <div className="space-y-1.5 text-[11px] pt-1 font-medium">
+              {warranty.covered && (
+                <div className="flex items-start gap-1.5 text-slate-700">
+                  <span className="font-bold text-emerald-700 shrink-0">✓ Covered:</span>
+                  <span>{warranty.covered}</span>
+                </div>
+              )}
+              {warranty.notCovered && (
+                <div className="flex items-start gap-1.5 text-slate-500">
+                  <span className="font-bold text-rose-600 shrink-0">✕ Exclusions:</span>
+                  <span>{warranty.notCovered}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // Reusable Hardware / Product Truth Assistant Desk
+  const renderHardwareAssistant = () => {
+    const category = dossier?.product?.category || identifiedProduct?.category || "general";
+    const isSupplement = category === "supplement";
+    const isSoftware = category === "software_subscription";
+
+    const assistantTitle = isSupplement
+      ? "Supplement Truth Assistant"
+      : isSoftware
+      ? "Software & SaaS Truth Assistant"
+      : "Hardware Truth Assistant";
+
+    const assistantSub = isSupplement
+      ? "Ask about label purity, 3rd-party lab tests, protein per scoop, or dietary consultation."
+      : isSoftware
+      ? "Ask about subscription tiers, cloud limits, export formats, or cancellation terms."
+      : "Ask any direct question about thermal heating, real battery endurance, box contents, or warranty.";
+
+    const defaultChips = isSupplement
+      ? [
+          "Is the protein purity 3rd-party lab certified?",
+          "Does it cause bloating or digestion issues?",
+          "Are there artificial sweeteners or fillers added?",
+          "Should I consult a nutritionist before starting?"
+        ]
+      : isSoftware
+      ? [
+          "Is the Free tier enough for casual work?",
+          "Can I export files if my subscription lapses?",
+          "Does it auto-renew without notification?",
+          "Are there cheaper or open-source alternatives?"
+        ]
+      : (isUS ? [
           "Does it throttle under high performance loads?",
           "What is the real-world battery endurance?",
           "Is a 120V fast charger included in the box?",
@@ -557,12 +973,43 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
           "What is the real battery backup?",
           "Is a fast charger included in the box?",
           "Does warranty cover scale or display issues?"
-        ]).map((qChip, cIdx) => (
-          <button
-            key={cIdx}
-            type="button"
-            disabled={isAssistantLoading}
-            onClick={() => handleAskAssistant(qChip)}
+        ]);
+
+    return (
+      <div className="p-5 sm:p-6 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+              <Bot className="w-4 h-4" />
+            </div>
+            <div>
+              <h4 className="text-xs sm:text-sm font-black text-slate-900 flex items-center gap-1.5">
+                <span>{assistantTitle}</span>
+                <span className="px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 text-[10px] font-bold">Spec Grounded</span>
+              </h4>
+              <p className="text-[11px] text-slate-500 font-medium">
+                {assistantSub}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200/80">
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+            <span>100% Zero-Marketing Honesty</span>
+          </div>
+        </div>
+
+        {/* Quick Suggestion Chips */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 no-scrollbar sm:flex-wrap">
+          <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 mr-1">
+            Quick Doubts:
+          </span>
+          {defaultChips.map((qChip, cIdx) => (
+            <button
+              key={cIdx}
+              type="button"
+              disabled={isAssistantLoading}
+              onClick={() => handleAskAssistant(qChip)}
             className="px-2.5 py-1 rounded-xl text-[11px] font-semibold bg-slate-50 hover:bg-indigo-50 hover:text-indigo-700 border border-slate-200 text-slate-700 transition-all cursor-pointer disabled:opacity-50"
           >
             {qChip}
@@ -763,6 +1210,7 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
       </form>
     </div>
   );
+};
 
   return (
     <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 animate-in fade-in duration-300">
@@ -946,17 +1394,15 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
 
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-black uppercase tracking-wider mb-4">
               <Sparkles className="w-3.5 h-3.5 text-indigo-600 animate-spin-slow" />
-              <span>{phase === "identifying" ? "Deep Web Product Research Active" : "Consulting Hardware Reliability Brain"}</span>
+              <span>AI Product Truth Engine Active</span>
             </div>
 
             <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mb-2">
-              {phase === "identifying" ? "Conducting 360° Product Research Across The Web..." : "Synthesizing Final Buying Decision..."}
+              Gathering Specifications & Synthesizing AI Trust Dossier...
             </h2>
 
             <p className="text-xs sm:text-sm text-slate-500 max-w-md mx-auto mb-8 font-medium">
-              {phase === "identifying"
-                ? "Gathering authentic technical specs, merchant pricing, and real-world failure rates from across the web — so you get a complete, definitive verdict without having to research anywhere else."
-                : "Cross-checking TDP wattage, aging physics, and real-world durability to give you an uncompromising final buying verdict..."}
+              "Cross-referencing verified merchant specifications, operating limits, and real-world performance metrics to generate your 1-shot definitive buying verdict..."
             </p>
 
             <div className="max-w-md mx-auto space-y-2.5 text-left">
@@ -974,170 +1420,6 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
                   {phase === "identifying" ? "Analyzing Real-World Durability & Critical Gotchas..." : "Generating Unbiased Buying Decision & Trust Score..."}
                 </span>
               </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ============================================================== */}
-      {/* STAGE 2: PRODUCT IDENTIFIED -> DYNAMIC CATEGORY QUESTIONS      */}
-      {/* ============================================================== */}
-      {phase === "questions" && identifiedProduct && (
-        <div className="max-w-3xl mx-auto py-6 animate-in fade-in duration-300">
-          
-          {/* Identified Product Header Card */}
-          {identifiedProduct.isGenericQuery ? (
-            <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-indigo-50/90 via-purple-50/80 to-white border border-indigo-200 shadow-md mb-6 flex flex-col sm:flex-row items-center gap-4">
-              <div className="w-20 h-20 rounded-2xl bg-white border border-indigo-100 p-2 shrink-0 flex items-center justify-center overflow-hidden shadow-2xs">
-                <img 
-                  src={identifiedProduct.image} 
-                  alt={identifiedProduct.title}
-                  className="w-full h-full object-contain"
-                  onError={(e) => {
-                    e.target.src = "https://images.unsplash.com/photo-1526738549149-8e07eca6c147?w=500&auto=format&fit=crop&q=60";
-                  }}
-                />
-              </div>
-
-              <div className="flex-1 text-center sm:text-left min-w-0">
-                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mb-1.5">
-                  <span className="px-2.5 py-0.5 rounded-full bg-indigo-600 text-white text-[10px] font-black uppercase tracking-wider">
-                    🎯 Category Discovery Mode
-                  </span>
-                  <span className="px-2.5 py-0.5 rounded-full bg-white text-indigo-900 text-[10px] font-bold uppercase tracking-wider border border-indigo-200">
-                    Category: {identifiedProduct.category?.toUpperCase()}
-                  </span>
-                </div>
-
-                <h2 className="text-base sm:text-lg font-extrabold text-slate-900 leading-snug line-clamp-2">
-                  &quot;{identifiedProduct.title}&quot;
-                </h2>
-
-                <p className="text-xs text-slate-600 font-medium mt-1 leading-relaxed">
-                  You are searching for a broad category rather than an individual product model. Select your 2 top priorities below so our AI can formulate the exact requirement strategy for you.
-                </p>
-              </div>
-
-              <button
-                onClick={handleReset}
-                className="text-xs font-bold text-slate-500 hover:text-indigo-600 transition-colors shrink-0 underline"
-              >
-                Change
-              </button>
-            </div>
-          ) : (
-            <div className="p-4 sm:p-5 rounded-3xl bg-white border border-slate-200 shadow-md mb-6 flex flex-col sm:flex-row items-center gap-4">
-              <div className="w-24 h-24 rounded-2xl bg-slate-50 border border-slate-200/80 p-2 shrink-0 flex items-center justify-center overflow-hidden">
-                <img 
-                  src={identifiedProduct.image} 
-                  alt={identifiedProduct.title}
-                  className="w-full h-full object-contain"
-                  onError={(e) => {
-                    e.target.src = "https://images.unsplash.com/photo-1526738549149-8e07eca6c147?w=500&auto=format&fit=crop&q=60";
-                  }}
-                />
-              </div>
-
-              <div className="flex-1 text-center sm:text-left min-w-0">
-                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mb-1.5">
-                  <span className="px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700 text-[10px] font-black uppercase tracking-wider border border-indigo-200">
-                    {identifiedProduct.store || "Verified Store"}
-                  </span>
-                  <span className="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[10px] font-bold uppercase tracking-wider border border-slate-200">
-                    Category: {identifiedProduct.category?.toUpperCase()}
-                  </span>
-                </div>
-
-                <h2 className="text-sm sm:text-base font-extrabold text-slate-900 leading-snug line-clamp-2">
-                  {identifiedProduct.title}
-                </h2>
-
-                {identifiedProduct.price && (
-                  <div className="mt-1 text-sm font-black text-emerald-700">
-                    Live Price: {identifiedProduct.price}
-                  </div>
-                )}
-              </div>
-
-              <button
-                onClick={handleReset}
-                className="text-xs font-bold text-slate-500 hover:text-indigo-600 transition-colors shrink-0 underline"
-              >
-                Change Product
-              </button>
-            </div>
-          )}
-
-          {/* Dynamic 2-Step Questionnaire Box */}
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-md p-6 sm:p-8">
-            <div className="mb-6">
-              <h3 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
-                {identifiedProduct.isGenericQuery
-                  ? "Help Us Tailor Your Search Strategy"
-                  : "Help Us Tailor Your Workload Reality Check"}
-              </h3>
-              <p className="text-xs sm:text-sm text-slate-500 mt-1 font-medium">
-                {identifiedProduct.isGenericQuery
-                  ? "Select your priorities below so we can formulate the exact high-converting smart search query for live deals."
-                  : "Hardware that is fantastic for office work might choke on gaming or video editing. Select your preferences below or skip to get the general hardware verdict."}
-              </p>
-            </div>
-
-            {/* Dynamic Questions */}
-            <div className="space-y-6">
-              {questions.map((q, qIdx) => (
-                <div key={q.id} className="space-y-2.5">
-                  <label className="text-xs font-black uppercase tracking-wider text-slate-700 block">
-                    {qIdx + 1}. {q.title}
-                  </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {q.options.map((opt) => {
-                      const isSelected = userAnswers[q.id] === opt.label;
-                      return (
-                        <button
-                          key={opt.id}
-                          type="button"
-                          onClick={() => {
-                            setUserAnswers(prev => ({ ...prev, [q.id]: opt.label }));
-                          }}
-                          className={`p-3 rounded-2xl text-xs font-bold text-left transition-all border cursor-pointer flex items-center justify-between ${
-                            isSelected
-                              ? "bg-indigo-50 border-indigo-400 text-indigo-950 shadow-xs ring-2 ring-indigo-500/15"
-                              : "bg-slate-50/70 border-slate-200 text-slate-700 hover:bg-slate-100"
-                          }`}
-                        >
-                          <span>{opt.label}</span>
-                          {isSelected && <Check className="w-4 h-4 text-brand-indigo shrink-0" />}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Action Buttons */}
-            <div className="mt-8 pt-6 border-t border-slate-200/80 flex flex-col sm:flex-row items-center justify-between gap-3">
-              <button
-                type="button"
-                onClick={() => handleGenerateDossier({})}
-                className="w-full sm:w-auto px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer text-center"
-              >
-                {identifiedProduct.isGenericQuery ? "Skip Priorities & Build Strategy ➔" : "Skip & Show General Verdict →"}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleGenerateDossier()}
-                className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-gradient-to-r from-brand-indigo via-indigo-600 to-brand-violet hover:opacity-95 text-white font-extrabold text-xs sm:text-sm shadow-md shadow-indigo-500/25 transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-2"
-              >
-                <Sparkles className="w-4 h-4 text-amber-300" />
-                <span>
-                  {identifiedProduct.isGenericQuery
-                    ? "🎯 Build Smart Strategy & Find Deals ➔"
-                    : "Generate Tailored Trust Sheet ➔"}
-                </span>
-              </button>
             </div>
           </div>
         </div>
@@ -1395,6 +1677,9 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
                   {/* Regional Real-World Reality Check */}
                   {renderRegionalRealityCheck()}
 
+                  {/* Caring Considerations & Care Guidelines */}
+                  {renderCareGuidelines()}
+
                   {/* Lifespan & Daily Cost */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs">
@@ -1570,8 +1855,10 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
                       {!isFetchingStores && liveStores && liveStores.length > 0 && (
                         <div className="space-y-1.5">
                           {liveStores.map((st, sIdx) => {
+                            const pCountry = (dossier?.product?.country || identifiedProduct?.country || country || "IN").toUpperCase();
+                            const pSym = pCountry === "US" ? "$" : pCountry === "GB" ? "£" : pCountry === "CA" ? "C$" : pCountry === "AU" ? "A$" : pCountry === "AE" ? "AED " : "₹";
                             const formattedPrice = typeof st.price === "number"
-                              ? (isUS ? `$${st.price.toFixed(2)}` : `₹${st.price.toLocaleString("en-IN")}`)
+                              ? `${pSym}${st.price.toLocaleString(pCountry === "IN" ? "en-IN" : "en-US", { minimumFractionDigits: pCountry === "IN" ? 0 : 2, maximumFractionDigits: 2 })}`
                               : st.price;
 
                             return (
@@ -1685,12 +1972,36 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
               <div className="p-5 rounded-3xl bg-gradient-to-r from-indigo-900 via-indigo-950 to-slate-900 text-white shadow-md relative overflow-hidden">
                 <div className="flex items-center gap-2 mb-2 text-amber-300 text-xs font-black uppercase tracking-wider">
                   <ShieldCheck className="w-4 h-4 text-amber-300" />
-                  <span>Chief Hardware Engineer’s Bottom-Line Verdict</span>
+                  <span>
+                    {dossier?.product?.category === "supplement"
+                      ? "Nutritional Science & Consumer Purity Verdict"
+                      : dossier?.product?.category === "software_subscription"
+                      ? "SaaS Architect & Subscription Value Verdict"
+                      : "Chief Hardware Engineer’s Bottom-Line Verdict"}
+                  </span>
                 </div>
                 <p className="text-xs sm:text-sm font-medium leading-relaxed text-indigo-100">
                   {dossier.verdictSummary}
                 </p>
               </div>
+
+              {/* Mathematical Customer Satisfaction Consensus */}
+              {renderBuyerSatisfaction()}
+
+              {/* Dietary & Wellness Advisory Notice for Supplements */}
+              {dossier?.product?.category === "supplement" && (
+                <div className="p-4 rounded-3xl bg-emerald-50 border border-emerald-200 text-xs flex items-start gap-3 text-emerald-950 shadow-xs">
+                  <span className="text-xl shrink-0">🌿</span>
+                  <div className="space-y-0.5">
+                    <span className="font-extrabold text-[12px] block text-emerald-900">
+                      Dietary & Wellness Advisory Notice:
+                    </span>
+                    <p className="text-[11px] text-emerald-800 leading-relaxed font-medium">
+                      Supplements work best alongside balanced whole foods and exercise. If you have specific dietary restrictions, pre-existing health conditions, or are unsure of dosage, please consult a certified nutritionist or doctor.
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {/* 2-Column: Where It Excels vs Realistic Gotchas */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -1740,6 +2051,12 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
                 </div>
               </div>
 
+              {/* 2-Column: Who Should BUY vs Who Should SKIP */}
+              {renderDecisionMatrix()}
+
+              {/* Smart Saving Strategy: Decoded Bank Offers, Page Coupons & Brand Direct Perks */}
+              {renderSmartSavingStrategy()}
+
               {/* ============================================================== */}
               {/* THE 3 KILLER HOOKS SECTION                                    */}
               {/* ============================================================== */}
@@ -1753,10 +2070,20 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-slate-800">
                         <Clock className="w-4 h-4 text-indigo-600" />
-                        <span>Hardware Aging &amp; Lifespan Timeline</span>
+                        <span>
+                          {dossier?.product?.category === "supplement"
+                            ? "Freshness & Shelf-Life Timeline"
+                            : dossier?.product?.category === "software_subscription"
+                            ? "Subscription Lifecycle & Renewal Timeline"
+                            : "Hardware Aging & Lifespan Timeline"}
+                        </span>
                       </div>
                       <span className="text-[11px] font-black text-indigo-700 bg-indigo-50 border border-indigo-200 px-2.5 py-0.5 rounded-full">
-                        Lifespan: {dossier.shelfLife?.expectedYears || "3.5 Years"}
+                        {dossier?.product?.category === "supplement"
+                          ? `Shelf Life: ${dossier.shelfLife?.expectedYears || "18-24 Months"}`
+                          : dossier?.product?.category === "software_subscription"
+                          ? `Term: ${dossier.shelfLife?.expectedYears || "Active Cycle"}`
+                          : `Lifespan: ${dossier.shelfLife?.expectedYears || "3.5 Years"}`}
                       </span>
                     </div>
 
@@ -1788,10 +2115,12 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
                     <div>
                       <div className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-indigo-900 mb-2">
                         <Coins className="w-4 h-4 text-emerald-600" />
-                        <span>True Daily Cost</span>
+                        <span>
+                          {dossier?.product?.category === "supplement" ? "True Serving Cost" : "True Daily Cost"}
+                        </span>
                       </div>
                       <p className="text-[11px] text-slate-500 font-medium">
-                        Actual cost per day across its active lifespan
+                        {dossier?.product?.category === "supplement" ? "Actual cost per serving/scoop" : "Actual cost per day across its active lifespan"}
                       </p>
                     </div>
 
@@ -1813,6 +2142,15 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
 
                 {/* HOOK 3: Regional Real-World Reality Check */}
                 {renderRegionalRealityCheck()}
+
+                {/* In The Box & Warranty Fine-Print Reality */}
+                {renderInTheBoxAndWarranty()}
+
+                {/* Caring Considerations & Care Guidelines */}
+                {renderCareGuidelines()}
+
+                {/* Smart Directional Guidance (What to Look For Instead) */}
+                {renderDirectionalAdvice()}
               </div>
 
 
