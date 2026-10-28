@@ -18,6 +18,45 @@
 
 ## 📅 Daily Changelog & Feature Timeline
 
+### 🗓️ 2026-10-28 (Feature 3 TrustSheet 1-Shot Geolocation Engine, Zero-Dummy Store Policy & Unified Cache Quota Shield)
+
+* **Git Commit**: `0a48a76`
+* **Commit Message**: `feat(trust-sheet): finalize 1-shot multi-country geolocation pipeline, zero-dummy store policy & authentic spec grounding`
+* **Status**: ✅ 100% Tested & Verified across India (boAt D2C), USA (Walmart), UK (Boots) & Canada (Best Buy)
+* **Purpose & Architecture of this Release**:
+  1. **1-Shot Direct Product Truth Dossier Flow (`trustSheetService.js`, `TrustSheetView.jsx`, `/api/trust-sheet`)**:
+     - Eliminated multi-step conversational delay by generating the full Trust Sheet Dossier (Authentic Specs, Trust Score, Daily Cost, Shelf Life, Regional Reality Check) in a single direct shot.
+     - Preserved interactive follow-up Q&A capability for deep shopper queries while immediate answers appear instantly.
+  2. **Dynamic Zyte Geolocation IP Switching Engine (`zyteService.js`)**:
+     - URL domain analysis maps requests to regional Zyte geolocation proxy nodes (`IN`, `US`, `GB`, `CA`, `AU`, `AE`, `DE`, `FR`, `JP`).
+     - Eliminates international anti-bot blocks, geofencing, regional CAPTCHAs, and currency confusion.
+  3. **Zero-Dummy Stores Policy (`/api/products/compare/route.js`)**:
+     - Strict anti-hallucination mandate: For exclusive D2C items (e.g. boAt Lifestyle) or single-merchant items, the API returns an empty store list with an honest disclaimer message:
+       `"This product is currently exclusive to this store or not tracked across other verified marketplaces."`
+     - Synthetic placeholders, fake mock stores, and arbitrary fallback prices are permanently eradicated.
+  4. **URL-First Currency Locking & "No Data = No Feature" Spec Grounding**:
+     - Locked currency symbols strictly to the merchant's authenticated origin URL (`₹` for `.in`, `$` for `.com`, `£` for `.co.uk`, `C$` for `.ca`).
+     - Non-electronic categories (skincare, creams, apparel) cleanly omit electrical/voltage attributes without hallucinating dummy specs.
+  5. **Zero-Cost Redis Cache Quota Shield (`src/app/api/trust-sheet/route.js`)**:
+     - Pre-flight check uses `isCacheHit: true` (read-only quota check). Cache hits consume exactly 0 credits from the user's unified 10 daily AI operations.
+  6. **End-to-End Multi-Country Verification Matrix**:
+     - 🇮🇳 **India**: boAt Lifestyle Airdopes 131 (`₹899`) — Verified D2C single store status, sweat/rain caveats flagged.
+     - 🇺🇸 **USA**: Walmart Apple AirPods Pro 2 (`$149.99`) — Verified USB-C cable & 1-year US limited warranty.
+     - 🇬🇧 **UK**: Boots CeraVe Moisturising Cream (`£15.00`) — Verified 3 competing UK stores (`£13`), electrical specs cleanly omitted, pediatric usage warnings displayed.
+     - 🇨🇦 **Canada**: Best Buy Canada Garmin Venu Sq (`C$174.95`) — Verified Quebec Consumer Protection Act compliance & 0.3s cached delivery with 0 credit deduction.
+
+#### 📂 Files Modified:
+- `SYSTEM_ARCHITECTURE_LOCK.md` *(Updated Trust Sheet invariants to 1-Shot architecture)*
+- `src/app/api/trust-sheet/route.js` *(Zero-cost cache quota check, 1-shot dossier pipeline)*
+- `src/app/api/products/compare/route.js` *(Zero-dummy-stores policy, regional domain extraction)*
+- `src/components/TrustSheetView.jsx` *(Direct 1-shot dossier UI, authentic specs, single-store exclusive badge)*
+- `src/services/trustSheetService.js` *(1-Shot dossier prompt, authentic spec grounding, currency lock)*
+- `src/services/zyteService.js` *(Dynamic regional geolocation IP proxy engine)*
+- `src/services/openweb.js` *(Strict search grounding without synthetic mock items)*
+- `src/services/autoHealingSentinel.js` *(Sentinel health check sync for 1-shot pipeline)*
+- `DEVELOPMENT_LOG.md` *(Documented Feature 3 1-Shot Geolocation Release)*
+
+
 ### 🗓️ 2026-10-27 (Multi-Country Localization: Universal 6-Country Regional Architecture for UK, Canada & Australia)
 
 * **Git Commit**: `42af2ff`
