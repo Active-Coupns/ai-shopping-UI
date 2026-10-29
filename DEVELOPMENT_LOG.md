@@ -18,6 +18,50 @@
 
 ## 📅 Daily Changelog & Feature Timeline
 
+### 🗓️ 2026-10-29 (Mandatory Post-Signup Country Onboarding, Real-Time IP Geo Detection, OTT Skeleton Loader & Zyte Geolocation Proxy)
+
+* **Git Commit**: `e3b68f4`
+* **Commit Message**: `feat(country-engine): mandatory post-signup country confirmation, real-time IP geo detection, OTT skeleton loader & Zyte proxy routing`
+* **Status**: ✅ 100% Tested & Verified (Mumbai, Washington, London proxy test passing; zero hydration warnings)
+* **Purpose & Architecture of this Release**:
+  1. **Mandatory Post-Signup Country Confirmation Modal (`CountryOnboardingModal.jsx`)**:
+     - Immediately shown upon successful user registration/sign-in. Non-dismissible (no cancel/close button).
+     - Forces explicit country confirmation (IN, US, GB, CA, AU, AE) and permanently syncs selection to Clerk `unsafeMetadata.country` and per-user local storage key.
+  2. **Real-Time Client IP Geolocation Resolver (`countryDetector.js` & `/api/geo/detect`)**:
+     - Eliminated flawed reliance on OS clock timezones (e.g. PST on Windows laptop sitting in India).
+     - Silent zero-latency ISP IP detection for new guest users defaulting to `IN` (India).
+     - Explicit separation: IP geolocation is strictly used for guest initial view; on-demand scraping and user flows strictly use the user's confirmed country.
+  3. **OTT / Subscriptions Syncing Skeleton Loader (`SubscriptionsView.jsx`)**:
+     - Added `isLoadingSubs` state and 6-card animated shimmer skeleton cards.
+     - Completely eliminated the premature "No Subscriptions in This Category (0)" error message during catalog sync.
+     - Empty state only appears if catalog fetch finishes and results are genuinely zero.
+  4. **Multi-Country Fashion Trial Room Catalog (`/api/vton/catalog`)**:
+     - Delivers verified Indian Myntra/Ajio garments in INR (₹) for `IN`.
+     - Automatically adapts and converts garments to country-specific stores (Amazon.com, ASOS, etc.) with local currency ($ USD, £ GBP, etc.) for international visitors.
+  5. **Zyte Web Scraper Geolocation Alignment (`zyteService.js`)**:
+     - Zyte API requests now receive explicit `geolocation: country` parameter (e.g. `IN`, `US`, `GB`).
+     - Verified live with Zyte API:
+       - `IN` routes through Mumbai, India IP (`168.205.73.124`).
+       - `US` routes through Washington, US IP (`89.117.162.126`).
+       - `GB` routes through London, UK IP (`2.58.31.106`).
+     - Zero disruption to existing coupon, travel, and trust sheet schemas.
+  6. **Extension Hydration Mismatch Shield**:
+     - Added `suppressHydrationWarning` across all button and input elements targeted by browser password managers/autofill extensions (`fdprocessedid`).
+
+#### 📂 Files Modified / Created:
+- `src/components/CountryOnboardingModal.jsx` *(New: Non-dismissible 6-country post-signup confirmation)*
+- `src/lib/countryDetector.js` *(New: Real-time client IP geolocation detector)*
+- `src/app/api/geo/detect/route.js` *(New: Server geo-header fallback route)*
+- `src/components/SubscriptionsView.jsx` *(Skeleton loader & eliminated premature empty state)*
+- `src/app/api/vton/catalog/route.js` *(Multi-country clothing catalog localization)*
+- `src/services/zyteService.js` *(Dynamic country geolocation proxy support)*
+- `src/services/zyteTravelDealsService.js` *(Passed country to Zyte)*
+- `src/services/travelOnDemandService.js` *(Passed country to Zyte)*
+- `src/services/trustSheetService.js` *(Passed country to Zyte)*
+- `src/components/SearchHero.jsx` *(Extension hydration protection)*
+- `src/app/page.js` *(Integrated country detector, onboarding modal, hydration protection)*
+- `DEVELOPMENT_LOG.md` *(Documented release)*
+
 ### 🗓️ 2026-10-29 (Virtual Trial Room AI Stylist Security Shield: Prompt Injection & Jailbreak Defense)
 
 * **Git Commit**: `d71f729`

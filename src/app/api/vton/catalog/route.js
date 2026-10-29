@@ -109,12 +109,60 @@ export async function GET(request) {
 
     const total = filtered.length;
     const startIndex = (page - 1) * limit;
-    const items = filtered.slice(startIndex, startIndex + limit);
+    let items = filtered.slice(startIndex, startIndex + limit);
+
+    // If country is not India, localize the catalog items to match the user's selected country
+    if (country && country !== "IN") {
+      const isUS = country === "US";
+      const isUK = country === "GB" || country === "UK";
+      const isCA = country === "CA";
+      const isAU = country === "AU";
+      const isAE = country === "AE";
+
+      const currSymbol = isAE ? "AED " : isAU ? "A$" : isCA ? "C$" : isUK ? "£" : "$";
+      const exchangeDivisor = isAE ? 22 : isAU ? 55 : isCA ? 60 : isUK ? 105 : 83;
+      const storeName = isAE ? "Amazon.ae" : isAU ? "Amazon.com.au" : isCA ? "Amazon.ca" : isUK ? "ASOS UK" : "Amazon.com";
+      const storeBaseUrl = isAE 
+        ? "https://www.amazon.ae/s?k=" 
+        : isAU 
+        ? "https://www.amazon.com.au/s?k=" 
+        : isCA 
+        ? "https://www.amazon.ca/s?k=" 
+        : isUK 
+        ? "https://www.amazon.co.uk/s?k=" 
+        : "https://www.amazon.com/s?k=";
+
+      items = items.map(item => {
+        const raw = item.raw_price || 1500;
+        const converted = Math.max(15, Math.round(raw / exchangeDivisor));
+        const originalConverted = Math.round(converted * 1.4);
+        const encodedTitle = encodeURIComponent(item.title || "fashion clothing");
+
+        return {
+          ...item,
+          country,
+          store: storeName,
+          price: `${currSymbol}${converted}`,
+          original_price: `${currSymbol}${originalConverted}`,
+          raw_price: converted,
+          direct_link: `${storeBaseUrl}${encodedTitle}`,
+          deal_link: `${storeBaseUrl}${encodedTitle}`,
+          price_comparison: [
+            {
+              store_name: storeName,
+              price: converted,
+              deal_link: `${storeBaseUrl}${encodedTitle}`,
+              is_lowest: true
+            }
+          ]
+        };
+      });
+    }
 
     const payload = {
       success: true,
       source: "local_catalog",
-      country: "IN",
+      country: country || "IN",
       items,
       total,
       page,

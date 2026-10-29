@@ -161,7 +161,7 @@ export async function discoverOnDemandDeals(brandName, category = "flights", cou
   try {
     const scraperKey = getZyteApiKey();
     if (scraperKey) {
-      const rawHtml = await fetchOfficialBrandPage(safeOfficialUrl, { browserHtml: false, timeoutMs: 12000 });
+      const rawHtml = await fetchOfficialBrandPage(safeOfficialUrl, { country: normCountry, browserHtml: false, timeoutMs: 12000 });
       if (rawHtml && rawHtml.length > 300) {
         scrapedText = rawHtml
           .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")

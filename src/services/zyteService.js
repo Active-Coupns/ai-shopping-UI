@@ -78,7 +78,7 @@ export function isSafeExternalUrl(targetUrl) {
   }
 }
 
-export async function fetchOfficialBrandPage(targetUrl, { browserHtml = false, timeoutMs = 20000 } = {}) {
+export async function fetchOfficialBrandPage(targetUrl, { country = null, browserHtml = false, timeoutMs = 20000 } = {}) {
   const apiKey = getZyteApiKey();
   if (!apiKey) {
     console.warn("[ZyteService] Notice: ZYTE_API_KEY environment variable is not configured.");
@@ -102,7 +102,8 @@ export async function fetchOfficialBrandPage(targetUrl, { browserHtml = false, t
   } catch (_) {}
 
   const authHeader = "Basic " + Buffer.from(apiKey + ":").toString("base64");
-  const geo = detectCountryCode(cleanUrl);
+  // Use passed user country or fall back to URL domain detection or IN
+  const geo = (country ? String(country).toUpperCase() : null) || detectCountryCode(cleanUrl) || "IN";
 
   const requestBody = {
     url: cleanUrl,
@@ -150,7 +151,7 @@ export async function fetchOfficialBrandPage(targetUrl, { browserHtml = false, t
  * @param {number} [options.timeoutMs=20000] - Request timeout ceiling
  * @returns {Promise<Object|null>} Structured product object or null
  */
-export async function extractProductWithZyte(targetUrl, { timeoutMs = 35000 } = {}) {
+export async function extractProductWithZyte(targetUrl, { country = null, timeoutMs = 35000 } = {}) {
   const apiKey = getZyteApiKey();
   if (!apiKey) {
     console.warn("[ZyteService] ZYTE_API_KEY is not configured.");
@@ -174,7 +175,8 @@ export async function extractProductWithZyte(targetUrl, { timeoutMs = 35000 } = 
   } catch (_) {}
 
   const authHeader = "Basic " + Buffer.from(apiKey + ":").toString("base64");
-  const geo = detectCountryCode(cleanUrl);
+  // Use passed user country or fall back to URL domain detection or IN
+  const geo = (country ? String(country).toUpperCase() : null) || detectCountryCode(cleanUrl) || "IN";
 
   try {
     const res = await fetch("https://api.zyte.com/v1/extract", {

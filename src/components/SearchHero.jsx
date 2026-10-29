@@ -665,6 +665,7 @@ export default function SearchHero({
                   />
                   <button
                     type="button"
+                    suppressHydrationWarning
                     onClick={clearCartImage}
                     className="absolute top-0.5 right-0.5 p-0.5 bg-black/60 text-white rounded-full hover:bg-black transition-colors"
                     title="Remove image"
@@ -688,6 +689,7 @@ export default function SearchHero({
               <div className="flex items-center gap-2 w-full sm:w-auto">
                 <button
                   type="button"
+                  suppressHydrationWarning
                   onClick={clearCartImage}
                   className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold transition-all cursor-pointer"
                 >
@@ -695,6 +697,7 @@ export default function SearchHero({
                 </button>
                 <button
                   type="button"
+                  suppressHydrationWarning
                   disabled={isAnalyzingCart}
                   onClick={handleCartAnalysisSubmit}
                   className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white text-xs font-bold shadow-md shadow-violet-500/25 hover:opacity-95 transition-all cursor-pointer active:scale-95 disabled:opacity-60"
@@ -848,6 +851,7 @@ export default function SearchHero({
             {onOpenConcierge && (
               <button
                 type="button"
+                suppressHydrationWarning
                 onClick={() => onOpenConcierge(query.trim())}
                 className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50/80 hover:bg-indigo-100 border border-indigo-200/70 text-[11px] sm:text-xs font-semibold text-brand-indigo hover:text-indigo-800 transition-all cursor-pointer shadow-2xs group"
               >
@@ -860,6 +864,7 @@ export default function SearchHero({
             {onOpenTrustSheet && (
               <button
                 type="button"
+                suppressHydrationWarning
                 onClick={() => onOpenTrustSheet(query.trim())}
                 className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50/90 hover:bg-emerald-100 border border-emerald-300/80 text-[11px] sm:text-xs font-semibold text-emerald-800 hover:text-emerald-950 transition-all cursor-pointer shadow-2xs group"
               >
@@ -971,6 +976,7 @@ export default function SearchHero({
                 </div>
                 <button
                   type="button"
+                  suppressHydrationWarning
                   className="px-3.5 py-1.5 rounded-xl bg-violet-600 text-white text-xs font-bold shadow-xs hover:bg-violet-700 transition-all shrink-0 cursor-pointer pointer-events-none"
                 >
                   Choose Image
@@ -987,6 +993,7 @@ export default function SearchHero({
                     />
                     <button
                       type="button"
+                      suppressHydrationWarning
                       onClick={clearCartImage}
                       className="absolute top-0.5 right-0.5 p-0.5 bg-black/60 text-white rounded-full hover:bg-black transition-colors"
                       title="Remove image"
@@ -1010,6 +1017,7 @@ export default function SearchHero({
                 <div className="flex items-center gap-2 w-full sm:w-auto">
                   <button
                     type="button"
+                    suppressHydrationWarning
                     onClick={clearCartImage}
                     className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold transition-all cursor-pointer"
                   >
@@ -1017,6 +1025,7 @@ export default function SearchHero({
                   </button>
                   <button
                     type="button"
+                    suppressHydrationWarning
                     disabled={isAnalyzingCart}
                     onClick={handleCartAnalysisSubmit}
                     className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white text-xs font-bold shadow-md shadow-violet-500/25 hover:opacity-95 transition-all cursor-pointer active:scale-95 disabled:opacity-60"

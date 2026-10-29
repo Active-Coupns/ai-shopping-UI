@@ -11,6 +11,7 @@ import CouponCard from "@/components/CouponCard";
 import SmartFilterChips, { generateSmartChips } from "@/components/SmartFilterChips";
 import { isProductUrl, extractProductTitleFromUrl, extractProductInfoFromUrl } from "@/lib/urlProductParser";
 import { SUPPORTED_COUNTRIES, getCountryMeta } from "@/lib/countryConfig";
+import { detectUserCountry } from "@/lib/countryDetector";
 import { searchProducts } from "@/services/api";
 import { userJourneyTracker } from "@/services/userJourneyTracker";
 
@@ -52,6 +53,7 @@ const PriceDropModal = dynamic(() => import("@/components/PriceDropModal"), { ss
 const SearchAiConciergeModal = dynamic(() => import("@/components/SearchAiConciergeModal"), { ssr: false });
 const UnifiedAccountModal = dynamic(() => import("@/components/UnifiedAccountModal"), { ssr: false });
 const SupportTicketModal = dynamic(() => import("@/components/SupportTicketModal"), { ssr: false });
+const CountryOnboardingModal = dynamic(() => import("@/components/CountryOnboardingModal"), { ssr: false });
 const TrustSheetView = dynamic(() => import("@/components/TrustSheetView"), {
   ssr: false,
   loading: () => (
@@ -145,6 +147,7 @@ export default function Home() {
   const [travelAdvisorCategory, setTravelAdvisorCategory] = useState("flights");
   const [travelAdvisorInitialQuery, setTravelAdvisorInitialQuery] = useState("");
   const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
+  const [isCountryModalOpen, setIsCountryModalOpen] = useState(false);
   const [activeFilterChipId, setActiveFilterChipId] = useState("all");
 
   // 1. Saved Deals / Bookmarks (LocalStorage persistence)
@@ -424,6 +427,76 @@ export default function Home() {
     return () => window.removeEventListener("unhandledrejection", handleUnhandledRejection);
   }, []);
 
+  // Load saved country preferences or perform real-time silent IP auto-detect for guests
+  useEffect(() => {
+    let isMounted = true;
+    (async () => {
+      try {
+        const country = await detectUserCountry();
+        if (isMounted && country && SUPPORTED_COUNTRIES[country]) {
+          setSelectedCountry(country);
+        }
+      } catch (_) {}
+    })();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Post-Signup / Post-Signin Trigger: Mandatory Country Confirmation immediately after sign up
+  useEffect(() => {
+    if (isLoaded && isSignedIn && clerkUser) {
+      try {
+        const metadataCountry = clerkUser.unsafeMetadata?.country;
+        const userConfirmedKey = `shopsmart_country_confirmed_${clerkUser.id}`;
+        const isUserConfirmedLocally = localStorage.getItem(userConfirmedKey);
+
+        if (metadataCountry && SUPPORTED_COUNTRIES[String(metadataCountry).toUpperCase()]) {
+          // User already confirmed their country in a previous session or device
+          const normCountry = String(metadataCountry).toUpperCase();
+          setSelectedCountry(normCountry);
+          localStorage.setItem("user_selected_country", normCountry);
+          localStorage.setItem(userConfirmedKey, "true");
+          setIsCountryModalOpen(false);
+        } else if (!isUserConfirmedLocally) {
+          // Newly signed up user who has NEVER confirmed their shopping country!
+          console.log("[ShopSmart Onboarding] Triggering mandatory country setup for user:", clerkUser.id);
+          setIsCountryModalOpen(true);
+        }
+      } catch (err) {
+        console.warn("[ShopSmart Onboarding] Error checking user country status:", err);
+      }
+    } else {
+      // If user is guest/logged out, never block them with the onboarding modal
+      setIsCountryModalOpen(false);
+    }
+  }, [isLoaded, isSignedIn, clerkUser]);
+
+  const handleCountryConfirm = async (countryCode) => {
+    const code = (countryCode || "IN").toUpperCase();
+    setSelectedCountry(code);
+    try {
+      localStorage.setItem("user_selected_country", code);
+      if (clerkUser?.id) {
+        localStorage.setItem(`shopsmart_country_confirmed_${clerkUser.id}`, "true");
+        // Persist to Clerk user profile so it syncs across all devices
+        if (typeof clerkUser.update === "function") {
+          clerkUser.update({
+            unsafeMetadata: {
+              ...(clerkUser.unsafeMetadata || {}),
+              country: code
+            }
+          }).catch((e) => console.warn("[Clerk Metadata Sync]", e));
+        }
+      }
+    } catch (_) {}
+    setIsCountryModalOpen(false);
+
+    if (appState === "results" && searchQuery) {
+      handleSearchSubmitForCountry(searchQuery, code);
+    }
+  };
+
   const handleCountryChange = async (newCountry) => {
     const code = newCountry.toUpperCase();
     if (code === selectedCountry) return;
@@ -431,6 +504,17 @@ export default function Home() {
     setSelectedCountry(code);
     try {
       localStorage.setItem("user_selected_country", code);
+      if (clerkUser?.id) {
+        localStorage.setItem(`shopsmart_country_confirmed_${clerkUser.id}`, "true");
+        if (typeof clerkUser.update === "function") {
+          clerkUser.update({
+            unsafeMetadata: {
+              ...(clerkUser.unsafeMetadata || {}),
+              country: code
+            }
+          }).catch((e) => console.warn("[Clerk Metadata Sync]", e));
+        }
+      }
     } catch (e) {}
 
     if (appState === "results" && searchQuery) {
@@ -1039,6 +1123,8 @@ export default function Home() {
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                 <div className="flex items-center gap-3">
                   <button
+                    type="button"
+                    suppressHydrationWarning
                     onClick={handleReset}
                     className="flex items-center justify-center p-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-600 hover:text-slate-900 transition-all shadow-sm cursor-pointer active:scale-95"
                   >
@@ -1062,6 +1148,8 @@ export default function Home() {
                     </div>
                   )}
                   <button
+                    type="button"
+                    suppressHydrationWarning
                     onClick={() => handleSearchSubmit(searchQuery)}
                     className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 text-xs md:text-sm font-bold text-slate-700 hover:text-slate-900 transition-all cursor-pointer shadow-sm active:scale-95"
                   >
@@ -1087,6 +1175,8 @@ export default function Home() {
                       This service or coupon is currently not available on our platform.
                     </p>
                     <button
+                      type="button"
+                      suppressHydrationWarning
                       onClick={handleReset}
                       className="px-6 py-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-xs md:text-sm font-bold text-slate-800 transition-all cursor-pointer shadow-sm active:scale-95"
                     >
@@ -1206,6 +1296,7 @@ export default function Home() {
             >
               <button
                 type="button"
+                suppressHydrationWarning
                 onClick={() => {
                   chatSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
                 }}
@@ -1239,7 +1330,7 @@ export default function Home() {
 </main>
 
       {/* Footer */}
-      <footer className="relative z-10 w-full py-3 pb-24 md:pb-6 text-center text-[10px] sm:text-xs text-slate-500 border-t border-slate-200/80 glass-panel border-x-0 border-b-0">
+      <footer suppressHydrationWarning className="relative z-10 w-full py-3 pb-24 md:pb-6 text-center text-[10px] sm:text-xs text-slate-500 border-t border-slate-200/80 glass-panel border-x-0 border-b-0">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-1.5 sm:gap-4">
           <div className="flex items-center gap-1">
             <Sparkles className="w-3 h-3 text-brand-indigo" />
@@ -1248,6 +1339,7 @@ export default function Home() {
           <div className="flex items-center gap-3">
             <button
               type="button"
+              suppressHydrationWarning
               onClick={() => setIsSupportModalOpen(true)}
               className="text-indigo-600 hover:text-indigo-800 font-semibold hover:underline cursor-pointer flex items-center gap-1"
             >
@@ -1261,9 +1353,9 @@ export default function Home() {
       </footer>
 
       {/* Mobile-Only Bottom Navigation Bar (Modern App Experience) */}
-      <nav className="fixed bottom-0 inset-x-0 z-50 md:hidden bg-white/95 backdrop-blur-2xl border-t border-slate-200 shadow-[0_-4px_25px_rgba(0,0,0,0.08)] px-4 py-1.5 flex items-center justify-around">
+      <nav suppressHydrationWarning className="fixed bottom-0 inset-x-0 z-50 md:hidden bg-white/95 backdrop-blur-2xl border-t border-slate-200 shadow-[0_-4px_25px_rgba(0,0,0,0.08)] px-4 py-1.5 flex items-center justify-around">
         {/* Tab 1: Deals Search */}
-        <button
+        <button suppressHydrationWarning
           type="button"
           onClick={() => setAppState("idle")}
           className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl transition-all cursor-pointer ${
@@ -1277,7 +1369,7 @@ export default function Home() {
         </button>
 
         {/* Tab 2: AI Virtual Trial Room */}
-        <button
+        <button suppressHydrationWarning
           type="button"
           onClick={() => setAppState("trial_room")}
           className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl transition-all cursor-pointer relative ${
@@ -1293,7 +1385,7 @@ export default function Home() {
         </button>
 
         {/* Tab 2.5: AI Trust Sheet */}
-        <button
+        <button suppressHydrationWarning
           type="button"
           onClick={() => handleOpenTrustSheet("")}
           className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl transition-all cursor-pointer relative ${
@@ -1310,7 +1402,7 @@ export default function Home() {
 
         {/* Tab 3: Quick Jump to AI Shopping Assistant (when on results page) */}
         {appState === "results" && (
-          <button
+          <button suppressHydrationWarning
             type="button"
             onClick={() => {
               chatSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -1326,7 +1418,7 @@ export default function Home() {
         )}
 
         {/* Tab 3.5: OTT & Subscriptions */}
-        <button
+        <button suppressHydrationWarning
           type="button"
           onClick={() => setAppState("subscriptions")}
           className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl transition-all cursor-pointer relative ${
@@ -1342,7 +1434,7 @@ export default function Home() {
         </button>
 
         {/* Tab 4: Unified Account & Preferences */}
-        <button
+        <button suppressHydrationWarning
           type="button"
           onClick={() => setIsAccountModalOpen(true)}
           className="flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl text-slate-500 hover:text-slate-900 transition-all cursor-pointer"
@@ -1422,6 +1514,13 @@ export default function Home() {
       <SupportTicketModal
         isOpen={isSupportModalOpen}
         onClose={() => setIsSupportModalOpen(false)}
+      />
+
+      {/* Mandatory Country Onboarding Modal (Strict: Non-dismissible without confirmation) */}
+      <CountryOnboardingModal
+        isOpen={isCountryModalOpen}
+        onConfirm={handleCountryConfirm}
+        currentCountry={selectedCountry}
       />
     </div>
   );

@@ -84,7 +84,7 @@ export async function scrapeLiveBrandDeals(targetUrl, brandName, category, count
   }
 
   console.log(`[Zyte Travel Engine] Scraping official promo page for ${brandName} (${targetUrl})...`);
-  const rawHtml = await fetchOfficialBrandPage(targetUrl, { browserHtml: false, timeoutMs: 25000 });
+  const rawHtml = await fetchOfficialBrandPage(targetUrl, { country, browserHtml: false, timeoutMs: 25000 });
 
   if (!rawHtml || rawHtml.length < 200) {
     console.warn(`[Zyte Travel Engine] Empty or short HTML payload for ${brandName}`);

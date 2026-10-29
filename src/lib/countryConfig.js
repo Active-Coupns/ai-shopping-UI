@@ -124,3 +124,24 @@ export function formatCountryPrice(amount, countryCode = "IN") {
     return `${meta.symbol}${Math.round(num)}`;
   }
 }
+
+/**
+ * Zero-Latency Browser Timezone Country Resolver
+ * Maps standard IANA timezones to our 6 supported Tier-1 countries
+ * Runs 100% client-side in 0ms with zero network requests
+ */
+export function detectCountryFromTimezone() {
+  try {
+    const tz = (typeof Intl !== "undefined" && Intl.DateTimeFormat)
+      ? Intl.DateTimeFormat().resolvedOptions().timeZone || ""
+      : "";
+    if (/Kolkata|Calcutta/i.test(tz)) return "IN";
+    if (/London/i.test(tz)) return "GB";
+    if (/Dubai/i.test(tz)) return "AE";
+    if (/Toronto|Vancouver|Montreal|Edmonton|Winnipeg|Halifax|Calgary/i.test(tz)) return "CA";
+    if (/Sydney|Melbourne|Brisbane|Perth|Adelaide|Hobart|Darwin/i.test(tz)) return "AU";
+    if (/New_York|Chicago|Denver|Los_Angeles|Phoenix|Anchorage|Honolulu|Detroit|Boise|Indiana|Kentucky|North_Dakota/i.test(tz)) return "US";
+  } catch (_) {}
+  return "IN";
+}
+

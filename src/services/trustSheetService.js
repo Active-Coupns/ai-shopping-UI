@@ -533,7 +533,7 @@ export async function identifyProduct(input, country = "IN", existingProduct = n
   // If input is a URL, call Zyte Cloud Proxy API to extract live authentic product data
   if (isUrl && rawUrl) {
     try {
-      const zyteData = await extractProductWithZyte(rawUrl);
+      const zyteData = await extractProductWithZyte(rawUrl, { country: targetCountry });
       if (zyteData && zyteData.success && zyteData.title) {
         product.title = zyteData.title;
         product.brand = zyteData.brand || "";

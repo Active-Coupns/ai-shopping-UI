@@ -68,6 +68,7 @@ export default function SubscriptionsView({
   // Dynamic Catalog State (Baseline from Supabase API + any On-Demand ingested brands)
   const [catalogSubs, setCatalogSubs] = useState([]);
   const [subsCache, setSubsCache] = useState({});
+  const [isLoadingSubs, setIsLoadingSubs] = useState(true);
   const [isDiscovering, setIsDiscovering] = useState(false);
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [verifiedEntity, setVerifiedEntity] = useState(null);
@@ -138,9 +139,11 @@ export default function SubscriptionsView({
       // 1. Check local in-memory state cache first
       if (subsCache[selectedCountry] && subsCache[selectedCountry].length > 0) {
         setCatalogSubs(subsCache[selectedCountry]);
+        setIsLoadingSubs(false);
         return;
       }
 
+      setIsLoadingSubs(true);
       try {
         // Parallel fetch both catalog and on-demand without blocking each other
         const [catalogRes, onDemandRes] = await Promise.allSettled([
@@ -181,6 +184,10 @@ export default function SubscriptionsView({
         }
       } catch (err) {
         console.error("Error loading subscriptions data:", err);
+      } finally {
+        if (isMounted) {
+          setIsLoadingSubs(false);
+        }
       }
     };
 
@@ -423,7 +430,7 @@ export default function SubscriptionsView({
               <Zap className="w-3 h-3 fill-current" /> 100% Verified {regionName} Pricing
             </span>
             <span className="text-xs font-semibold text-slate-400">
-              {catalogSubs.length} Leading Brands & Multi-Tier Plans
+              {isLoadingSubs ? "Syncing Live Catalog..." : `${catalogSubs.length} Leading Brands & Multi-Tier Plans`}
             </span>
             <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
               <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Live Data Verified
@@ -532,7 +539,7 @@ export default function SubscriptionsView({
             const Icon = cat.icon;
             const isSelected = selectedCategory === cat.id;
             const count = categoryCounts[cat.id] ?? 0;
-            const label = `${cat.emoji}${cat.name} (${count})`;
+            const label = isLoadingSubs ? `${cat.emoji}${cat.name}` : `${cat.emoji}${cat.name} (${count})`;
             return (
               <button
                 key={cat.id}
@@ -815,7 +822,34 @@ export default function SubscriptionsView({
         })}
       </div>
 
-      {filteredSubs.length === 0 && (
+      {/* 4. SKELETON LOADING STATE: Shown while data is fetching from Supabase / API */}
+      {isLoadingSubs && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6 my-4">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div
+              key={i}
+              className="rounded-3xl border border-slate-200/80 bg-white/80 p-5 space-y-4 animate-pulse shadow-2xs"
+            >
+              <div className="flex items-center justify-between">
+                <div className="w-28 h-7 bg-slate-200 rounded-xl" />
+                <div className="w-20 h-5 bg-slate-100 rounded-full" />
+              </div>
+              <div className="space-y-2">
+                <div className="w-3/4 h-5 bg-slate-200 rounded-lg" />
+                <div className="w-1/2 h-3.5 bg-slate-100 rounded-lg" />
+              </div>
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-2.5">
+                <div className="w-full h-8 bg-slate-200/80 rounded-xl" />
+                <div className="w-2/3 h-4 bg-slate-100 rounded-lg" />
+              </div>
+              <div className="w-full h-11 bg-slate-200 rounded-2xl" />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* 5. EMPTY / VERIFICATION STATE: Only shown AFTER loading completes and truly 0 items exist */}
+      {!isLoadingSubs && filteredSubs.length === 0 && (
         <div className="max-w-2xl mx-auto my-6">
           {isVerifyingEntity ? (
             /* Analyzing / Verifying Entity with ShopSmart AI */
