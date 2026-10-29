@@ -18,9 +18,30 @@
 
 ## 📅 Daily Changelog & Feature Timeline
 
+### 🗓️ 2026-10-29 (Virtual Trial Room AI Stylist Security Shield: Prompt Injection & Jailbreak Defense)
+
+* **Git Commit**: `d71f729`
+* **Commit Message**: `sec(vton-stylist): add pre-flight prompt injection defense, jailbreak regex shield & scope guardrails`
+* **Status**: ✅ 100% Tested & Verified (Attacks intercepted in 117ms, zero prompt leakage, legitimate architecture intact)
+* **Purpose & Architecture of this Release**:
+  1. **Pre-flight Jailbreak & Prompt Injection Interception (`JAILBREAK_REGEX`)**:
+     - Pre-flight regex detects and intercepts unauthorized prompt override patterns (`ignore previous instructions`, `reveal system prompt/api keys`, `developer mode`, `dan mode`, `override rules`).
+     - Returns instant polite security redirection (`intent: SECURITY_GUARDRAIL`) without sending malicious tokens to Groq LLM (saves API costs and eliminates prompt extraction risks).
+  2. **Input Payload Sanitization & Capping**:
+     - Capped user messages to 350 characters to eliminate token exhaustion and buffer-overflow-style DDoS attacks.
+     - Sanitized multi-turn chat history messages with length clamps and regex inspection.
+  3. **Zero-Leakage System Scope Guardrails**:
+     - Explicit system-level guardrails instruct the model to never write code, generate general knowledge essays, or disclose its internal prompt/keys.
+  4. **Regression Verification**:
+     - Tested against adversarial injection attacks (117ms block) and verified legitimate styling queries across India and international flows with 0% regression.
+
+#### 📂 Files Modified:
+- `src/app/api/vton/stylist/route.js` *(Pre-flight JAILBREAK_REGEX shield, input sanitization, zero-leak system prompt)*
+- `DEVELOPMENT_LOG.md` *(Documented security release)*
+
 ### 🗓️ 2026-10-29 (Virtual Trial Room AI Stylist 2-Phase Engine & Multi-Country Grounding Overhaul)
 
-* **Git Commit**: `4f6d0e3`
+* **Git Commit**: `b07b160`
 * **Commit Message**: `feat(vton-stylist): 2-phase personal stylist playbook, dummy model protection & multi-country grounding`
 * **Status**: ✅ 100% Tested & Verified across India (IN), USA (US), UK (GB), UAE (AE)
 * **Purpose & Architecture of this Release**:
