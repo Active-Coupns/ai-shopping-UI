@@ -912,7 +912,12 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
           userMessage: textToSend,
           skinTone,
           gender,
+          country: selectedCountry || "IN",
           isCustomPhoto,
+          chatHistory: chatHistory.slice(-6).map(m => ({
+            role: m.sender === "user" ? "user" : "assistant",
+            content: m.text
+          })),
           excludeProductIds: activeOutfits.map(p => p.id)
         })
       });
@@ -934,7 +939,8 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
         setSelectedCategory(data.targetCategory);
       }
 
-      if (data.recommendedProducts && data.recommendedProducts.length > 0) {
+      // If this was a recommendation turn (not just a questioning turn), load outfits
+      if (data.recommendedProducts && data.recommendedProducts.length > 0 && !data.isQuestioningTurn) {
         setActiveOutfits(data.recommendedProducts);
         setCurrentTryonGarment(data.recommendedProducts[0]);
       }
@@ -1566,14 +1572,56 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
               </div>
             )}
 
-            {!isStylistTyping && chatHistory.filter(m => m.sender === "ai").length > 0 && (
-              <div className="p-2.5 rounded-xl bg-indigo-50/80 border border-indigo-100 text-xs text-indigo-950 flex items-start gap-2 animate-fade-in">
-                <Sparkles className="w-3.5 h-3.5 text-brand-indigo shrink-0 mt-0.5" />
-                <div className="flex-1 text-[11px] leading-relaxed">
-                  {chatHistory.filter(m => m.sender === "ai").slice(-1)[0]?.text}
+            {!isStylistTyping && chatHistory.filter(m => m.sender === "ai").length > 0 && (() => {
+              const latestAi = chatHistory.filter(m => m.sender === "ai").slice(-1)[0];
+              if (!latestAi) return null;
+              return (
+                <div className="space-y-2 animate-fade-in">
+                  <div className="p-3 rounded-2xl bg-indigo-50/80 border border-indigo-100 text-xs text-indigo-950 flex items-start gap-2.5 shadow-2xs">
+                    <Sparkles className="w-4 h-4 text-brand-indigo shrink-0 mt-0.5" />
+                    <div className="flex-1 space-y-2.5">
+                      <p className="text-xs leading-relaxed font-medium">
+                        {latestAi.text}
+                      </p>
+
+                      {/* Out-of-the-Box / Custom Screenshot Upload CTA */}
+                      {latestAi.suggestScreenshotUpload && (
+                        <div className="p-2.5 rounded-xl bg-purple-50/90 border border-purple-200/90 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 shadow-2xs">
+                          <div className="flex items-center gap-2 text-[11px] font-semibold text-purple-900">
+                            <span className="text-base">📸</span>
+                            <span>Seen a look on Pinterest or Instagram? Upload screenshot to try it on!</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => garmentFileInputRef.current?.click()}
+                            className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 hover:opacity-95 text-white text-[11px] font-bold shadow-xs transition-all active:scale-95 cursor-pointer shrink-0"
+                          >
+                            Upload Screenshot
+                          </button>
+                        </div>
+                      )}
+
+                      {/* 1-Tap Quick Answer / Follow-up Question Chips */}
+                      {Array.isArray(latestAi.options) && latestAi.options.length > 0 && (
+                        <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                          <span className="text-[10px] uppercase font-bold text-indigo-400 tracking-wider mr-0.5">Quick Reply:</span>
+                          {latestAi.options.map((option, optIdx) => (
+                            <button
+                              key={optIdx}
+                              type="button"
+                              onClick={() => handleStylistQuery(option)}
+                              className="px-2.5 py-1 rounded-lg bg-white hover:bg-brand-indigo hover:text-white border border-indigo-200 text-indigo-700 text-[11px] font-semibold transition-all shadow-2xs cursor-pointer active:scale-95"
+                            >
+                              {option}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
           </div>
 
           {/* 4-LOOK GOOGLE-STYLE STUDIO GRID */}

@@ -18,6 +18,38 @@
 
 ## 📅 Daily Changelog & Feature Timeline
 
+### 🗓️ 2026-10-29 (Virtual Trial Room AI Stylist 2-Phase Engine & Multi-Country Grounding Overhaul)
+
+* **Git Commit**: `4f6d0e3`
+* **Commit Message**: `feat(vton-stylist): 2-phase personal stylist playbook, dummy model protection & multi-country grounding`
+* **Status**: ✅ 100% Tested & Verified across India (IN), USA (US), UK (GB), UAE (AE)
+* **Purpose & Architecture of this Release**:
+  1. **Virtual Trial Room Identity Alignment**:
+     - Positioned AI purely as a personal stylist whose sole mission is to inspire shoppers to **TRY ON** clothes directly on their photo or dummy avatar.
+     - Prohibited e-commerce sales pressure; focused on undertones, silhouettes, and mix-matching.
+  2. **Scenario B (No Photo Uploaded / Dummy Model Safeguard)**:
+     - Fixed dummy sample model assumption: On Turn 1 without custom photo, skin tone is strictly marked as unknown. The AI never claims to know the user's skin tone from the stock photo.
+     - AI asks for skin tone, body frame, and event context, accompanied by a polite invitation to upload their photo for authentic try-on.
+     - 1-Tap quick reply chips strictly output user replies (e.g., `["🌾 Wheatish Skin Tone", "☀️ Daytime Event"]`), never questions.
+  3. **Scenario A (Authentic Photo Uploaded)**:
+     - On Turn 1, qualifies vibe before dumping outfits (`isQuestioningTurn: true`).
+     - On Turn 2, acknowledges the user's authentic frame, facial features, and undertone, recommending matching palette & cuts.
+     - Dedicated Try-On quick chips: Action-oriented buttons (e.g. `["👕 Try on Cream Cuban", "📸 Upload Reference Screenshot"]`).
+  4. **Bespoke / Out-of-Catalog Screenshot Try-On Trigger**:
+     - When the user requests bespoke/designer looks (e.g. velvet bandhgala, designer Pinterest pieces), AI triggers `suggestScreenshotUpload: true` activating the direct screenshot drape CTA.
+  5. **Occasion-to-Category Grounding**:
+     - Mapped cocktails/galas to `blazers_suits` (never casual oversized tees).
+     - Mapped bandhgala/Indo-western coats to `men_nehru_jackets` / `blazers_suits` (never casual winter `jackets_hoodies`).
+     - Mapped tropical resort/brunch to `men_cuban_shirts`.
+  6. **Trust Sheet Landing Page Polish**:
+     - Strict URL-only input validation, eliminating scraper jargon, and introducing `ResearchProgressLoader` with rotating shopping insights.
+
+#### 📂 Files Modified:
+- `src/app/api/vton/stylist/route.js` *(2-Phase stylist system prompt, sub-second Qwen engine, category grounding, 1-tap chip protocol)*
+- `src/components/FashionTrialRoom.jsx` *(Multi-turn chat history pass-through, interactive screenshot CTA button, responsive try-on chips)*
+- `src/components/TrustSheetView.jsx` *(Strict URL validation, no-scraper copy, ResearchProgressLoader)*
+- `DEVELOPMENT_LOG.md` *(Documented release)*
+
 ### 🗓️ 2026-10-28 (Feature 3 TrustSheet 1-Shot Geolocation Engine, Zero-Dummy Store Policy & Unified Cache Quota Shield)
 
 * **Git Commit**: `0a48a76`

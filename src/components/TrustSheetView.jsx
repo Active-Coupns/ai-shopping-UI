@@ -52,21 +52,173 @@ import { searchProducts } from "@/services/api";
 import { getCountryMeta, formatCountryPrice } from "@/lib/countryConfig";
 import { useUser, useClerk } from "@clerk/nextjs";
 
-const DEMO_GADGETS_IN = [
-  { label: "🧺 LG 8 Kg 5 Star Front Load", query: "LG 8 Kg 5 Star Inverter Direct Drive Front Load Washing Machine" },
-  { label: "🎧 boAt Nirvana Ion ANC", query: "boAt Nirvana Ion ANC TWS Earbuds" },
-  { label: "⌚ Noise ColorFit Pro 5", query: "Noise ColorFit Pro 5 Smartwatch" },
-  { label: "📺 Sony Bravia 55\" 4K", query: "Sony Bravia 55 inch 4K Ultra HD Smart LED Google TV" },
-  { label: "💻 Acer Swift Go 14 OLED", query: "Acer Swift Go 14 Intel Core Ultra 5 OLED" }
+const RESEARCH_INSIGHTS = [
+  "Paper specs don't always reflect daily reality. Sustained build quality and thermals matter more than headline numbers.",
+  "A product's true cost isn't just its purchase price — factoring expected lifespan and maintenance reveals its honest everyday value.",
+  "Realistic trade-offs exist in every product. The best purchase is the one whose trade-offs don't interfere with your daily routine.",
+  "Regional factors like local voltage variations, climate, and brand service presence directly impact long-term satisfaction."
 ];
 
-const DEMO_GADGETS_US = [
-  { label: "🧺 LG 4.5 Cu. Ft. Front Load", query: "LG 4.5 Cu Ft Front Load Washer with ColdWash Steam" },
-  { label: "🎧 Sony WH-1000XM5 ANC", query: "Sony WH-1000XM5 Wireless Noise Canceling Headphones" },
-  { label: "⌚ Apple Watch Series 10", query: "Apple Watch Series 10 GPS 46mm" },
-  { label: "📺 LG C4 55\" OLED 4K", query: "LG C4 55 inch 4K OLED Smart TV" },
-  { label: "💻 Apple MacBook Air M3", query: "Apple MacBook Air 13-inch M3 16GB RAM" }
+const RESEARCH_MILESTONES = [
+  { threshold: 0, text: "Reading product specifications & verified details" },
+  { threshold: 7, text: "Reviewing user feedback & community discussions across the web" },
+  { threshold: 16, text: "Evaluating practical trade-offs, longevity & daily operating cost" },
+  { threshold: 25, text: "Assessing local regional compatibility & warranty reality" },
+  { threshold: 34, text: "Synthesizing your comprehensive Trust Sheet report" }
 ];
+
+function ResearchProgressLoader({ inputVal, identifiedProduct }) {
+  const [elapsed, setElapsed] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setElapsed(prev => prev + 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const rawUrl = identifiedProduct?.url || inputVal || "";
+  let domain = "";
+  try {
+    const fullUrl = /^https?:\/\//i.test(rawUrl) ? rawUrl : `https://${rawUrl}`;
+    const parsed = new URL(fullUrl);
+    domain = parsed.hostname.replace(/^www\./i, "");
+  } catch (e) {
+    domain = "";
+  }
+
+  // Smooth realistic progress percentage up to 94%
+  const progressPercent = Math.min(
+    94,
+    elapsed <= 5 ? 12 + elapsed * 3 :
+    elapsed <= 15 ? 27 + (elapsed - 5) * 3 :
+    elapsed <= 25 ? 57 + (elapsed - 15) * 2 :
+    elapsed <= 35 ? 77 + (elapsed - 25) * 1.5 :
+    92 + (elapsed - 35) * 0.3
+  );
+
+  const insightIndex = Math.floor(elapsed / 7) % RESEARCH_INSIGHTS.length;
+
+  return (
+    <div className="w-full max-w-2xl mx-auto py-10 md:py-14 text-center animate-in fade-in duration-300">
+      <div className="bg-white rounded-3xl border border-indigo-100 shadow-xl p-6 sm:p-10 relative overflow-hidden">
+        {/* Soft Ambient Background Glows */}
+        <div className="absolute -top-24 -left-24 w-72 h-72 bg-indigo-500/10 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute -bottom-24 -right-24 w-72 h-72 bg-emerald-500/10 rounded-full blur-3xl animate-pulse delay-700" />
+
+        {/* Icon */}
+        <div className="relative w-14 h-14 mx-auto mb-4">
+          <div className="absolute inset-0 rounded-2xl bg-indigo-500/20 animate-ping" />
+          <div className="relative w-14 h-14 bg-gradient-to-tr from-brand-indigo to-brand-violet rounded-2xl flex items-center justify-center text-white shadow-lg shadow-indigo-500/30">
+            <ShieldCheck className="w-7 h-7 text-amber-300 animate-pulse" />
+          </div>
+        </div>
+
+        {/* Header Badge */}
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-bold uppercase tracking-wider mb-2.5">
+          <Sparkles className="w-3.5 h-3.5 text-indigo-600 animate-spin-slow" />
+          <span>AI Research In Progress</span>
+        </div>
+
+        {/* Title */}
+        <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mb-1">
+          Researching Across The Entire Internet...
+        </h2>
+
+        {/* Domain Tag */}
+        {domain ? (
+          <p className="text-xs text-slate-500 max-w-md mx-auto mb-5 font-medium">
+            Gathering product data from{" "}
+            <span className="font-bold text-indigo-700 bg-indigo-50/80 px-2 py-0.5 rounded-md border border-indigo-200/60 inline-flex items-center gap-1">
+              <ExternalLink className="w-3 h-3 inline" />
+              {domain}
+            </span>
+          </p>
+        ) : (
+          <p className="text-xs text-slate-500 max-w-md mx-auto mb-5 font-medium">
+            Reviewing product details and community feedback from across the web.
+          </p>
+        )}
+
+        {/* Progress Bar & Timer */}
+        <div className="max-w-md mx-auto mb-6">
+          <div className="flex items-center justify-between text-xs font-bold text-slate-500 mb-1.5 px-0.5">
+            <span className="flex items-center gap-1.5 text-indigo-600">
+              <Clock className="w-3.5 h-3.5" />
+              <span>Elapsed: {elapsed}s</span>
+            </span>
+            <span>{Math.round(progressPercent)}%</span>
+          </div>
+          <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden p-0.5 border border-slate-200">
+            <div 
+              className="h-full bg-gradient-to-r from-brand-indigo via-indigo-600 to-brand-violet rounded-full transition-all duration-500 ease-out"
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
+        </div>
+
+        {/* Sequential Milestones */}
+        <div className="max-w-md mx-auto space-y-2 text-left mb-6">
+          {RESEARCH_MILESTONES.map((m, idx) => {
+            const isCompleted = idx < RESEARCH_MILESTONES.length - 1 && elapsed >= RESEARCH_MILESTONES[idx + 1].threshold;
+            const isActive = !isCompleted && elapsed >= m.threshold;
+
+            return (
+              <div
+                key={idx}
+                className={`flex items-center gap-2.5 p-2.5 rounded-xl border transition-all text-xs ${
+                  isCompleted 
+                    ? "bg-emerald-50/50 border-emerald-200/70 text-slate-700" 
+                    : isActive 
+                    ? "bg-indigo-50/80 border-indigo-300 shadow-2xs font-bold text-indigo-950" 
+                    : "bg-slate-50/50 border-slate-200/50 text-slate-400"
+                }`}
+              >
+                <div className="shrink-0">
+                  {isCompleted ? (
+                    <div className="w-5 h-5 rounded-md bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-[10px]">
+                      ✓
+                    </div>
+                  ) : isActive ? (
+                    <div className="w-5 h-5 rounded-md bg-indigo-100 text-indigo-700 flex items-center justify-center">
+                      <Loader2 className="w-3 h-3 animate-spin text-indigo-600" />
+                    </div>
+                  ) : (
+                    <div className="w-5 h-5 rounded-md bg-slate-200/60 text-slate-400 flex items-center justify-center font-semibold text-[10px]">
+                      {idx + 1}
+                    </div>
+                  )}
+                </div>
+                <span className="flex-1 leading-tight">
+                  {m.text}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Rotating Smart Shopping Insight Card */}
+        <div className="max-w-md mx-auto p-3.5 rounded-2xl bg-amber-50/70 border border-amber-200/80 text-left shadow-2xs">
+          <div className="flex items-start gap-2.5">
+            <div className="p-1.5 rounded-lg bg-amber-100/90 text-amber-700 shrink-0 mt-0.5">
+              <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+            </div>
+            <div className="text-xs space-y-0.5">
+              <div className="font-bold text-amber-950 text-[11px] uppercase tracking-wide flex items-center gap-1.5">
+                <span>Smart Shopping Insight</span>
+                <span className="text-[10px] text-amber-600 font-semibold">• Tip {insightIndex + 1} of 4</span>
+              </div>
+              <p className="text-amber-900/90 leading-relaxed text-[11px] sm:text-xs">
+                {RESEARCH_INSIGHTS[insightIndex]}
+              </p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
+}
 
 export default function TrustSheetView({
   initialQuery = "",
@@ -78,7 +230,6 @@ export default function TrustSheetView({
   const { openSignIn } = useClerk();
   const countryMeta = getCountryMeta(country);
   const isUS = (country || "IN").toUpperCase() === "US";
-  const demoGadgets = isUS ? DEMO_GADGETS_US : DEMO_GADGETS_IN;
   const [inputVal, setInputVal] = useState(initialQuery || "");
   const [phase, setPhase] = useState("input"); // "input" | "identifying" | "questions" | "generating" | "dossier"
   const [identifiedProduct, setIdentifiedProduct] = useState(null);
@@ -121,7 +272,7 @@ export default function TrustSheetView({
     }
   }, [initialQuery]);
 
-  // Phase 1: Identify Product (URL via Zyte or Name via Search)
+  // Phase 1: Identify Product (URL-First Direct Flow)
   const handleIdentify = async (targetInput, existingProduct = null) => {
     if (!isSignedIn) {
       if (typeof openSignIn === "function") {
@@ -131,6 +282,19 @@ export default function TrustSheetView({
     }
     const clean = String(typeof targetInput === "string" ? targetInput : inputVal || "").trim();
     if (!clean && !existingProduct) return;
+
+    // Strict URL validation: When not selecting an existing alternative card, require a valid URL
+    const isUrl = /^https?:\/\//i.test(clean) || /^www\./i.test(clean) || /^[a-zA-Z0-9-]+\.[a-zA-Z]{2,}(\/.*)?$/i.test(clean);
+    if (!existingProduct && !isUrl) {
+      setError("Please paste a direct product link (URL). We need an exact product page with details and specifications to research it for you.");
+      setPhase("input");
+      return;
+    }
+
+    let targetUrl = clean;
+    if (!existingProduct && !/^https?:\/\//i.test(targetUrl)) {
+      targetUrl = `https://${targetUrl}`;
+    }
 
     setError(null);
     setPhase("generating");
@@ -146,7 +310,7 @@ export default function TrustSheetView({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "direct",
-          input: clean || existingProduct?.title,
+          input: existingProduct ? (existingProduct.url || existingProduct.title) : targetUrl,
           product: existingProduct || undefined,
           country: country || "IN"
         })
@@ -154,7 +318,7 @@ export default function TrustSheetView({
 
       const data = await res.json();
       if (!res.ok || !data.success) {
-        throw new Error(data.error || "Failed to inspect product. Please verify the URL or name.");
+        throw new Error(data.error || "Unable to retrieve product details. Please make sure the link is an exact product page.");
       }
 
       // Merge existing product data so real image, real price, real url from alternative card are NEVER lost!
@@ -1230,12 +1394,12 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
         <div className="flex items-center gap-1.5 sm:gap-2">
           <span className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 rounded-full text-[11px] sm:text-xs font-black bg-indigo-50 text-indigo-700 border border-indigo-200 shadow-2xs">
             <ShieldCheck className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-            <span className="hidden sm:inline">AI Trust Sheet™ • Hardware Reality Engine</span>
+            <span className="hidden sm:inline">AI Trust Sheet™ • Product Research</span>
             <span className="sm:hidden">AI Trust Sheet™</span>
           </span>
           <span className="hidden md:inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
             <Sparkles className="w-3.5 h-3.5 text-emerald-600 animate-spin-slow" />
-            360° Web Research
+            Whole-Internet Research
           </span>
         </div>
       </div>
@@ -1262,47 +1426,53 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
       {phase === "input" && (
         <div className="max-w-3xl mx-auto py-8 sm:py-12 text-center">
           
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-50/90 border border-indigo-200/80 text-indigo-700 text-xs font-black uppercase tracking-wider mb-4 shadow-2xs">
-            <Sparkles className="w-4 h-4 text-indigo-600 animate-pulse" />
-            <span>Zero-Research Shopping • Personal AI Hardware Investigator</span>
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-50/90 border border-indigo-200/80 text-indigo-700 text-xs font-bold uppercase tracking-wider mb-4 shadow-2xs">
+            <Sparkles className="w-3.5 h-3.5 text-indigo-600 animate-pulse" />
+            <span>Zero-Research Shopping • We Research For You</span>
           </div>
 
           <h1 className="text-2xl sm:text-3xl md:text-5xl font-black text-slate-900 tracking-tight mb-3 sm:mb-4 leading-tight">
-            Stop Doing Product Research. <br className="hidden sm:inline" />
+            Never Waste Hours on Product Research Again. <br className="hidden sm:inline" />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-indigo via-indigo-600 to-brand-violet">
-              We Deep-Investigate Everything For You.
+              We Research The Entire Internet For You.
             </span>
           </h1>
 
           <p className="text-xs sm:text-sm md:text-base text-slate-600 max-w-2xl mx-auto mb-8 font-medium leading-relaxed">
-            No more wasting hours watching reviews or decoding spec sheets. Simply paste any product link or type a model name — our AI investigates component quality, hidden gotchas, realistic lifespan, and whether it’s truly right for your workload and budget.
+            You don't need to spend hours watching review videos, decoding complex spec sheets, or browsing multiple tabs. Simply bring us the exact product link, and we'll research the product across the entire internet for you.
           </p>
 
-          {/* Search Console Input Form */}
+          {/* Search Console Input Form (Strict URL Input) */}
           <form 
             onSubmit={(e) => {
               e.preventDefault();
               handleIdentify(inputVal);
             }}
-            className="w-full max-w-2xl mx-auto mb-5"
+            className="w-full max-w-2xl mx-auto mb-4"
           >
             <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-2xl p-2 shadow-lg shadow-slate-100/80 hover:border-indigo-300 focus-within:border-brand-indigo focus-within:ring-4 focus-within:ring-indigo-500/10 transition-all">
               <div className="pl-2.5 shrink-0">
-                <Search className="w-5 h-5 text-indigo-600" />
+                <ExternalLink className="w-5 h-5 text-indigo-600" />
               </div>
 
               <input
                 type="text"
                 value={inputVal}
-                onChange={(e) => setInputVal(e.target.value)}
-                placeholder="Paste any product link OR type a model name — we'll research it for you..."
+                onChange={(e) => {
+                  setInputVal(e.target.value);
+                  if (error) setError(null);
+                }}
+                placeholder="Paste the exact product link here (e.g. Amazon, Walmart, Best Buy, boAt)..."
                 className="w-full bg-transparent text-slate-800 text-xs sm:text-sm font-medium focus:outline-hidden px-1 placeholder:text-slate-400"
               />
 
               {inputVal && (
                 <button
                   type="button"
-                  onClick={() => setInputVal("")}
+                  onClick={() => {
+                    setInputVal("");
+                    if (error) setError(null);
+                  }}
                   className="p-1 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
                 >
                   <X className="w-3.5 h-3.5" />
@@ -1321,35 +1491,32 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
             </div>
           </form>
 
-          {/* Sample Gadgets Across Multiple Categories */}
-          <div className="flex flex-wrap items-center justify-center gap-2 max-w-2xl mx-auto">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mr-1">
-              Popular Samples:
-            </span>
-            {demoGadgets.map((item, idx) => (
-              <button
-                key={idx}
-                type="button"
-                onClick={() => {
-                  setInputVal(item.query);
-                  handleIdentify(item.query);
-                }}
-                className="px-3 py-1 rounded-xl text-xs font-semibold bg-slate-50 hover:bg-indigo-50/80 text-slate-700 hover:text-indigo-700 border border-slate-200 transition-all cursor-pointer active:scale-95 shadow-2xs"
-              >
-                {item.label}
-              </button>
-            ))}
+          {/* Product Page Link Guideline Box */}
+          <div className="max-w-2xl mx-auto text-left p-4 rounded-2xl bg-slate-50/90 border border-slate-200/90 shadow-2xs">
+            <div className="flex items-start gap-3">
+              <div className="p-2 rounded-xl bg-indigo-100/80 text-indigo-700 shrink-0 mt-0.5">
+                <Info className="w-4 h-4" />
+              </div>
+              <div className="text-xs space-y-1">
+                <h4 className="font-bold text-slate-800">
+                  Bring an exact product page link for the best research:
+                </h4>
+                <p className="text-slate-600 leading-relaxed text-[11px] sm:text-xs">
+                  Paste a direct link to the product's official page where specifications, pricing, and details are visible (from any store or brand website). This ensures we have the necessary data to research the product thoroughly across the entire internet.
+                </p>
+              </div>
+            </div>
           </div>
 
-          {/* Guarantee Badges */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-12 max-w-3xl mx-auto text-left">
+          {/* 3 Value Pillars */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-10 max-w-3xl mx-auto text-left">
             <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-2xs">
               <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-2.5">
-                <Cpu className="w-4 h-4" />
+                <Clock className="w-4 h-4" />
               </div>
-              <h4 className="text-xs font-bold text-slate-900 mb-0.5">We Do The Heavy Research</h4>
+              <h4 className="text-xs font-bold text-slate-900 mb-0.5">Save Hours of Time</h4>
               <p className="text-[11px] text-slate-500 leading-relaxed">
-                No need to read 50+ reviews or decipher spec sheets. We extract real component wattages, panel quality, and build limits.
+                No need to spend hours watching review videos, checking endless forums, or comparing tabs. We handle the heavy research for you.
               </p>
             </div>
 
@@ -1357,9 +1524,9 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
               <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-2.5">
                 <ShieldCheck className="w-4 h-4" />
               </div>
-              <h4 className="text-xs font-bold text-slate-900 mb-0.5">Is It Truly Right For You?</h4>
+              <h4 className="text-xs font-bold text-slate-900 mb-0.5">Researched Across The Web</h4>
               <p className="text-[11px] text-slate-500 leading-relaxed">
-                Zero sponsored brand fluff. We evaluate whether this exact product fits your actual workload, daily habits, and budget.
+                We gather real-world feedback, community discussions, and specifications from across the internet to give you a well-rounded picture.
               </p>
             </div>
 
@@ -1367,9 +1534,9 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
               <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center mb-2.5">
                 <Coins className="w-4 h-4" />
               </div>
-              <h4 className="text-xs font-bold text-slate-900 mb-0.5">Real Lifespan &amp; Daily Cost</h4>
+              <h4 className="text-xs font-bold text-slate-900 mb-0.5">Practical, Balanced Insights</h4>
               <p className="text-[11px] text-slate-500 leading-relaxed">
-                Calculates true ₹/day running cost, 1-3+ year hardware aging stages, and Indian operating conditions (heat &amp; water).
+                Get an honest breakdown of practical benefits, realistic trade-offs, and estimated daily operating cost for everyday use.
               </p>
             </div>
           </div>
@@ -1377,52 +1544,13 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
       )}
 
       {/* ============================================================== */}
-      {/* SCANNING RADAR LOADER (While Identifying or Generating)        */}
+      {/* RESEARCH IN PROGRESS LOADER (While Identifying or Generating)  */}
       {/* ============================================================== */}
       {(phase === "identifying" || phase === "generating") && (
-        <div className="w-full max-w-2xl mx-auto py-12 md:py-16 text-center animate-in fade-in duration-300">
-          <div className="bg-white rounded-3xl border border-indigo-100 shadow-xl p-8 sm:p-12 relative overflow-hidden">
-            <div className="absolute -top-24 -left-24 w-72 h-72 bg-indigo-500/10 rounded-full blur-3xl animate-pulse" />
-            <div className="absolute -bottom-24 -right-24 w-72 h-72 bg-emerald-500/10 rounded-full blur-3xl animate-pulse delay-700" />
-
-            <div className="relative w-16 h-16 mx-auto mb-6">
-              <div className="absolute inset-0 rounded-2xl bg-indigo-500/20 animate-ping" />
-              <div className="relative w-16 h-16 bg-gradient-to-tr from-brand-indigo to-brand-violet rounded-2xl flex items-center justify-center text-white shadow-xl shadow-indigo-500/30">
-                <ShieldCheck className="w-8 h-8 text-amber-300 animate-pulse" />
-              </div>
-            </div>
-
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-black uppercase tracking-wider mb-4">
-              <Sparkles className="w-3.5 h-3.5 text-indigo-600 animate-spin-slow" />
-              <span>AI Product Truth Engine Active</span>
-            </div>
-
-            <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mb-2">
-              Gathering Specifications & Synthesizing AI Trust Dossier...
-            </h2>
-
-            <p className="text-xs sm:text-sm text-slate-500 max-w-md mx-auto mb-8 font-medium">
-              "Cross-referencing verified merchant specifications, operating limits, and real-world performance metrics to generate your 1-shot definitive buying verdict..."
-            </p>
-
-            <div className="max-w-md mx-auto space-y-2.5 text-left">
-              <div className="flex items-center gap-3 p-3 rounded-2xl bg-slate-50 border border-slate-200/80 text-xs">
-                <div className="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-black text-xs shrink-0">✓</div>
-                <span className="font-semibold text-slate-800">
-                  {phase === "identifying" ? "Product Model & Live Pricing Verified" : "Hardware Component Architecture Mapped"}
-                </span>
-              </div>
-              <div className="flex items-center gap-3 p-3 rounded-2xl bg-indigo-50/70 border border-indigo-200 text-xs animate-pulse">
-                <div className="w-6 h-6 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center font-black text-xs shrink-0">
-                  <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-600" />
-                </div>
-                <span className="font-bold text-indigo-950">
-                  {phase === "identifying" ? "Analyzing Real-World Durability & Critical Gotchas..." : "Generating Unbiased Buying Decision & Trust Score..."}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
+        <ResearchProgressLoader 
+          inputVal={inputVal} 
+          identifiedProduct={identifiedProduct} 
+        />
       )}
 
       {/* ============================================================== */}
