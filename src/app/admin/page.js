@@ -974,17 +974,17 @@ export default function AdminPage() {
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800">
-                  <span className="text-xs font-bold text-slate-300 block">OpenWebNinja Google Shopping</span>
+                  <span className="text-xs font-bold text-slate-300 block">Real-Time Product Search Network</span>
                   <span className="text-sm font-black text-emerald-400 mt-1 block">Active (PAYG)</span>
                   <span className="text-[10px] text-slate-500 block mt-1">₹{m.financialBurn.liveSearchCostINR.toFixed(2)} burned today</span>
                 </div>
                 <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800">
-                  <span className="text-xs font-bold text-slate-300 block">Groq + Gemini AI Engines</span>
+                  <span className="text-xs font-bold text-slate-300 block">Multi-Tier Neural AI Engines</span>
                   <span className="text-sm font-black text-emerald-400 mt-1 block">Active (Free Tier / ₹0)</span>
                   <span className="text-[10px] text-slate-500 block mt-1">Sub-second inference</span>
                 </div>
                 <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800">
-                  <span className="text-xs font-bold text-slate-300 block">Zyte Brand Coupon Scraper</span>
+                  <span className="text-xs font-bold text-slate-300 block">Enterprise Brand Coupon Engine</span>
                   <span className="text-sm font-black text-emerald-400 mt-1 block">Active ($5 Trial Credit)</span>
                   <span className="text-[10px] text-slate-500 block mt-1">D2C brand promo extractor</span>
                 </div>
@@ -1008,7 +1008,7 @@ export default function AdminPage() {
                   </p>
                 </div>
                 <span className="px-2.5 py-1 rounded-full bg-indigo-500/10 text-indigo-300 text-xs font-bold border border-indigo-500/20">
-                  Redis Powered (10ms Latency)
+                  High-Speed Cache (10ms Latency)
                 </span>
               </div>
             </div>
@@ -1026,7 +1026,7 @@ export default function AdminPage() {
                   key: "aiConciergeChat",
                   title: "💬 Pre-Search AI Shopping Concierge",
                   desc: "Controls the conversational shopping assistant modal. If LLM provider experiences delays, toggle OFF.",
-                  tag: "Groq / LLM"
+                  tag: "Neural LLM Pipeline"
                 },
                 {
                   key: "aiSpecRealityCheck",

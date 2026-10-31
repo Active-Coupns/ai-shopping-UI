@@ -51,8 +51,13 @@ export function safeClientError(err, fallbackMessage = "A secure server error oc
 
   // Strip internal provider names or sensitive infrastructure cues
   const userSafe = sanitized
-    .replace(/OpenWebNinja/gi, "Product Search Network")
-    .replace(/Groq/gi, "AI Engine")
+    .replace(/OpenWeb(?:Ninja)?/gi, "Product Search Network")
+    .replace(/Groq|Grok/gi, "AI Engine")
+    .replace(/Gemini/gi, "Neural Intelligence Engine")
+    .replace(/OpenRouter/gi, "AI Gateway")
+    .replace(/Zyte/gi, "Web Search Gateway")
+    .replace(/PixelAPI/gi, "Neural Try-On Engine")
+    .replace(/Clerk/gi, "Identity Provider")
     .replace(/RapidAPI/gi, "Affiliate Gateway")
     .replace(/Upstash|Redis/gi, "High-Speed Cache")
     .replace(/ECONNREFUSED|ENOTFOUND|ETIMEDOUT/g, "SERVICE_TIMEOUT");

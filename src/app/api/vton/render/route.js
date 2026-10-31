@@ -487,7 +487,7 @@ export async function POST(request) {
           success: true,
           renderedImageUrl: cachedResult,
           processingTimeMs: Date.now() - startTime,
-          engine: "PixelAPI-VTON-Cache",
+          engine: "Neural-VTON-Cache",
           garmentTitle: garmentTitle || "Tailored Fit",
           freeTier: {
             limit: 3,
@@ -615,7 +615,7 @@ export async function POST(request) {
                 success: true,
                 renderedImageUrl: finalOutputUrl,
                 processingTimeMs: Date.now() - startTime,
-                engine: "PixelAPI-Neural-VTON",
+                engine: "Neural-VTON-Core",
                 garmentTitle: garmentTitle || "Tailored Fit",
                 freeTier: {
                   limit: 3,

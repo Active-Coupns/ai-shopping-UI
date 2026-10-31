@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getCouponsForStore } from "@/services/couponService";
 import { isFeatureEnabled } from "@/services/featureFlags";
 import { recordCrashException } from "@/services/crashVault";
+import { safeClientError } from "@/lib/errorShield";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +17,7 @@ export async function GET(req) {
       return NextResponse.json({
         success: false,
         error: "FEATURE_DISABLED",
-        message: "Brand Coupon Scraper is temporarily paused by the administrator."
+        message: "Coupon Discovery is temporarily paused by the administrator."
       }, { status: 503 });
     }
 
@@ -56,7 +57,7 @@ export async function GET(req) {
       severity: "error"
     }).catch(() => {});
     return NextResponse.json(
-      { error: "Failed to fetch coupons", details: error.message },
+      { error: "Failed to fetch coupons", details: safeClientError(error).message },
       { status: 500 }
     );
   }

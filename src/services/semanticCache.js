@@ -399,7 +399,7 @@ Return ONLY valid JSON (no markdown):
           const otherProducts = eligibleInventory.filter(p => !matchedProducts.includes(p));
           return {
             products: [...matchedProducts, ...otherProducts],
-            strategy: `AI_SHOPKEEPER_${aiResult.provider.toUpperCase()}`,
+            strategy: "AI_SHOPKEEPER_CORE",
             reason: decision.reason
           };
         }

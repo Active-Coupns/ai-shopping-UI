@@ -22,16 +22,16 @@ export async function POST(request) {
       const client = await (typeof clerkClient === "function" ? clerkClient() : clerkClient);
       await client.users.deleteUser(userId);
     } catch (clerkErr) {
-      console.error("[Account Deletion] Clerk deletion error:", clerkErr);
+      console.error("[Account Deletion] Auth directory deletion error:", clerkErr);
       return NextResponse.json(
-        { success: false, error: "CLERK_ERROR", message: "Could not remove user from auth provider. Please contact support." },
+        { success: false, error: "AUTH_SERVICE_ERROR", message: "Could not remove user from identity directory. Please contact support." },
         { status: 500 }
       );
     }
 
     return NextResponse.json({
       success: true,
-      message: "Your Zippy account and all associated personal data have been permanently erased."
+      message: "Your account and all associated personal data have been permanently erased."
     }, { status: 200 });
 
   } catch (err) {

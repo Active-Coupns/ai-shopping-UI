@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getAuth } from "@clerk/nextjs/server";
 import { checkRateLimit, checkSharedIpQuota } from "@/services/rateLimiter";
 import { calculateBestCartCoupon } from "@/services/couponService";
+import { safeClientError } from "@/lib/errorShield";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
 
@@ -252,7 +253,7 @@ Important:
   } catch (error) {
     console.error("[Cart Analysis Route Error]:", error);
     return NextResponse.json(
-      { error: "Cart analysis failed", details: error.message },
+      { error: "Cart analysis failed", details: safeClientError(error).message },
       { status: 500 }
     );
   }

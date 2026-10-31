@@ -292,7 +292,7 @@ export default function SmartPurchaseTerminal({
                     AI Buy Timing Verdict
                   </h3>
                   <span className="text-[11px] font-bold text-emerald-700">
-                    Groq Intelligence ({aiTiming?.confidencePercent || 85}% Confidence)
+                    AI Price Intelligence ({aiTiming?.confidencePercent || 85}% Confidence)
                   </span>
                 </div>
               </div>

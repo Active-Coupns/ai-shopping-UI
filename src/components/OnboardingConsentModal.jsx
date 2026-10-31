@@ -266,7 +266,7 @@ export default function OnboardingConsentModal({ onConsentComplete }) {
           {/* Action Footer */}
           <div className="p-4 sm:p-5 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3">
             <span className="text-[11px] text-slate-500 text-center sm:text-left">
-              स्वीकृति का समय और ऑडिट आईडी Upstash Redis में सुरक्षित दर्ज रहेगा।
+              स्वीकृति का समय और ऑडिट आईडी सिक्योर क्लाउड वॉल्ट में सुरक्षित दर्ज रहेगा।
             </span>
             <div className="flex items-center gap-2.5 w-full sm:w-auto">
               <button
