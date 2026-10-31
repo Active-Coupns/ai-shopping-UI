@@ -12,7 +12,7 @@
 import { getTravelDealsByCountry } from "@/services/travelDealsDatabase";
 import { clampString, checkSearchContentSafety } from "@/services/securityShield";
 
-const GROQ_API_KEY = process.env.GROQ_API_KEY || "";
+import { aiRouter } from "./aiRouter.js";
 
 // Cache for resolved entity verifications (TTL: 24h)
 const ENTITY_VERIFICATION_CACHE = new Map();
@@ -145,12 +145,11 @@ export async function verifyTravelEntity(rawQuery, activeCategory = "flights", c
     return result;
   }
 
-  // 2. LAYER 2 & 3: Groq Entity Knowledge & Industry Categorization
+  // 2. LAYER 2 & 3: Multi-Tier AI Entity Knowledge
   let groqAnalysis = null;
-  if (GROQ_API_KEY) {
-    try {
-      const safeQuery = query.replace(/"/g, '\\"').replace(/[\r\n\t]/g, " ");
-      const prompt = `You are the ShopSmart AI Entity Gatekeeper.
+  try {
+    const safeQuery = String(query || '').replace(/"/g, "'").trim();
+    const prompt = `You are the ShopSmart AI Entity Gatekeeper.
 A user typed the following search query: "${safeQuery}" in the "${activeCategory}" tab for country "${country}".
 
 Analyze whether this refers to a real, authentic commercial brand, company, app, airline, hotel, or booking website.
@@ -176,31 +175,20 @@ OUTPUT JSON ONLY:
   "briefDescription": string
 }`;
 
-      const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${GROQ_API_KEY}`
-        },
-        body: JSON.stringify({
-          model: "openai/gpt-oss-120b",
-          messages: [{ role: "user", content: prompt }],
-          temperature: 0.1,
-          response_format: { type: "json_object" }
-        }),
-        signal: AbortSignal.timeout(4000)
-      });
+    const aiRes = await aiRouter.complete({
+      prompt,
+      systemPrompt: "You are the ShopSmart AI Entity Gatekeeper. Always respond in valid JSON.",
+      jsonMode: true,
+      temperature: 0.1,
+      maxTokens: 250,
+      timeoutMs: 2500
+    });
 
-      if (res.ok) {
-        const json = await res.json();
-        const content = json.choices?.[0]?.message?.content;
-        if (content) {
-          groqAnalysis = JSON.parse(content);
-        }
-      }
-    } catch (err) {
-      console.warn("[Entity Resolver] Groq analysis timed out or failed:", err.message);
+    if (aiRes?.parsed) {
+      groqAnalysis = aiRes.parsed;
     }
+  } catch (err) {
+    console.warn("[Entity Resolver] AI Router error:", err.message);
   }
 
   // 3. Fallback Heuristics if Groq was unavailable

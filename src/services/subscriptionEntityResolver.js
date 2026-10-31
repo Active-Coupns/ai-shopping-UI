@@ -12,7 +12,7 @@
 import { getSubscriptionsCatalog } from "@/data/subscriptionsRegistry";
 import { clampString, checkSearchContentSafety } from "@/services/securityShield";
 
-const GROQ_API_KEY = process.env.GROQ_API_KEY || "";
+import { aiRouter } from "./aiRouter.js";
 const ENTITY_CACHE = new Map();
 
 /**
@@ -131,11 +131,10 @@ export async function verifySubscriptionEntity(rawQuery, country = "IN") {
     return result;
   }
 
-  // 2. LAYER 2 & 3: Groq Entity Knowledge & Categorization
+  // 2. LAYER 2 & 3: Multi-Tier AI Entity Knowledge
   let groqAnalysis = null;
-  if (GROQ_API_KEY) {
-    try {
-      const prompt = `You are the ShopSmart AI Subscription Entity Gatekeeper.
+  try {
+    const prompt = `You are the ShopSmart AI Subscription Entity Gatekeeper.
 A user searched for: "${query}" in the Subscriptions & OTT section for country "${country}".
 
 Analyze whether this refers to a real, authentic commercial digital subscription, OTT streaming app, music/audio platform, cloud storage, fitness subscription, or digital pass.
@@ -143,7 +142,7 @@ Analyze whether this refers to a real, authentic commercial digital subscription
 RULES:
 1. "isRealBrand": true if this is a real-world commercial brand, company, app, airline, hotel, or subscription service (e.g. "MUBI", "Hayu", "IndiGo", "Netflix", "Zomato").
    If it is random gibberish, a common dictionary word, or non-existent (e.g. "asdfgh", "flyfakexyz", "fakestream99"), return "isRealBrand": false.
-2. "industry": Choose from exactly one of: ["subscriptions", "flights", "hotels", "events", "ecommerce", "fashion", "food", "other"].
+2. "industry": Choose from exactly one of: ["subscriptions", "flights", "hotels", "events", "ecommerce", "fashion", "other"].
 3. "canonicalName": Clean, official title casing (e.g. "Lionsgate Play", "MUBI").
 4. "domain": Likely primary website domain without protocol (e.g. "lionsgateplay.com", "mubi.com").
 5. "briefDescription": One short sentence explaining what it is.
@@ -157,31 +156,20 @@ OUTPUT JSON ONLY:
   "briefDescription": string
 }`;
 
-      const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${GROQ_API_KEY}`
-        },
-        body: JSON.stringify({
-          model: "openai/gpt-oss-120b",
-          messages: [{ role: "user", content: prompt }],
-          temperature: 0.1,
-          response_format: { type: "json_object" }
-        }),
-        signal: AbortSignal.timeout(4000)
-      });
+    const aiRes = await aiRouter.complete({
+      prompt,
+      systemPrompt: "You are the ShopSmart AI Subscription Entity Gatekeeper. Always respond in valid JSON.",
+      jsonMode: true,
+      temperature: 0.1,
+      maxTokens: 250,
+      timeoutMs: 2500
+    });
 
-      if (res.ok) {
-        const json = await res.json();
-        const content = json.choices?.[0]?.message?.content;
-        if (content) {
-          groqAnalysis = JSON.parse(content);
-        }
-      }
-    } catch (err) {
-      console.warn("[Subscription Resolver] Groq analysis timed out or failed:", err.message);
+    if (aiRes?.parsed) {
+      groqAnalysis = aiRes.parsed;
     }
+  } catch (err) {
+    console.warn("[Subscription Resolver] AI Router error:", err.message);
   }
 
   // 3. Fallback Heuristics if Groq was unavailable

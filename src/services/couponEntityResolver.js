@@ -11,8 +11,8 @@
 
 import { MASTER_COUPON_DATABASE, matchStoreKey } from "./couponDatabase.js";
 import { clampString, checkSearchContentSafety } from "./securityShield.js";
+import { aiRouter } from "./aiRouter.js";
 
-const GROQ_API_KEY = process.env.GROQ_API_KEY || "";
 const STORE_CACHE = new Map();
 
 /**
@@ -127,11 +127,10 @@ export async function verifyStoreEntity(rawQuery, country = "IN") {
     return result;
   }
 
-  // 2. LAYER 2 & 3: Groq Entity Knowledge & Categorization
+  // 2. LAYER 2 & 3: Multi-Tier AI Entity Knowledge & Categorization
   let groqAnalysis = null;
-  if (GROQ_API_KEY) {
-    try {
-      const prompt = `You are the ShopSmart AI E-Commerce & Retail Store Gatekeeper.
+  try {
+    const prompt = `You are the ShopSmart AI E-Commerce & Retail Store Gatekeeper.
 A user searched for: "${query}" in the Coupons & Store Deals section for country "${country}".
 
 Analyze whether this refers to a real, authentic commercial e-commerce store, retail brand, food delivery app, fashion brand, electronics store, or beauty shop (e.g. "The Souled Store", "Snitch", "Boat", "Lenskart", "Mamaearth", "Nykaa", "Zara", "IKEA", "Decathlon", "Croma", "Sephora", "Lululemon").
@@ -155,31 +154,20 @@ OUTPUT JSON ONLY:
   "briefDescription": string
 }`;
 
-      const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${GROQ_API_KEY}`
-        },
-        body: JSON.stringify({
-          model: "openai/gpt-oss-120b",
-          messages: [{ role: "user", content: prompt }],
-          temperature: 0.1,
-          response_format: { type: "json_object" }
-        }),
-        signal: AbortSignal.timeout(4000)
-      });
+    const aiRes = await aiRouter.complete({
+      prompt,
+      systemPrompt: "You are the ShopSmart AI E-Commerce & Retail Store Gatekeeper. Always respond in valid JSON.",
+      jsonMode: true,
+      temperature: 0.1,
+      maxTokens: 250,
+      timeoutMs: 2500
+    });
 
-      if (res.ok) {
-        const json = await res.json();
-        const content = json.choices?.[0]?.message?.content;
-        if (content) {
-          groqAnalysis = JSON.parse(content);
-        }
-      }
-    } catch (err) {
-      console.warn("[Store Gatekeeper] Groq analysis error:", err.message);
+    if (aiRes?.parsed) {
+      groqAnalysis = aiRes.parsed;
     }
+  } catch (err) {
+    console.warn("[Store Gatekeeper] AI Router analysis error:", err.message);
   }
 
   // 3. Fallback Heuristics if Groq was unavailable

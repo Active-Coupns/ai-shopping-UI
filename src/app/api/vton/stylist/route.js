@@ -4,7 +4,7 @@ import { checkRateLimit, extractTrustedClientIp } from '@/services/rateLimiter';
 import { consultFashionStylist } from '@/services/fashionStylist';
 import { FASHION_CATALOG } from '@/data/fashionCatalog';
 
-const GROQ_API_KEY = process.env.GROQ_API_KEY || '';
+import { aiRouter } from '@/services/aiRouter';
 
 // Strict Prompt Injection & Jailbreak Defense Regex
 const JAILBREAK_REGEX = /\b(ignore (all|previous|prior|above)|system prompt|reveal (key|system|instructions|token|secret)|developer mode|jailbreak|override rules?|forget instructions|dan mode|bypass (filters?|rules?))\b/i;
@@ -198,43 +198,18 @@ Output strictly valid JSON:
 
         groqMessages.push({ role: "user", content: sanitizedUserMessage });
 
-        // Primary: Qwen 27B (Ultra-fast 600 t/s, 700ms latency, 100% JSON compliance)
-        let groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${GROQ_API_KEY}`,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            model: "qwen/qwen3.8-27b",
-            messages: groqMessages,
-            temperature: 0.3,
-            response_format: { type: "json_object" }
-          }),
-          signal: AbortSignal.timeout(6000)
+        const conversationText = groqMessages.slice(1).map(m => `[${m.role.toUpperCase()}]: ${m.content}`).join("\n\n");
+        const aiRes = await aiRouter.complete({
+          prompt: conversationText,
+          systemPrompt,
+          jsonMode: true,
+          temperature: 0.3,
+          maxTokens: 500,
+          timeoutMs: 4000
         });
 
-        // Fallback to GPT-OSS 120B if Qwen is unavailable
-        if (!groqRes.ok) {
-          groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-            method: "POST",
-            headers: {
-              "Authorization": `Bearer ${GROQ_API_KEY}`,
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-              model: "openai/gpt-oss-120b",
-              messages: groqMessages,
-              temperature: 0.3,
-              response_format: { type: "json_object" }
-            }),
-            signal: AbortSignal.timeout(7000)
-          });
-        }
-
-        if (groqRes.ok) {
-          const groqData = await groqRes.json();
-          const parsed = JSON.parse(groqData.choices[0].message.content);
+        const parsed = aiRes?.parsed;
+        if (parsed) {
           if (parsed && parsed.reply) {
             let finalRecommendedProducts = baseResponse.recommendedProducts;
 

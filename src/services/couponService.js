@@ -1,6 +1,18 @@
 import { MASTER_COUPON_DATABASE, matchStoreKey } from "./couponDatabase.js";
 import { getCountryMeta } from "@/lib/countryConfig.js";
 import { discoverOnDemandStoreCoupons } from "./couponOnDemandService.js";
+import { aiRouter } from "./aiRouter.js";
+
+const SEMANTIC_INTENT_MAP = [
+  { keywords: ["pizza", "burger", "biryani", "food", "dinner", "lunch", "hungry", "cravings", "restaurant", "meal", "khaana"], storeKey: "zomato" },
+  { keywords: ["grocery", "groceries", "milk", "vegetables", "fruits", "10 min", "snacks", "ration"], storeKey: "blinkit" },
+  { keywords: ["cab", "taxi", "ride", "auto", "commute", "gadi"], storeKey: "uber" },
+  { keywords: ["clothes", "fashion", "shirt", "jeans", "dress", "shoes", "sneakers", "kapde"], storeKey: "myntra" },
+  { keywords: ["movie", "cinema", "tickets", "show", "film"], storeKey: "bookmyshow" },
+  { keywords: ["flight", "hotel", "holiday", "vacation", "trip"], storeKey: "makemytrip" },
+  { keywords: ["beauty", "makeup", "skincare", "cosmetics"], storeKey: "nykaa" },
+  { keywords: ["gadgets", "phone", "electronics", "online shopping"], storeKey: "amazon" }
+];
 
 /**
  * Real-Time On-Demand Coupon Evaluation Engine
@@ -13,7 +25,21 @@ export async function getCouponsForStore(queryOrStore = "", country = "IN") {
   // 1. Lookup in Live Verified Master Database
   let storeData = normalizedKey ? MASTER_COUPON_DATABASE[normalizedKey] : null;
 
-  // 2. Fallback / Fuzzy Search across all store categories if specific key wasn't matched
+  // 2. Semantic Intent & Category Mapping (Zero-latency RAG layer)
+  if (!storeData && queryOrStore) {
+    const qLower = queryOrStore.toLowerCase();
+    for (const mapping of SEMANTIC_INTENT_MAP) {
+      if (mapping.keywords.some(kw => qLower.includes(kw))) {
+        if (MASTER_COUPON_DATABASE[mapping.storeKey]) {
+          storeData = MASTER_COUPON_DATABASE[mapping.storeKey];
+          console.log(`[Coupon RAG] Mapped "${queryOrStore}" to verified merchant "${storeData.name}"`);
+          break;
+        }
+      }
+    }
+  }
+
+  // 3. Fallback / Fuzzy Search across all store categories if specific key wasn't matched
   if (!storeData) {
     const queryLower = queryOrStore.toLowerCase();
 

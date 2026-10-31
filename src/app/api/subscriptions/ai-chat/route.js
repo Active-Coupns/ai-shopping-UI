@@ -12,9 +12,7 @@ import { SUBSCRIPTIONS_SEO_MAP_UK } from "@/data/subscriptionsSeoDataUK";
 import { SUBSCRIPTIONS_SEO_MAP_CA } from "@/data/subscriptionsSeoDataCA";
 import { SUBSCRIPTIONS_SEO_MAP_AU } from "@/data/subscriptionsSeoDataAU";
 import { SUBSCRIPTIONS_SEO_MAP_AE } from "@/data/subscriptionsSeoDataAE";
-
-const GROQ_API_KEY = process.env.GROQ_API_KEY || "";
-const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || "";
+import { aiRouter } from "@/services/aiRouter";
 
 // Compact India catalog summary for prompt injection
 const COMPACT_CATALOG_SUMMARY = INDIA_SUBSCRIPTIONS_CATALOG.map((sub) => {
@@ -644,70 +642,26 @@ ${COMPACT_CATALOG_SUMMARY}`;
 
     let structuredData = null;
 
-    // 1. Try Groq (Sub-Second response)
-    if (GROQ_API_KEY) {
-      try {
-        const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${GROQ_API_KEY}`
-          },
-          body: JSON.stringify({
-            model: "qwen/qwen3.8-27b",
-            messages: conversationMessages,
-            temperature: 0.2,
-            response_format: { type: "json_object" }
-          }),
-          signal: AbortSignal.timeout(8000)
-        });
+    // 1. Dispatch via Multi-Tier Centralized AI Router (Groq/OpenRouter/Gemini)
+    try {
+      const promptCombined = conversationMessages
+        .map(m => `[${m.role.toUpperCase()}]: ${m.content}`)
+        .join("\n\n");
 
-        if (groqRes.ok) {
-          const data = await groqRes.json();
-          const content = data.choices?.[0]?.message?.content;
-          if (content) {
-            structuredData = parseAiJson(content);
-          }
-        }
-      } catch (err) {
-        console.warn("[Subscriptions AI Chat] Groq error:", err.message);
+      const aiRes = await aiRouter.complete({
+        prompt: `<user_inquiry>\n${userMessage}\n</user_inquiry>`,
+        systemPrompt,
+        temperature: 0.2,
+        jsonMode: true,
+        maxTokens: 750,
+        timeoutMs: 4000
+      });
+
+      if (aiRes?.parsed) {
+        structuredData = aiRes.parsed;
       }
-    }
-
-    // 2. Fallback to OpenRouter
-    if (!structuredData && OPENROUTER_API_KEY) {
-      const orModels = ["liquid/lfm-2.5-2.6b:free", "google/gemini-2.0-flash-001"];
-      for (const model of orModels) {
-        try {
-          const orRes = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
-              "HTTP-Referer": "http://localhost:3000",
-              "X-Title": "ShopSmart Subscriptions Advisor"
-            },
-            body: JSON.stringify({
-              model,
-              messages: conversationMessages,
-              temperature: 0.2,
-              max_tokens: 700
-            }),
-            signal: AbortSignal.timeout(10000)
-          });
-
-          if (orRes.ok) {
-            const data = await orRes.json();
-            const content = data.choices?.[0]?.message?.content;
-            if (content) {
-              structuredData = parseAiJson(content);
-              if (structuredData) break;
-            }
-          }
-        } catch (err) {
-          console.warn(`[Subscriptions AI Chat] OpenRouter ${model} error:`, err.message);
-        }
-      }
+    } catch (err) {
+      console.warn("[Subscriptions AI Chat] AI Router error:", err.message);
     }
 
     // 3. Fallback rule-based catalog engine

@@ -3,7 +3,7 @@ import { getAuth } from "@clerk/nextjs/server";
 import { sanitizeAiPrompt, checkSearchContentSafety, clampString } from "@/services/securityShield";
 import { extractTrustedClientIp, checkUnifiedApiQuota } from "@/services/rateLimiter";
 
-const GROQ_API_KEY = process.env.GROQ_API_KEY || "";
+import { aiRouter } from "@/services/aiRouter";
 
 export const maxDuration = 30;
 
@@ -132,50 +132,26 @@ OUTPUT STRICTLY AS VALID JSON MATCHING THIS EXACT SCHEMA:
 
     let aiResult = null;
 
-    if (GROQ_API_KEY) {
-      try {
-        const groqMessages = [
-          { role: "system", content: systemPrompt },
-          ...history.map(h => ({ role: h.role === "assistant" ? "assistant" : "user", content: clampString(String(h.content || ""), 300) })),
-          { role: "user", content: `<user_inquiry>\n${sanitizedUserMessage}\n</user_inquiry>` }
-        ];
+    try {
+      const groqMessages = [
+        ...history.map(h => `[${(h.role === "assistant" ? "AI" : "User")}]: ${clampString(String(h.content || ""), 300)}`),
+        `[USER_INQUIRY]: ${sanitizedUserMessage}`
+      ].join("\n\n");
 
-        const candidateModels = ["qwen/qwen3.8-27b", "openai/gpt-oss-120b"];
-        for (const modelName of candidateModels) {
-          try {
-            const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${GROQ_API_KEY}`
-              },
-              body: JSON.stringify({
-                model: modelName,
-                messages: groqMessages,
-                temperature: 0.1,
-                response_format: { type: "json_object" }
-              }),
-              signal: AbortSignal.timeout(9000)
-            });
+      const res = await aiRouter.complete({
+        prompt: groqMessages,
+        systemPrompt,
+        jsonMode: true,
+        temperature: 0.1,
+        maxTokens: 750,
+        timeoutMs: 3500
+      });
 
-            if (groqRes.ok) {
-              const json = await groqRes.json();
-              const content = json.choices?.[0]?.message?.content;
-              if (content) {
-                aiResult = JSON.parse(content);
-                break; // Successfully generated strategy
-              }
-            } else {
-              const errText = await groqRes.text().catch(() => "");
-              console.warn(`[Travel AI Advisor] Groq (${modelName}) returned HTTP ${groqRes.status}:`, errText);
-            }
-          } catch (mErr) {
-            console.warn(`[Travel AI Advisor] Model ${modelName} error:`, mErr.message);
-          }
-        }
-      } catch (err) {
-        console.warn("[Travel AI Advisor] Groq error:", err.message);
+      if (res?.parsed) {
+        aiResult = res.parsed;
       }
+    } catch (err) {
+      console.warn("[Travel AI Advisor] AI Router error:", err.message);
     }
 
     // High quality deterministic fallback generator if Groq is unreachable
