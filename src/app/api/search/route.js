@@ -343,6 +343,54 @@ export async function POST(request) {
       console.warn("Redis cache read error:", cacheErr);
     }
 
+    // 3.5 Intelligent RAG Shelf Gatekeeper (Broad & Conversational Query Fulfillment)
+    // If the exact query was not cached, check if the store's verified rolling inventory pool
+    // can fulfill this request (e.g. "best camera phone", "under 30000 phone", "headphones", etc.)
+    // without consuming external API quota or adding search latency.
+    if (!isUrlLookup && !isExactProduct) {
+      try {
+        const shopkeeperMatch = await consultAiShopkeeper(country, cleanQuery);
+        if (shopkeeperMatch && Array.isArray(shopkeeperMatch.products) && shopkeeperMatch.products.length >= 3) {
+          const quotaStatus = await checkUnifiedApiQuota({
+            userId,
+            clientIp,
+            deviceFingerprint: effectiveDeviceFingerprint,
+            isCacheHit: true,
+            limit: 10
+          });
+
+          // Non-blocking telemetry
+          recordSearchMetric({
+            query: cleanQuery,
+            clientIp,
+            isCacheHit: true,
+            country,
+            category: "ecommerce",
+            latencyMs: Date.now() - searchStartTime,
+            statusCode: 200
+          }).catch(() => {});
+
+          return NextResponse.json({
+            products: shopkeeperMatch.products,
+            coupons: [],
+            intent: "E-COMMERCE",
+            error: null,
+            searchesLeft: quotaStatus.remaining,
+            fromCache: true,
+            strategy: shopkeeperMatch.strategy || "AI_RAG_SHOPKEEPER",
+            reason: shopkeeperMatch.reason || "Fulfilled from store inventory pool"
+          }, {
+            status: 200,
+            headers: {
+              "Cache-Control": "public, s-maxage=1800, stale-while-revalidate=86400"
+            }
+          });
+        }
+      } catch (shopkeeperErr) {
+        console.warn("[Search Route] Shopkeeper gatekeeper bypassed safely:", shopkeeperErr?.message);
+      }
+    }
+
     // 4. Admin Settings & Coupons
     const settings = await getAdminSettings();
     const userRegion = (country || "IN").toUpperCase();

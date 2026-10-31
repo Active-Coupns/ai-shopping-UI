@@ -13,7 +13,7 @@ function parsePriceNum(val) {
   return !isNaN(n) ? Math.round(n) : 0;
 }
 
-const GROQ_API_KEY = process.env.GROQ_API_KEY || "";
+import { aiRouter } from "./aiRouter.js";
 
 function getMinDevicePrice(country = "IN") {
   const c = String(country || "IN").toUpperCase();
@@ -72,10 +72,6 @@ export async function curateProductsWithAi(query, products = [], country = "IN")
     s: p.store_name || p.store || "Online"
   }));
 
-  if (!GROQ_API_KEY) {
-    return heuristicFallback(cleanQuery, products, country);
-  }
-
   const prompt = `You are ShopSmart AI Product Quality & Curation Specialist.
 User search query: "${cleanQuery}" (Country: ${country})
 
@@ -97,27 +93,17 @@ Respond ONLY with valid JSON:
 }`;
 
   try {
-    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${GROQ_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: "llama-3.1-8b-instant",
-        messages: [{ role: "user", content: prompt }],
-        temperature: 0.1,
-        response_format: { type: "json_object" },
-        max_tokens: 300
-      }),
-      signal: AbortSignal.timeout(1800)
+    const aiResult = await aiRouter.complete({
+      prompt,
+      systemPrompt: "You are ShopSmart AI Product Quality & Curation Specialist. Always respond in valid JSON.",
+      jsonMode: true,
+      temperature: 0.1,
+      maxTokens: 300,
+      timeoutMs: 1800
     });
 
-    if (res.ok) {
-      const data = await res.json();
-      const rawText = data.choices?.[0]?.message?.content;
-      const parsed = JSON.parse(rawText);
-
+    const parsed = aiResult?.parsed;
+    if (parsed) {
       const validSet = new Set(Array.isArray(parsed.validIndices) ? parsed.validIndices : []);
       const top3List = Array.isArray(parsed.top3Indices) ? parsed.top3Indices : [];
 

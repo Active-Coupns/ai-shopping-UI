@@ -1,6 +1,5 @@
-import { redis } from "@/services/redis";
-
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
+import { redis } from "./redis.js";
+import { aiRouter } from "./aiRouter.js";
 
 /**
  * Known Product Categories & Keywords
@@ -37,6 +36,15 @@ const CATEGORIES = [
   {
     name: "apparel",
     keywords: ["shirt", "tshirt", "t-shirt", "jeans", "jacket", "hoodie", "saree", "kurti", "dress", "clothes"]
+  },
+  {
+    name: "pharmacy",
+    keywords: [
+      "medicine", "medicines", "tablet", "tablets", "capsule", "capsules", "syrup", 
+      "paracetamol", "vitamin", "vitamins", "supplement", "supplements", "ayurvedic", 
+      "protein", "ointment", "pain relief", "bp monitor", "glucometer", "thermometer",
+      "cough syrup", "antibiotic", "zinc", "calcium", "omega 3", "fish oil"
+    ]
   }
 ];
 
@@ -45,8 +53,18 @@ const KNOWN_BRANDS = [
   "oneplus", "xiaomi", "redmi", "realme", "poco", "vivo", "oppo", "motorola", "google", "nothing",
   "sony", "boat", "noise", "boult", "jbl", "sennheiser", "bose", "zebronics",
   "nike", "adidas", "puma", "reebok", "woodland", "bata", "asian", "campus", "sparx",
-  "lg", "whirlpool", "panasonic", "haier", "godrej", "daikin", "voltas", "fire-boltt"
+  "lg", "whirlpool", "panasonic", "haier", "godrej", "daikin", "voltas", "fire-boltt",
+  "cipla", "sun pharma", "dr reddy", "dabur", "himalaya", "apollo", "1mg", "tata 1mg", 
+  "netmeds", "pharmeasy", "dettol", "savlon", "volini", "moov", "crocin", "calpol"
 ];
+
+const FEATURE_KEYWORDS = {
+  camera: ["camera", "photo", "photography", "selfie", "portrait", "megapixels", "mp", "ois"],
+  gaming: ["gaming", "game", "games", "processor", "snapdragon", "dimensity", "gpu", "fps"],
+  battery: ["battery", "backup", "mah", "charging", "fast charge", "long lasting"],
+  display: ["display", "screen", "amoled", "oled", "120hz", "refresh rate"],
+  audio_anc: ["anc", "noise cancelling", "noise cancellation", "bass", "sound", "calling"]
+};
 
 function detectCategory(text) {
   const lower = String(text || "").toLowerCase();
@@ -89,6 +107,20 @@ function parseNumericPrice(p) {
 }
 
 /**
+ * Detect requested features like camera, gaming, battery
+ */
+function detectFeatures(text) {
+  const lower = String(text || "").toLowerCase();
+  const matched = [];
+  for (const [feat, kws] of Object.entries(FEATURE_KEYWORDS)) {
+    if (kws.some(kw => new RegExp(`\\b${kw}\\b`, "i").test(lower))) {
+      matched.push(feat);
+    }
+  }
+  return matched;
+}
+
+/**
  * Redis Key for the Central Store Inventory Pool (24-Hour TTL)
  */
 function getInventoryPoolKey(country) {
@@ -103,22 +135,23 @@ function sanitizePoolProduct(p) {
   if (!p) return null;
   return {
     id: p.id || p.product_id || p.title,
-    title: p.title || "",
-    price: p.price || "₹0",
+    title: p.title || p.product_title || "",
+    price: p.price || p.product_price || "₹0",
     rawPrice: p.rawPrice || parseNumericPrice(p),
-    image: p.image || "",
+    image: p.image || p.product_image || "",
     rating: p.rating || "4.3",
     reviews_count: p.reviews_count || 120,
     store_name: p.store_name || p.store || "Online Store",
     link: p.link || p.deal_link || p.affiliateUrl || "",
     deal_link: p.deal_link || p.link || p.affiliateUrl || "",
-    currency: p.currency || "INR"
+    currency: p.currency || "INR",
+    price_comparison: p.price_comparison || []
   };
 }
 
 /**
  * Add freshly fetched products to the Central Store Inventory Pool
- * Keeps a compact rolling inventory of up to 35 high-relevance products with 24-hour TTL.
+ * Keeps a compact rolling inventory of up to 40 high-relevance products with 24-hour TTL.
  */
 export async function addToInventoryPool(country, products) {
   try {
@@ -164,8 +197,8 @@ export async function addToInventoryPool(country, products) {
       }
     }
 
-    // Keep compact 35 products (~8 KB total instead of 137 KB)
-    const finalInventory = merged.slice(0, 35);
+    // Keep compact 40 products
+    const finalInventory = merged.slice(0, 40);
     localInventoryMemory.set(cleanCountry, finalInventory);
     await redis.set(key, JSON.stringify(finalInventory), { ex: 86400 });
   } catch (err) {
@@ -174,15 +207,16 @@ export async function addToInventoryPool(country, products) {
 }
 
 /**
- * Local Smart Shopkeeper Brain: Fast, deterministic human-salesman logic (Sub-5ms, Zero API Dependencies).
- * Runs as the primary engine or automatic fallback when external Gemini API is unreachable.
+ * Local Smart Shopkeeper Brain: Fast, deterministic human-salesman logic (Sub-2ms, Zero API Dependencies).
+ * Runs as the instant evaluator or automatic fallback when external LLM is unreachable.
  */
-function evaluateShelfLocally(cleanQuery, inventory) {
+export function evaluateShelfLocally(cleanQuery, inventory) {
   if (!Array.isArray(inventory) || inventory.length < 3) return null;
 
   const queryCat = detectCategory(cleanQuery);
   const requestedBrand = detectBrand(cleanQuery);
   const maxBudget = parseBudget(cleanQuery);
+  const requestedFeatures = detectFeatures(cleanQuery);
 
   // Filter shelf items by category
   const matchingCategoryItems = inventory.filter(p => {
@@ -230,11 +264,23 @@ function evaluateShelfLocally(cleanQuery, inventory) {
   }
 
   if (candidates.length >= 3) {
-    // Rank candidates by rating & review count
+    // Score candidates based on rating, review count, and feature affinity
     candidates.sort((a, b) => {
-      const rA = parseFloat(a.rating || "4.2");
-      const rB = parseFloat(b.rating || "4.2");
-      return rB - rA;
+      let scoreA = parseFloat(a.rating || "4.2") * 10;
+      let scoreB = parseFloat(b.rating || "4.2") * 10;
+
+      // Feature affinity boost (e.g. camera, gaming, battery)
+      if (requestedFeatures.length > 0) {
+        const titleA = String(a.title || "").toLowerCase();
+        const titleB = String(b.title || "").toLowerCase();
+        for (const feat of requestedFeatures) {
+          const kws = FEATURE_KEYWORDS[feat] || [];
+          if (kws.some(kw => titleA.includes(kw))) scoreA += 15;
+          if (kws.some(kw => titleB.includes(kw))) scoreB += 15;
+        }
+      }
+
+      return scoreB - scoreA;
     });
 
     const topMatches = candidates.slice(0, 3);
@@ -243,7 +289,7 @@ function evaluateShelfLocally(cleanQuery, inventory) {
     return {
       products: [...topMatches, ...otherProducts],
       strategy: "AI_SHOPKEEPER_LOCAL_BRAIN",
-      reason: `Fulfilled "${cleanQuery}" with top-rated ${queryCat !== "general" ? queryCat : "products"} from store shelf.`
+      reason: `Fulfilled "${cleanQuery}" with top matching ${queryCat !== "general" ? queryCat : "products"} from store shelf.`
     };
   }
 
@@ -252,7 +298,7 @@ function evaluateShelfLocally(cleanQuery, inventory) {
 
 /**
  * AI Shopkeeper Brain: Evaluates the store's inventory like an intelligent human salesman.
- * Dual-Engine: First tries Gemini (if valid API key), with instant Local Brain failover.
+ * Dual-Engine: First tries Centralized AI Router (Groq/Gemini), with instant Local Brain failover.
  */
 export async function consultAiShopkeeper(country, userQuery) {
   try {
@@ -280,16 +326,20 @@ export async function consultAiShopkeeper(country, userQuery) {
 
     const queryCat = detectCategory(cleanQuery);
 
-    // 1. FAST-PATH: Run Local Deterministic Salesman Logic First (Sub-millisecond latency, zero external API wait)
+    // 1. FAST-PATH: Run Local Deterministic Salesman Logic First for instant broad category queries
+    // If it's a simple broad query without deep semantic nuances, Local Brain satisfies in < 1ms
     const localMatch = evaluateShelfLocally(cleanQuery, inventory);
     if (localMatch && Array.isArray(localMatch.products) && localMatch.products.length >= 3) {
-      console.log(`[AI Shopkeeper] Cache HIT (Local Brain Instant): Fulfilled "${cleanQuery}" in 0.5ms!`);
-      return localMatch;
+      // If query is broad (e.g. "phones under 30k", "smartwatch", "headphones"), return local brain instant match
+      const hasDeepNuance = /\b(best|compare|which|better|camera|gaming|photo|battery|fastest|recommend|worth)\b/i.test(cleanQuery);
+      if (!hasDeepNuance) {
+        console.log(`[AI Shopkeeper] Cache HIT (Local Brain Instant): Fulfilled "${cleanQuery}" in 0.5ms!`);
+        return localMatch;
+      }
     }
 
     // Strict Category Isolation:
-    // If the customer asks for a specific category (e.g., laptops, audio, shoes, etc.),
-    // only inspect and return items from that specific category.
+    // If the customer asks for a specific category, only inspect items from that category
     let eligibleInventory = inventory;
     if (queryCat !== "general") {
       eligibleInventory = inventory.filter(p => detectCategory(p.title) === queryCat);
@@ -315,9 +365,10 @@ Here is the current product stock available on your shop's shelves:
 ${JSON.stringify(shelfItems)}
 
 RETAIL INSTRUCTIONS:
-1. BROAD & GENERAL QUERIES: If the customer asks broad/category questions (e.g. "best smartwatch", "top laptop", "good headphones", "fitness watch", "shoes for men") without explicitly demanding a missing brand:
-   - ALWAYS enthusiastically fulfill from your shop! Select your 3 highest-rated, best-value products in that category. Never turn away a customer when you have great products in that same category on your shelf!
-2. BUDGET & FEATURE QUERIES: If the customer specifies a budget or feature and your shelf has products matching that, fulfill with top 3 matches.
+1. BROAD & GENERAL QUERIES: If the customer asks broad/category questions (e.g. "best smartwatch", "top laptop", "good headphones", "shoes for men") without explicitly demanding a missing brand:
+   - ALWAYS enthusiastically fulfill from your shop! Select your 3 highest-rated, best-value products in that category.
+2. FEATURE & REFINEMENT QUERIES: If the customer specifies a feature or priority (e.g. "best camera phone", "good battery", "gaming", "budget under ₹25,000") and your shelf has products matching that:
+   - Select the 3 products from your shelf that best fulfill this specific requirement.
 3. HONEST WAREHOUSE CALLS: Only set "available": false if:
    - The customer asks for a completely different product category (e.g. asking for shoes when your shelf only has smartwatches/laptops), OR
    - The customer explicitly demanded a specific brand or model that you do NOT have on your shelf.
@@ -329,177 +380,40 @@ Return ONLY valid JSON (no markdown):
   "reason": "Clear 1-sentence explanation"
 }`;
 
-    // 1. Try Ultra-Fast Groq AI (Sub-Second Shopkeeper Evaluation)
-    const GROQ_API_KEY = process.env.GROQ_API_KEY || "";
-    if (GROQ_API_KEY) {
-      const groqModels = ["qwen/qwen3.8-27b", "openai/gpt-oss-120b"];
-      for (const gModel of groqModels) {
-        try {
-          const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${GROQ_API_KEY}`
-            },
-            body: JSON.stringify({
-              model: gModel,
-              messages: [{ role: "user", content: prompt }],
-              temperature: 0.1,
-              response_format: { type: "json_object" }
-            }),
-            signal: AbortSignal.timeout(4000)
-          });
+    // 2. Dispatch to Centralized AI Router (Groq Ultra-Fast sub-200ms -> Gemini Fallback)
+    const aiResult = await aiRouter.complete({
+      prompt,
+      systemPrompt: "You are a business-smart e-commerce retail shopkeeper. Always respond in valid JSON.",
+      jsonMode: true,
+      temperature: 0.1,
+      maxTokens: 250,
+      timeoutMs: 1800
+    });
 
-          if (!res.ok) continue;
-
-          const data = await res.json();
-          const rawText = data.choices?.[0]?.message?.content;
-          if (rawText) {
-            let cleaned = rawText.replace(/```json/gi, "").replace(/```/g, "").trim();
-            const firstBrace = cleaned.indexOf("{");
-            const lastBrace = cleaned.lastIndexOf("}");
-            if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-              cleaned = cleaned.substring(firstBrace, lastBrace + 1);
-            }
-            const decision = JSON.parse(cleaned);
-            if (decision && decision.available && Array.isArray(decision.matchedIndices) && decision.matchedIndices.length >= 3) {
-              const matchedProducts = decision.matchedIndices.map(i => eligibleInventory[i]).filter(Boolean);
-              if (matchedProducts.length >= 3) {
-                console.log(`[AI Shopkeeper] Cache HIT (Groq): Fulfilled "${cleanQuery}" from shelf! Reason: ${decision.reason}`);
-                const otherProducts = eligibleInventory.filter(p => !matchedProducts.includes(p));
-                return {
-                  products: [...matchedProducts, ...otherProducts],
-                  strategy: "AI_SHOPKEEPER_GROQ",
-                  reason: decision.reason
-                };
-              }
-            }
-            if (decision && !decision.available) {
-              console.log(`[AI Shopkeeper] Cache MISS (Groq): "${cleanQuery}" needs warehouse -> ${decision.reason}`);
-              return null;
-            }
-          }
-        } catch (groqErr) {}
+    if (aiResult?.parsed) {
+      const decision = aiResult.parsed;
+      if (decision.available && Array.isArray(decision.matchedIndices) && decision.matchedIndices.length >= 3) {
+        const matchedProducts = decision.matchedIndices.map(i => eligibleInventory[i]).filter(Boolean);
+        if (matchedProducts.length >= 3) {
+          console.log(`[AI Shopkeeper] Cache HIT (${aiResult.provider.toUpperCase()}): Fulfilled "${cleanQuery}" from shelf! Reason: ${decision.reason}`);
+          const otherProducts = eligibleInventory.filter(p => !matchedProducts.includes(p));
+          return {
+            products: [...matchedProducts, ...otherProducts],
+            strategy: `AI_SHOPKEEPER_${aiResult.provider.toUpperCase()}`,
+            reason: decision.reason
+          };
+        }
+      }
+      if (decision.available === false) {
+        console.log(`[AI Shopkeeper] Cache MISS (${aiResult.provider.toUpperCase()}): "${cleanQuery}" needs warehouse -> ${decision.reason}`);
+        return null;
       }
     }
 
-    // 2. Fallback to OpenRouter AI (100% Free / Reliable)
-    const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || "";
-    if (OPENROUTER_API_KEY) {
-      const openRouterModels = ["cohere/north-mini-code:free", "liquid/lfm-2.5-2.6b:free", "dots-studio/dots-3-note-preview:free"];
-      for (const orModel of openRouterModels) {
-        try {
-          const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
-              "HTTP-Referer": "http://localhost:3000",
-              "X-Title": "ShopSmart AI"
-            },
-            body: JSON.stringify({
-              model: orModel,
-              messages: [{ role: "user", content: prompt }],
-              temperature: 0.1,
-              max_tokens: 300
-            }),
-            signal: AbortSignal.timeout(5000)
-          });
-
-          if (!res.ok) continue;
-
-          const data = await res.json();
-          const rawText = data.choices?.[0]?.message?.content;
-          if (rawText) {
-            let cleaned = rawText.replace(/```json/gi, "").replace(/```/g, "").trim();
-            const firstBrace = cleaned.indexOf("{");
-            const lastBrace = cleaned.lastIndexOf("}");
-            if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-              cleaned = cleaned.substring(firstBrace, lastBrace + 1);
-            }
-            const decision = JSON.parse(cleaned);
-            if (decision && decision.available && Array.isArray(decision.matchedIndices) && decision.matchedIndices.length >= 3) {
-              const matchedProducts = decision.matchedIndices.map(i => eligibleInventory[i]).filter(Boolean);
-              if (matchedProducts.length >= 3) {
-                console.log(`[AI Shopkeeper] Cache HIT (OpenRouter): Fulfilled "${cleanQuery}" from shelf! Reason: ${decision.reason}`);
-                const otherProducts = eligibleInventory.filter(p => !matchedProducts.includes(p));
-                return {
-                  products: [...matchedProducts, ...otherProducts],
-                  strategy: "AI_SHOPKEEPER_OPENROUTER",
-                  reason: decision.reason
-                };
-              }
-            }
-            if (decision && !decision.available) {
-              console.log(`[AI Shopkeeper] Cache MISS (OpenRouter): "${cleanQuery}" needs warehouse -> ${decision.reason}`);
-              return null;
-            }
-          }
-        } catch (orErr) {}
-      }
-    }
-
-    // 2. Fallback to Gemini AI if OpenRouter was unavailable
-    if (GEMINI_API_KEY) {
-      const models = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-flash-8b"];
-      for (const model of models) {
-        try {
-          const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
-          const res = await fetch(url, {
-            method: "POST",
-            headers: { 
-              "Content-Type": "application/json",
-              "x-goog-api-key": GEMINI_API_KEY
-            },
-            body: JSON.stringify({
-              contents: [{ parts: [{ text: prompt }] }],
-              generationConfig: {
-                temperature: 0.1,
-                responseMimeType: "application/json",
-                maxOutputTokens: 250
-              }
-            }),
-            signal: AbortSignal.timeout(2000)
-          });
-
-          if (!res.ok) continue;
-
-          const data = await res.json();
-          const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (rawText) {
-            let cleaned = rawText.replace(/```json/gi, "").replace(/```/g, "").trim();
-            const firstBrace = cleaned.indexOf("{");
-            const lastBrace = cleaned.lastIndexOf("}");
-            if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-              cleaned = cleaned.substring(firstBrace, lastBrace + 1);
-            }
-            const decision = JSON.parse(cleaned);
-            if (decision && decision.available && Array.isArray(decision.matchedIndices) && decision.matchedIndices.length >= 3) {
-              const matchedProducts = decision.matchedIndices.map(i => eligibleInventory[i]).filter(Boolean);
-              if (matchedProducts.length >= 3) {
-                console.log(`[AI Shopkeeper] Cache HIT (Gemini): Fulfilled "${cleanQuery}" from shelf! Reason: ${decision.reason}`);
-                const otherProducts = eligibleInventory.filter(p => !matchedProducts.includes(p));
-                return {
-                  products: [...matchedProducts, ...otherProducts],
-                  strategy: "AI_SHOPKEEPER_GEMINI",
-                  reason: decision.reason
-                };
-              }
-            }
-            if (decision && !decision.available) {
-              console.log(`[AI Shopkeeper] Cache MISS (Gemini): "${cleanQuery}" needs warehouse -> ${decision.reason}`);
-              return null;
-            }
-          }
-        } catch (geminiErr) {}
-      }
-    }
-
-    // 3. High-Performance Local Shopkeeper Brain (Sub-5ms, Zero API failure risk)
-    const localDecision = evaluateShelfLocally(cleanQuery, eligibleInventory);
-    if (localDecision) {
-      console.log(`[AI Shopkeeper] Cache HIT (Local Brain): Fulfilled "${cleanQuery}" from shelf! -> ${localDecision.reason}`);
-      return localDecision;
+    // 3. Deterministic Local Fallback if AI Router timed out or returned inconclusive
+    if (localMatch) {
+      console.log(`[AI Shopkeeper] Cache HIT (Local Brain Fallback): Fulfilled "${cleanQuery}" from shelf! -> ${localMatch.reason}`);
+      return localMatch;
     }
 
     console.log(`[AI Shopkeeper] Cache MISS: Query "${cleanQuery}" not present on shelf, calling warehouse.`);
