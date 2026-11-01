@@ -427,32 +427,32 @@ export default function SubscriptionsView({
         <div>
           <div className="flex items-center gap-2 mb-1 flex-wrap">
             <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider bg-rose-500/10 text-rose-500 border border-rose-500/20 flex items-center gap-1">
-              <Zap className="w-3 h-3 fill-current" /> 100% Verified {regionName} Pricing
+              <Zap className="w-3 h-3 fill-current" /> 100% Verified Direct Platform Pricing
             </span>
             <span className="text-xs font-semibold text-slate-400">
-              {isLoadingSubs ? "Syncing Live Catalog..." : `${catalogSubs.length} Leading Brands & Multi-Tier Plans`}
+              {isLoadingSubs ? "Syncing Live Catalog..." : "Multi-Tier Official Plans & Verified Savings"}
             </span>
             <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
               <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Live Data Verified
             </span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-            Digital Subscriptions & OTT Pass Hub ({regionName})
+            Digital Subscriptions &amp; OTT Pass Hub
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 font-medium">
-            Explore plans, compare screen limits & 4K quality, and expand the 4-Level Savings Blueprint.
+            Explore official multi-tier plans, compare screen limits &amp; 4K quality, and unlock 4-Level Savings Blueprints.
           </p>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
-          {/* Projection View Toggle */}
-          <div className="flex items-center bg-slate-100 p-1 rounded-2xl border border-slate-200 text-xs font-bold">
+        <div className="w-full sm:w-auto flex items-center justify-between sm:justify-end gap-2.5 pt-1 sm:pt-0">
+          {/* Projection View Toggle Segmented Control */}
+          <div className="flex items-center p-1 bg-slate-100/90 rounded-2xl border border-slate-200/90 shadow-2xs text-xs font-bold gap-1">
             <button
               type="button"
               onClick={() => setProjectionMode("direct")}
-              className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer ${
+              className={`px-3 sm:px-3.5 py-1.5 rounded-xl transition-all cursor-pointer ${
                 projectionMode === "direct"
-                  ? "bg-white text-slate-900 shadow-2xs font-extrabold"
+                  ? "bg-white text-slate-950 shadow-xs font-black ring-1 ring-slate-200"
                   : "text-slate-600 hover:text-slate-900"
               }`}
             >
@@ -461,9 +461,9 @@ export default function SubscriptionsView({
             <button
               type="button"
               onClick={() => setProjectionMode("annualized")}
-              className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1 ${
+              className={`px-3 sm:px-3.5 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
                 projectionMode === "annualized"
-                  ? "bg-indigo-600 text-white shadow-2xs font-extrabold"
+                  ? "bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-xs font-black ring-1 ring-indigo-500/30"
                   : "text-slate-600 hover:text-slate-900"
               }`}
             >
@@ -476,9 +476,9 @@ export default function SubscriptionsView({
             <button
               type="button"
               onClick={onBack}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all cursor-pointer"
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all border border-slate-200/80 active:scale-95 cursor-pointer shrink-0"
             >
-              ← Back to Shopping
+              <span>← Back to Shopping</span>
             </button>
           )}
         </div>
@@ -533,29 +533,41 @@ export default function SubscriptionsView({
           )}
         </div>
 
-        {/* Category Pills with Dynamic Country-Verified Counts */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-          {categoryDefinitions.map((cat) => {
-            const Icon = cat.icon;
-            const isSelected = selectedCategory === cat.id;
-            const count = categoryCounts[cat.id] ?? 0;
-            const label = isLoadingSubs ? `${cat.emoji}${cat.name}` : `${cat.emoji}${cat.name} (${count})`;
-            return (
-              <button
-                key={cat.id}
-                type="button"
-                onClick={() => setSelectedCategory(cat.id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
-                  isSelected
-                    ? "bg-slate-900 text-white shadow-2xs scale-102"
-                    : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
-                }`}
-              >
-                <Icon className={`w-3.5 h-3.5 ${isSelected ? "text-amber-400" : "text-slate-400"}`} />
-                <span>{label}</span>
-              </button>
-            );
-          })}
+        {/* Smart Category Hub Box */}
+        <div className="p-2 sm:p-2.5 rounded-2xl bg-slate-100/80 border border-slate-200/80 shadow-2xs">
+          <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar scroll-smooth py-0.5 px-0.5">
+            {categoryDefinitions.map((cat) => {
+              const Icon = cat.icon;
+              const isSelected = selectedCategory === cat.id;
+              const count = categoryCounts[cat.id] ?? 0;
+              return (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => setSelectedCategory(cat.id)}
+                  className={`inline-flex items-center gap-1.5 sm:gap-2 px-3 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 whitespace-nowrap active:scale-95 ${
+                    isSelected
+                      ? "bg-slate-900 text-white shadow-sm ring-1 ring-slate-800 font-extrabold"
+                      : "bg-white text-slate-600 border border-slate-200/80 hover:bg-slate-50 hover:text-slate-900 shadow-2xs font-bold"
+                  }`}
+                >
+                  <span className="text-xs sm:text-sm">{cat.emoji || "📺"}</span>
+                  <span>{cat.name}</span>
+                  {!isLoadingSubs && (
+                    <span
+                      className={`px-1.5 py-0.5 rounded-full text-[10px] font-black leading-none ${
+                        isSelected
+                          ? "bg-indigo-500 text-white"
+                          : "bg-slate-100 text-slate-600"
+                      }`}
+                    >
+                      {count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
@@ -582,12 +594,12 @@ export default function SubscriptionsView({
                       {sub.logoText.slice(0, 3)}
                     </div>
                     <div className="min-w-0">
-                      <h3 className="font-extrabold text-sm sm:text-base leading-tight truncate">{sub.name}</h3>
+                      <h3 className="font-extrabold text-sm sm:text-base leading-tight truncate text-white">{sub.name}</h3>
                       <p className="text-[10px] text-white/80 font-medium truncate">{sub.tagline}</p>
                     </div>
                   </div>
                   {sub.badge && (
-                    <span className="px-2 py-0.5 rounded-full bg-white/20 text-[9px] font-black tracking-wide border border-white/20 whitespace-nowrap shrink-0 ml-2">
+                    <span className="px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-xs text-[9px] font-black tracking-wide border border-white/25 whitespace-nowrap shrink-0 ml-2">
                       {sub.badge}
                     </span>
                   )}
@@ -597,11 +609,11 @@ export default function SubscriptionsView({
                 <div className="p-4 space-y-3">
                   {/* Interactive Plan Selector Pills */}
                   <div>
-                    <div className="flex items-center justify-between mb-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                    <div className="flex items-center justify-between mb-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                       <span>Tiers ({sub.plans.length}):</span>
-                      <span className="text-indigo-600 font-semibold lowercase">click to switch</span>
+                      <span className="text-indigo-600 font-semibold lowercase">tap to compare</span>
                     </div>
-                    <div className="flex flex-wrap gap-1">
+                    <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 scroll-smooth">
                       {sub.plans.map((p, pIdx) => {
                         const isSelected = pIdx === currentPlanIdx;
                         return (
@@ -609,10 +621,10 @@ export default function SubscriptionsView({
                             key={pIdx}
                             type="button"
                             onClick={() => handlePlanSelect(sub.id, pIdx)}
-                            className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
+                            className={`px-2.5 py-1 rounded-xl text-[10px] font-extrabold transition-all cursor-pointer shrink-0 whitespace-nowrap active:scale-95 ${
                               isSelected
-                                ? "bg-indigo-600 text-white shadow-2xs font-black ring-2 ring-indigo-300"
-                                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                                ? "bg-indigo-600 text-white shadow-xs font-black ring-2 ring-indigo-300"
+                                : "bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200/60"
                             }`}
                           >
                             {p.name.split(" ")[0]} ({currencySymbol}{p.price})
@@ -623,10 +635,10 @@ export default function SubscriptionsView({
                   </div>
 
                   {/* Compact Selected Plan Pricing Box */}
-                  <div className="p-2.5 px-3 bg-slate-50 rounded-2xl border border-slate-100 space-y-1">
-                    <div className="flex items-baseline justify-between">
+                  <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100 space-y-1.5">
+                    <div className="flex items-baseline justify-between gap-1">
                       <div>
-                        <span className="text-[11px] font-bold text-slate-700 block">{activePlan.name}</span>
+                        <span className="text-xs font-bold text-slate-800 block">{activePlan.name}</span>
                         <div className="flex items-baseline gap-1 mt-0.5">
                           {projectionMode === "annualized" ? (
                             <>
@@ -641,16 +653,16 @@ export default function SubscriptionsView({
                           )}
                         </div>
                       </div>
-                      <span className="px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-700 font-black text-[9px] border border-emerald-200">
+                      <span className="px-2 py-0.5 rounded-lg bg-emerald-100/80 text-emerald-800 font-black text-[10px] border border-emerald-200 shrink-0">
                         {activePlan.ads || "Ad-Free"}
                       </span>
                     </div>
 
                     {/* Projections Matrix Mini Pill */}
-                    <div className="pt-1.5 border-t border-slate-200/50 flex items-center justify-between text-[10px] text-slate-500 font-medium">
-                      <span>3-Mo: <b>{currencySymbol}{projections.threeMonth}</b></span>
+                    <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between text-[10px] text-slate-500 font-medium">
+                      <span>3-Mo: <b className="text-slate-700">{currencySymbol}{projections.threeMonth}</b></span>
                       <span className="text-slate-300">•</span>
-                      <span>1-Yr: <b>{currencySymbol}{projections.annual}</b></span>
+                      <span>1-Yr: <b className="text-slate-700">{currencySymbol}{projections.annual}</b></span>
                       <span className="text-slate-300">•</span>
                       <span className="text-indigo-600 font-bold">{currencySymbol}{projections.monthly}/mo</span>
                     </div>
@@ -679,28 +691,31 @@ export default function SubscriptionsView({
                     </div>
                   </div>
 
-                  {/* 4-LEVEL SAVINGS BLUEPRINT: Collapsible Accordion ("Read More") */}
-                  <div className="rounded-2xl border border-indigo-100/90 overflow-hidden bg-indigo-50/20 transition-all">
+                  {/* 4-LEVEL SAVINGS BLUEPRINT: Smart Interactive Accordion */}
+                  <div className="rounded-2xl border border-indigo-100 bg-indigo-50/25 overflow-hidden transition-all shadow-2xs">
                     {/* Accordion Toggle Bar */}
                     <button
                       type="button"
                       onClick={() => toggleSavings(sub.id)}
-                      className="w-full p-2 px-3 bg-gradient-to-r from-amber-50/80 via-indigo-50/60 to-purple-50/50 hover:bg-indigo-100/40 flex items-center justify-between transition-all cursor-pointer group"
+                      className="w-full p-2.5 px-3 bg-gradient-to-r from-amber-50/80 via-indigo-50/60 to-purple-50/50 hover:bg-indigo-100/50 flex items-center justify-between gap-2 transition-all cursor-pointer group"
                     >
-                      <div className="flex items-center gap-2">
-                        <div className="w-5 h-5 rounded-md bg-amber-400 text-slate-950 flex items-center justify-center">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="w-5 h-5 rounded-md bg-amber-400 text-slate-950 flex items-center justify-center shrink-0 shadow-2xs">
                           <Zap className="w-3 h-3 fill-current" />
                         </div>
-                        <span className="font-extrabold text-[11px] text-slate-900 group-hover:text-indigo-950">
+                        <span className="font-black text-xs text-slate-900 group-hover:text-indigo-950 truncate">
                           4-Level Savings Blueprint
                         </span>
-                        <span className="px-1.5 py-0.2 rounded-full bg-emerald-100 text-emerald-800 text-[9px] font-black tracking-tight">
+                      </div>
+
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <span className="px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black tracking-tight">
                           {currencySymbol}0 to 50% Off
                         </span>
-                      </div>
-                      <div className="flex items-center gap-1 text-[11px] font-bold text-indigo-600 group-hover:text-indigo-800">
-                        <span>{isSavingsExpanded ? "Show Less" : "Read More"}</span>
-                        <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isSavingsExpanded ? "rotate-180" : ""}`} />
+                        <div className="flex items-center gap-0.5 text-[11px] font-black text-indigo-600 group-hover:text-indigo-800 pl-0.5">
+                          <span>{isSavingsExpanded ? "Less" : "View"}</span>
+                          <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isSavingsExpanded ? "rotate-180" : ""}`} />
+                        </div>
                       </div>
                     </button>
 
@@ -714,13 +729,13 @@ export default function SubscriptionsView({
                           transition={{ duration: 0.2 }}
                           className="overflow-hidden"
                         >
-                          <div className="p-3 pt-1 space-y-2 border-t border-indigo-100/70 bg-white">
+                          <div className="p-3 pt-2 space-y-2 border-t border-indigo-100/80 bg-white">
                             {/* Level 1: Telecom Free */}
-                            <div className="text-[11px] flex items-start gap-1.5 text-slate-700">
-                              <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 font-black text-[9px] shrink-0">
+                            <div className="text-xs flex items-start gap-2 text-slate-700">
+                              <span className="px-1.5 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-black text-[10px] shrink-0">
                                 L1 FREE
                               </span>
-                              <p className="line-clamp-1 font-medium text-[10px]">
+                              <p className="font-medium text-[11px] leading-snug">
                                 {sub.savingsBlueprint?.telecomFree?.[0] ? (
                                   <>Free via <b>{sub.savingsBlueprint.telecomFree[0].operator}</b> ({sub.savingsBlueprint.telecomFree[0].plan})</>
                                 ) : (
@@ -730,39 +745,39 @@ export default function SubscriptionsView({
                             </div>
 
                             {/* Level 2: Voucher Savings */}
-                            <div className="text-[11px] flex items-start gap-1.5 text-slate-700">
-                              <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 font-black text-[9px] shrink-0">
+                            <div className="text-xs flex items-start gap-2 text-slate-700">
+                              <span className="px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-900 font-black text-[10px] shrink-0">
                                 L2 VOUCHER
                               </span>
-                              <p className="line-clamp-1 font-medium text-[10px]">
+                              <p className="font-medium text-[11px] leading-snug">
                                 <b>{sub.savingsBlueprint?.voucherSavings?.discountPercent || "10% Off"}</b> via {sub.savingsBlueprint?.voucherSavings?.provider || (isUS ? "Target Circle / Costco" : "Amazon Pay Gift Card")}
                               </p>
                             </div>
 
                             {/* Level 3: Combo Pass */}
-                            <div className="text-[11px] flex items-start gap-1.5 text-slate-700">
-                              <span className="px-1.5 py-0.5 rounded bg-sky-100 text-sky-800 font-black text-[9px] shrink-0">
+                            <div className="text-xs flex items-start gap-2 text-slate-700">
+                              <span className="px-1.5 py-0.5 rounded-md bg-sky-100 text-sky-800 font-black text-[10px] shrink-0">
                                 L3 COMBO
                               </span>
-                              <p className="line-clamp-1 font-medium text-[10px]">
+                              <p className="font-medium text-[11px] leading-snug">
                                 In <b>{sub.savingsBlueprint?.comboPass?.passName || (isUS ? "Mega Bundle" : "Super Pass")}</b> (Save {currencySymbol}{sub.savingsBlueprint?.comboPass?.netSavings || (isUS ? "10+/mo" : "1,200+")})
                               </p>
                             </div>
 
                             {/* Level 4: Promo Code with 1-Click Copy */}
-                            <div className="text-[11px] flex items-center justify-between gap-1.5 text-slate-700 pt-1 border-t border-slate-100">
+                            <div className="text-xs flex items-center justify-between gap-2 text-slate-700 pt-1.5 border-t border-slate-100">
                               <div className="flex items-center gap-1.5">
-                                <span className="px-1.5 py-0.5 rounded bg-purple-100 text-purple-800 font-black text-[9px] shrink-0">
+                                <span className="px-1.5 py-0.5 rounded-md bg-purple-100 text-purple-800 font-black text-[10px] shrink-0">
                                   L4 CODE
                                 </span>
-                                <code className="text-[10px] font-black text-slate-900 bg-slate-50 px-2 py-0.5 rounded border border-purple-200">
+                                <code className="text-[11px] font-black text-slate-900 bg-slate-50 px-2 py-0.5 rounded border border-purple-200">
                                   {sub.savingsBlueprint?.coupons?.[0]?.code || "STUDENTVIP"}
                                 </code>
                               </div>
                               <button
                                 type="button"
                                 onClick={() => handleCopyCode(sub.savingsBlueprint?.coupons?.[0]?.code || "STUDENTVIP")}
-                                className="px-2 py-0.5 rounded-md bg-slate-50 hover:bg-slate-100 text-indigo-600 font-bold text-[10px] border border-indigo-200 flex items-center gap-1 cursor-pointer transition-all active:scale-95"
+                                className="px-2.5 py-1 rounded-lg bg-slate-50 hover:bg-slate-100 text-indigo-600 font-bold text-[10px] border border-indigo-200 flex items-center gap-1 cursor-pointer transition-all active:scale-95"
                               >
                                 {copiedCode === (sub.savingsBlueprint?.coupons?.[0]?.code || "STUDENTVIP") ? (
                                   <>
@@ -801,7 +816,7 @@ export default function SubscriptionsView({
                         <span>{liveCheck?.loading ? "Checking Grounding..." : "Verify Live Grounding"}</span>
                       </button>
                     )}
-                    <span className="text-slate-400 font-medium">{regionName} 2026</span>
+                    <span className="text-slate-400 font-medium">Verified 2026</span>
                   </div>
                 </div>
               </div>
