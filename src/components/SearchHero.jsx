@@ -28,11 +28,11 @@ import CategoryDealsExplorer from "@/components/CategoryDealsExplorer";
 import { getCountryMeta } from "@/lib/countryConfig";
 
 const ECOM_QUERIES_IN = [
-  "Best laptop under ₹50,000",
-  "Sabse sasta 5G phone",
-  "Noise cancelling headphones",
-  "Pure cotton party shirt",
-  "Top 4K vlog camera"
+  "Search best smartphones & prices...",
+  "Search laptops for work & gaming...",
+  "Search wireless noise cancelling earbuds...",
+  "Search smartwatches & fitness trackers...",
+  "Search top rated running shoes..."
 ];
 
 const HEALTH_QUERIES_IN = [
@@ -47,23 +47,23 @@ const COUPON_QUERIES_IN = [
   "Zomato food discount coupons",
   "Swiggy 50% OFF promo codes",
   "Myntra new user fashion coupon",
-  "Blinkit ₹100 grocery voucher",
+  "Blinkit grocery voucher",
   "Domino's pizza deals today"
 ];
 
 const DEALS_QUERIES_IN = [
-  "5G smartphone deals under ₹20,000",
-  "Noise cancelling earbuds 50% discount",
-  "Gaming laptops special offer sale",
-  "Running shoes price drop offers",
-  "Whey protein supplement deals"
+  "Smartphone deals and offers",
+  "Wireless earbuds discount sale",
+  "Laptops special offer deals",
+  "Running shoes price drop",
+  "Smartwatch festival discounts"
 ];
 
 const SMART_TERMINAL_QUERIES_IN = [
   "https://www.amazon.in/dp/B0CQ2889D7 (Samsung Galaxy S24)",
   "https://www.flipkart.com/apple-iphone-16-128-gb/p/itm43212abcd",
   "https://www.croma.com/sony-wh-1000xm5-headphones/p/251234",
-  "Paste any Amazon or Flipkart product URL to calculate max savings"
+  "Paste any product URL to calculate max savings"
 ];
 
 const QUICK_TRENDING_TERMINAL_IN = [
@@ -73,12 +73,15 @@ const QUICK_TRENDING_TERMINAL_IN = [
   { label: "💻 MacBook Air M3", query: "https://www.amazon.in/dp/B0CX21C26G-Apple-MacBook-Air-M3" }
 ];
 
-const QUICK_TRENDING_ECOM_IN = [
-  { label: "⚡ Laptops under ₹50K", query: "Best laptop under ₹50,000 for coding & gaming" },
-  { label: "🔥 Top 5G Phones", query: "Sabse sasta 5G mobile phone" },
-  { label: "🎧 ANC Earbuds", query: "Noise-cancelling headphones for travel" },
-  { label: "👔 Party Shirts", query: "Party cotton shirt under ₹3,000" }
+const UNIVERSAL_TRENDING_SHOPPING = [
+  { label: "📱 Smartphones", query: "Best smartphone deals" },
+  { label: "💻 Laptops", query: "Top rated laptops" },
+  { label: "⌚ Smartwatches", query: "Smartwatches with fitness tracking" },
+  { label: "🎧 Wireless Earbuds", query: "Noise cancelling wireless earbuds" },
+  { label: "👟 Running Shoes", query: "Comfortable running shoes" }
 ];
+
+const QUICK_TRENDING_ECOM_IN = UNIVERSAL_TRENDING_SHOPPING;
 
 const QUICK_TRENDING_HEALTH_IN = [
   { label: "💪 ON Whey 2kg", query: "ON Gold Standard 100% Whey 2kg" },
@@ -99,11 +102,11 @@ const QUICK_TRENDING_COUPONS_IN = [
 ];
 
 const ECOM_QUERIES_US = [
-  "Best laptop under $600 for work & gaming",
-  "Top 5G unlocked smartphone deals",
-  "Sony noise cancelling headphones",
-  "Men's slim fit oxford dress shirt",
-  "4K streaming camera with AI autofocus"
+  "Search best smartphones & prices...",
+  "Search laptops for work & gaming...",
+  "Search wireless noise cancelling earbuds...",
+  "Search smartwatches & fitness trackers...",
+  "Search top rated running shoes..."
 ];
 
 const HEALTH_QUERIES_US = [
@@ -122,12 +125,7 @@ const COUPON_QUERIES_US = [
   "Amazon active vouchers"
 ];
 
-const QUICK_TRENDING_ECOM_US = [
-  { label: "🎯 Demo: Smart Money Terminal", query: "https://www.amazon.com/dp/B0CQ2889D7-Samsung-Galaxy-S24-5G" },
-  { label: "⚡ Laptops under $600", query: "Best laptop under $600 for work & gaming" },
-  { label: "🔥 Unlocked 5G Phones", query: "Top 5G unlocked smartphone deals" },
-  { label: "🎧 Noise Cancelling Earbuds", query: "Sony noise cancelling headphones" }
-];
+const QUICK_TRENDING_ECOM_US = UNIVERSAL_TRENDING_SHOPPING;
 
 const QUICK_TRENDING_HEALTH_US = [
   { label: "💪 ON Gold Whey 5lb", query: "Optimum Nutrition Gold Standard 100% Whey 5lb" },
@@ -217,26 +215,47 @@ export default function SearchHero({
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef(null);
 
-  const toggleVoiceSearch = () => {
-    if (typeof window === "undefined") return;
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      alert("Voice search is not supported in this browser. Please use Google Chrome or Microsoft Edge.");
-      return;
-    }
-
-    if (isListening && recognitionRef.current) {
+  const stopVoiceSearch = () => {
+    if (recognitionRef.current) {
       try {
         recognitionRef.current.stop();
       } catch (e) {}
+    }
+    setIsListening(false);
+  };
+
+  const toggleVoiceSearch = async () => {
+    if (typeof window === "undefined") return;
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Voice search is not supported in this browser. Please use Google Chrome, Safari, or Microsoft Edge.");
+      return;
+    }
+
+    if (isListening) {
+      stopVoiceSearch();
+      return;
+    }
+
+    // Explicitly request microphone permission on mobile so native dialog appears
+    try {
+      if (navigator?.mediaDevices?.getUserMedia) {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream.getTracks().forEach((track) => track.stop());
+      }
+    } catch (permErr) {
+      console.warn("[Voice Search] Microphone permission rejected:", permErr);
+      alert("Microphone permission was not granted. Please enable microphone access in your browser settings to search by voice.");
       setIsListening(false);
       return;
     }
 
     try {
       const recognition = new SpeechRecognition();
-      recognition.lang = getCountryMeta(country).locale || "en-US";
-      recognition.interimResults = false;
+      const meta = getCountryMeta(country);
+      recognition.lang = meta?.locale || "en-US";
+      recognition.interimResults = true;
+      recognition.continuous = false;
       recognition.maxAlternatives = 1;
 
       recognition.onstart = () => {
@@ -244,14 +263,28 @@ export default function SearchHero({
       };
 
       recognition.onresult = (event) => {
-        const transcript = event.results[0]?.[0]?.transcript;
+        const results = event.results;
+        if (!results || results.length === 0) return;
+        const latest = results[results.length - 1];
+        const transcript = latest[0]?.transcript || "";
         if (transcript) {
           setQuery(transcript);
         }
-        setIsListening(false);
+        if (latest.isFinal) {
+          setIsListening(false);
+          if (transcript.trim().length > 1 && onSubmit) {
+            setTimeout(() => {
+              onSubmit(transcript.trim());
+            }, 300);
+          }
+        }
       };
 
-      recognition.onerror = () => {
+      recognition.onerror = (event) => {
+        console.warn("[Voice Search] Recognition error:", event?.error);
+        if (event?.error === "not-allowed" || event?.error === "service-not-allowed") {
+          alert("Microphone access was blocked. Please enable microphone permission in your browser settings.");
+        }
         setIsListening(false);
       };
 
@@ -262,7 +295,7 @@ export default function SearchHero({
       recognitionRef.current = recognition;
       recognition.start();
     } catch (err) {
-      console.warn("Speech recognition error:", err);
+      console.warn("[Voice Search] Failed to start:", err);
       setIsListening(false);
     }
   };
@@ -420,7 +453,7 @@ export default function SearchHero({
   };
 
   return (
-    <div className="w-full max-w-3xl mx-auto px-4 py-4 sm:py-8 text-center flex flex-col justify-center items-center">
+    <div className="w-full max-w-3xl mx-auto px-4 pt-24 pb-1 sm:py-8 text-center flex flex-col justify-center items-center">
       {/* 1. Dynamic Catchy Brand Tag & Headline */}
       <AnimatePresence mode="wait">
         <motion.div
@@ -433,34 +466,34 @@ export default function SearchHero({
         >
           {/* Top Badge with Dynamic Theme Coloring */}
           {isSmartTerminal ? (
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-300 text-[11px] font-bold text-emerald-800 mb-2.5 shadow-2xs">
-              <Zap className="w-3.5 h-3.5 text-emerald-600 animate-pulse fill-emerald-600" />
-              <span>AI Smart Purchase Terminal • Money-Saver Desk</span>
+            <div className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full bg-emerald-50 border border-emerald-300 text-[10px] sm:text-[11px] font-bold text-emerald-800 mb-2 shadow-2xs">
+              <Zap className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-600 animate-pulse fill-emerald-600" />
+              <span>Next-Gen AI Smart Purchase Terminal • Money-Saver Desk</span>
             </div>
           ) : isDeals ? (
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-50 border border-rose-200 text-[11px] font-bold text-rose-800 mb-2.5 shadow-2xs">
-              <Flame className="w-3.5 h-3.5 text-rose-600 animate-pulse fill-rose-600" />
-              <span>{isUS ? "US Today's Active Deals & Price Drops" : "100% Live Deals & Steep Price Drops Today"}</span>
+            <div className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full bg-rose-50 border border-rose-200 text-[10px] sm:text-[11px] font-bold text-rose-800 mb-2 shadow-2xs">
+              <Flame className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-rose-600 animate-pulse fill-rose-600" />
+              <span>Next-Gen Real-Time Deals Radar</span>
             </div>
           ) : isCoupons ? (
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-violet-50 border border-violet-200 text-[11px] font-bold text-violet-800 mb-2.5 shadow-2xs">
-              <Tag className="w-3.5 h-3.5 text-violet-600 animate-pulse" />
-              <span>{isUS ? "100% Verified Promo Codes & Cart Scanner" : "100% Verified Coupons & AI Cart Saver"}</span>
+            <div className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full bg-violet-50 border border-violet-200 text-[10px] sm:text-[11px] font-bold text-violet-800 mb-2 shadow-2xs">
+              <Tag className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-violet-600 animate-pulse" />
+              <span>Next-Gen AI Coupon & Cart Scanner</span>
             </div>
           ) : isHealth ? (
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-[11px] font-bold text-emerald-800 mb-2.5 shadow-2xs">
-              <HeartPulse className="w-3.5 h-3.5 text-emerald-600 animate-pulse" />
-              <span>{isUS ? "US Pharmacy & Verified Health Finder" : "100% Genuine Pharmacy & Supplements"}</span>
+            <div className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full bg-emerald-50 border border-emerald-200 text-[10px] sm:text-[11px] font-bold text-emerald-800 mb-2 shadow-2xs">
+              <HeartPulse className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-600 animate-pulse" />
+              <span>Next-Gen AI Pharmacy & Health Engine</span>
             </div>
           ) : (
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-[11px] font-bold text-brand-indigo mb-2.5 shadow-2xs">
-              <Sparkles className="w-3.5 h-3.5 text-brand-indigo animate-pulse" />
-              <span>{isUS ? "US Smart Shopping Assistant" : "AI Deal & E-Commerce Finder"}</span>
+            <div className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full bg-indigo-50 border border-indigo-100 text-[10px] sm:text-[11px] font-bold text-brand-indigo mb-2 shadow-2xs">
+              <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-brand-indigo animate-pulse" />
+              <span>Next-Gen AI Shopping Search Engine</span>
             </div>
           )}
 
           {/* Dynamic Catchy Title with Mode-Specific Gradients */}
-          <h1 className="text-2xl sm:text-4xl md:text-5xl font-black tracking-tight text-slate-900 leading-tight">
+          <h1 className="text-xl sm:text-4xl md:text-5xl font-black tracking-tight text-slate-900 leading-tight">
             {isSmartTerminal ? (
               <>
                 Paste Product Link, <span className="bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 via-teal-600 to-indigo-600">Save Max Cash.</span>
@@ -479,42 +512,34 @@ export default function SearchHero({
               </>
             ) : (
               <>
-                Find the Best Price, <span className="bg-clip-text text-transparent bg-gradient-to-r from-brand-indigo via-purple-600 to-pink-600">Instantly.</span>
+                The AI Search Engine for <span className="bg-clip-text text-transparent bg-gradient-to-r from-brand-indigo via-purple-600 to-pink-600">Smart Shopping.</span>
               </>
             )}
           </h1>
           
           {/* Dynamic Subtitle */}
-          <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1.5 leading-relaxed">
+          <p className="text-[11px] sm:text-sm text-slate-500 font-medium mt-1 leading-snug">
             {isSmartTerminal
-              ? "Paste any Amazon, Flipkart, or Croma product URL to calculate store arbitrage + 3.5% instant voucher savings + bank card perks."
+              ? "Paste any product URL to calculate store arbitrage + instant voucher savings + bank card perks."
               : isDeals
-              ? (isUS
-                  ? "Live price drops and steep discounts across Amazon, Walmart, Best Buy & Target."
-                  : "Live price drops and steep discounts across Amazon, Flipkart, Myntra & Croma.")
+              ? "Automated live price drops and steep discounts detected across trusted merchants."
               : isCoupons
-              ? (isUS
-                  ? "Live verified promo codes across UberEats, DoorDash, Amazon, Target, Nike & 50+ stores."
-                  : "Live verified promo codes across Zomato, Swiggy, Myntra, Blinkit, Zepto & 50+ stores.")
+              ? "Live verified promo codes, instant cashback intelligence, and automated cart savings."
               : isHealth
-              ? (isUS 
-                  ? "Real-time prices across CVS, Walgreens, GNC, iHerb & Walmart Pharmacy." 
-                  : "Real-time prices across Tata 1mg, Apollo 24|7, HealthKart & PharmEasy.")
-              : (isUS 
-                  ? "Real-time comparison across Amazon.com, Walmart, Best Buy & Target." 
-                  : "Real-time comparison across Amazon, Flipkart, Myntra & Croma.")}
+              ? "Clinical pharmacopoeia insights, verified active compositions, and authentic wellness prices."
+              : "Intelligent product discovery, verified specifications, and real-time value analysis tailored to your exact needs."}
           </p>
         </motion.div>
       </AnimatePresence>
 
-      {/* 2. Interactive Segmented Toggle: Smart Terminal is Prominently 4th, Deals is pushed to back */}
-      <div className="flex items-center p-1 bg-slate-100/90 rounded-2xl border border-slate-200/80 mb-4 sm:mb-6 w-full max-w-xl sm:max-w-2xl shadow-inner overflow-x-auto no-scrollbar gap-1" suppressHydrationWarning>
+      {/* 2. Interactive Segmented Toggle: Smooth Scrollable Ribbon on Mobile */}
+      <div className="flex items-center p-1 bg-slate-100/90 rounded-2xl border border-slate-200/80 mb-3 sm:mb-5 w-full max-w-xl sm:max-w-2xl shadow-inner overflow-x-auto no-scrollbar gap-1.5 scroll-smooth" suppressHydrationWarning>
         {/* Shopping Tab */}
         <button
           type="button"
           suppressHydrationWarning
           onClick={() => setActiveTab("ecommerce")}
-          className={`flex-1 flex items-center justify-center gap-1 sm:gap-1.5 py-1.5 px-2 sm:px-2.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+          className={`shrink-0 flex items-center justify-center gap-1 sm:gap-1.5 py-1.5 px-3 sm:px-3.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
             activeTab === "ecommerce"
               ? "bg-white text-slate-900 shadow-sm border border-slate-200/60"
               : "text-slate-500 hover:text-slate-900"
@@ -529,7 +554,7 @@ export default function SearchHero({
           type="button"
           suppressHydrationWarning
           onClick={() => setActiveTab("health")}
-          className={`flex-1 flex items-center justify-center gap-1 sm:gap-1.5 py-1.5 px-2 sm:px-2.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+          className={`shrink-0 flex items-center justify-center gap-1 sm:gap-1.5 py-1.5 px-3 sm:px-3.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
             activeTab === "health"
               ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-sm shadow-emerald-500/20"
               : "text-slate-500 hover:text-emerald-700"
@@ -544,7 +569,7 @@ export default function SearchHero({
           type="button"
           suppressHydrationWarning
           onClick={() => setActiveTab("coupons")}
-          className={`flex-1 flex items-center justify-center gap-1 sm:gap-1.5 py-1.5 px-2 sm:px-2.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+          className={`shrink-0 flex items-center justify-center gap-1 sm:gap-1.5 py-1.5 px-3 sm:px-3.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
             activeTab === "coupons"
               ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-sm shadow-violet-500/20"
               : "text-slate-500 hover:text-violet-700"
@@ -559,7 +584,7 @@ export default function SearchHero({
           type="button"
           suppressHydrationWarning
           onClick={() => setActiveTab("today_deals")}
-          className={`flex-1 flex items-center justify-center gap-1 sm:gap-1.5 py-1.5 px-2 sm:px-2.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+          className={`shrink-0 flex items-center justify-center gap-1 sm:gap-1.5 py-1.5 px-3 sm:px-3.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
             activeTab === "today_deals" || activeTab === "deals"
               ? "bg-gradient-to-r from-amber-500 to-rose-500 text-white shadow-sm shadow-amber-500/20"
               : "text-slate-500 hover:text-rose-600"
@@ -579,7 +604,7 @@ export default function SearchHero({
               onOpenSubscriptions();
             }
           }}
-          className="flex-1 flex items-center justify-center gap-1 sm:gap-1.5 py-1.5 px-2 sm:px-2.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all cursor-pointer whitespace-nowrap text-slate-500 hover:text-indigo-600 hover:bg-indigo-50/50"
+          className="shrink-0 flex items-center justify-center gap-1 sm:gap-1.5 py-1.5 px-3 sm:px-3.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all cursor-pointer whitespace-nowrap text-slate-500 hover:text-indigo-600 hover:bg-indigo-50/50"
         >
           <Tv className="w-3.5 h-3.5 text-indigo-500" />
           <span className="hidden sm:inline">OTT &amp; Subs</span>
@@ -595,7 +620,7 @@ export default function SearchHero({
               onOpenTravel();
             }
           }}
-          className="flex-1 flex items-center justify-center gap-1 sm:gap-1.5 py-1.5 px-2 sm:px-2.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all cursor-pointer whitespace-nowrap text-slate-500 hover:text-emerald-600 hover:bg-emerald-50/50"
+          className="shrink-0 flex items-center justify-center gap-1 sm:gap-1.5 py-1.5 px-3 sm:px-3.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all cursor-pointer whitespace-nowrap text-slate-500 hover:text-emerald-600 hover:bg-emerald-50/50"
         >
           <Plane className="w-3.5 h-3.5 text-emerald-500" />
           <span className="hidden sm:inline">Travel &amp; Stays</span>
@@ -773,14 +798,14 @@ export default function SearchHero({
             placeholder={
               placeholder || 
               (isSmartTerminal
-                ? "Paste product link (Amazon, Flipkart, Croma, Samsung)..."
+                ? "Paste any product link or URL..."
                 : isDeals
-                ? "Search deals (e.g. 5G phones, sneakers, laptops)..."
+                ? "Search deals across all categories..."
                 : isCoupons 
-                ? "Search store (e.g. Zomato, Swiggy, Myntra)..." 
+                ? "Search store or brand for promo codes..." 
                 : isHealth 
                 ? "Search medicine, supplement or paste link..." 
-                : "Search product or paste URL (Amazon, Flipkart)...")
+                : "Search product or paste any web link...")
             }
             className="w-full bg-transparent text-slate-800 text-xs sm:text-sm font-medium focus:outline-hidden px-1 placeholder:text-slate-400"
           />
@@ -804,7 +829,7 @@ export default function SearchHero({
             title={isListening ? "Listening... Click to stop" : "Search with Voice"}
             className={`p-2 rounded-xl transition-all cursor-pointer flex items-center justify-center shrink-0 ${
               isListening
-                ? "bg-rose-600 text-white animate-pulse shadow-md shadow-rose-500/30"
+                ? "bg-rose-600 text-white animate-pulse shadow-md shadow-rose-500/30 ring-2 ring-rose-300"
                 : "text-slate-400 hover:text-slate-700 hover:bg-slate-100"
             }`}
           >
@@ -845,41 +870,26 @@ export default function SearchHero({
           </button>
         </form>
 
-        {/* AI Guide Assistance & Trust Sheet Prompts */}
-        {!isCoupons && !isHealth && !isSmartTerminal && (
-          <div className="mt-2.5 flex flex-wrap items-center justify-center gap-2">
-            {onOpenConcierge && (
-              <button
-                type="button"
-                suppressHydrationWarning
-                onClick={() => onOpenConcierge(query.trim())}
-                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50/80 hover:bg-indigo-100 border border-indigo-200/70 text-[11px] sm:text-xs font-semibold text-brand-indigo hover:text-indigo-800 transition-all cursor-pointer shadow-2xs group"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-indigo-600 group-hover:rotate-12 transition-transform" />
-                <span>Confused? <strong className="underline">Ask AI</strong></span>
-                <ArrowRight className="w-3 h-3 text-indigo-600 group-hover:translate-x-0.5 transition-transform" />
-              </button>
-            )}
-
-            {onOpenTrustSheet && (
-              <button
-                type="button"
-                suppressHydrationWarning
-                onClick={() => onOpenTrustSheet(query.trim())}
-                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50/90 hover:bg-emerald-100 border border-emerald-300/80 text-[11px] sm:text-xs font-semibold text-emerald-800 hover:text-emerald-950 transition-all cursor-pointer shadow-2xs group"
-              >
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 group-hover:scale-110 transition-transform" />
-                <span>Shortlisted a Model? <strong className="underline">AI Trust Sheet</strong></span>
-                <ArrowRight className="w-3 h-3 text-emerald-600 group-hover:translate-x-0.5 transition-transform" />
-              </button>
-            )}
+        {/* Active Voice Listening Status Pill */}
+        {isListening && (
+          <div className="mt-2.5 flex items-center justify-center gap-2 px-3 py-1.5 rounded-full bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold shadow-xs animate-pulse">
+            <span className="w-2 h-2 rounded-full bg-rose-600 animate-ping" />
+            <span>Listening... बोलिए (Speak now)</span>
+            <button
+              type="button"
+              onClick={stopVoiceSearch}
+              className="ml-2 text-[10px] uppercase font-black text-rose-600 hover:text-rose-900 underline cursor-pointer"
+            >
+              Cancel
+            </button>
           </div>
         )}
 
-        {/* Quick Trending Chips */}
-        <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 mt-3 sm:mt-4" suppressHydrationWarning>
-          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mr-1">
-            {isSmartTerminal ? "Sample Products:" : "Trending:"}
+        {/* Quick Trending Chips: Sleek Universal Single-Row Bar */}
+        <div className="w-full flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1 px-0.5 justify-start sm:justify-center mt-2.5 sm:mt-3" suppressHydrationWarning>
+          <span className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider shrink-0 mr-1 flex items-center gap-1">
+            <Flame className="w-3 h-3 text-amber-500 fill-amber-500" />
+            <span>{isSmartTerminal ? "Samples:" : "Trending:"}</span>
           </span>
           {trendingList.map((item, idx) => (
             <button
@@ -887,15 +897,7 @@ export default function SearchHero({
               type="button"
               suppressHydrationWarning
               onClick={() => handlePromptClick(item.query)}
-              className={`px-2.5 py-1 rounded-xl text-[11px] sm:text-xs font-semibold border transition-all cursor-pointer active:scale-95 shadow-2xs ${
-                isSmartTerminal
-                  ? "bg-emerald-50/70 hover:bg-emerald-100/90 text-emerald-800 border-emerald-200/80"
-                  : isCoupons
-                  ? "bg-violet-50/70 hover:bg-violet-100/90 text-violet-800 border-violet-200/70"
-                  : isHealth
-                  ? "bg-emerald-50/70 hover:bg-emerald-100/90 text-emerald-800 border-emerald-200/70"
-                  : "bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200/80"
-              }`}
+              className="px-2.5 sm:px-3 py-1 rounded-xl text-[11px] sm:text-xs font-semibold border border-slate-200/90 bg-white/95 hover:bg-slate-50 text-slate-700 transition-all cursor-pointer active:scale-95 shadow-2xs shrink-0 whitespace-nowrap hover:border-slate-300"
             >
               {item.label}
             </button>

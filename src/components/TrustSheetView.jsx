@@ -1450,9 +1450,9 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
             }}
             className="w-full max-w-2xl mx-auto mb-4"
           >
-            <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-2xl p-2 shadow-lg shadow-slate-100/80 hover:border-indigo-300 focus-within:border-brand-indigo focus-within:ring-4 focus-within:ring-indigo-500/10 transition-all">
-              <div className="pl-2.5 shrink-0">
-                <ExternalLink className="w-5 h-5 text-indigo-600" />
+            <div className="flex items-center gap-1.5 sm:gap-2 bg-white border border-slate-200 rounded-2xl p-1.5 sm:p-2 shadow-lg shadow-slate-100/80 hover:border-indigo-300 focus-within:border-brand-indigo focus-within:ring-4 focus-within:ring-indigo-500/10 transition-all">
+              <div className="pl-2 sm:pl-2.5 shrink-0">
+                <ExternalLink className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600" />
               </div>
 
               <input
@@ -1462,8 +1462,8 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
                   setInputVal(e.target.value);
                   if (error) setError(null);
                 }}
-                placeholder="Paste the exact product link here (e.g. Amazon, Walmart, Best Buy, boAt)..."
-                className="w-full bg-transparent text-slate-800 text-xs sm:text-sm font-medium focus:outline-hidden px-1 placeholder:text-slate-400"
+                placeholder="Paste product page URL to research..."
+                className="w-full min-w-0 bg-transparent text-slate-800 text-xs sm:text-sm font-medium focus:outline-hidden px-1 placeholder:text-slate-400"
               />
 
               {inputVal && (
@@ -1473,7 +1473,7 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
                     setInputVal("");
                     if (error) setError(null);
                   }}
-                  className="p-1 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                  className="p-1 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors shrink-0"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -1482,11 +1482,12 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
               <button
                 type="submit"
                 disabled={!inputVal.trim()}
-                className="px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl bg-gradient-to-r from-brand-indigo to-brand-violet hover:opacity-95 disabled:opacity-50 text-white font-extrabold text-xs sm:text-sm shadow-md shadow-indigo-500/20 cursor-pointer transition-all active:scale-95 shrink-0 flex items-center gap-1.5"
+                className="px-3 sm:px-6 py-2 sm:py-2.5 rounded-xl bg-gradient-to-r from-brand-indigo to-brand-violet hover:opacity-95 disabled:opacity-50 text-white font-extrabold text-xs sm:text-sm shadow-md shadow-indigo-500/20 cursor-pointer transition-all active:scale-95 shrink-0 flex items-center gap-1 sm:gap-1.5"
               >
-                <Sparkles className="w-4 h-4 shrink-0" />
-                <span>Research For Me</span>
-                <ChevronRight className="w-4 h-4 shrink-0" />
+                <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+                <span className="sm:hidden">Research</span>
+                <span className="hidden sm:inline">Research For Me</span>
+                <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 hidden sm:inline" />
               </button>
             </div>
           </form>

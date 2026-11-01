@@ -30,7 +30,9 @@ import {
   Filter,
   Loader2,
   Zap,
-  Compass
+  Compass,
+  Lock,
+  Eye
 } from "lucide-react";
 import { SUPPORTED_COUNTRIES } from "@/lib/countryConfig";
 import { useUser, useClerk } from "@clerk/nextjs";
@@ -76,6 +78,7 @@ export default function TravelHubView({
   const { openSignIn } = useClerk();
   const [activeTab, setActiveTab] = useState("flights"); // "flights" | "hotels" | "events"
   const [copiedCode, setCopiedCode] = useState(null);
+  const [revealedDeals, setRevealedDeals] = useState({});
   const [dealTypeFilter, setDealTypeFilter] = useState("all");
   const [dealSearchQuery, setDealSearchQuery] = useState("");
 
@@ -267,6 +270,29 @@ export default function TravelHubView({
     setTimeout(() => setCopiedCode(null), 2500);
   };
 
+  const handleRevealAndCopy = (deal) => {
+    if (!isSignedIn) {
+      if (typeof openSignIn === "function") {
+        openSignIn();
+      }
+      return;
+    }
+    // 1. Reveal promo code
+    setRevealedDeals((prev) => ({ ...prev, [deal.id]: true }));
+
+    // 2. Copy code to clipboard
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(deal.promoCode);
+    }
+    setCopiedCode(deal.promoCode);
+    setTimeout(() => setCopiedCode(null), 2500);
+
+    // 3. Open merchant portal in new tab
+    if (deal.directUrl && typeof window !== "undefined") {
+      window.open(deal.directUrl, "_blank", "noopener,noreferrer");
+    }
+  };
+
   const handleOpenAdvisorSecurely = (category, query) => {
     if (!isSignedIn) {
       if (typeof openSignIn === "function") {
@@ -337,7 +363,7 @@ export default function TravelHubView({
               type="text"
               value={dealSearchQuery}
               onChange={(e) => setDealSearchQuery(e.target.value)}
-              placeholder="Search or type brand (e.g. Air India, Hyatt)..."
+              placeholder="Search deals, coupons, or platforms..."
               className="w-full pl-8 pr-3 py-1.5 text-xs rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-slate-800 placeholder-slate-400"
             />
             {dealSearchQuery && (
@@ -352,28 +378,41 @@ export default function TravelHubView({
           </div>
         </div>
 
-        {/* Filter Pills (OTT Category Style) */}
-        <div className="flex flex-wrap items-center gap-1.5 px-1">
+        {/* Filter Pills - Modern Horizontal Ribbon with Badges */}
+        <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar py-1 px-1 scroll-smooth">
           {[
-            { id: "all", label: `All Deals (${filterCounts.all})` },
-            { id: "PROMO_CODE", label: `🎟️ Promo Codes (${filterCounts.PROMO_CODE})` },
-            { id: "BANK_OFFER", label: `💳 Bank Offers (${filterCounts.BANK_OFFER})` },
-            { id: "CATEGORY_PERK", label: `🎓 Student & Category (${filterCounts.CATEGORY_PERK})` },
-            { id: "APP_EXCLUSIVE", label: `📱 App Only (${filterCounts.APP_EXCLUSIVE})` },
-          ].map((pill) => (
-            <button
-              key={pill.id}
-              type="button"
-              onClick={() => setDealTypeFilter(pill.id)}
-              className={`px-3 py-1 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
-                dealTypeFilter === pill.id
-                  ? "bg-slate-900 text-white shadow-2xs font-extrabold"
-                  : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
-              }`}
-            >
-              {pill.label}
-            </button>
-          ))}
+            { id: "all", icon: "✨", label: "All Deals", count: filterCounts.all },
+            { id: "PROMO_CODE", icon: "🎟️", label: "Promo Codes", count: filterCounts.PROMO_CODE },
+            { id: "BANK_OFFER", icon: "💳", label: "Bank Offers", count: filterCounts.BANK_OFFER },
+            { id: "CATEGORY_PERK", icon: "🎓", label: "Student & Category", count: filterCounts.CATEGORY_PERK },
+            { id: "APP_EXCLUSIVE", icon: "📱", label: "App Only", count: filterCounts.APP_EXCLUSIVE },
+          ].map((pill) => {
+            const isActive = dealTypeFilter === pill.id;
+            return (
+              <button
+                key={pill.id}
+                type="button"
+                onClick={() => setDealTypeFilter(pill.id)}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 whitespace-nowrap active:scale-95 ${
+                  isActive
+                    ? "bg-slate-900 text-white shadow-sm ring-1 ring-slate-800"
+                    : "bg-white text-slate-700 border border-slate-200/90 hover:bg-slate-50 hover:text-slate-900 shadow-2xs"
+                }`}
+              >
+                <span className="text-xs sm:text-sm">{pill.icon}</span>
+                <span>{pill.label}</span>
+                <span
+                  className={`px-1.5 py-0.5 rounded-full text-[10px] font-black leading-none ${
+                    isActive
+                      ? "bg-indigo-500 text-white"
+                      : "bg-slate-100 text-slate-600"
+                  }`}
+                >
+                  {pill.count}
+                </span>
+              </button>
+            );
+          })}
         </div>
 
         {/* Deals Cards Grid (OTT Style Cards) */}
@@ -578,6 +617,7 @@ export default function TravelHubView({
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 items-start">
             {deals.map((deal) => {
               const isCopied = copiedCode === deal.promoCode;
+              const isRevealed = !!revealedDeals[deal.id];
               return (
                 <div
                   key={deal.id}
@@ -632,32 +672,52 @@ export default function TravelHubView({
                       </p>
                     </div>
 
-                    {/* Promo Code Copy Bar */}
-                    <div className="p-2.5 px-3 bg-indigo-50/60 rounded-xl border border-indigo-100/90 flex items-center justify-between gap-2">
+                    {/* Promo Code Reveal & Copy Gate */}
+                    <div className="p-2.5 px-3 bg-indigo-50/70 rounded-2xl border border-indigo-100 flex items-center justify-between gap-2">
                       <div className="min-w-0">
-                        <span className="text-[9px] font-extrabold text-indigo-400 uppercase tracking-wider block">Promo Code</span>
-                        <span className="font-mono font-black text-xs sm:text-sm text-indigo-950 tracking-wider">
-                          {deal.promoCode}
-                        </span>
+                        <span className="text-[9px] font-extrabold text-indigo-500 uppercase tracking-wider block">Promo Code</span>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          {isRevealed ? (
+                            <span className="font-mono font-black text-xs sm:text-sm text-indigo-950 tracking-wider">
+                              {deal.promoCode}
+                            </span>
+                          ) : (
+                            <span className="font-mono font-black text-xs sm:text-sm text-slate-400 tracking-widest select-none">
+                              ••••••••
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <button
                         type="button"
-                        onClick={() => handleCopy(deal.promoCode)}
-                        className={`px-3 py-1.5 rounded-lg text-[10px] font-extrabold transition-all cursor-pointer flex items-center gap-1 shrink-0 ${
+                        onClick={() => handleRevealAndCopy(deal)}
+                        className={`px-3 py-1.5 rounded-xl text-[10px] font-extrabold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 shadow-xs active:scale-95 ${
                           isCopied
-                            ? "bg-emerald-600 text-white shadow-2xs"
-                            : "bg-indigo-600 hover:bg-indigo-700 text-white shadow-2xs active:scale-95"
+                            ? "bg-emerald-600 text-white"
+                            : isRevealed
+                            ? "bg-indigo-600 hover:bg-indigo-700 text-white"
+                            : "bg-slate-900 hover:bg-slate-800 text-white"
                         }`}
                       >
                         {isCopied ? (
                           <>
-                            <Check className="w-3 h-3" />
+                            <Check className="w-3 h-3 text-white" />
                             <span>COPIED!</span>
+                          </>
+                        ) : isRevealed ? (
+                          <>
+                            <Copy className="w-3 h-3 text-white" />
+                            <span>COPY AGAIN</span>
+                          </>
+                        ) : !isSignedIn ? (
+                          <>
+                            <Lock className="w-3 h-3 text-amber-300" />
+                            <span>REVEAL CODE</span>
                           </>
                         ) : (
                           <>
-                            <Copy className="w-3 h-3" />
-                            <span>{!isSignedIn ? "SIGN IN TO COPY" : "COPY CODE"}</span>
+                            <Eye className="w-3 h-3 text-indigo-300" />
+                            <span>REVEAL &amp; OPEN</span>
                           </>
                         )}
                       </button>
@@ -707,121 +767,112 @@ export default function TravelHubView({
     <div className="w-full max-w-6xl mx-auto px-3 sm:px-6 py-4 sm:py-8 space-y-6 sm:space-y-8 animate-fade-in">
       
       {/* 1. HERO HEADER: Transparency & Strategy Value Proposition */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 text-white p-6 sm:p-10 border border-slate-800 shadow-xl">
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 text-white p-4 sm:p-8 md:p-10 border border-slate-800 shadow-xl">
         <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-1/3 w-80 h-80 bg-rose-500/10 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="relative z-10 max-w-3xl space-y-4">
+        <div className="relative z-10 max-w-3xl space-y-3 sm:space-y-4">
           {/* Status & Credibility Pill */}
-          <div className="inline-flex flex-wrap items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-[11px] font-bold text-indigo-200">
-            <span className="flex items-center gap-1.5 text-amber-300 font-extrabold">
-              <Clock className="w-3.5 h-3.5 animate-pulse text-amber-400" />
-              1-Click Direct Booking Services: Coming Soon in 2026
-            </span>
-            <span className="text-slate-500">•</span>
-            <span className="text-emerald-300 flex items-center gap-1 font-extrabold">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-              Live Now: Smart Savings Advisor &amp; Strategy Engine
-            </span>
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-indigo-500/20 border border-indigo-400/30 text-[11px] sm:text-xs font-bold text-indigo-200">
+            <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-pulse shrink-0" />
+            <span>AI Booking Strategy &amp; Smart Savings Hub</span>
           </div>
 
-          <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-tight">
-            Smart Travel, Hotels &amp; Events Strategy Hub
+          <h1 className="text-xl sm:text-3xl lg:text-4xl font-black tracking-tight leading-tight">
+            Smart Travel, Flights &amp; Hotel Intelligence
           </h1>
 
-          <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md space-y-2 text-xs sm:text-[13px] leading-relaxed text-slate-200">
-            <p className="font-semibold text-white">
-              🚀 <span className="text-amber-300 font-bold">Upcoming Service:</span> We are actively building 1-Click direct flight, hotel, and event booking directly inside this platform (Coming Soon in 2026).
-            </p>
-            <p className="text-slate-300">
-              💡 <span className="text-emerald-300 font-bold">Active Right Now:</span> Consult our AI Booking Strategy Advisor before you purchase. Share your itinerary to uncover verified fare rules, free luggage entitlements, and fee-waiver strategies to maximize your savings.
-            </p>
-          </div>
+          <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-2xl">
+            Uncover hidden airline fare rules, free luggage hacks, and member-only hotel rates before you book across trusted booking portals.
+          </p>
 
           {/* Quick AI Advisor Launch Action */}
-          <div className="pt-2 flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="pt-1 flex flex-col sm:flex-row sm:items-center gap-2.5">
             <button
               type="button"
               onClick={() => handleOpenAdvisorSecurely(activeTab)}
-              className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-gradient-to-r from-indigo-500 via-indigo-600 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white text-xs sm:text-sm font-black shadow-lg shadow-indigo-500/30 flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-95 group"
+              className="w-full sm:w-auto px-5 sm:px-6 py-2.5 sm:py-3.5 rounded-xl bg-gradient-to-r from-indigo-500 via-indigo-600 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white text-xs sm:text-sm font-black shadow-lg shadow-indigo-500/30 flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-95 group shrink-0"
             >
               <Sparkles className="w-4 h-4 text-amber-300 animate-pulse shrink-0" />
               <span>Talk to AI Booking Strategy Advisor</span>
               <ArrowRight className="w-4 h-4 text-indigo-200 group-hover:translate-x-1 transition-transform shrink-0" />
             </button>
             <span className="text-[11px] text-slate-400 font-medium text-center sm:text-left">
-              Describe your journey or booking plan • AI builds your savings blueprint in seconds
+              Share your route or stay • AI generates instant savings strategies
             </span>
           </div>
 
-          {/* Quick Example Prompt Chips */}
-          <div className="pt-1 flex flex-wrap items-center gap-2 text-[11px]">
-            <span className="text-slate-400 font-bold">Try asking:</span>
+          {/* Quick Universal Prompt Chips */}
+          <div className="pt-1 flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 text-[11px]">
+            <span className="text-slate-400 font-bold shrink-0">Try asking:</span>
             <button
               type="button"
-              onClick={() => handleOpenAdvisorSecurely("flights", "Delhi to Goa flight with luggage, how to save money?")}
-              className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-slate-200 border border-white/10 transition-colors cursor-pointer"
+              onClick={() => handleOpenAdvisorSecurely("flights", "How to avoid luggage fees and get seat selection discount?")}
+              className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-slate-200 border border-white/10 transition-colors cursor-pointer shrink-0 whitespace-nowrap"
             >
-              🛫 Delhi to Goa flight with luggage?
+              🛫 Baggage fee &amp; seat hacks?
             </button>
             <button
               type="button"
-              onClick={() => handleOpenAdvisorSecurely("hotels", "Booking London hotel, how to unlock mobile app discount?")}
-              className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-slate-200 border border-white/10 transition-colors cursor-pointer"
+              onClick={() => handleOpenAdvisorSecurely("hotels", "How to get member rates and secret mobile discounts on hotels?")}
+              className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-slate-200 border border-white/10 transition-colors cursor-pointer shrink-0 whitespace-nowrap"
             >
-              🏨 Hotel mobile discount strategy?
+              🏨 Secret hotel app discounts?
             </button>
             <button
               type="button"
-              onClick={() => handleOpenAdvisorSecurely("events", "BookMyShow movie ticket with ICICI card, how to claim BOGO?")}
-              className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-slate-200 border border-white/10 transition-colors cursor-pointer"
+              onClick={() => handleOpenAdvisorSecurely("events", "Credit card perks and early bird booking discounts?")}
+              className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-slate-200 border border-white/10 transition-colors cursor-pointer shrink-0 whitespace-nowrap"
             >
-              🎟️ Movie BOGO quota timing?
+              🎟️ Card booking perks?
             </button>
           </div>
         </div>
       </div>
 
       {/* 2. THREE-PILLAR SUB-NAVIGATION (Flights | Hotels | Events) */}
-      <div className="flex items-center justify-center">
-        <div className="inline-flex p-1.5 bg-slate-100 rounded-2xl border border-slate-200/80 shadow-inner">
+      <div className="flex items-center justify-center w-full">
+        <div className="w-full sm:w-auto flex items-center p-1 sm:p-1.5 bg-slate-100 rounded-2xl border border-slate-200/80 shadow-inner overflow-x-auto no-scrollbar gap-1 sm:gap-1.5">
           <button
             type="button"
             onClick={() => handleTabSwitch("flights")}
-            className={`flex items-center gap-2 px-4 sm:px-6 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold transition-all cursor-pointer ${
+            className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 sm:gap-2 px-3.5 sm:px-6 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer whitespace-nowrap active:scale-95 ${
               activeTab === "flights"
-                ? "bg-white text-slate-950 shadow-sm"
-                : "text-slate-600 hover:text-slate-900"
+                ? "bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-md shadow-indigo-500/30 ring-2 ring-indigo-400/40"
+                : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
             }`}
           >
-            <Plane className={`w-4 h-4 ${activeTab === "flights" ? "text-indigo-600" : "text-slate-400"}`} />
-            <span>Flights Strategy</span>
+            <Plane className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${activeTab === "flights" ? "text-white" : "text-slate-400"}`} />
+            <span className="sm:hidden">Flights</span>
+            <span className="hidden sm:inline">Flights Strategy</span>
           </button>
 
           <button
             type="button"
             onClick={() => handleTabSwitch("hotels")}
-            className={`flex items-center gap-2 px-4 sm:px-6 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold transition-all cursor-pointer ${
+            className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 sm:gap-2 px-3.5 sm:px-6 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer whitespace-nowrap active:scale-95 ${
               activeTab === "hotels"
-                ? "bg-white text-slate-950 shadow-sm"
-                : "text-slate-600 hover:text-slate-900"
+                ? "bg-gradient-to-r from-emerald-600 to-teal-700 text-white shadow-md shadow-emerald-500/30 ring-2 ring-emerald-400/40"
+                : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
             }`}
           >
-            <Hotel className={`w-4 h-4 ${activeTab === "hotels" ? "text-emerald-600" : "text-slate-400"}`} />
-            <span>Hotels &amp; Stays</span>
+            <Hotel className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${activeTab === "hotels" ? "text-white" : "text-slate-400"}`} />
+            <span className="sm:hidden">Hotels</span>
+            <span className="hidden sm:inline">Hotels &amp; Stays</span>
           </button>
 
           <button
             type="button"
             onClick={() => handleTabSwitch("events")}
-            className={`flex items-center gap-2 px-4 sm:px-6 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold transition-all cursor-pointer ${
+            className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 sm:gap-2 px-3.5 sm:px-6 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer whitespace-nowrap active:scale-95 ${
               activeTab === "events"
-                ? "bg-white text-slate-950 shadow-sm"
-                : "text-slate-600 hover:text-slate-900"
+                ? "bg-gradient-to-r from-purple-600 to-fuchsia-700 text-white shadow-md shadow-purple-500/30 ring-2 ring-purple-400/40"
+                : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
             }`}
           >
-            <Ticket className={`w-4 h-4 ${activeTab === "events" ? "text-purple-600" : "text-slate-400"}`} />
-            <span>Events &amp; Movies</span>
+            <Ticket className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${activeTab === "events" ? "text-white" : "text-slate-400"}`} />
+            <span className="sm:hidden">Events</span>
+            <span className="hidden sm:inline">Events &amp; Movies</span>
           </button>
         </div>
       </div>
@@ -841,60 +892,38 @@ export default function TravelHubView({
             transition={{ duration: 0.2 }}
             className="space-y-6"
           >
-            {/* Strategy Grid: Practical Real-World Rules */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Upcoming 1-Click Direct Booking Service Spotlight Card */}
+            <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-900 text-white border border-indigo-500/25 shadow-md relative overflow-hidden">
+              <div className="absolute -right-8 -bottom-8 w-48 h-48 bg-indigo-500/15 rounded-full blur-2xl pointer-events-none" />
               
-              {/* Card 1: Two-Way Split Independence */}
-              <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-2xs space-y-3">
-                <div className="w-10 h-10 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
-                  <ArrowLeftRight className="w-5 h-5" />
+              <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-2 max-w-xl">
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-400/15 border border-amber-400/30 text-[11px] font-extrabold text-amber-300">
+                    <Clock className="w-3.5 h-3.5 animate-pulse text-amber-300" />
+                    <span>Upcoming Feature • Direct 1-Click Booking</span>
+                  </div>
+                  <h3 className="text-base sm:text-lg font-black text-white">
+                    Direct Wholesale Flight &amp; Stay Bookings Coming Soon
+                  </h3>
+                  <p className="text-xs text-slate-300 leading-relaxed">
+                    We are actively building 1-click direct booking with wholesale net fares and zero hidden markups right inside this platform. In the meantime, explore active verified deals below or consult our AI Strategy Advisor for instant itinerary savings.
+                  </p>
                 </div>
-                <h3 className="font-extrabold text-sm text-slate-900">
-                  Smart Two-Way Carrier Split
-                </h3>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Instead of locking into a single airline for round-trip, mix carriers based on flight departure timing (e.g. morning outbound with Airline A, evening return with Airline B). Gives better schedules and balances blended fares.
-                </p>
-                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 text-[11px] font-bold text-indigo-700">
-                  ✓ Verified: Up to {currencySymbol}{isIN ? "1,400" : "60"} saved on domestic routes
-                </div>
-              </div>
 
-              {/* Card 2: Student & Senior Statutory Baggage Entitlements */}
-              <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-2xs space-y-3">
-                <div className="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600">
-                  <Luggage className="w-5 h-5" />
-                </div>
-                <h3 className="font-extrabold text-sm text-slate-900">
-                  Official Special Category Fares
-                </h3>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Airlines offer statutory category discounts that travelers miss. Students get 6%–10% base fare discount + <strong>10kg to 25kg free baggage</strong>. Senior citizens (60+) receive statutory base concessions.
-                </p>
-                <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-100 text-[11px] font-bold text-emerald-800">
-                  ✓ Zero counter baggage penalty ({currencySymbol}{isIN ? "2,500" : "75"} value)
-                </div>
-              </div>
-
-              {/* Card 3: Pre-Ticked Fee Shaver */}
-              <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-2xs space-y-3">
-                <div className="w-10 h-10 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600">
-                  <ShieldCheck className="w-5 h-5" />
-                </div>
-                <h3 className="font-extrabold text-sm text-slate-900">
-                  Checkout Add-On Fee Audit
-                </h3>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Always inspect the checkout summary before paying: uncheck auto-selected travel insurance and luggage loss protection if your credit card already includes travel coverage. Save seat selection fees until web check-in.
-                </p>
-                <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-100 text-[11px] font-bold text-amber-800">
-                  ✓ Eliminates {currencySymbol}{isIN ? "350–600" : "15–30"} in pre-ticked extras
-                </div>
+                <button
+                  type="button"
+                  onClick={() => handleOpenAdvisorSecurely(activeTab)}
+                  className="shrink-0 self-start sm:self-center px-4 sm:px-5 py-2.5 rounded-xl bg-white text-indigo-950 hover:bg-slate-100 font-extrabold text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+                  <span>Consult AI Advisor</span>
+                  <ArrowRight className="w-3.5 h-3.5 text-indigo-900" />
+                </button>
               </div>
             </div>
 
             {/* VERIFIED DEALS & PROMO CODES SECTION */}
-            {renderDealsSection("flights", "Verified Flights Deals & Official Promo Codes", "Direct verified discounts across IndiGo, Air India, MakeMyTrip & EaseMyTrip")}
+            {renderDealsSection("flights", "Verified Flights Deals & Official Promo Codes", "Direct verified discounts, baggage waivers, and student perks across official airlines")}
 
             {/* Verified Major Airlines Portal Hub */}
             <div className="bg-white rounded-3xl border border-slate-200 p-5 sm:p-6 shadow-2xs space-y-4">
@@ -1049,60 +1078,38 @@ export default function TravelHubView({
             transition={{ duration: 0.2 }}
             className="space-y-6"
           >
-            {/* Strategy Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Upcoming 1-Click Direct Hotel Booking Spotlight Card */}
+            <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-slate-950 via-emerald-950 to-slate-900 text-white border border-emerald-500/25 shadow-md relative overflow-hidden">
+              <div className="absolute -right-8 -bottom-8 w-48 h-48 bg-emerald-500/15 rounded-full blur-2xl pointer-events-none" />
               
-              {/* Card 1: Mobile App Exclusive Rate Advantage */}
-              <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-2xs space-y-3">
-                <div className="w-10 h-10 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
-                  <Smartphone className="w-5 h-5" />
+              <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-2 max-w-xl">
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-400/15 border border-emerald-400/30 text-[11px] font-extrabold text-emerald-300">
+                    <Clock className="w-3.5 h-3.5 animate-pulse text-emerald-300" />
+                    <span>Upcoming Feature • Direct 1-Click Booking</span>
+                  </div>
+                  <h3 className="text-base sm:text-lg font-black text-white">
+                    Direct Wholesale Hotel &amp; Stay Bookings Coming Soon
+                  </h3>
+                  <p className="text-xs text-slate-300 leading-relaxed">
+                    We are actively building 1-click direct hotel booking with wholesale member rates, complimentary upgrades, and zero middleman markups. In the meantime, explore verified deals below or consult our AI Strategy Advisor for instant stay savings.
+                  </p>
                 </div>
-                <h3 className="font-extrabold text-sm text-slate-900">
-                  Mobile App Exclusive Deals
-                </h3>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Booking.com and Agoda offer official <strong>10% to 15% Mobile Only Discounts</strong> on thousands of partner properties. If you find a hotel on laptop, complete the booking via their mobile app to unlock the lower rate.
-                </p>
-                <div className="p-2.5 rounded-xl bg-indigo-50 border border-indigo-100 text-[11px] font-bold text-indigo-700">
-                  ✓ Save 10%–15% instantly via official mobile apps
-                </div>
-              </div>
 
-              {/* Card 2: Genius & VIP Loyalty Unlocking */}
-              <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-2xs space-y-3">
-                <div className="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600">
-                  <Award className="w-5 h-5" />
-                </div>
-                <h3 className="font-extrabold text-sm text-slate-900">
-                  Official Loyalty Tiers (Genius &amp; VIP)
-                </h3>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Booking.com Genius and Agoda VIP are 100% free lifetime membership programs. Level 1 unlocks 10% room discount, and Level 2 unlocks free complimentary breakfast and room category upgrades at participating properties.
-                </p>
-                <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-100 text-[11px] font-bold text-emerald-800">
-                  ✓ Free breakfast + room upgrade perks
-                </div>
-              </div>
-
-              {/* Card 3: Free Cancellation Price Lock */}
-              <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-2xs space-y-3">
-                <div className="w-10 h-10 rounded-2xl bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-600">
-                  <Calendar className="w-5 h-5" />
-                </div>
-                <h3 className="font-extrabold text-sm text-slate-900">
-                  Free Cancellation Price Shield
-                </h3>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Avoid non-refundable rates to save nominal amounts. Always choose "Free Cancellation". If the hotel drops rates or issues a promo code 48 hours before your arrival to fill vacancy, rebook and cancel the prior reservation.
-                </p>
-                <div className="p-2.5 rounded-xl bg-purple-50 border border-purple-100 text-[11px] font-bold text-purple-800">
-                  ✓ Zero risk flexibility + re-booking arbitrage
-                </div>
+                <button
+                  type="button"
+                  onClick={() => handleOpenAdvisorSecurely("hotels")}
+                  className="shrink-0 self-start sm:self-center px-4 sm:px-5 py-2.5 rounded-xl bg-white text-emerald-950 hover:bg-slate-100 font-extrabold text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-emerald-600 fill-emerald-600" />
+                  <span>Consult AI Advisor</span>
+                  <ArrowRight className="w-3.5 h-3.5 text-emerald-900" />
+                </button>
               </div>
             </div>
 
             {/* VERIFIED HOTEL DEALS & MOBILE SAVING STRATEGIES */}
-            {renderDealsSection("hotels", "Verified Hotel Deals & Mobile Saving Strategies", "Direct verified discounts across Booking.com, Agoda, MakeMyTrip Hotels, Taj & OYO")}
+            {renderDealsSection("hotels", "Verified Hotel Deals & Mobile Saving Strategies", "Direct verified room discounts, free breakfast perks, and secret mobile rates")}
 
             {/* Verified Major Hotel Booking Channels */}
             <div className="bg-white rounded-3xl border border-slate-200 p-5 sm:p-6 shadow-2xs space-y-4">
@@ -1196,60 +1203,38 @@ export default function TravelHubView({
             transition={{ duration: 0.2 }}
             className="space-y-6"
           >
-            {/* Strategy Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Upcoming 1-Click Direct Event Booking Spotlight Card */}
+            <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-slate-950 via-purple-950 to-slate-900 text-white border border-purple-500/25 shadow-md relative overflow-hidden">
+              <div className="absolute -right-8 -bottom-8 w-48 h-48 bg-purple-500/15 rounded-full blur-2xl pointer-events-none" />
               
-              {/* Card 1: Bank Card BOGO Quota Timing */}
-              <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-2xs space-y-3">
-                <div className="w-10 h-10 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
-                  <CreditCard className="w-5 h-5" />
+              <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-2 max-w-xl">
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-400/15 border border-purple-400/30 text-[11px] font-extrabold text-purple-300">
+                    <Clock className="w-3.5 h-3.5 animate-pulse text-purple-300" />
+                    <span>Upcoming Feature • Direct 1-Click Booking</span>
+                  </div>
+                  <h3 className="text-base sm:text-lg font-black text-white">
+                    Direct Face-Value Event &amp; Concert Passes Coming Soon
+                  </h3>
+                  <p className="text-xs text-slate-300 leading-relaxed">
+                    We are actively building direct event, concert, and movie ticketing integrations with verified card discounts and zero handling fee markups. In the meantime, explore verified offers below or consult our AI Strategy Advisor for instant booking perks.
+                  </p>
                 </div>
-                <h3 className="font-extrabold text-sm text-slate-900">
-                  Bank Card BOGO (Buy 1 Get 1) Quota
-                </h3>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Major credit/debit cards offer 1 free movie or event ticket monthly. Because daily bank quotas fill up quickly by evening, book right when the bank daily quota resets at <strong>12:00 Midnight or 11:00 AM</strong> to secure your complimentary ticket.
-                </p>
-                <div className="p-2.5 rounded-xl bg-indigo-50 border border-indigo-100 text-[11px] font-bold text-indigo-700">
-                  ✓ Save up to {currencySymbol}{isIN ? "500" : "15"} per movie booking
-                </div>
-              </div>
 
-              {/* Card 2: Official Concert Presale Windows */}
-              <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-2xs space-y-3">
-                <div className="w-10 h-10 rounded-2xl bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-600">
-                  <Clock className="w-5 h-5" />
-                </div>
-                <h3 className="font-extrabold text-sm text-slate-900">
-                  Priority Presale Booking Access
-                </h3>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  For high-demand stadium concerts and arena tours, official organizers offer 24–48 hour exclusive presales for specific cardholders (e.g. Kotak/HSBC in India, Chase/Amex in US, Mastercard in UK). Secures face-value tickets before general sellouts.
-                </p>
-                <div className="p-2.5 rounded-xl bg-purple-50 border border-purple-100 text-[11px] font-bold text-purple-800">
-                  ✓ Face-value tickets (Avoids 3x secondary markups)
-                </div>
-              </div>
-
-              {/* Card 3: Convenience Fee Mitigation */}
-              <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-2xs space-y-3">
-                <div className="w-10 h-10 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600">
-                  <Percent className="w-5 h-5" />
-                </div>
-                <h3 className="font-extrabold text-sm text-slate-900">
-                  Convenience &amp; Booking Fee Offset
-                </h3>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Ticketing portals add Internet Handling Fees per ticket. Using qualifying bank card promotions, digital loyalty points (e.g. Tata Neu coins, Payback), or partner gift vouchers absorbs or offsets these booking charges entirely.
-                </p>
-                <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-100 text-[11px] font-bold text-amber-800">
-                  ✓ 100% fee absorption via bank tie-ups
-                </div>
+                <button
+                  type="button"
+                  onClick={() => handleOpenAdvisorSecurely("events")}
+                  className="shrink-0 self-start sm:self-center px-4 sm:px-5 py-2.5 rounded-xl bg-white text-purple-950 hover:bg-slate-100 font-extrabold text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-purple-600 fill-purple-600" />
+                  <span>Consult AI Advisor</span>
+                  <ArrowRight className="w-3.5 h-3.5 text-purple-900" />
+                </button>
               </div>
             </div>
 
             {/* VERIFIED EVENTS & MOVIES DEALS SECTION */}
-            {renderDealsSection("events", "Verified Event, Concert & Movie BOGO Passes", "Bank 1+1 offers, early bird festival passes across BookMyShow, District & Paytm Insider")}
+            {renderDealsSection("events", "Verified Event, Concert & Movie BOGO Passes", "Cardholder 1+1 offers, early bird festival passes, and verified entertainment perks")}
 
             {/* Verified Major Event Booking Channels */}
             <div className="bg-white rounded-3xl border border-slate-200 p-5 sm:p-6 shadow-2xs space-y-4">
