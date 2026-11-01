@@ -18,6 +18,41 @@
 
 ## 📅 Daily Changelog & Feature Timeline
 
+### 🗓️ 2026-11-01 (Coupons & OTT Major Release: AdvCoupon Mini Visual Tiles, Cart Savings Estimator, Smart Floating Copy Toast, Dynamic Brand Theming & Mobile UI Polish)
+
+* **Git Commit**: [`1e1bd8a`](https://github.com/Active-Coupns/ai-shopping-UI/commit/1e1bd8a)
+* **Commit Message**: `feat(coupons-ott): advcoupon visual tiles, cart savings estimator, smart copy toast, dynamic brand theming & mobile ui polish`
+* **Status**: ✅ 100% Tested, Verified & Pushed to `origin/main`
+* **Purpose & Architecture of this Release**:
+  1. **AdvCoupon-Style Mini Visual Category Tiles (`StoreCardCarousel.jsx` & `SubscriptionsView.jsx`)**:
+     - Converted flat category pills across both Coupons and Subscriptions hubs into sleek, high-conversion visual mini tiles (`w-[130px] sm:w-[155px] h-[70px] sm:h-[76px]`).
+     - Added rich ambient gradients (`from-violet-900`, `from-rose-900`, `from-amber-900`, `from-pink-900`, `from-sky-900`, `from-emerald-900`), translucent squircle emoji badges, active store/service counter pills, and circular chevron arrows (`→`).
+  2. **Coupons Discovery & Hero Sanitization (`SearchHero.jsx`)**:
+     - Sanitized search placeholders: Removed hardcoded brand names (`Zomato`, `Swiggy`, `Myntra`, `Blinkit`, `Domino's`) from animated and static search placeholders; replaced with universal queries.
+     - Fixed voice search microphone routing: Transcripts spoken while in Coupons mode now reliably route to `onCouponSearch` rather than generic ecommerce search.
+     - Redesigned top 'Snap & Save' AI Cart Scanner with an `AI VISION` badge, responsive mobile text layout, and high-contrast `Upload →` CTA.
+     - Removed redundant duplicate bottom dropzone (`Or Snap Your Checkout Cart`), eliminating clutter in the mobile viewport.
+     - Preserved all Trending brand chips (`🍕 Zomato`, `🛵 Swiggy`, `🛍️ Myntra`, etc.) exactly as specified.
+  3. **Individual Store View Mobile Optimization (`CouponResultView.jsx`)**:
+     - Fixed '100% Verified' badge: Moved to a dedicated status row above store title with a `ShieldCheck` icon and a live pulsating green dot (`Active & Working`), eliminating title collision and text clipping on mobile.
+     - Clean mobile navigation: Streamlined back navigation to a single top `<ArrowLeft>` button on mobile, hiding the duplicate desktop button.
+     - Responsive grid and card padding (`p-3.5 sm:p-5`, `gap-3.5 sm:gap-5`) with `pb-24` container padding to prevent mobile bottom navigation overlap.
+  4. **Four Core Interactive Innovations in Store Coupons (`CouponResultView.jsx`)**:
+     - **Quick Filter Chips**: Dynamic 1-tap pills (`All Codes`, `Bank & Cards 💳`, `% Discounts 🔥`, `Flat ₹ OFF ⚡`, `New Users ✨`) with live counts.
+     - **Mini Cart Savings Estimator**: Interactive calculator widget with quick presets (`₹249`, `₹499`, `₹999`, `₹1499`) that calculates the #1 best saving coupon, highlights the winning card in gold/emerald, and calculates shortfalls for others.
+     - **Smart Floating Bottom Toast on Copy**: Bottom pop-up toast with checkmark, copied coupon code, and direct `Open [Store] ↗` action button.
+     - **Dynamic Brand Color Theming**: Store-specific themes for Zomato (red), Swiggy (orange), Blinkit (yellow/amber), Zepto (purple), Myntra (pink), Domino's (blue), Croma (teal), etc.
+
+#### 📂 Files Modified:
+- `src/components/CouponResultView.jsx` *(Smart filter chips, cart savings calculator, copy toast, brand theming, mobile header polish)*
+- `src/components/SearchHero.jsx` *(Universal search placeholders, voice search coupon routing, cart scanner hero redesign, bottom dropzone removal)*
+- `src/components/StoreCardCarousel.jsx` *(AdvCoupon mini visual tiles, responsive header with verified badge)*
+- `src/components/SubscriptionsView.jsx` *(AdvCoupon visual category tiles, universal copy, blueprint polish)*
+- `DEVELOPMENT_LOG.md` *(Documented release log)*
+- `STRATEGY_BLUEPRINT_PARTNERSHIPS.md` *(Updated with multi-country dynamic SEO and timezone architecture)*
+
+---
+
 ### 🗓️ 2026-11-01 (OTT & Subscriptions Hub Mobile Optimization, Universal Copy, Smart Category Box & Blueprint Polish)
 
 * **Git Commit**: [`7bb90cd`](https://github.com/Active-Coupns/ai-shopping-UI/commit/7bb90cd)

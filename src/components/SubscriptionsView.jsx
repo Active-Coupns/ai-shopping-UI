@@ -254,14 +254,62 @@ export default function SubscriptionsView({
   };
 
   const categoryDefinitions = useMemo(() => [
-    { id: "all", name: "All Subscriptions", icon: Tv, emoji: "" },
-    { id: "video", name: "OTT & Movies", icon: Film, emoji: "🎬 " },
-    { id: "music", name: "Music & Audio", icon: Volume2, emoji: "🎵 " },
-    { id: "ai_design", name: "AI & Creative", icon: Palette, emoji: "🤖 " },
-    { id: "cloud_work", name: "Work & Cloud", icon: Cloud, emoji: "💼 " },
-    { id: "gaming", name: "Gaming Passes", icon: Gamepad2, emoji: "🎮 " },
-    { id: "fitness", name: "Health & Fitness", icon: Dumbbell, emoji: "💪 " },
-    { id: "bundle", name: "All-in-One Combos", icon: Gift, emoji: "🎁 " }
+    { 
+      id: "all", 
+      name: "All Passes", 
+      icon: Tv, 
+      bgGradient: "from-indigo-900 via-indigo-950 to-slate-950",
+      iconBg: "bg-indigo-500/25 border-indigo-400/40 text-indigo-300"
+    },
+    { 
+      id: "video", 
+      name: "OTT & Movies", 
+      icon: Film, 
+      bgGradient: "from-rose-900 via-red-950 to-slate-950",
+      iconBg: "bg-rose-500/25 border-rose-400/40 text-rose-300"
+    },
+    { 
+      id: "music", 
+      name: "Music & Audio", 
+      icon: Volume2, 
+      bgGradient: "from-emerald-900 via-teal-950 to-slate-950",
+      iconBg: "bg-emerald-500/25 border-emerald-400/40 text-emerald-300"
+    },
+    { 
+      id: "ai_design", 
+      name: "AI & Creative", 
+      icon: Palette, 
+      bgGradient: "from-purple-900 via-fuchsia-950 to-slate-950",
+      iconBg: "bg-purple-500/25 border-purple-400/40 text-purple-300"
+    },
+    { 
+      id: "cloud_work", 
+      name: "Work & Cloud", 
+      icon: Cloud, 
+      bgGradient: "from-sky-900 via-blue-950 to-slate-950",
+      iconBg: "bg-sky-500/25 border-sky-400/40 text-sky-300"
+    },
+    { 
+      id: "gaming", 
+      name: "Gaming Passes", 
+      icon: Gamepad2, 
+      bgGradient: "from-amber-900 via-orange-950 to-slate-950",
+      iconBg: "bg-amber-500/25 border-amber-400/40 text-amber-300"
+    },
+    { 
+      id: "fitness", 
+      name: "Health & Fitness", 
+      icon: Dumbbell, 
+      bgGradient: "from-teal-900 via-cyan-950 to-slate-950",
+      iconBg: "bg-teal-500/25 border-teal-400/40 text-teal-300"
+    },
+    { 
+      id: "bundle", 
+      name: "Combos & Bundles", 
+      icon: Gift, 
+      bgGradient: "from-violet-900 via-purple-950 to-slate-950",
+      iconBg: "bg-violet-500/25 border-violet-400/40 text-violet-300"
+    }
   ], []);
 
   const categoryCounts = useMemo(() => {
@@ -495,7 +543,7 @@ export default function SubscriptionsView({
               ShopSmart AI Subscription Optimizer
             </h2>
             <p className="text-xs text-indigo-200/80 font-medium max-w-xl">
-              Don&apos;t pay full price upfront. Discover if your mobile plan ({telecomNames}) gives {currencySymbol}0 access or bundle for savings.
+              Don&apos;t pay full price upfront. Discover if your telecom provider or credit card unlocks complimentary access and bundled savings.
             </p>
           </div>
         </div>
@@ -518,7 +566,7 @@ export default function SubscriptionsView({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search subscriptions, series or movies (e.g., Netflix, Hotstar, Mirzapur, ChatGPT, Spotify, Cloud, Game Pass)..."
+            placeholder="Search passes, streaming apps, or series..."
             className="w-full px-4 py-3 pl-11 rounded-2xl bg-white border border-slate-200 text-slate-800 text-xs sm:text-sm font-semibold placeholder:text-slate-400 shadow-2xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
           />
           <Tv className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
@@ -533,9 +581,19 @@ export default function SubscriptionsView({
           )}
         </div>
 
-        {/* Smart Category Hub Box */}
-        <div className="p-2 sm:p-2.5 rounded-2xl bg-slate-100/80 border border-slate-200/80 shadow-2xs">
-          <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar scroll-smooth py-0.5 px-0.5">
+        {/* Visual Category Tiles (Inspired by Modern Category Portals) */}
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between px-1 text-[11px] font-bold text-slate-500">
+            <span className="flex items-center gap-1.5 font-extrabold text-slate-800 text-xs">
+              <span>Browse by Category</span>
+              <span className="text-[10px] font-semibold text-slate-400">({categoryDefinitions.length} hubs)</span>
+            </span>
+            <span className="text-[10px] text-slate-400 font-semibold sm:hidden">
+              Swipe to explore →
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2.5 overflow-x-auto no-scrollbar scroll-smooth py-1 px-1">
             {categoryDefinitions.map((cat) => {
               const Icon = cat.icon;
               const isSelected = selectedCategory === cat.id;
@@ -545,25 +603,42 @@ export default function SubscriptionsView({
                   key={cat.id}
                   type="button"
                   onClick={() => setSelectedCategory(cat.id)}
-                  className={`inline-flex items-center gap-1.5 sm:gap-2 px-3 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 whitespace-nowrap active:scale-95 ${
+                  className={`relative w-[132px] sm:w-[155px] h-[72px] sm:h-[78px] p-2.5 rounded-2xl bg-gradient-to-br ${cat.bgGradient} text-white flex flex-col justify-between shrink-0 text-left transition-all duration-200 cursor-pointer overflow-hidden group select-none active:scale-95 ${
                     isSelected
-                      ? "bg-slate-900 text-white shadow-sm ring-1 ring-slate-800 font-extrabold"
-                      : "bg-white text-slate-600 border border-slate-200/80 hover:bg-slate-50 hover:text-slate-900 shadow-2xs font-bold"
+                      ? "ring-2 ring-indigo-400 ring-offset-2 ring-offset-white shadow-md shadow-indigo-500/30 border border-indigo-300/40 scale-[1.02]"
+                      : "border border-white/10 hover:border-white/20 hover:scale-[1.01] shadow-2xs opacity-90 hover:opacity-100"
                   }`}
                 >
-                  <span className="text-xs sm:text-sm">{cat.emoji || "📺"}</span>
-                  <span>{cat.name}</span>
-                  {!isLoadingSubs && (
-                    <span
-                      className={`px-1.5 py-0.5 rounded-full text-[10px] font-black leading-none ${
-                        isSelected
-                          ? "bg-indigo-500 text-white"
-                          : "bg-slate-100 text-slate-600"
-                      }`}
-                    >
-                      {count}
+                  {/* Subtle Ambient Light Orb */}
+                  <div className="absolute -top-6 -right-6 w-16 h-16 bg-white/10 rounded-full blur-xl pointer-events-none group-hover:bg-white/20 transition-all" />
+
+                  {/* Top Row: Translucent Squircle Icon + Counter Pill */}
+                  <div className="flex items-center justify-between relative z-10">
+                    <div className={`w-6 h-6 rounded-lg ${cat.iconBg} backdrop-blur-xs flex items-center justify-center border shrink-0 shadow-2xs`}>
+                      <Icon className="w-3.5 h-3.5" />
+                    </div>
+                    {!isLoadingSubs && (
+                      <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-black tracking-wider ${
+                        isSelected ? "bg-white text-slate-900 shadow-2xs" : "bg-white/15 text-white/90 backdrop-blur-xs border border-white/10"
+                      }`}>
+                        {count}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Bottom Row: Category Name + Subtle Arrow Circle */}
+                  <div className="flex items-end justify-between relative z-10 gap-1">
+                    <span className="font-extrabold text-[11px] sm:text-xs text-white leading-tight truncate">
+                      {cat.name}
                     </span>
-                  )}
+                    <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 transition-transform duration-200 ${
+                      isSelected 
+                        ? "bg-white text-slate-950 scale-110 shadow-2xs" 
+                        : "bg-white/15 text-white/70 group-hover:translate-x-0.5"
+                    }`}>
+                      <ChevronRight className="w-2.5 h-2.5 stroke-[3]" />
+                    </div>
+                  </div>
                 </button>
               );
             })}
@@ -658,36 +733,45 @@ export default function SubscriptionsView({
                       </span>
                     </div>
 
-                    {/* Projections Matrix Mini Pill */}
-                    <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between text-[10px] text-slate-500 font-medium">
-                      <span>3-Mo: <b className="text-slate-700">{currencySymbol}{projections.threeMonth}</b></span>
-                      <span className="text-slate-300">•</span>
-                      <span>1-Yr: <b className="text-slate-700">{currencySymbol}{projections.annual}</b></span>
-                      <span className="text-slate-300">•</span>
-                      <span className="text-indigo-600 font-bold">{currencySymbol}{projections.monthly}/mo</span>
+                    {/* Projections Matrix & Highlighted Effective Monthly Rate */}
+                    <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between text-[10px]">
+                      <div className="flex items-center gap-1.5 text-slate-500 font-medium">
+                        <span>3-Mo: <b className="text-slate-700">{currencySymbol}{projections.threeMonth}</b></span>
+                        <span className="text-slate-300">•</span>
+                        <span>1-Yr: <b className="text-slate-700">{currencySymbol}{projections.annual}</b></span>
+                      </div>
+                      <span className="px-2 py-0.5 rounded-full bg-indigo-50 border border-indigo-200/80 text-indigo-700 font-black text-[10px] tracking-tight">
+                        ⚡ {currencySymbol}{projections.monthly}/mo effective
+                      </span>
                     </div>
                   </div>
 
                   {/* Compact Sleek 2x2 Specifications Grid */}
                   <div className="grid grid-cols-2 gap-1.5 text-[11px] font-semibold text-slate-600">
-                    <div className="px-2.5 py-1.5 bg-slate-50 rounded-xl border border-slate-100 flex items-center gap-1.5 min-w-0">
+                    <div className="px-2.5 py-1.5 bg-slate-50/80 rounded-xl border border-slate-100 flex items-center gap-1.5 min-w-0">
                       <Smartphone className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-                      <span className="truncate text-[10px]">{activePlan.screens} Screens ({activePlan.devices?.split("&")[0]?.trim() || "All"})</span>
+                      <span className="truncate text-[10px]">
+                        {activePlan.screens} {activePlan.screens > 1 ? "Screens" : "Screen"}
+                      </span>
                     </div>
 
-                    <div className="px-2.5 py-1.5 bg-slate-50 rounded-xl border border-slate-100 flex items-center gap-1.5 min-w-0">
+                    <div className="px-2.5 py-1.5 bg-slate-50/80 rounded-xl border border-slate-100 flex items-center gap-1.5 min-w-0">
                       <Monitor className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
                       <span className="truncate text-[10px]">{activePlan.resolution}</span>
                     </div>
 
-                    <div className="px-2.5 py-1.5 bg-slate-50 rounded-xl border border-slate-100 flex items-center gap-1.5 min-w-0">
+                    <div className="px-2.5 py-1.5 bg-slate-50/80 rounded-xl border border-slate-100 flex items-center gap-1.5 min-w-0">
                       <Volume2 className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
                       <span className="truncate text-[10px]">{activePlan.audio || "Dolby 5.1"}</span>
                     </div>
 
-                    <div className="px-2.5 py-1.5 bg-slate-50 rounded-xl border border-slate-100 flex items-center gap-1.5 min-w-0">
-                      <Shield className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-                      <span className="truncate text-[10px]">{activePlan.ads}</span>
+                    <div className="px-2.5 py-1.5 bg-slate-50/80 rounded-xl border border-slate-100 flex items-center gap-1.5 min-w-0">
+                      <Tv className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                      <span className="truncate text-[10px]">
+                        {activePlan.devices?.includes("TV") || activePlan.devices?.includes("Laptop")
+                          ? "TV, Laptop & Phone"
+                          : "Phone & Tablet only"}
+                      </span>
                     </div>
                   </div>
 
@@ -798,25 +882,28 @@ export default function SubscriptionsView({
                     </AnimatePresence>
                   </div>
 
-                  {/* Gemini Live Grounding Subtle Pill */}
-                  <div className="flex items-center justify-between text-[10px] pt-0.5">
+                  {/* Live AI Verification Status */}
+                  <div className="flex items-center justify-between text-[10px] pt-1.5 border-t border-slate-100">
                     {liveCheck?.grounded ? (
-                      <div className="flex items-center gap-1 text-emerald-700 font-bold">
-                        <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                        <span>Live Grounded ({liveCheck.lastVerified})</span>
+                      <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200/80 text-emerald-700 font-bold">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />
+                        <span>Live Verified ({liveCheck.lastVerified})</span>
                       </div>
                     ) : (
                       <button
                         type="button"
                         onClick={() => handleVerifyLiveOffers(sub)}
                         disabled={liveCheck?.loading}
-                        className="text-slate-500 hover:text-indigo-600 font-bold text-[10px] flex items-center gap-1 transition-colors cursor-pointer"
+                        className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-50 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-200 text-slate-600 hover:text-indigo-700 font-bold transition-all cursor-pointer active:scale-95"
                       >
-                        <RefreshCw className={`w-2.5 h-2.5 text-indigo-500 ${liveCheck?.loading ? "animate-spin" : ""}`} />
-                        <span>{liveCheck?.loading ? "Checking Grounding..." : "Verify Live Grounding"}</span>
+                        <RefreshCw className={`w-2.5 h-2.5 text-indigo-500 shrink-0 ${liveCheck?.loading ? "animate-spin" : ""}`} />
+                        <span>{liveCheck?.loading ? "Scanning Channels..." : "Verify Live Offers"}</span>
                       </button>
                     )}
-                    <span className="text-slate-400 font-medium">Verified 2026</span>
+                    <span className="text-[10px] text-slate-400 font-medium flex items-center gap-1">
+                      <ShieldCheck className="w-3 h-3 text-slate-400" />
+                      <span>Verified 2026</span>
+                    </span>
                   </div>
                 </div>
               </div>

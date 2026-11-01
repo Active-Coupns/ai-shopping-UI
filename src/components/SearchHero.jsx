@@ -43,13 +43,15 @@ const HEALTH_QUERIES_IN = [
   "Creatine monohydrate 250g"
 ];
 
-const COUPON_QUERIES_IN = [
-  "Zomato food discount coupons",
-  "Swiggy 50% OFF promo codes",
-  "Myntra new user fashion coupon",
-  "Blinkit grocery voucher",
-  "Domino's pizza deals today"
+const UNIVERSAL_COUPON_QUERIES = [
+  "Search food delivery discount coupons...",
+  "Search fashion & apparel promo codes...",
+  "Search grocery & supermarket vouchers...",
+  "Search electronics & gadgets coupons...",
+  "Search travel & ride discount codes..."
 ];
+
+const COUPON_QUERIES_IN = UNIVERSAL_COUPON_QUERIES;
 
 const DEALS_QUERIES_IN = [
   "Smartphone deals and offers",
@@ -117,13 +119,7 @@ const HEALTH_QUERIES_US = [
   "Centrum Men's Daily Multivitamin 200 tablets"
 ];
 
-const COUPON_QUERIES_US = [
-  "UberEats promo codes",
-  "DoorDash discount coupons",
-  "Target weekly promo codes",
-  "Nike shoes discount code",
-  "Amazon active vouchers"
-];
+const COUPON_QUERIES_US = UNIVERSAL_COUPON_QUERIES;
 
 const QUICK_TRENDING_ECOM_US = UNIVERSAL_TRENDING_SHOPPING;
 
@@ -272,9 +268,14 @@ export default function SearchHero({
         }
         if (latest.isFinal) {
           setIsListening(false);
-          if (transcript.trim().length > 1 && onSubmit) {
+          const finalSpoken = transcript.trim();
+          if (finalSpoken.length > 1) {
             setTimeout(() => {
-              onSubmit(transcript.trim());
+              if (isCoupons && onCouponSearch) {
+                onCouponSearch(finalSpoken);
+              } else if (onSubmit) {
+                onSubmit(finalSpoken);
+              }
             }, 300);
           }
         }
@@ -647,33 +648,35 @@ export default function SearchHero({
           {!cartImagePreview ? (
             <div 
               onClick={() => fileInputRef.current?.click()}
-              className="p-3 sm:p-3.5 rounded-2xl bg-gradient-to-r from-violet-600 via-indigo-600 to-purple-700 text-white shadow-md shadow-violet-500/20 hover:shadow-lg transition-all cursor-pointer flex items-center gap-3 relative overflow-hidden group active:scale-[0.99]"
+              className="p-3 sm:p-4 rounded-2xl bg-gradient-to-r from-violet-700 via-indigo-700 to-purple-800 text-white shadow-md shadow-violet-500/20 hover:shadow-lg transition-all cursor-pointer flex items-center justify-between gap-3 relative overflow-hidden group active:scale-[0.99] border border-violet-400/30"
             >
-              <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+              <div className="absolute top-0 right-0 w-36 h-36 bg-white/10 rounded-full blur-2xl pointer-events-none" />
 
-              {/* Camera Icon */}
-              <div className="w-10 h-10 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
-                <Camera className="w-5 h-5 text-amber-300" />
-              </div>
-
-              {/* Title & Subtitle */}
-              <div className="flex-1 min-w-0 text-left">
-                <div className="flex items-center gap-1.5">
-                  <h4 className="text-xs sm:text-sm font-extrabold text-white truncate">
-                    Snap & Save Cart Scanner
-                  </h4>
-                  <span className="shrink-0 px-1.5 py-0.2 rounded-md bg-white/20 text-[9px] font-bold text-amber-200 uppercase tracking-wider">
-                    AI
-                  </span>
+              <div className="flex items-center gap-3 min-w-0">
+                {/* Camera Icon */}
+                <div className="w-10 h-10 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
+                  <Camera className="w-5 h-5 text-amber-300" />
                 </div>
-                <p className="text-[11px] text-violet-200/90 truncate mt-0.5">
-                  Upload cart screenshot to auto-apply max discount
-                </p>
+
+                {/* Title & Subtitle */}
+                <div className="text-left min-w-0">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <h4 className="text-xs sm:text-sm font-black text-white leading-tight">
+                      Snap &amp; Save Cart Scanner
+                    </h4>
+                    <span className="px-1.5 py-0.5 rounded-full bg-amber-400/20 border border-amber-300/40 text-[9px] font-black text-amber-300 tracking-wider shrink-0">
+                      AI VISION
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-violet-200/90 font-medium leading-tight mt-1 line-clamp-1">
+                    Upload checkout cart screenshot to auto-apply biggest code
+                  </p>
+                </div>
               </div>
 
               {/* Action Button */}
               <div className="shrink-0">
-                <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-white text-violet-900 text-xs font-bold shadow-xs group-hover:bg-amber-300 group-hover:text-slate-950 transition-colors">
+                <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-white text-violet-950 text-xs font-black shadow-xs group-hover:bg-amber-300 group-hover:text-slate-950 transition-colors">
                   <span>Upload</span>
                   <ArrowRight className="w-3 h-3" />
                 </span>
@@ -753,7 +756,7 @@ export default function SearchHero({
             <div className="w-full border-t border-slate-200" />
           </div>
           <span className="relative px-3 bg-white/80 text-[10px] sm:text-[11px] font-extrabold text-slate-400 uppercase tracking-widest backdrop-blur-xs">
-            Or Search 50+ Stores Directly
+            Or Search Stores &amp; Promo Codes Directly
           </span>
         </div>
       )}
@@ -802,7 +805,7 @@ export default function SearchHero({
                 : isDeals
                 ? "Search deals across all categories..."
                 : isCoupons 
-                ? "Search store or brand for promo codes..." 
+                ? "Search any store, brand, or discount coupon..." 
                 : isHealth 
                 ? "Search medicine, supplement or paste link..." 
                 : "Search product or paste any web link...")
@@ -919,7 +922,7 @@ export default function SearchHero({
         </div>
       )}
 
-      {/* 4. FEATURED STORES CAROUSEL & SNAP DROPZONE (Coupons Mode) */}
+      {/* 4. FEATURED STORES CAROUSEL (Coupons Mode) */}
       {isCoupons && (
         <div className="w-full flex flex-col items-center">
           {/* Interactive Store Cards Carousel */}
@@ -932,126 +935,8 @@ export default function SearchHero({
               }
             }}
           />
-
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 0.1 }}
-            className="w-full max-w-xl mt-4"
-          >
-          {/* OR Divider */}
-          <div className="relative flex items-center justify-center my-4">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-200" />
-            </div>
-            <span className="relative px-3 bg-white/80 text-[10px] sm:text-[11px] font-extrabold text-slate-400 uppercase tracking-widest backdrop-blur-xs">
-              Or Snap Your Checkout Cart
-            </span>
-          </div>
-
-          {/* Interactive Dropzone Box */}
-          <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-b from-white to-violet-50/40 border-2 border-dashed border-violet-200 hover:border-violet-400 transition-all text-left shadow-sm relative overflow-hidden">
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleImageFileChange}
-              accept="image/png, image/jpeg, image/jpg, image/webp"
-              className="hidden"
-            />
-
-            {!cartImagePreview ? (
-              <div 
-                onClick={() => fileInputRef.current?.click()}
-                className="flex flex-col sm:flex-row items-center gap-3.5 cursor-pointer group"
-              >
-                <div className="w-12 h-12 rounded-2xl bg-violet-100 text-violet-600 flex items-center justify-center shrink-0 group-hover:scale-105 group-hover:bg-violet-600 group-hover:text-white transition-all shadow-xs">
-                  <UploadCloud className="w-6 h-6" />
-                </div>
-                <div className="flex-1 text-center sm:text-left">
-                  <h4 className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-violet-700 transition-colors flex items-center justify-center sm:justify-start gap-1.5">
-                    <span>Upload Cart or Checkout Screenshot</span>
-                    <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-                  </h4>
-                  <p className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">
-                    AI reads your cart amount & store from screenshot to match the #1 biggest discount coupon.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  suppressHydrationWarning
-                  className="px-3.5 py-1.5 rounded-xl bg-violet-600 text-white text-xs font-bold shadow-xs hover:bg-violet-700 transition-all shrink-0 cursor-pointer pointer-events-none"
-                >
-                  Choose Image
-                </button>
-              </div>
-            ) : (
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-3.5">
-                <div className="flex items-center gap-3 w-full sm:w-auto">
-                  <div className="relative w-14 h-14 rounded-xl overflow-hidden border border-violet-200 shrink-0 bg-slate-100">
-                    <img
-                      src={cartImagePreview}
-                      alt="Cart preview"
-                      className="w-full h-full object-cover"
-                    />
-                    <button
-                      type="button"
-                      suppressHydrationWarning
-                      onClick={clearCartImage}
-                      className="absolute top-0.5 right-0.5 p-0.5 bg-black/60 text-white rounded-full hover:bg-black transition-colors"
-                      title="Remove image"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </div>
-                  <div className="text-left">
-                    <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider flex items-center gap-1">
-                      <ImageIcon className="w-3 h-3" /> Screenshot Ready
-                    </span>
-                    <h5 className="text-xs font-bold text-slate-800">
-                      Ready for AI Analysis
-                    </h5>
-                    <p className="text-[10px] text-slate-500">
-                      Click below to find the max saving code
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 w-full sm:w-auto">
-                  <button
-                    type="button"
-                    suppressHydrationWarning
-                    onClick={clearCartImage}
-                    className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold transition-all cursor-pointer"
-                  >
-                    Change
-                  </button>
-                  <button
-                    type="button"
-                    suppressHydrationWarning
-                    disabled={isAnalyzingCart}
-                    onClick={handleCartAnalysisSubmit}
-                    className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white text-xs font-bold shadow-md shadow-violet-500/25 hover:opacity-95 transition-all cursor-pointer active:scale-95 disabled:opacity-60"
-                  >
-                    {isAnalyzingCart ? (
-                      <>
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        <span>Analyzing Cart...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                        <span>Find Best Coupon</span>
-                        <ArrowRight className="w-3 h-3" />
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </motion.div>
-      </div>
-    )}
+        </div>
+      )}
 
     </div>
   );

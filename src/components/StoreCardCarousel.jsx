@@ -1,16 +1,52 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useMemo } from "react";
 import { motion } from "framer-motion";
 import { ChevronLeft, ChevronRight, Sparkles, ArrowRight, ShieldCheck, Tag } from "lucide-react";
 
 const CATEGORIES = [
-  { id: "all", label: "🔥 All Stores" },
-  { id: "food", label: "🍕 Food & Dining", filter: "Food" },
-  { id: "grocery", label: "⚡ Quick Grocery", filter: "Grocery" },
-  { id: "fashion", label: "👗 Fashion & Beauty", filter: "Fashion" },
-  { id: "tech", label: "💻 Tech & Electronics", filter: "Electronics" },
-  { id: "travel", label: "✈️ Travel & Rides", filter: "Travel" }
+  { 
+    id: "all", 
+    label: "All Stores", 
+    emoji: "🔥", 
+    bgGradient: "from-violet-900 via-purple-950 to-slate-950",
+    iconBg: "bg-violet-500/25 border-violet-400/40 text-violet-300"
+  },
+  { 
+    id: "food", 
+    label: "Food & Dining", 
+    emoji: "🍕", 
+    bgGradient: "from-rose-900 via-red-950 to-slate-950",
+    iconBg: "bg-rose-500/25 border-rose-400/40 text-rose-300"
+  },
+  { 
+    id: "grocery", 
+    label: "Quick Grocery", 
+    emoji: "⚡", 
+    bgGradient: "from-amber-900 via-yellow-950 to-slate-950",
+    iconBg: "bg-amber-500/25 border-amber-400/40 text-amber-300"
+  },
+  { 
+    id: "fashion", 
+    label: "Fashion & Beauty", 
+    emoji: "👗", 
+    bgGradient: "from-pink-900 via-fuchsia-950 to-slate-950",
+    iconBg: "bg-pink-500/25 border-pink-400/40 text-pink-300"
+  },
+  { 
+    id: "tech", 
+    label: "Tech & Gadgets", 
+    emoji: "💻", 
+    bgGradient: "from-sky-900 via-blue-950 to-slate-950",
+    iconBg: "bg-sky-500/25 border-sky-400/40 text-sky-300"
+  },
+  { 
+    id: "travel", 
+    label: "Travel & Rides", 
+    emoji: "✈️", 
+    bgGradient: "from-emerald-900 via-teal-950 to-slate-950",
+    iconBg: "bg-emerald-500/25 border-emerald-400/40 text-emerald-300"
+  }
 ];
 
 export const FEATURED_STORES = [
@@ -163,6 +199,16 @@ export default function StoreCardCarousel({ onSelectStore }) {
   const [activeCategory, setActiveCategory] = useState("all");
   const scrollContainerRef = useRef(null);
 
+  const categoryCounts = useMemo(() => {
+    const counts = { all: FEATURED_STORES.length };
+    CATEGORIES.forEach(cat => {
+      if (cat.id !== "all") {
+        counts[cat.id] = FEATURED_STORES.filter(s => s.catGroup === cat.id).length;
+      }
+    });
+    return counts;
+  }, []);
+
   const filteredStores = activeCategory === "all"
     ? FEATURED_STORES
     : FEATURED_STORES.filter(s => s.catGroup === activeCategory);
@@ -178,13 +224,14 @@ export default function StoreCardCarousel({ onSelectStore }) {
       {/* Category Tabs Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3 mb-3">
         <div>
-          <div className="flex items-center gap-2">
-            <Tag className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-violet-600" />
+          <div className="flex items-center gap-2 flex-wrap">
+            <Tag className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-violet-600 shrink-0" />
             <h3 className="text-xs sm:text-base font-extrabold text-slate-900 tracking-tight">
-              Featured Stores & Verified Codes
+              Featured Stores &amp; Verified Codes
             </h3>
-            <span className="px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-[9px] sm:text-[10px] font-bold text-emerald-700">
-              100% Checked
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200/90 text-[9px] sm:text-[10px] font-bold text-emerald-700 shadow-2xs">
+              <ShieldCheck className="w-3 h-3 text-emerald-600" />
+              <span>100% Verified</span>
             </span>
           </div>
           <p className="text-[11px] sm:text-xs text-slate-500 font-medium mt-0.5">
@@ -213,22 +260,53 @@ export default function StoreCardCarousel({ onSelectStore }) {
         </div>
       </div>
 
-      {/* Category Pills Switcher */}
-      <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-2 mb-3 scrollbar-none">
-        {CATEGORIES.map(cat => (
-          <button
-            key={cat.id}
-            type="button"
-            onClick={() => setActiveCategory(cat.id)}
-            className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl text-[11px] sm:text-xs font-bold whitespace-nowrap transition-all cursor-pointer shrink-0 active:scale-95 ${
-              activeCategory === cat.id
-                ? "bg-violet-600 text-white shadow-sm shadow-violet-500/20"
-                : "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200/60"
-            }`}
-          >
-            {cat.label}
-          </button>
-        ))}
+      {/* Category Mini Visual Tiles (AdvCoupon style) */}
+      <div className="flex items-center gap-2.5 overflow-x-auto no-scrollbar scroll-smooth py-1 px-0.5 mb-3 scrollbar-none">
+        {CATEGORIES.map(cat => {
+          const isSelected = activeCategory === cat.id;
+          const count = categoryCounts[cat.id] ?? 0;
+          return (
+            <button
+              key={cat.id}
+              type="button"
+              onClick={() => setActiveCategory(cat.id)}
+              className={`relative w-[130px] sm:w-[155px] h-[70px] sm:h-[76px] p-2.5 rounded-2xl bg-gradient-to-br ${cat.bgGradient} text-white flex flex-col justify-between shrink-0 text-left transition-all duration-200 cursor-pointer overflow-hidden group select-none active:scale-95 ${
+                isSelected
+                  ? "ring-2 ring-violet-400 ring-offset-2 ring-offset-white shadow-md shadow-violet-500/30 border border-violet-300/40 scale-[1.02]"
+                  : "border border-white/10 hover:border-white/20 hover:scale-[1.01] shadow-2xs opacity-90 hover:opacity-100"
+              }`}
+            >
+              {/* Ambient Light Orb */}
+              <div className="absolute -top-6 -right-6 w-16 h-16 bg-white/10 rounded-full blur-xl pointer-events-none group-hover:bg-white/20 transition-all" />
+
+              {/* Top Row: Translucent Squircle Emoji + Counter Pill */}
+              <div className="flex items-center justify-between relative z-10">
+                <div className={`w-6 h-6 rounded-lg ${cat.iconBg} backdrop-blur-xs flex items-center justify-center border shrink-0 shadow-2xs text-xs`}>
+                  <span>{cat.emoji}</span>
+                </div>
+                <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-black tracking-wider ${
+                  isSelected ? "bg-white text-slate-900 shadow-2xs" : "bg-white/15 text-white/90 backdrop-blur-xs border border-white/10"
+                }`}>
+                  {count}
+                </span>
+              </div>
+
+              {/* Bottom Row: Category Name + Subtle Arrow Circle */}
+              <div className="flex items-end justify-between relative z-10 gap-1">
+                <span className="font-extrabold text-[11px] sm:text-xs text-white leading-tight truncate">
+                  {cat.label}
+                </span>
+                <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 transition-transform duration-200 ${
+                  isSelected 
+                    ? "bg-white text-slate-950 scale-110 shadow-2xs" 
+                    : "bg-white/15 text-white/70 group-hover:translate-x-0.5"
+                }`}>
+                  <ChevronRight className="w-2.5 h-2.5 stroke-[3]" />
+                </div>
+              </div>
+            </button>
+          );
+        })}
       </div>
 
       {/* Smooth Carousel Container */}

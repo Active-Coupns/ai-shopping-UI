@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Sparkles, 
@@ -25,8 +25,141 @@ import {
   Award,
   Clock,
   Flame,
-  CreditCard
+  CreditCard,
+  Calculator,
+  X
 } from "lucide-react";
+
+// Dynamic Store Brand Theming Palette
+const STORE_THEMES = {
+  zomato: {
+    primary: "from-rose-600 to-red-600",
+    text: "text-rose-600",
+    bg: "bg-rose-50",
+    border: "border-rose-200",
+    ring: "ring-rose-500",
+    btn: "bg-red-600 hover:bg-red-700 text-white shadow-red-500/20",
+    badge: "bg-rose-500/10 text-rose-700 border-rose-200",
+    glow: "rgba(239, 68, 68, 0.12)"
+  },
+  swiggy: {
+    primary: "from-orange-500 to-amber-600",
+    text: "text-orange-600",
+    bg: "bg-orange-50",
+    border: "border-orange-200",
+    ring: "ring-orange-500",
+    btn: "bg-orange-600 hover:bg-orange-700 text-white shadow-orange-500/20",
+    badge: "bg-orange-500/10 text-orange-700 border-orange-200",
+    glow: "rgba(249, 115, 22, 0.12)"
+  },
+  blinkit: {
+    primary: "from-amber-500 to-yellow-500",
+    text: "text-amber-700",
+    bg: "bg-amber-50",
+    border: "border-amber-200",
+    ring: "ring-amber-500",
+    btn: "bg-amber-500 hover:bg-amber-600 text-slate-950 shadow-amber-500/20 font-bold",
+    badge: "bg-amber-500/15 text-amber-900 border-amber-300",
+    glow: "rgba(245, 158, 11, 0.15)"
+  },
+  zepto: {
+    primary: "from-purple-600 to-violet-700",
+    text: "text-purple-600",
+    bg: "bg-purple-50",
+    border: "border-purple-200",
+    ring: "ring-purple-500",
+    btn: "bg-purple-600 hover:bg-purple-700 text-white shadow-purple-500/20",
+    badge: "bg-purple-500/10 text-purple-700 border-purple-200",
+    glow: "rgba(168, 85, 247, 0.12)"
+  },
+  domino: {
+    primary: "from-blue-600 to-indigo-700",
+    text: "text-blue-600",
+    bg: "bg-blue-50",
+    border: "border-blue-200",
+    ring: "ring-blue-500",
+    btn: "bg-blue-600 hover:bg-blue-700 text-white shadow-blue-500/20",
+    badge: "bg-blue-500/10 text-blue-700 border-blue-200",
+    glow: "rgba(37, 99, 235, 0.12)"
+  },
+  myntra: {
+    primary: "from-pink-600 to-rose-600",
+    text: "text-pink-600",
+    bg: "bg-pink-50",
+    border: "border-pink-200",
+    ring: "ring-pink-500",
+    btn: "bg-gradient-to-r from-pink-600 to-rose-600 hover:opacity-95 text-white shadow-pink-500/20",
+    badge: "bg-pink-500/10 text-pink-700 border-pink-200",
+    glow: "rgba(236, 72, 153, 0.12)"
+  },
+  nykaa: {
+    primary: "from-fuchsia-600 to-pink-600",
+    text: "text-fuchsia-600",
+    bg: "bg-fuchsia-50",
+    border: "border-fuchsia-200",
+    ring: "ring-fuchsia-500",
+    btn: "bg-fuchsia-600 hover:bg-fuchsia-700 text-white shadow-fuchsia-500/20",
+    badge: "bg-fuchsia-500/10 text-fuchsia-700 border-fuchsia-200",
+    glow: "rgba(217, 70, 239, 0.12)"
+  },
+  ajio: {
+    primary: "from-slate-800 to-indigo-900",
+    text: "text-slate-900",
+    bg: "bg-slate-100",
+    border: "border-slate-300",
+    ring: "ring-slate-800",
+    btn: "bg-slate-900 hover:bg-black text-white shadow-slate-900/20",
+    badge: "bg-slate-200 text-slate-800 border-slate-300",
+    glow: "rgba(15, 23, 42, 0.12)"
+  },
+  croma: {
+    primary: "from-teal-600 to-emerald-700",
+    text: "text-teal-600",
+    bg: "bg-teal-50",
+    border: "border-teal-200",
+    ring: "ring-teal-500",
+    btn: "bg-teal-600 hover:bg-teal-700 text-white shadow-teal-500/20",
+    badge: "bg-teal-500/10 text-teal-700 border-teal-200",
+    glow: "rgba(20, 184, 166, 0.12)"
+  },
+  makemytrip: {
+    primary: "from-red-600 to-rose-700",
+    text: "text-red-600",
+    bg: "bg-red-50",
+    border: "border-red-200",
+    ring: "ring-red-500",
+    btn: "bg-red-600 hover:bg-red-700 text-white shadow-red-500/20",
+    badge: "bg-red-500/10 text-red-700 border-red-200",
+    glow: "rgba(239, 68, 68, 0.12)"
+  },
+  uber: {
+    primary: "from-slate-800 to-black",
+    text: "text-slate-900",
+    bg: "bg-slate-100",
+    border: "border-slate-300",
+    ring: "ring-slate-900",
+    btn: "bg-slate-900 hover:bg-black text-white shadow-slate-900/20",
+    badge: "bg-slate-200 text-slate-800 border-slate-300",
+    glow: "rgba(15, 23, 42, 0.12)"
+  }
+};
+
+const getStoreTheme = (name = "") => {
+  const lower = (name || "").toLowerCase();
+  for (const [key, theme] of Object.entries(STORE_THEMES)) {
+    if (lower.includes(key)) return theme;
+  }
+  return {
+    primary: "from-violet-600 to-indigo-600",
+    text: "text-violet-600",
+    bg: "bg-violet-50",
+    border: "border-violet-200",
+    ring: "ring-violet-500",
+    btn: "bg-violet-600 hover:bg-violet-700 text-white shadow-violet-500/20",
+    badge: "bg-violet-500/10 text-violet-700 border-violet-200",
+    glow: "rgba(139, 92, 246, 0.12)"
+  };
+};
 
 export default function CouponResultView({
   resultData,
@@ -34,10 +167,14 @@ export default function CouponResultView({
   onReset
 }) {
   const [copiedCode, setCopiedCode] = useState(null);
+  const [copiedCouponData, setCopiedCouponData] = useState(null);
   const [revealedCodes, setRevealedCodes] = useState({});
   const [particles, setParticles] = useState([]);
   const [openFaq, setOpenFaq] = useState(0); // First FAQ open by default for rich content
   const [expandedAiGuides, setExpandedAiGuides] = useState({});
+  const [activeFilter, setActiveFilter] = useState("all");
+  const [calculatorAmount, setCalculatorAmount] = useState("");
+  const toastTimeoutRef = useRef(null);
 
   const toggleAiGuide = (code) => {
     setExpandedAiGuides(prev => ({
@@ -149,11 +286,152 @@ export default function CouponResultView({
         document.body.removeChild(temp);
       }
       setCopiedCode(code);
+      setCopiedCouponData(coupon);
+      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+      toastTimeoutRef.current = setTimeout(() => {
+        setCopiedCouponData(null);
+      }, 5000);
       setTimeout(() => setCopiedCode(null), 3500);
     } catch (err) {
       console.warn("Copy failed:", err);
     }
   };
+
+  // Dynamic Store Theme Colors
+  const storeTheme = useMemo(() => getStoreTheme(storeName), [storeName]);
+
+  // Compute Available Filter Tabs based on active store coupons
+  const filterTabs = useMemo(() => {
+    const counts = {
+      all: storeCoupons.length,
+      bank: 0,
+      percent: 0,
+      flat: 0,
+      newUser: 0
+    };
+
+    storeCoupons.forEach(c => {
+      const badge = (c.badge || "").toUpperCase();
+      const desc = (c.description || "").toLowerCase();
+      const title = (c.title || "").toLowerCase();
+      const pay = (c.payment_method || "").toLowerCase();
+
+      if (badge.includes("BANK") || pay.includes("bank") || pay.includes("card") || title.includes("hdfc") || title.includes("icici") || title.includes("axis") || title.includes("sbi")) {
+        counts.bank++;
+      }
+      if (c.discount_type === "PERCENT" || title.includes("%") || desc.includes("%")) {
+        counts.percent++;
+      }
+      if (c.discount_type === "FLAT" || title.includes("flat ₹") || title.includes("flat rs")) {
+        counts.flat++;
+      }
+      if (badge.includes("NEW") || desc.includes("new user") || desc.includes("first order") || title.includes("first")) {
+        counts.newUser++;
+      }
+    });
+
+    const tabs = [
+      { id: "all", label: "All Codes", count: counts.all, icon: Tag }
+    ];
+    if (counts.bank > 0) {
+      tabs.push({ id: "bank", label: "Bank & Cards", count: counts.bank, icon: CreditCard });
+    }
+    if (counts.percent > 0) {
+      tabs.push({ id: "percent", label: "% Discounts", count: counts.percent, icon: Flame });
+    }
+    if (counts.flat > 0) {
+      tabs.push({ id: "flat", label: "Flat ₹ OFF", count: counts.flat, icon: Zap });
+    }
+    if (counts.newUser > 0) {
+      tabs.push({ id: "newUser", label: "New Users", count: counts.newUser, icon: Sparkles });
+    }
+
+    return tabs;
+  }, [storeCoupons]);
+
+  // Mini Cart Savings Estimator Evaluation
+  const evaluatedSavings = useMemo(() => {
+    const num = Number(calculatorAmount);
+    if (!num || isNaN(num) || num <= 0) return null;
+
+    let highestDiscount = 0;
+    let winningCode = null;
+    const perCouponSavings = {};
+    let minShortfall = Infinity;
+    let closestCoupon = null;
+
+    storeCoupons.forEach(c => {
+      const minOrder = Number(c.min_order) || 0;
+      const maxDiscount = Number(c.max_discount) || 999999;
+      const discountVal = Number(c.discount_val) || 0;
+      const discountType = c.discount_type || "PERCENT";
+
+      if (num >= minOrder) {
+        let save = 0;
+        if (discountType === "PERCENT") {
+          save = Math.min(maxDiscount, Math.round(num * (discountVal / 100)));
+        } else {
+          save = Number(c.max_discount) || discountVal || 0;
+        }
+        perCouponSavings[c.code] = { qualifies: true, amount: save };
+        if (save > highestDiscount) {
+          highestDiscount = save;
+          winningCode = c.code;
+        }
+      } else {
+        const shortfall = minOrder - num;
+        perCouponSavings[c.code] = { qualifies: false, shortfall };
+        if (shortfall < minShortfall) {
+          minShortfall = shortfall;
+          closestCoupon = c;
+        }
+      }
+    });
+
+    return {
+      cartAmount: num,
+      winningCode,
+      highestDiscount,
+      perCouponSavings,
+      closestCoupon,
+      minShortfall: minShortfall === Infinity ? 0 : minShortfall
+    };
+  }, [calculatorAmount, storeCoupons]);
+
+  // Filtered & Prioritized Coupons
+  const filteredCoupons = useMemo(() => {
+    let list = storeCoupons;
+    if (activeFilter === "bank") {
+      list = list.filter(c => {
+        const badge = (c.badge || "").toUpperCase();
+        const title = (c.title || "").toLowerCase();
+        const pay = (c.payment_method || "").toLowerCase();
+        return badge.includes("BANK") || pay.includes("bank") || pay.includes("card") || title.includes("hdfc") || title.includes("icici") || title.includes("axis") || title.includes("sbi");
+      });
+    } else if (activeFilter === "percent") {
+      list = list.filter(c => c.discount_type === "PERCENT" || (c.title || "").includes("%") || (c.description || "").includes("%"));
+    } else if (activeFilter === "flat") {
+      list = list.filter(c => c.discount_type === "FLAT" || (c.title || "").toLowerCase().includes("flat ₹") || (c.title || "").toLowerCase().includes("flat rs"));
+    } else if (activeFilter === "newUser") {
+      list = list.filter(c => {
+        const badge = (c.badge || "").toUpperCase();
+        const desc = (c.description || "").toLowerCase();
+        const title = (c.title || "").toLowerCase();
+        return badge.includes("NEW") || desc.includes("new user") || desc.includes("first order") || title.includes("first");
+      });
+    }
+
+    // If calculator has a winning code, bump it to the front
+    if (evaluatedSavings?.winningCode) {
+      list = [...list].sort((a, b) => {
+        if (a.code === evaluatedSavings.winningCode) return -1;
+        if (b.code === evaluatedSavings.winningCode) return 1;
+        return 0;
+      });
+    }
+
+    return list;
+  }, [storeCoupons, activeFilter, evaluatedSavings]);
 
   // SEO Savings Strategies curated for store
   const savingStrategies = [
@@ -240,7 +518,7 @@ export default function CouponResultView({
   }
 
   return (
-    <div className="w-full max-w-5xl mx-auto px-4 py-6 md:py-8 text-left">
+    <div className="w-full max-w-5xl mx-auto px-3.5 sm:px-4 pt-4 sm:pt-6 pb-24 sm:pb-12 text-left">
       {/* Confetti Particles Container */}
       <AnimatePresence>
         {particles.map((p) => (
@@ -262,42 +540,66 @@ export default function CouponResultView({
         ))}
       </AnimatePresence>
 
-      {/* Top Header & Back Button */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-5 border-b border-slate-200/80">
-        <div className="flex items-center gap-3">
+      {/* Top Header with Dynamic Store Accent */}
+      <div 
+        className="mb-5 sm:mb-6 p-4 sm:p-5 rounded-3xl border transition-all relative overflow-hidden shadow-2xs"
+        style={{
+          background: `linear-gradient(135deg, ${storeTheme.glow} 0%, rgba(255,255,255,0.98) 100%)`,
+          borderColor: "rgba(226, 232, 240, 0.9)"
+        }}
+      >
+        <div className="flex items-start justify-between gap-3 relative z-10">
+          <div className="flex items-start gap-2.5 sm:gap-3.5 min-w-0 flex-1">
+            <button
+              type="button"
+              onClick={() => onReset?.("COUPONS")}
+              className="p-2 sm:p-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 hover:text-slate-900 transition-all shadow-xs cursor-pointer active:scale-95 shrink-0 mt-0.5"
+              title="Go back to stores"
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </button>
+            
+            <div className="min-w-0 flex-1">
+              {/* Verified Badge & Status Row */}
+              <div className="flex items-center gap-2 flex-wrap mb-1.5">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200/90 text-[10px] sm:text-[11px] font-black text-emerald-700 uppercase tracking-wider shadow-2xs">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span>100% Verified Today</span>
+                </span>
+                <span className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-semibold text-slate-400">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span>Active &amp; Working</span>
+                </span>
+                <span className={`hidden sm:inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold ${storeTheme.badge}`}>
+                  {storeName} Verified Deals
+                </span>
+              </div>
+
+              {/* Store Logo & Title */}
+              <div className="flex items-center gap-2">
+                <span className="text-xl sm:text-2xl shrink-0 leading-none">{logo}</span>
+                <h1 className="text-base sm:text-2xl font-black text-slate-900 tracking-tight leading-tight">
+                  {storeName} Promo Codes &amp; Offers
+                </h1>
+              </div>
+
+              {/* Subtitle */}
+              <p className="text-[11px] sm:text-xs text-slate-500 font-medium mt-1 leading-relaxed">
+                {isCartAnalysis
+                  ? `AI Cart Analyzed: Cart Total ₹${cartTotal} • Showing best matched coupons`
+                  : `Verified promo vouchers, universal cart discounts & exclusive bank perks`}
+              </p>
+            </div>
+          </div>
+
           <button
             type="button"
             onClick={() => onReset?.("COUPONS")}
-            className="p-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 hover:text-slate-900 transition-all shadow-xs cursor-pointer active:scale-95"
-            title="Go back to stores"
+            className="hidden sm:inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-200/80 text-xs font-bold transition-all cursor-pointer shrink-0 shadow-2xs"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <span>← All Stores</span>
           </button>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-2xl">{logo}</span>
-              <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-                {storeName} Promo Codes & Offers
-              </h2>
-              <span className="px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-[10px] font-bold text-emerald-700">
-                100% Verified Today
-              </span>
-            </div>
-            <p className="text-xs text-slate-500 font-medium mt-0.5">
-              {isCartAnalysis
-                ? `AI Cart Analyzed: Cart Total ₹${cartTotal} • Showing best matched coupons`
-                : `October 2026 Verified: Active promo vouchers, universal cart codes & bank offers`}
-            </p>
-          </div>
         </div>
-
-        <button
-          type="button"
-          onClick={() => onReset?.("COUPONS")}
-          className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all cursor-pointer"
-        >
-          <span>← Browse All Stores</span>
-        </button>
       </div>
 
       {/* CART SCREENSHOT ANALYSIS HERO CARD (When Analyzed from Screenshot) */}
@@ -458,192 +760,351 @@ export default function CouponResultView({
         </motion.div>
       )}
 
-      {/* ALL VERIFIED COUPONS GRID WITH IN-PAGE CLICK-TO-REVEAL */}
-      <div className="mb-10">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-4 mb-4">
-          <div className="flex items-center gap-2 min-w-0">
-            <Tag className="w-4 h-4 text-violet-600 shrink-0" />
-            <h3 className="text-base sm:text-lg font-bold text-slate-900 truncate">
-              Active Promo Codes for {storeName} ({storeCoupons.length})
-            </h3>
+      {/* 1. MINI CART SAVINGS ESTIMATOR */}
+      <div className="mb-6 p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-slate-50 via-white to-slate-50 border border-slate-200/90 shadow-2xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mb-2.5">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-amber-500/15 border border-amber-400/30 flex items-center justify-center text-amber-600 shrink-0">
+              <Calculator className="w-4 h-4" />
+            </div>
+            <div>
+              <h4 className="text-xs sm:text-sm font-black text-slate-900 leading-tight">
+                Cart Savings Estimator
+              </h4>
+              <p className="text-[10px] sm:text-[11px] text-slate-500 font-medium">
+                Enter your cart value to instantly discover the #1 highest saving coupon
+              </p>
+            </div>
           </div>
-          <span className="text-xs text-slate-500 shrink-0">
-            Click to reveal code & copy to clipboard
-          </span>
-        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {storeCoupons.map((coupon, idx) => {
-            const isBest = isCartAnalysis && bestCoupon?.code === coupon.code;
-            const isRevealed = Boolean(revealedCodes[coupon.code]);
-            const isCopied = copiedCode === coupon.code;
-
-            return (
-              <motion.div
-                key={coupon.id || `coupon-card-${idx}`}
-                whileHover={{ y: -3 }}
-                className={`p-5 rounded-2xl bg-white border transition-all shadow-sm flex flex-col justify-between min-h-[220px] relative overflow-hidden ${
-                  isBest 
-                    ? "border-violet-500 ring-2 ring-violet-500/20 shadow-violet-100" 
-                    : "border-slate-200 hover:border-slate-300"
+          {/* Quick Presets */}
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar scrollbar-none">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0 mr-0.5">Quick:</span>
+            {[249, 499, 999, 1499].map(preset => (
+              <button
+                key={preset}
+                type="button"
+                onClick={() => setCalculatorAmount(String(preset))}
+                className={`px-2 py-0.5 rounded-lg text-[10px] font-black transition-all cursor-pointer shrink-0 ${
+                  calculatorAmount === String(preset)
+                    ? "bg-slate-900 text-white shadow-2xs"
+                    : "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200/60"
                 }`}
               >
-                {/* Top Badge & Success Rate */}
-                <div>
-                  <div className="flex items-center justify-between gap-2 mb-2">
-                    <span className="text-[10px] font-bold text-violet-700 bg-violet-50 border border-violet-200 px-2 py-0.5 rounded-full uppercase tracking-wider">
-                      {coupon.badge || "PROMO CODE"}
-                    </span>
-                    <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
-                      {coupon.verified_rate || "98% Success"}
-                    </span>
-                  </div>
+                ₹{preset}
+              </button>
+            ))}
+          </div>
+        </div>
 
-                  <h4 className="text-sm font-bold text-slate-900 line-clamp-2 leading-snug">
-                    {coupon.title}
-                  </h4>
-                  <p className="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">
-                    {coupon.description}
-                  </p>
+        {/* Input & Live Result */}
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-black text-slate-400">₹</span>
+            <input
+              type="number"
+              min="1"
+              step="1"
+              value={calculatorAmount}
+              onChange={(e) => setCalculatorAmount(e.target.value)}
+              placeholder="Enter your cart total (e.g. 549)..."
+              className="w-full pl-7 pr-8 py-2 rounded-xl bg-white border border-slate-200 text-xs sm:text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 shadow-2xs"
+            />
+            {calculatorAmount && (
+              <button
+                type="button"
+                onClick={() => setCalculatorAmount("")}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+        </div>
 
-                  {/* AI Coupon Fit Guide for this card */}
-                  {(() => {
-                    const aiFit = getCouponAiFitGuide(coupon);
-                    const isAiOpen = Boolean(expandedAiGuides[coupon.code]);
-                    return (
-                      <div className="mt-2.5">
-                        <button
-                          type="button"
-                          onClick={() => toggleAiGuide(coupon.code)}
-                          className={`w-full py-1.5 px-2.5 rounded-xl text-left transition-all cursor-pointer border flex items-center justify-between active:scale-98 ${
-                            isAiOpen
-                              ? "bg-violet-50/90 border-violet-300 text-violet-950 font-bold shadow-2xs"
-                              : "bg-slate-50/90 hover:bg-violet-50/60 border-slate-200/80 text-slate-700 hover:text-violet-900"
-                          }`}
-                        >
-                          <div className="flex items-center gap-1.5">
-                            <Sparkles className="w-3.5 h-3.5 text-violet-600 fill-violet-200 shrink-0" />
-                            <span className="text-[11px] font-bold">AI Fit Guide</span>
-                          </div>
-                          <div className="flex items-center gap-1 text-[10px] sm:text-[11px] font-semibold text-violet-700">
-                            <span>{isAiOpen ? "Hide" : "Will this work for me?"}</span>
-                            <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${isAiOpen ? "rotate-180" : ""}`} />
-                          </div>
-                        </button>
+        {/* Live Evaluated Output */}
+        {evaluatedSavings && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            className="mt-2.5 pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2 text-xs"
+          >
+            {evaluatedSavings.winningCode ? (
+              <div className="flex items-center gap-1.5 text-emerald-800 font-bold text-[11px] sm:text-xs">
+                <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                <span>
+                  Best Match: Use <strong className="font-mono text-emerald-900 bg-emerald-100 px-1.5 py-0.5 rounded">{evaluatedSavings.winningCode}</strong> to save <strong>₹{evaluatedSavings.highestDiscount}</strong> (Net Pay: ₹{evaluatedSavings.cartAmount - evaluatedSavings.highestDiscount})
+                </span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 text-amber-800 font-medium text-[11px]">
+                <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                <span>
+                  Add ₹{evaluatedSavings.minShortfall} more to cart to qualify for {evaluatedSavings.closestCoupon?.code} (saves up to ₹{evaluatedSavings.closestCoupon?.max_discount})
+                </span>
+              </div>
+            )}
+          </motion.div>
+        )}
+      </div>
 
-                        <AnimatePresence>
-                          {isAiOpen && aiFit && (
-                            <motion.div
-                              initial={{ opacity: 0, height: 0 }}
-                              animate={{ opacity: 1, height: "auto" }}
-                              exit={{ opacity: 0, height: 0 }}
-                              transition={{ duration: 0.2 }}
-                              className="overflow-hidden"
-                            >
-                              <div className="mt-2 p-2.5 rounded-xl bg-gradient-to-br from-violet-50/90 via-purple-50/40 to-indigo-50/80 border border-violet-200/90 text-[11px] space-y-1.5 shadow-inner">
-                                <div className="flex items-start gap-1.5">
-                                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
-                                  <div className="leading-snug">
-                                    <span className="font-bold text-slate-800">Valid For: </span>
-                                    <span className="text-slate-600">{aiFit.userTarget} — {aiFit.targetDesc}</span>
-                                  </div>
-                                </div>
-                                <div className="flex items-start gap-1.5">
-                                  <Zap className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
-                                  <div className="leading-snug">
-                                    <span className="font-bold text-slate-800">Best Cart Size: </span>
-                                    <span className="text-slate-600">{aiFit.sweetSpot}</span>
-                                  </div>
-                                </div>
-                                <div className="flex items-start gap-1.5">
-                                  <AlertCircle className="w-3.5 h-3.5 text-rose-500 shrink-0 mt-0.5" />
-                                  <div className="leading-snug">
-                                    <span className="font-bold text-rose-900">The Catch: </span>
-                                    <span className="text-slate-600">{aiFit.hiddenCatch}</span>
-                                  </div>
-                                </div>
-                                <div className="flex items-start gap-1.5">
-                                  <CreditCard className="w-3.5 h-3.5 text-indigo-600 shrink-0 mt-0.5" />
-                                  <div className="leading-snug">
-                                    <span className="font-bold text-slate-800">Payment: </span>
-                                    <span className="text-slate-600">{aiFit.paymentMethod}</span>
-                                  </div>
-                                </div>
-                              </div>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </div>
-                    );
-                  })()}
-                </div>
-
-                {/* Bottom Section & In-Page Click-to-Reveal CTA */}
-                <div className="pt-3 border-t border-slate-100">
-                  <div className="flex items-center justify-between text-[11px] text-slate-500 mb-2.5">
-                    <span>Min Order: <strong className="text-slate-700">₹{coupon.min_order}</strong></span>
-                    <span>Max Save: <strong className="text-emerald-600 font-bold">₹{coupon.max_discount}</strong></span>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    {/* The In-Page Reveal/Copy Button */}
-                    <button
-                      type="button"
-                      onClick={() => handleRevealAndCopy(coupon)}
-                      className={`flex-1 flex items-center justify-between px-3.5 py-2.5 rounded-xl transition-all cursor-pointer font-mono text-xs font-bold active:scale-95 shadow-2xs ${
-                        isCopied
-                          ? "bg-emerald-500 text-white shadow-sm"
-                          : isRevealed
-                          ? "bg-violet-600 hover:bg-violet-700 text-white"
-                          : "bg-gradient-to-r from-violet-50 to-indigo-50 hover:from-violet-100 hover:to-indigo-100 text-violet-900 border border-violet-200/80"
-                      }`}
-                    >
-                      <div className="flex items-center gap-1.5">
-                        {isRevealed ? (
-                          <Unlock className="w-3.5 h-3.5" />
-                        ) : (
-                          <Lock className="w-3.5 h-3.5 text-violet-600" />
-                        )}
-                        <span className="tracking-wider">
-                          {isRevealed ? coupon.code : getMaskedCode(coupon.code)}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-1 text-[11px] font-sans font-extrabold">
-                        {isCopied ? (
-                          <span className="flex items-center gap-1">
-                            <Check className="w-3.5 h-3.5 stroke-[3]" /> Copied!
-                          </span>
-                        ) : isRevealed ? (
-                          <span className="flex items-center gap-1 text-violet-100">
-                            <Copy className="w-3 h-3" /> Copy
-                          </span>
-                        ) : (
-                          <span className="flex items-center gap-1 text-violet-700">
-                            Reveal Code
-                          </span>
-                        )}
-                      </div>
-                    </button>
-
-                    {/* Dedicated Open Store Link (User chooses when to open) */}
-                    {coupon.link && (
-                      <a
-                        href={coupon.link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition-all shrink-0"
-                        title={`Visit ${storeName}`}
-                      >
-                        <ExternalLink className="w-3.5 h-3.5" />
-                      </a>
-                    )}
-                  </div>
-                </div>
-              </motion.div>
+      {/* 2. QUICK COUPON FILTER CHIPS */}
+      {filterTabs.length > 1 && (
+        <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar scrollbar-none pb-2 mb-4">
+          {filterTabs.map(tab => {
+            const isTabActive = activeFilter === tab.id;
+            const TabIcon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveFilter(tab.id)}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 active:scale-95 ${
+                  isTabActive
+                    ? `${storeTheme.btn} shadow-sm`
+                    : "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200/70"
+                }`}
+              >
+                <TabIcon className="w-3.5 h-3.5" />
+                <span>{tab.label}</span>
+                <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+                  isTabActive ? "bg-white/20 text-white" : "bg-white text-slate-700 border border-slate-200/80"
+                }`}>
+                  {tab.count}
+                </span>
+              </button>
             );
           })}
         </div>
+      )}
+
+      {/* 3. ALL VERIFIED COUPONS GRID WITH IN-PAGE CLICK-TO-REVEAL */}
+      <div className="mb-10">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-4 mb-3 sm:mb-4">
+          <div className="flex items-center gap-2 min-w-0">
+            <Tag className="w-4 h-4 text-violet-600 shrink-0" />
+            <h3 className="text-sm sm:text-lg font-black text-slate-900 truncate">
+              Active Promo Codes for {storeName} ({filteredCoupons.length})
+            </h3>
+          </div>
+          <span className="text-[11px] sm:text-xs text-slate-500 shrink-0">
+            Tap code to reveal &amp; copy instantly
+          </span>
+        </div>
+
+        {filteredCoupons.length === 0 ? (
+          <div className="p-8 rounded-2xl bg-slate-50 border border-slate-200 text-center space-y-2">
+            <p className="text-xs font-bold text-slate-600">
+              No coupons found matching this filter category.
+            </p>
+            <button
+              type="button"
+              onClick={() => setActiveFilter("all")}
+              className="px-3.5 py-1.5 rounded-xl bg-violet-600 text-white text-xs font-bold shadow-xs hover:bg-violet-700 transition-all cursor-pointer"
+            >
+              Show All Codes ({storeCoupons.length})
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-5">
+            {filteredCoupons.map((coupon, idx) => {
+              const isBest = isCartAnalysis && bestCoupon?.code === coupon.code;
+              const isCalculatorWinner = evaluatedSavings?.winningCode === coupon.code;
+              const calcData = evaluatedSavings?.perCouponSavings?.[coupon.code];
+              const isRevealed = Boolean(revealedCodes[coupon.code]);
+              const isCopied = copiedCode === coupon.code;
+
+              return (
+                <motion.div
+                  key={coupon.id || `coupon-card-${idx}`}
+                  whileHover={{ y: -3 }}
+                  className={`p-3.5 sm:p-5 rounded-2xl bg-white border transition-all shadow-sm flex flex-col justify-between min-h-[200px] sm:min-h-[220px] relative overflow-hidden ${
+                    isCalculatorWinner
+                      ? "border-amber-400 ring-2 ring-amber-400/40 shadow-md shadow-amber-500/10"
+                      : isBest 
+                      ? "border-violet-500 ring-2 ring-violet-500/20 shadow-violet-100" 
+                      : "border-slate-200 hover:border-slate-300"
+                  }`}
+                >
+                  {/* Calculator Winner Highlight Banner */}
+                  {isCalculatorWinner && (
+                    <div className="mb-2 py-1 px-2.5 rounded-xl bg-amber-500/15 border border-amber-400/40 text-amber-900 font-black text-[10px] flex items-center justify-between">
+                      <span className="flex items-center gap-1">
+                        <Sparkles className="w-3 h-3 text-amber-600 fill-amber-500" />
+                        <span>#1 Best for your ₹{evaluatedSavings.cartAmount} cart!</span>
+                      </span>
+                      <span className="text-emerald-700 font-bold">
+                        Saves ₹{evaluatedSavings.highestDiscount}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Calculator Shortfall Alert */}
+                  {calcData && !calcData.qualifies && (
+                    <div className="mb-2 py-0.5 px-2 rounded-lg bg-slate-100 border border-slate-200/80 text-slate-500 text-[10px] flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3 text-amber-500 shrink-0" />
+                      <span>Add ₹{calcData.shortfall} more to cart to unlock</span>
+                    </div>
+                  )}
+
+                  {/* Top Badge & Success Rate */}
+                  <div>
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <span className="text-[10px] font-bold text-violet-700 bg-violet-50 border border-violet-200 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                        {coupon.badge || "PROMO CODE"}
+                      </span>
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        <span>{coupon.verified_rate || "98% Success"}</span>
+                      </span>
+                    </div>
+
+                    <h4 className="text-xs sm:text-sm font-bold text-slate-900 line-clamp-2 leading-snug">
+                      {coupon.title}
+                    </h4>
+                    <p className="text-[11px] sm:text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">
+                      {coupon.description}
+                    </p>
+
+                    {/* AI Coupon Fit Guide for this card */}
+                    {(() => {
+                      const aiFit = getCouponAiFitGuide(coupon);
+                      const isAiOpen = Boolean(expandedAiGuides[coupon.code]);
+                      return (
+                        <div className="mt-2.5">
+                          <button
+                            type="button"
+                            onClick={() => toggleAiGuide(coupon.code)}
+                            className={`w-full py-1.5 px-2.5 rounded-xl text-left transition-all cursor-pointer border flex items-center justify-between active:scale-98 ${
+                              isAiOpen
+                                ? "bg-violet-50/90 border-violet-300 text-violet-950 font-bold shadow-2xs"
+                                : "bg-slate-50/90 hover:bg-violet-50/60 border-slate-200/80 text-slate-700 hover:text-violet-900"
+                            }`}
+                          >
+                            <div className="flex items-center gap-1.5">
+                              <Sparkles className="w-3.5 h-3.5 text-violet-600 fill-violet-200 shrink-0" />
+                              <span className="text-[11px] font-bold">AI Fit Guide</span>
+                            </div>
+                            <div className="flex items-center gap-1 text-[10px] sm:text-[11px] font-semibold text-violet-700">
+                              <span>{isAiOpen ? "Hide" : "Will this work for me?"}</span>
+                              <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${isAiOpen ? "rotate-180" : ""}`} />
+                            </div>
+                          </button>
+
+                          <AnimatePresence>
+                            {isAiOpen && aiFit && (
+                              <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: "auto" }}
+                                exit={{ opacity: 0, height: 0 }}
+                                transition={{ duration: 0.2 }}
+                                className="overflow-hidden"
+                              >
+                                <div className="mt-2 p-2.5 rounded-xl bg-gradient-to-br from-violet-50/90 via-purple-50/40 to-indigo-50/80 border border-violet-200/90 text-[11px] space-y-1.5 shadow-inner">
+                                  <div className="flex items-start gap-1.5">
+                                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                                    <div className="leading-snug">
+                                      <span className="font-bold text-slate-800">Valid For: </span>
+                                      <span className="text-slate-600">{aiFit.userTarget} — {aiFit.targetDesc}</span>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-start gap-1.5">
+                                    <Zap className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
+                                    <div className="leading-snug">
+                                      <span className="font-bold text-slate-800">Best Cart Size: </span>
+                                      <span className="text-slate-600">{aiFit.sweetSpot}</span>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-start gap-1.5">
+                                    <AlertCircle className="w-3.5 h-3.5 text-rose-500 shrink-0 mt-0.5" />
+                                    <div className="leading-snug">
+                                      <span className="font-bold text-rose-900">The Catch: </span>
+                                      <span className="text-slate-600">{aiFit.hiddenCatch}</span>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-start gap-1.5">
+                                    <CreditCard className="w-3.5 h-3.5 text-indigo-600 shrink-0 mt-0.5" />
+                                    <div className="leading-snug">
+                                      <span className="font-bold text-slate-800">Payment: </span>
+                                      <span className="text-slate-600">{aiFit.paymentMethod}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      );
+                    })()}
+                  </div>
+
+                  {/* Bottom Section & In-Page Click-to-Reveal CTA */}
+                  <div className="pt-3 border-t border-slate-100">
+                    <div className="flex items-center justify-between text-[11px] text-slate-500 mb-2.5">
+                      <span>Min Order: <strong className="text-slate-700">₹{coupon.min_order}</strong></span>
+                      <span>Max Save: <strong className="text-emerald-600 font-bold">₹{coupon.max_discount}</strong></span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {/* The In-Page Reveal/Copy Button */}
+                      <button
+                        type="button"
+                        onClick={() => handleRevealAndCopy(coupon)}
+                        className={`flex-1 flex items-center justify-between px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-xl transition-all cursor-pointer font-mono text-xs font-bold active:scale-95 shadow-2xs ${
+                          isCopied
+                            ? "bg-emerald-500 text-white shadow-sm"
+                            : isRevealed
+                            ? `${storeTheme.btn}`
+                            : "bg-gradient-to-r from-violet-50 to-indigo-50 hover:from-violet-100 hover:to-indigo-100 text-violet-900 border border-violet-200/80"
+                        }`}
+                      >
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          {isRevealed ? (
+                            <Unlock className="w-3.5 h-3.5 shrink-0" />
+                          ) : (
+                            <Lock className="w-3.5 h-3.5 text-violet-600 shrink-0" />
+                          )}
+                          <span className="tracking-wider truncate font-mono text-xs">
+                            {isRevealed ? coupon.code : getMaskedCode(coupon.code)}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-1 text-[10px] sm:text-[11px] font-sans font-extrabold shrink-0 ml-1">
+                          {isCopied ? (
+                            <span className="flex items-center gap-1 text-white">
+                              <Check className="w-3.5 h-3.5 stroke-[3]" /> Copied!
+                            </span>
+                          ) : isRevealed ? (
+                            <span className="flex items-center gap-1 text-white/90">
+                              <Copy className="w-3 h-3" /> Copy
+                            </span>
+                          ) : (
+                            <span className="flex items-center gap-1 text-violet-700">
+                              Reveal Code
+                            </span>
+                          )}
+                        </div>
+                      </button>
+
+                      {/* Dedicated Open Store Link */}
+                      {coupon.link && (
+                        <a
+                          href={coupon.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-2 sm:p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition-all shrink-0 active:scale-95 flex items-center justify-center"
+                          title={`Visit ${storeName}`}
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* RICH SEO SAVINGS GUIDE SECTION (Drives Organic Traffic & High Retention) */}
@@ -652,7 +1113,7 @@ export default function CouponResultView({
           <div className="flex items-center gap-2 mb-1">
             <Award className="w-4 h-4 text-violet-600" />
             <h3 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
-              Top 4 Smart Saving Strategies for {storeName} (October 2026)
+              Top 4 Smart Saving Strategies for {storeName}
             </h3>
           </div>
           <p className="text-xs text-slate-500">
@@ -730,6 +1191,60 @@ export default function CouponResultView({
           </div>
         </div>
       </div>
+
+      {/* 4. SMART FLOATING BOTTOM TOAST ON COPY */}
+      <AnimatePresence>
+        {copiedCouponData && (
+          <motion.div
+            initial={{ opacity: 0, y: 30, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 30, scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 450, damping: 30 }}
+            className="fixed bottom-20 sm:bottom-6 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-md p-3 sm:p-3.5 rounded-2xl bg-slate-950/95 backdrop-blur-md text-white shadow-2xl border border-white/20 flex items-center justify-between gap-3"
+          >
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-400/40 text-emerald-400 flex items-center justify-center shrink-0">
+                <Check className="w-5 h-5 stroke-[3]" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="font-mono font-black text-xs sm:text-sm text-emerald-300">
+                    {copiedCouponData.code}
+                  </span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                    Copied!
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-300 truncate">
+                  Ready to paste on {storeName} checkout
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1.5 shrink-0">
+              {copiedCouponData.link && (
+                <a
+                  href={copiedCouponData.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-xl ${storeTheme.btn} text-xs font-black transition-all active:scale-95 shadow-sm`}
+                >
+                  <span>Open {storeName}</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              )}
+              <button
+                type="button"
+                onClick={() => setCopiedCouponData(null)}
+                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                title="Dismiss"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
