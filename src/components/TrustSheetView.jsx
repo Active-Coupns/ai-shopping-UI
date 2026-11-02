@@ -1264,7 +1264,7 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
                       {item.matchingDeals.length > 0 ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
                           {item.matchingDeals.slice(0, 3).map((deal, dIdx) => {
-                            const dealImg = deal.image || deal.image_url || deal.thumbnail || "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=500&auto=format&fit=crop&q=60";
+                            const dealImg = deal.image || deal.image_url || deal.thumbnail || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='1.5'%3E%3Crect width='18' height='18' x='3' y='3' rx='2'/%3E%3Cpath d='m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21'/%3E%3C/svg%3E";
                             const dealPrice = typeof deal.price === "number" ? (isUS ? `$${deal.price.toFixed(2)}` : `₹${deal.price.toLocaleString("en-IN")}`) : (deal.price || "Check Store");
                             const storeName = deal.store_name || deal.store || "Online Store";
 
@@ -1424,6 +1424,82 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
       {/* STAGE 1: INPUT HERO CONSOLE (When on "input" phase)            */}
       {/* ============================================================== */}
       {phase === "input" && (
+        country && country.toUpperCase() !== "IN" ? (
+          <div className="max-w-3xl mx-auto py-10 sm:py-16 text-center animate-in fade-in duration-300">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 text-indigo-700 text-xs font-black uppercase tracking-wider mb-5 shadow-xs">
+              <Sparkles className="w-4 h-4 text-indigo-600 animate-spin-slow" />
+              <span>Expanding Globally • Arriving Soon in {countryMeta?.name || "Your Region"}</span>
+            </div>
+
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 tracking-tight mb-4 leading-tight">
+              Stop Guessing. <br className="hidden sm:inline" />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-indigo via-indigo-600 to-brand-violet">
+                The AI Product Truth Engine is Arriving Soon in {countryMeta?.name || "Global Stores"}.
+              </span>
+            </h1>
+
+            <p className="text-sm sm:text-base text-slate-600 max-w-2xl mx-auto mb-8 font-medium leading-relaxed">
+              Imagine pasting any product link from Amazon, Best Buy, or Walmart, and having our Chief Hardware AI dismantle marketing fluff, decode hidden trade-offs, reveal true daily costs, and tell you if it genuinely fits your life before you spend a single dollar.
+            </p>
+
+            {/* 3 Core Value Pill Pillars */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-left max-w-2xl mx-auto mb-8">
+              <div className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-xs space-y-1.5">
+                <div className="w-8 h-8 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold text-sm">
+                  🔍
+                </div>
+                <h4 className="text-xs font-black text-slate-900">Zero-Fluff Reality Specs</h4>
+                <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
+                  100% spec-grounded hardware truth without vendor marketing hype.
+                </p>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-xs space-y-1.5">
+                <div className="w-8 h-8 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600 font-bold text-sm">
+                  ⚖️
+                </div>
+                <h4 className="text-xs font-black text-slate-900">Buy vs. Skip Matrix</h4>
+                <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
+                  Decisive profiles: who extracts maximum value vs who will face regret.
+                </p>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-xs space-y-1.5">
+                <div className="w-8 h-8 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 font-bold text-sm">
+                  💰
+                </div>
+                <h4 className="text-xs font-black text-slate-900">True Daily Cost Waterfall</h4>
+                <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
+                  Store arbitrage, bank card discounts, and daily cost across lifespan.
+                </p>
+              </div>
+            </div>
+
+            {/* CTA: Try Live India Edition */}
+            <div className="p-6 rounded-3xl bg-gradient-to-r from-indigo-900 via-indigo-950 to-slate-900 text-white max-w-xl mx-auto text-center shadow-lg space-y-3">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold border border-emerald-500/30">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span>Currently Live in India</span>
+              </div>
+              <h3 className="text-base font-extrabold">Want to see how it works right now?</h3>
+              <p className="text-xs text-indigo-200/80 max-w-md mx-auto">
+                Our India edition is fully live with deep inspection for Flipkart, Amazon India, Croma, and brand stores.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  if (typeof window !== "undefined") {
+                    window.dispatchEvent(new CustomEvent("shopsmart:switch_country", { detail: { country: "IN" } }));
+                  }
+                }}
+                className="py-2.5 px-5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-black transition-all shadow-md cursor-pointer active:scale-95 inline-flex items-center gap-2"
+              >
+                <span>🇮🇳 Experience Live India Edition</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        ) : (
         <div className="max-w-3xl mx-auto py-8 sm:py-12 text-center">
           
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-50/90 border border-indigo-200/80 text-indigo-700 text-xs font-bold uppercase tracking-wider mb-4 shadow-2xs">
@@ -1542,6 +1618,7 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
             </div>
           </div>
         </div>
+        )
       )}
 
       {/* ============================================================== */}
@@ -1699,7 +1776,7 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
                     {matchingDeals.length > 0 ? (
                       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5">
                         {matchingDeals.slice(0, 3).map((item, mIdx) => {
-                          const itemImage = item.image || item.image_url || "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=500&auto=format&fit=crop&q=60";
+                          const itemImage = item.image || item.image_url || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='1.5'%3E%3Crect width='18' height='18' x='3' y='3' rx='2'/%3E%3Cpath d='m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21'/%3E%3C/svg%3E";
                           const itemPrice = typeof item.price === "number" ? (isUS ? `$${item.price.toFixed(2)}` : `₹${item.price.toLocaleString("en-IN")}`) : (item.price || "Check Store");
                           const storeName = item.store_name || item.store || "Online Store";
 
@@ -1895,7 +1972,7 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
                     alt={dossier.product?.title}
                     className="w-full h-full object-contain"
                     onError={(e) => {
-                      e.target.src = "https://images.unsplash.com/photo-1526738549149-8e07eca6c147?w=500&auto=format&fit=crop&q=60";
+                      e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='1.5'%3E%3Crect width='18' height='18' x='3' y='3' rx='2'/%3E%3Ccircle cx='9' cy='9' r='2'/%3E%3Cpath d='m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21'/%3E%3C/svg%3E";
                     }}
                   />
                 </div>
@@ -2114,9 +2191,6 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
                 </p>
               </div>
 
-              {/* Mathematical Customer Satisfaction Consensus */}
-              {renderBuyerSatisfaction()}
-
               {/* Dietary & Wellness Advisory Notice for Supplements */}
               {dossier?.product?.category === "supplement" && (
                 <div className="p-4 rounded-3xl bg-emerald-50 border border-emerald-200 text-xs flex items-start gap-3 text-emerald-950 shadow-xs">
@@ -2269,17 +2343,6 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
                   </div>
                 </div>
 
-                {/* HOOK 3: Regional Real-World Reality Check */}
-                {renderRegionalRealityCheck()}
-
-                {/* In The Box & Warranty Fine-Print Reality */}
-                {renderInTheBoxAndWarranty()}
-
-                {/* Caring Considerations & Care Guidelines */}
-                {renderCareGuidelines()}
-
-                {/* Smart Directional Guidance (What to Look For Instead) */}
-                {renderDirectionalAdvice()}
               </div>
 
 

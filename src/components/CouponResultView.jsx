@@ -164,6 +164,7 @@ const getStoreTheme = (name = "") => {
 export default function CouponResultView({
   resultData,
   isCartAnalysis = false,
+  isLoading = false,
   onReset
 }) {
   const [copiedCode, setCopiedCode] = useState(null);
@@ -472,6 +473,74 @@ export default function CouponResultView({
       a: `If a code does not apply, check the minimum cart value shown on our card (e.g. ₹199 or ₹499). You can also upload your cart screenshot to ShopSmart AI to let our optimizer find the exact code matching your items.`
     }
   ];
+
+  // SKELETON LOADING STATE: Shown while data is fetching from coupons API
+  if (isLoading || !resultData) {
+    return (
+      <div className="w-full max-w-5xl mx-auto px-3 sm:px-6 py-4 sm:py-6 text-left">
+        {/* Top Header Shimmer */}
+        <div className="flex items-center justify-between gap-3 mb-6 pb-4 border-b border-slate-200 animate-pulse">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-slate-200" />
+            <div className="space-y-1.5">
+              <div className="h-5 w-40 bg-slate-200 rounded-md" />
+              <div className="h-3 w-56 bg-slate-100 rounded-md" />
+            </div>
+          </div>
+          <div className="h-8 w-24 bg-slate-100 rounded-xl" />
+        </div>
+
+        {/* Store Profile Card Shimmer */}
+        <div className="p-5 sm:p-6 rounded-3xl bg-white border border-slate-200 shadow-xs mb-6 animate-pulse">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3.5">
+              <div className="w-14 h-14 rounded-2xl bg-slate-200 shrink-0" />
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="h-6 w-36 bg-slate-200 rounded-lg" />
+                  <div className="h-5 w-20 bg-emerald-100 rounded-full" />
+                </div>
+                <div className="h-3.5 w-64 bg-slate-100 rounded-md" />
+              </div>
+            </div>
+            <div className="h-10 w-32 bg-slate-100 rounded-2xl" />
+          </div>
+        </div>
+
+        {/* Filter Pills Shimmer */}
+        <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-1 animate-pulse">
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className="h-8 w-24 bg-slate-100 rounded-xl shrink-0" />
+          ))}
+        </div>
+
+        {/* 6-Card Coupon Tickets Shimmer Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
+          {[1, 2, 3, 4, 5, 6].map(i => (
+            <div
+              key={i}
+              className="p-4 sm:p-5 rounded-2xl bg-white border border-slate-200 shadow-xs flex flex-col justify-between space-y-3.5 animate-pulse min-h-[170px]"
+            >
+              <div className="flex items-center justify-between">
+                <div className="h-5 w-24 bg-violet-100 rounded-full" />
+                <div className="h-4 w-16 bg-slate-100 rounded-md" />
+              </div>
+
+              <div className="space-y-2">
+                <div className="h-5 w-4/5 bg-slate-200 rounded-md" />
+                <div className="h-3.5 w-full bg-slate-100 rounded-md" />
+              </div>
+
+              <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                <div className="h-9 w-28 bg-slate-100 rounded-xl" />
+                <div className="h-9 w-32 bg-slate-200 rounded-xl" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   // Polite Empty State if store not found or unverified
   if (resultData?.notFound || resultData?.success === false) {

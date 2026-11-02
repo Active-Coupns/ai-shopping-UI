@@ -175,11 +175,12 @@ export async function extractProductWithZyte(targetUrl, { country = null, timeou
   } catch (_) {}
 
   const authHeader = "Basic " + Buffer.from(apiKey + ":").toString("base64");
-  // Use passed user country or fall back to URL domain detection or IN
-  const geo = (country ? String(country).toUpperCase() : null) || detectCountryCode(cleanUrl) || "IN";
+  // User-selected country is primary source of truth for dynamic proxy routing
+  const rawCountry = country ? String(country).toUpperCase().trim() : null;
+  const userGeo = rawCountry === "UK" ? "GB" : rawCountry;
 
   try {
-    const res = await fetch("https://api.zyte.com/v1/extract", {
+    let res = await fetch("https://api.zyte.com/v1/extract", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -188,7 +189,7 @@ export async function extractProductWithZyte(targetUrl, { country = null, timeou
       body: JSON.stringify({
         url: cleanUrl,
         product: true,
-        ...(geo ? { geolocation: geo } : {})
+        ...(userGeo ? { geolocation: userGeo } : {})
       }),
       signal: AbortSignal.timeout(timeoutMs)
     });
@@ -198,7 +199,32 @@ export async function extractProductWithZyte(targetUrl, { country = null, timeou
       return null;
     }
 
-    const data = await res.json();
+    let data = await res.json();
+
+    // Resilient fallback retry if a localized Indian datacenter proxy received a Captcha/202 challenge
+    if ((!data.product || !data.product.name || data.statusCode === 202) && userGeo === "IN") {
+      try {
+        const retryRes = await fetch("https://api.zyte.com/v1/extract", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": authHeader
+          },
+          body: JSON.stringify({
+            url: cleanUrl,
+            product: true
+          }),
+          signal: AbortSignal.timeout(Math.min(timeoutMs, 22000))
+        });
+        if (retryRes.ok) {
+          const retryData = await retryRes.json();
+          if (retryData.product && retryData.product.name) {
+            data = retryData;
+          }
+        }
+      } catch (_) {}
+    }
+
     if (!data.product || !data.product.name || data.product.name === "404 Not Found" || data.product.name.toLowerCase().includes("page not found")) {
       return null;
     }
@@ -223,17 +249,21 @@ export async function extractProductWithZyte(targetUrl, { country = null, timeou
     const sym = curr === "USD" ? "$" : curr === "GBP" ? "£" : curr === "CAD" ? "C$" : curr === "EUR" ? "€" : curr === "AED" ? "AED " : "₹";
     const loc = curr === "USD" ? "en-US" : curr === "GBP" ? "en-GB" : curr === "CAD" ? "en-CA" : "en-IN";
 
+    const regPriceNum = typeof prod.regularPrice === "number" ? prod.regularPrice : parseFloat(prod.regularPrice) || null;
     const extractedResult = {
       success: true,
       title: prod.name || "",
       brand: prod.brand?.name || "",
       price: priceNum ? `${sym}${Number.isInteger(priceNum) ? priceNum.toLocaleString(loc) : priceNum.toFixed(2)}` : "",
       rawPrice: priceNum,
+      regularPrice: regPriceNum ? `${sym}${Number.isInteger(regPriceNum) ? regPriceNum.toLocaleString(loc) : regPriceNum.toFixed(2)}` : "",
+      rawRegularPrice: regPriceNum,
       currency: curr,
       image: prod.mainImage?.url || prod.images?.[0]?.url || "",
       description: prod.description || "",
       specifications: prod.specifications || [],
       features: prod.features || [],
+      breadcrumbs: Array.isArray(prod.breadcrumbs) ? prod.breadcrumbs.map(b => b.name).filter(Boolean) : [],
       aggregateRating: prod.aggregateRating || null,
       rating: prod.aggregateRating?.ratingValue || null,
       reviewCount: prod.aggregateRating?.reviewCount || null,

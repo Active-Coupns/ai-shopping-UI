@@ -351,33 +351,34 @@ export default function InChatShoppingAgent({
         {/* Agent Header */}
         <div 
           onClick={() => setIsExpanded(!isExpanded)}
-          className="px-4 sm:px-6 py-3.5 sm:py-4.5 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white flex items-center justify-between cursor-pointer select-none transition-all hover:bg-slate-900/95"
+          className="px-3.5 sm:px-6 py-3 sm:py-4 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white flex items-center justify-between cursor-pointer select-none transition-all hover:bg-slate-900/95"
         >
-          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center shadow-inner shrink-0">
-              <Bot className="w-5 h-5 text-indigo-300" />
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1 pr-2">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center shadow-inner shrink-0">
+              <Bot className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-300" />
             </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                <h3 className="font-extrabold text-xs sm:text-base text-white tracking-tight truncate">
-                  Ask AI About These Products
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <h3 className="font-extrabold text-xs sm:text-base text-white tracking-tight">
+                  <span className="sm:hidden">Ask AI Advisor</span>
+                  <span className="hidden sm:inline">Ask AI About These Products</span>
                 </h3>
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-[9px] sm:text-[10px] font-extrabold text-emerald-300 whitespace-nowrap shrink-0">
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-[9px] font-extrabold text-emerald-300 whitespace-nowrap shrink-0">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  Live Advisor
+                  <span>Live</span>
                 </span>
               </div>
-              <p className="text-[10px] sm:text-[11px] text-slate-300 font-medium truncate">
-                Compare these {products.length} options, test use-cases, or discover better alternatives
+              <p className="text-[10px] sm:text-[11px] text-slate-300 font-medium truncate mt-0.5">
+                Compare {products.length} options & get instant advice
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <span className="text-xs text-indigo-200 font-semibold hidden sm:inline">
               {isExpanded ? "Collapse" : "Open Chat"}
             </span>
-            <div className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center text-white/80">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-white/10 flex items-center justify-center text-white/80 shrink-0">
               {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
             </div>
           </div>
@@ -649,13 +650,13 @@ export default function InChatShoppingAgent({
               </div>
 
               {/* Input Bar */}
-              <form onSubmit={handleFormSubmit} className="p-3 bg-white border-t border-slate-200/80 flex items-center gap-2">
+              <form onSubmit={handleFormSubmit} className="p-2 sm:p-3 bg-white border-t border-slate-200/80 flex items-center gap-1.5 sm:gap-2 w-full box-border min-w-0">
                 <input
                   type="text"
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
-                  placeholder={isListening ? "Listening... speak now in English or Hindi..." : "Ask AI anything about these products (e.g. 'Which is best for coding?', 'Can I upgrade RAM?')..."}
-                  className={`flex-1 px-4 py-2.5 rounded-xl border text-xs md:text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none transition-all ${
+                  placeholder={isListening ? "Listening... speak now in English or Hindi..." : "Ask AI about these products..."}
+                  className={`min-w-0 flex-1 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl border text-xs sm:text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none transition-all ${
                     isListening
                       ? "bg-rose-50/80 border-rose-300 ring-2 ring-rose-400/20"
                       : "bg-slate-50 border-slate-200 focus:border-indigo-500 focus:bg-white"
@@ -667,7 +668,7 @@ export default function InChatShoppingAgent({
                   type="button"
                   onClick={toggleVoiceInput}
                   title={isListening ? "Listening... Click to stop" : "Speak your question (Voice Input)"}
-                  className={`p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-center shrink-0 ${
+                  className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl border transition-all cursor-pointer flex items-center justify-center shrink-0 ${
                     isListening
                       ? "bg-rose-600 text-white border-rose-700 animate-pulse shadow-md shadow-rose-500/30"
                       : "bg-slate-100 hover:bg-slate-200 text-slate-600 border-slate-200/90 hover:text-slate-900"
@@ -679,9 +680,9 @@ export default function InChatShoppingAgent({
                 <button
                   type="submit"
                   disabled={!inputValue.trim() || isLoading}
-                  className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white font-bold text-xs md:text-sm flex items-center gap-1.5 transition-all cursor-pointer shadow-xs"
+                  className="h-9 sm:h-10 px-3 sm:px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-xs shrink-0"
                 >
-                  <span>Ask</span>
+                  <span className="hidden sm:inline">Ask</span>
                   <Send className="w-3.5 h-3.5" />
                 </button>
               </form>

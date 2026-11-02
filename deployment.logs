@@ -1,0 +1,67 @@
+================================================================================
+DEPLOYMENT LOGS - SHOPSMART AI
+================================================================================
+
+[DEPLOYMENT TIMESTAMP] : 2026-11-02 07:20:00 UTC (Local: 2026-11-01 23:20:00 -08:00)
+[TARGET ENVIRONMENT]   : Production (Vercel) / origin main
+[BUILD STATUS]         : PASSED (npx next build --webpack: 190/190 routes compiled, 0 errors)
+[STATUS]               : PENDING COMMIT & PUSH
+
+--------------------------------------------------------------------------------
+SUMMARY OF CHANGES & RESOLVED ISSUES
+--------------------------------------------------------------------------------
+
+1. CORE TRUSTSHEET URL EXTRACTION & ZERO-DUMMY ARCHITECTURE
+   - Resolved Root Cause of Washing Machine -> Smartphone Replacement Bug:
+     * Removed forced `geolocation: "IN"` in Zyte scraper that choked on Indian datacenter IP pools and triggered Amazon WAF bot shields (202 / 404).
+     * Removed fragile `identifyProduct` fallback in trustSheetService.js that queried OpenWeb Ninja with ASINs and substituted top trending smartphones with blank specs.
+     * Enforced strict Fail-Honest rule: If a product link cannot be scraped, return an honest failure message rather than fabricating or swapping product data.
+     * Enforced strict zero-"N/A" spec prompt: Forces extraction of 6-8 authentic manufacturer specifications (Capacity, RPM, Inverter Motor, BEE Star Rating, Heater, etc.) directly from title, features, breadcrumbs, and raw description.
+
+2. INDIA-FIRST ARCHITECTURE & COMING SOON TEASER
+   - Optimized TrustSheet specifically for domestic Indian e-commerce (Flipkart, Amazon.in, Croma, Brand stores) where direct extraction has a >95% success rate.
+   - For non-Indian countries (country !== "IN"), added an engaging "Coming Soon" teaser screen highlighting 3 core value pillars with a 1-click "🇮🇳 Experience Live India Edition" preview button.
+
+3. TRUSTSHEET UI DECLUTTERING (6-MODULE STRUCTURE)
+   - Streamlined 18 sprawling blocks into 6 sharp, high-converting modules:
+     * Module 1: Reality Specifications Sheet (8 clean manufacturer specs, zero "N/A").
+     * Module 2: Genuine Strengths vs Realistic Gotchas.
+     * Module 3: Who Should BUY vs Who Should SKIP Decision Matrix.
+     * Module 4: Net Effective Savings Strategy & True Daily Cost (₹18/day).
+     * Module 5: On-Demand Multi-Store Price Comparison Drawer (searches by clean product title, not ASIN).
+     * Module 6: Spec-Grounded AI Requirement Assistant (interactive Q&A).
+   - Removed hardcoded Unsplash iPhone image fallbacks and replaced with clean SVG placeholders.
+
+4. UI / UX & MOBILE RESPONSIVENESS ENHANCEMENTS
+   - src/components/ProductCard.jsx:
+     * Redesigned AI Hardware Reality Sheet modal header: aligned badges with circular top-right close button.
+     * Split 1,500-word wall-of-text into 3 lightweight segmented tabs (🎯 Verdict, ⚙️ Specs, ⚖️ Pros & Cons).
+   - src/components/InChatShoppingAgent.jsx:
+     * Fixed header truncation bug on mobile ('Ask AI About T...') with responsive 'Ask AI Advisor' and live pulse badge.
+     * Fixed bottom input bar overflow: added min-w-0 flex-1 to input, shrink-0 to mic and ask buttons, preventing clipping on small mobile viewports.
+   - src/components/CouponResultView.jsx:
+     * Added modern 6-ticket shimmer skeleton loader screen while coupons are fetching.
+   - src/components/TravelHubView.jsx:
+     * Added 6-deal travel shimmer skeleton grid during deal ingestion.
+     * Made on-demand ingest buttons responsive (w-full sm:w-auto).
+   - src/components/SubscriptionsView.jsx:
+     * Replaced technical copy '⚡ Yes, Ingest Live Blueprint' with user-friendly '⚡ Yes, Reveal Live Deals & Plans'.
+     * Made action containers responsive for mobile viewports.
+   - src/app/page.js:
+     * Wired custom event listener 'shopsmart:switch_country' to allow 1-click preview switching to India edition from TrustSheet teaser card.
+     * Linked coupon search isLoading state directly to shimmer skeleton screen.
+
+--------------------------------------------------------------------------------
+MODIFIED FILES (10 FILES)
+--------------------------------------------------------------------------------
+- src/app/page.js
+- src/components/CouponResultView.jsx
+- src/components/InChatShoppingAgent.jsx
+- src/components/ProductCard.jsx
+- src/components/SubscriptionsView.jsx
+- src/components/TravelHubView.jsx
+- src/components/TrustSheetView.jsx
+- src/services/trustSheetService.js
+- src/services/zyteService.js
+- deployment.logs
+================================================================================

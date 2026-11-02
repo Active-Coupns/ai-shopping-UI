@@ -976,18 +976,18 @@ export default function SubscriptionsView({
               <p className="text-xs text-indigo-800 font-medium leading-relaxed max-w-xl">
                 We detected a possible spelling variation for &ldquo;{searchQuery.trim()}&rdquo;. We have multi-tier plans and 4-Level Savings Blueprints available for <strong>{verifiedEntity.canonicalName}</strong>.
               </p>
-              <div className="flex flex-wrap items-center gap-2.5 pt-1">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-2.5 pt-1">
                 <button
                   type="button"
                   onClick={() => setSearchQuery(verifiedEntity.canonicalName)}
-                  className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black shadow-xs cursor-pointer transition-colors"
+                  className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black shadow-xs cursor-pointer transition-colors text-center justify-center flex items-center"
                 >
                   Show Plans for {verifiedEntity.canonicalName}
                 </button>
                 <button
                   type="button"
                   onClick={() => setSearchQuery("")}
-                  className="px-3.5 py-2.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold border border-slate-200 transition-colors cursor-pointer"
+                  className="w-full sm:w-auto px-3.5 py-2.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold border border-slate-200 transition-colors cursor-pointer text-center justify-center flex items-center"
                 >
                   Clear Search
                 </button>
@@ -1016,20 +1016,20 @@ export default function SubscriptionsView({
                 </div>
               </div>
 
-              <div className="flex flex-wrap items-center gap-3 pt-1">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 pt-1">
                 <button
                   type="button"
                   onClick={() => {
                     window.location.href = `/?tab=${verifiedEntity.crossCategoryTab || "travel"}`;
                   }}
-                  className="px-5 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-black text-xs shadow-md flex items-center gap-2 cursor-pointer transition-all active:scale-95"
+                  className="w-full sm:w-auto px-5 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-black text-xs shadow-md flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-95 text-center"
                 >
                   <span>↗ Explore {verifiedEntity.crossCategoryTitle}</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setSearchQuery("")}
-                  className="px-4 py-3 rounded-2xl bg-white/10 hover:bg-white/15 text-slate-300 text-xs font-bold border border-white/10 transition-colors cursor-pointer"
+                  className="w-full sm:w-auto px-4 py-3 rounded-2xl bg-white/10 hover:bg-white/15 text-slate-300 text-xs font-bold border border-white/10 transition-colors cursor-pointer text-center justify-center flex items-center"
                 >
                   Back to Subscriptions
                 </button>
@@ -1071,19 +1071,19 @@ export default function SubscriptionsView({
                   </div>
                 </div>
               ) : (
-                <div className="flex flex-wrap items-center gap-3 pt-1">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 pt-1">
                   <button
                     type="button"
                     onClick={() => handleDiscoverOnDemand(verifiedEntity.canonicalName)}
-                    className="px-5 py-3 rounded-2xl bg-gradient-to-r from-indigo-500 via-indigo-600 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white text-xs sm:text-sm font-black shadow-lg shadow-indigo-500/25 flex items-center gap-2 cursor-pointer transition-all active:scale-95 group"
+                    className="w-full sm:w-auto px-5 py-3 rounded-2xl bg-gradient-to-r from-indigo-500 via-indigo-600 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white text-xs sm:text-sm font-black shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-95 group text-center"
                   >
                     <Zap className="w-4 h-4 text-amber-300 animate-pulse group-hover:scale-110 transition-transform" />
-                    <span>⚡ Yes, Ingest Live Blueprint for &ldquo;{verifiedEntity.canonicalName}&rdquo;</span>
+                    <span>⚡ Yes, Reveal Live Deals &amp; Plans for &ldquo;{verifiedEntity.canonicalName}&rdquo;</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setSearchQuery("")}
-                    className="px-4 py-3 rounded-2xl bg-white/10 hover:bg-white/15 text-slate-300 text-xs sm:text-sm font-bold border border-white/10 transition-colors cursor-pointer"
+                    className="w-full sm:w-auto px-4 py-3 rounded-2xl bg-white/10 hover:bg-white/15 text-slate-300 text-xs sm:text-sm font-bold border border-white/10 transition-colors cursor-pointer text-center justify-center flex items-center"
                   >
                     No, Show All Subscriptions
                   </button>

@@ -545,11 +545,11 @@ export default function TravelHubView({
                   </p>
                 </div>
               ) : (
-                <div className="flex flex-wrap items-center gap-3 pt-1">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 pt-1">
                   <button
                     type="button"
                     onClick={() => handleTriggerOnDemand(verifiedEntity.canonicalName, category)}
-                    className="px-5 py-3 rounded-2xl bg-gradient-to-r from-indigo-500 via-indigo-600 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white text-xs sm:text-sm font-black shadow-lg shadow-indigo-500/25 flex items-center gap-2 cursor-pointer transition-all active:scale-95 group"
+                    className="w-full sm:w-auto px-5 py-3 rounded-2xl bg-gradient-to-r from-indigo-500 via-indigo-600 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white text-xs sm:text-sm font-black shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-95 group text-center"
                   >
                     <Zap className="w-4 h-4 text-amber-300 animate-pulse group-hover:scale-110 transition-transform" />
                     <span>⚡ Yes, Scan Live Deals for &ldquo;{verifiedEntity.canonicalName}&rdquo;</span>
@@ -557,7 +557,7 @@ export default function TravelHubView({
                   <button
                     type="button"
                     onClick={() => { setDealSearchQuery(""); setDealTypeFilter("all"); }}
-                    className="px-4 py-3 rounded-2xl bg-white/10 hover:bg-white/15 text-slate-300 text-xs sm:text-sm font-bold border border-white/10 transition-colors cursor-pointer"
+                    className="w-full sm:w-auto px-4 py-3 rounded-2xl bg-white/10 hover:bg-white/15 text-slate-300 text-xs sm:text-sm font-bold border border-white/10 transition-colors cursor-pointer text-center justify-center flex items-center"
                   >
                     No, Show All Pre-Verified Deals
                   </button>
@@ -613,6 +613,34 @@ export default function TravelHubView({
               </div>
             </div>
           )
+        ) : isLoadingDeals ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 items-start">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div
+                key={`travel-skeleton-${i}`}
+                className="rounded-3xl bg-white border border-slate-200 shadow-2xs overflow-hidden flex flex-col animate-pulse"
+              >
+                <div className="p-3.5 bg-slate-200 flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-slate-300" />
+                    <div className="space-y-1">
+                      <div className="h-4 w-28 bg-slate-300 rounded" />
+                      <div className="h-2.5 w-16 bg-slate-300/70 rounded" />
+                    </div>
+                  </div>
+                  <div className="h-4 w-14 bg-slate-300 rounded-full" />
+                </div>
+                <div className="p-4 space-y-3">
+                  <div className="h-14 bg-slate-100 rounded-2xl" />
+                  <div className="space-y-1.5">
+                    <div className="h-3 w-full bg-slate-100 rounded" />
+                    <div className="h-3 w-3/4 bg-slate-100 rounded" />
+                  </div>
+                  <div className="h-10 bg-slate-200 rounded-2xl w-full" />
+                </div>
+              </div>
+            ))}
+          </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 items-start">
             {deals.map((deal) => {

@@ -424,7 +424,19 @@ export default function Home() {
       }
     };
     window.addEventListener("unhandledrejection", handleUnhandledRejection);
-    return () => window.removeEventListener("unhandledrejection", handleUnhandledRejection);
+
+    const handleCustomCountrySwitch = (event) => {
+      const targetC = event?.detail?.country;
+      if (targetC) {
+        handleCountryChange(targetC);
+      }
+    };
+    window.addEventListener("shopsmart:switch_country", handleCustomCountrySwitch);
+
+    return () => {
+      window.removeEventListener("unhandledrejection", handleUnhandledRejection);
+      window.removeEventListener("shopsmart:switch_country", handleCustomCountrySwitch);
+    };
   }, []);
 
   // Load saved country preferences or perform real-time silent IP auto-detect for guests
@@ -649,6 +661,7 @@ export default function Home() {
   const handleCouponSearch = async (storeQuery) => {
     if (!storeQuery) return;
     setSearchQuery(storeQuery);
+    setCouponResultData(null);
     setIsApiLoading(true);
     setAppState("coupon_results");
     setIsCartAnalysis(false);
@@ -666,6 +679,7 @@ export default function Home() {
 
   const handleAnalyzeCartScreenshot = async (imageBase64) => {
     if (!imageBase64) return;
+    setCouponResultData(null);
     setIsApiLoading(true);
     setAppState("coupon_results");
     setIsCartAnalysis(true);
@@ -1011,6 +1025,7 @@ export default function Home() {
               <CouponResultView
                 resultData={couponResultData}
                 isCartAnalysis={isCartAnalysis}
+                isLoading={isApiLoading}
                 onReset={handleReset}
               />
             </motion.div>

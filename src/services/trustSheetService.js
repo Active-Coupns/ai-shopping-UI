@@ -527,10 +527,7 @@ export async function identifyProduct(input, country = "IN", existingProduct = n
     if (existingProduct.category) product.category = existingProduct.category;
   }
 
-  // If input is a URL, pre-extract slug as zero-latency resilient fallback
-  const urlExtractedTitle = isUrl ? extractProductTitleFromUrl(rawUrl) : "";
-
-  // If input is a URL, call Zyte Cloud Proxy API to extract live authentic product data
+  // If input is a URL, call Zyte to extract authentic product details directly from the source page
   if (isUrl && rawUrl) {
     try {
       const zyteData = await extractProductWithZyte(rawUrl, { country: targetCountry });
@@ -539,10 +536,13 @@ export async function identifyProduct(input, country = "IN", existingProduct = n
         product.brand = zyteData.brand || "";
         product.price = zyteData.price || "";
         product.rawPrice = zyteData.rawPrice || null;
+        product.regularPrice = zyteData.regularPrice || "";
+        product.rawRegularPrice = zyteData.rawRegularPrice || null;
         product.image = zyteData.image || "";
         product.description = zyteData.description || "";
         product.specifications = zyteData.specifications || [];
         product.features = zyteData.features || [];
+        product.breadcrumbs = zyteData.breadcrumbs || [];
         product.rating = zyteData.rating || null;
         product.reviewCount = zyteData.reviewCount || null;
         product.store = zyteData.brand || store;
@@ -550,67 +550,22 @@ export async function identifyProduct(input, country = "IN", existingProduct = n
     } catch (e) {
       console.warn("[TrustSheet] Zyte extraction error:", e.message);
     }
-  }
 
-  // If product.title is still empty after Zyte, fall back to URL slug or ASIN
-  if (!product.title && urlExtractedTitle) {
-    product.title = urlExtractedTitle;
-  }
-
-  // Resilient fallback search via OpenWeb if we still lack price, image, or title is raw URL/ASIN
-  let searchKeyword = product.title && !product.title.startsWith("http") ? product.title : "";
-  if (!searchKeyword && urlExtractedTitle) {
-    searchKeyword = urlExtractedTitle;
-  }
-  if (!searchKeyword && cleanInput && !cleanInput.startsWith("http")) {
-    searchKeyword = cleanInput;
-  }
-
-  const isAsinOrStub = !product.title || product.title.startsWith("http") || /^[A-Z0-9]{10}$/i.test(product.title);
-  if (searchKeyword && (!product.image || !product.price || isAsinOrStub)) {
-    try {
-      const cleanCountry = String(targetCountry).toLowerCase();
-      const prods = await executeSearchRequest(searchKeyword, cleanCountry);
-      if (Array.isArray(prods) && prods.length > 0) {
-        const top = prods[0];
-        if (isAsinOrStub) {
-          product.title = top.product_title || searchKeyword;
-        }
-        if (!product.price) {
-          product.price = top.price || "";
-          product.rawPrice = parsePriceNum(top.price);
-        }
-        if (!product.image) {
-          product.image = (top.product_photos && top.product_photos[0]) || top.product_photo || "";
-        }
-        if (!product.store || product.store === "Online Store") {
-          product.store = formatStoreName(top.store_name || "Online Store", targetCountry);
-        }
-        if (!product.product_id) {
-          product.product_id = top.product_id || "";
-        }
-        if (!product.rating && top.product_rating) product.rating = top.product_rating;
-        if (!product.reviewCount && top.product_num_ratings) product.reviewCount = top.product_num_ratings;
-        if (top.product_id && !product.url) {
-          try {
-            const details = await executeProductDetailsRequest(top.product_id, cleanCountry);
-            const topOffer = details?.offers?.[0];
-            if (topOffer?.offer_page_url) {
-              product.url = topOffer.offer_page_url;
-              if (topOffer.store_name) {
-                product.store = formatStoreName(topOffer.store_name, targetCountry);
-              }
-            }
-          } catch (detErr) {}
-        }
-      }
-    } catch (searchErr) {
-      console.warn("[TrustSheet] Live search error for product fallback:", searchErr.message);
+    // STRICT ZERO-FALLBACK RULE: If Zyte could not extract authentic details from this URL, FAIL HONESTLY!
+    // Never fall back to arbitrary OpenWeb keyword searches, never substitute a smartphone or dummy data.
+    if (!product.title) {
+      return {
+        success: false,
+        error: "Could not retrieve authentic product details from this link. The store page may be unavailable, restricted by anti-bot protections, or expired. Please check the URL or try another product link."
+      };
     }
   }
 
-  if (!product.title || product.title.startsWith("http")) {
-    product.title = urlExtractedTitle || cleanInput;
+  if (!product.title) {
+    return {
+      success: false,
+      error: "Please provide a valid product URL or select a valid product."
+    };
   }
 
   // Dynamic AI Question Generation (ZERO-REGEX)
@@ -671,18 +626,17 @@ Analyze this scraped e-commerce product with 100% spec-grounded honesty for a co
 
 PRODUCT TITLE: "${title}"
 IDENTIFIED CATEGORY: "${category}"
-PRICE: "${price}"
+PRICE: "${price}" ${product.regularPrice ? `(Original MRP: ${product.regularPrice})` : ""}
 STORE / SOURCE: "${store}" ${rawUrl ? `(${rawUrl})` : ""}
 TARGET MARKET: ${regionProfile.name.toUpperCase()} (${regionProfile.currency} ${regionProfile.symbol})
-${specs.length > 0 ? `SCRAPED SPECIFICATIONS & INGREDIENTS:\n${specs.slice(0, 30).map(s => `• ${s.name || s.key}: ${s.value}`).join("\n")}` : ""}
-${product.description ? `PRODUCT DESCRIPTION EXCERPT:\n${product.description.slice(0, 500)}` : ""}
-
+${product.breadcrumbs && product.breadcrumbs.length > 0 ? `CATEGORY BREADCRUMBS: ${product.breadcrumbs.join(" > ")}\n` : ""}${specs.length > 0 ? `SCRAPED SPECIFICATIONS & INGREDIENTS:\n${specs.slice(0, 30).map(s => `• ${s.name || s.key}: ${s.value}`).join("\n")}\n` : ""}${product.features && product.features.length > 0 ? `OFFICIAL PRODUCT HIGHLIGHTS & BULLETS:\n${product.features.map(f => `• ${f}`).join("\n")}\n` : ""}${product.description ? `PRODUCT DESCRIPTION EXCERPT:\n${product.description.slice(0, 700)}\n` : ""}
 ${answerLines ? `USER PREFERENCES FROM QUESTIONS:\n${answerLines}` : "USER SKIPPED QUESTIONS: Provide a balanced general evaluation."}
 ${customReq ? `USER'S SPECIFIC PERSONAL CONCERN / REQUIREMENT:\n"${customReq}"` : ""}
 
 RULES FOR UNBIASED PRODUCT TRUTH:
-1. SPEC & FORMULATION GROUNDING: Base claims strictly on published specs, materials, or ingredients.
-2. WHERE IT EXCELS: 3 genuine strengths where this product excels.
+1. SPEC & HARDWARE GROUNDING (ZERO 'N/A' RULE):
+   Extract and declare 6 to 8 genuine, accurate engineering/hardware specifications in 'keySpecs' for this exact model (e.g. for a washing machine: Capacity, RPM Spin Speed, Inverter Motor Type, Star Energy Rating, Wash Programs, Tub Material, Voltage/Power). NEVER output 'N/A', 'Unknown', or 'Not specified'! State the official published manufacturer specification for this exact product model.
+2. WHERE IT EXCELS: 3 genuine strengths strictly grounded in these specifications.
 3. REALISTIC LIMITS / TRADE-OFFS: 3 honest limitations, gotchas, or bottlenecks brands downplay.
 4. CARE & SENSITIVITY GUIDELINES:
    Provide 2-3 caring, practical, non-alarmist considerations tailored to this product's materials/ingredients:
