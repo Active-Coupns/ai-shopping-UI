@@ -21,19 +21,28 @@ ShopSmart AI is **NOT a generic coupon website**, nor a generic affiliate blog. 
         ┌────────────────────────────────┴────────────────────────────────┐
         ▼                                                                 ▼
 ┌──────────────────────────────────────────────┐  ┌──────────────────────────────────────────────┐
-│  TIER 1: THE CORE USP & MONETIZATION ENGINE  │  │  TIER 2: TOP-OF-FUNNEL SEO & ACQUISITION     │
-│  Guaranteed Instant Discounts (Powered by    │  │  Free Organic Traffic & Search Capture       │
+│  TIER 1: THE CORE USP & MONETIZATION ENGINE  │  │  TIER 2: MULTI-VERTICAL GLOBAL DATA ENGINE   │
+│  Guaranteed Instant Discounts (Powered by    │  │  Free Organic Traffic, Travel & Coupons      │
 │  Runa - runa.io)                             │  │  (Powered by Feedico Partner Program)        │
 ├──────────────────────────────────────────────┤  ├──────────────────────────────────────────────┤
-│ • Passes 100% of wholesale margin (8%-15%)   │  │ • Captures millions of free Google search    │
-│   directly to the shopper at checkout.       │  │   queries ("Nike promo code", "ASOS coupon").│
-│ • Category: Zero-return daily services       │  │ • Category: Long-tail e-commerce, fashion,   │
-│   (Food, Cabs, Groceries, Fast Fashion).     │  │   electronics, international retail.         │
+│ • Passes 100% of wholesale margin (8%-15%)   │  │ • 48,000+ Global Brands (7 Major Networks:   │
+│   directly to the shopper at checkout.       │  │   CJ, Impact, Awin, Admitad, Partnerize).    │
+│ • Category: Zero-return daily services       │  │ • Verticals Covered: Retail, Flights,        │
+│   (Food, Cabs, Groceries, Fast Fashion).     │  │   Hotels, SaaS Subscriptions, Pharmacy.      │
+│ • Merchants: Zomato, Swiggy, Uber, Domino's, │  │ • Delivery: Daily Bulk Sync (Cron) + Instant │
+│   DoorDash, Deliveroo, Blinkit, Zepto.       │  │   On-Demand Lookup via POST /catalog/coupons.│
 │ • Zero expired codes. Zero cashback waiting. │  │ • Cost: $0.00 upfront. No monthly seat fees. │
 │ • Instant App Deep-Links with pre-loaded     │  │ • Monetization: 65% publisher revenue share  │
 │   merchant wallet credits.                   │  │   on matched sales paid via Payoneer.        │
 └──────────────────────────────────────────────┘  └──────────────────────────────────────────────┘
 ```
+
+### Technical Integration Blueprint for Feedico (`api.feedico.io`)
+- **Primary Endpoint**: `POST https://api.feedico.io/api/v1/catalog/coupons`
+- **Authentication**: Bearer Token (`fdco_...` generated from partner dashboard post domain verification)
+- **Daily Cron Mode**: Batch pagination (`{"page": 1, "pageSize": 100}`) to refresh top 100 multi-vertical deals in Redis.
+- **On-Demand Search Mode**: Targeted merchant filter (`{"firmName": "<brand>", "pageSize": 20}`) responding in ~200ms.
+- **Fail-Honest Policy**: If Feedico has 0 active coupons for a brand, return honest "No active coupon available" (zero AI hallucination).
 
 ### Routing Logic (How Links are Resolved)
 ```javascript
@@ -41,7 +50,7 @@ if (merchant.hasDirectPartnership || merchant.category in ["food", "cabs", "groc
   // TIER 1: Runa Guaranteed Wholesale Deep-Link (100% Margin to User / Retention Driver)
   return runa.generatePreloadedAppDeepLink(merchant);
 } else {
-  // TIER 2: Feedico Managed Catalog /go link (65% Rev-Share, $0 cost, SEO Long-tail)
+  // TIER 2: Feedico Managed Catalog /go link (Travel, Flights, Hotels, SaaS, Retail - 65% Rev-Share)
   return feedico.getTrackedGoLink(merchant);
 }
 ```
