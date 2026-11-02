@@ -2,11 +2,54 @@
 DEPLOYMENT LOGS - SHOPSMART AI
 ================================================================================
 
-[DEPLOYMENT TIMESTAMP] : 2026-11-02 18:30:00 UTC (Local: 2026-11-02 10:30:00 -08:00)
-[COMMIT HASH]          : 41110e2
+[DEPLOYMENT TIMESTAMP] : 2026-11-02 19:02:00 UTC (Local: 2026-11-02 11:02:00 -08:00)
+[COMMIT HASH]          : 90c403b
 [TARGET ENVIRONMENT]   : Production (Vercel) / origin main
 [BUILD STATUS]         : PASSED (npx next build --webpack: 189/189 routes compiled, 0 errors)
 [STATUS]               : PUSHED TO ORIGIN MAIN
+
+--------------------------------------------------------------------------------
+SUMMARY OF CHANGES & RESOLVED ISSUES
+--------------------------------------------------------------------------------
+
+1. UNIVERSAL CATEGORY PROFILE ENGINE FOR TRUSTSHEET AI ASSISTANT (`getProductCategoryProfile`)
+   - Fixed issue where non-hardware products (e.g. perfumes, skincare, apparel, groceries) displayed hardcoded hardware chips ("Does it heat up during summer?", "What is the real battery backup?", "Is a fast charger included in the box?") and "Hardware Truth Assistant" title.
+   - Introduced dynamic category resolver mapping titles and categories:
+     * Fragrance / Perfume: "Fragrance & Scent Truth Assistant" + projection, longevity, drydown notes, skin sensitivity doubts, and tailored placeholder.
+     * Beauty & Skincare: "Beauty & Skincare Truth Assistant" + acne safety, active ingredients, residue, layering doubts.
+     * Fashion & Footwear: "Style & Fit Truth Assistant" + true-to-size fit, fabric breathability, shrinkage/color bleeding.
+     * Food & Grocery: "Food & Quality Truth Assistant" + shelf-life, storage requirements, preservatives, allergens.
+     * Supplements: "Supplement & Nutrition Truth Assistant" + lab certification, digestive tolerance, purity.
+     * Software & SaaS: "Software & SaaS Truth Assistant" + subscription tiers, cancellation, export limits.
+     * Tech & Hardware: "Hardware Truth Assistant" (battery endurance, thermal throttling, charging, warranty).
+     * General Products: "Product Truth Assistant" (return reasons, trade-offs, durability).
+   - Dynamically adapted Verdict Card ("Fragrance Specialist’s Bottom-Line Verdict"), Aging Timeline ("Fragrance Maceration & Shelf-Life Timeline"), and Spec Benchmarks to eliminate inappropriate "Hardware" labels on consumer goods.
+
+2. ACTIVE VERIFIED COUPONS & PROMOS RESPONSIVE UI POLISH
+   - Fixed mobile display bug where coupon code, discount text, and copy button were forced into a single horizontal flex row, squeezing long discount copy ("Extra 10% off (max ₹150) on ₹599+ cart") into a narrow 80-100px column that wrapped every word onto separate lines.
+   - Re-architected coupon card layout:
+     * Top Row: Prominent dashed-border monospace coupon code badge (`AI_START_BEAUTY`) with "Active" badge on the left, and distinct 1-click "Copy" button on the right with responsive feedback ("Copied").
+     * Bottom Row: Full card width bold emerald discount headline with zero line truncation or awkward squishing, accompanied by minimum order terms.
+
+--------------------------------------------------------------------------------
+MODIFIED FILES
+--------------------------------------------------------------------------------
+- [MODIFIED] src/components/TrustSheetView.jsx
+- [MODIFIED] deployment.logs
+- [MODIFIED] DEVELOPMENT_LOG.md
+
+================================================================================
+PREVIOUS DEPLOYMENTS
+================================================================================
+
+[DEPLOYMENT TIMESTAMP] : 2026-11-02 18:30:00 UTC (Local: 2026-11-02 10:30:00 -08:00)
+[COMMIT HASH]          : 41110e2 / e3ab6b0
+[TARGET ENVIRONMENT]   : Production (Vercel) / origin main
+[BUILD STATUS]         : PASSED (npx next build --webpack: 189/189 routes compiled, 0 errors)
+[STATUS]               : PUSHED TO ORIGIN MAIN
+
+- Purge of "Deals" navigation tabs across desktop and mobile ("Shopping" tab restored)
+- Complete removal of "Today's Deals" category explorer, route handlers, and service files
 
 --------------------------------------------------------------------------------
 SUMMARY OF CHANGES & RESOLVED ISSUES

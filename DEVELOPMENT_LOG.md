@@ -18,6 +18,29 @@
 
 ## 📅 Daily Changelog & Feature Timeline
 
+### 🗓️ 2026-11-02 (TrustSheet AI Assistant Dynamic Category Adaptation & Coupon UI Polish)
+
+* **Git Commit**: [`90c403b`](https://github.com/Active-Coupns/ai-shopping-UI/commit/90c403b)
+* **Commit Message**: `fix: dynamic category adaptation for AI assistant chips and polish coupon layout`
+* **Status**: ✅ 100% Tested & Verified, Pushed to `origin/main`
+* **Changes in this Commit**:
+  1. **Universal Category Profile Engine (`getProductCategoryProfile`) in TrustSheet**:
+     - Resolved category mismatch where non-hardware products (like perfumes, cosmetics, fashion, foods) defaulted to "Hardware Truth Assistant" and battery/charger/thermal chips.
+     - Dynamically generates domain-tailored titles, subtitles, placeholders, and suggestion chips:
+       * **Fragrances & Scents**: Sillage/projection, opening/heart/base drydown notes, office/evening suitability, skin irritation doubts.
+       * **Beauty & Skincare**: Skin sensitivity, comedogenic rating, active ingredients, residue/white cast.
+       * **Fashion & Fit**: True-to-size fit, fabric breathability, color bleeding, washing durability.
+       * **Food & Grocery**: Expiry/shelf life, preservatives, humidity/temperature storage, allergens.
+       * **Hardware/Tech**: Real-world battery endurance, thermal throttling, charger in box, warranty.
+     - Dynamically adapted Verdict Card ("Fragrance Specialist’s Bottom-Line Verdict"), Aging Timeline ("Fragrance Maceration & Shelf-Life Timeline"), and Spec Benchmarks.
+  2. **Active Verified Coupons & Promos Responsive UI Polish**:
+     - Fixed mobile layout squash where coupon code (`AI_START_BEAUTY`), discount copy, and copy button shared a tight row, breaking text vertically word-by-word.
+     - Redesigned into structured 2-row card:
+       * Row 1: Prominent dashed monospace code badge + "Active" badge on left, distinct "Copy" button on right.
+       * Row 2: Full-width bold emerald discount text without wrapping compression + clean terms line.
+  3. **Production Build Verification**:
+     - Webpack build passed (`189/189` routes compiled with 0 errors).
+
 ### 🗓️ 2026-11-02 (Feature Cleanup: Complete Removal of Today's Deals & Category Explorer)
 
 * **Git Commit**: [`40a3e12`](https://github.com/Active-Coupns/ai-shopping-UI/commit/40a3e12)
