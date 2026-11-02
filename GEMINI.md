@@ -22,18 +22,17 @@ ShopSmart AI is **NOT a generic coupon website**, nor a generic affiliate blog. 
         ▼                                                                 ▼
 ┌──────────────────────────────────────────────┐  ┌──────────────────────────────────────────────┐
 │  TIER 1: THE CORE USP & MONETIZATION ENGINE  │  │  TIER 2: MULTI-VERTICAL GLOBAL DATA ENGINE   │
-│  Guaranteed Instant Discounts (Powered by    │  │  Free Organic Traffic, Travel & Coupons      │
-│  Runa - runa.io)                             │  │  (Powered by Feedico Partner Program)        │
+│  Zero-Markup Wholesale Net-Rate Engine       │  │  Free Organic Traffic, Travel & Coupons      │
+│  (Headless B2B White-Label REST APIs)        │  │  (Powered by Feedico & Secret B2B)           │
 ├──────────────────────────────────────────────┤  ├──────────────────────────────────────────────┤
-│ • Passes 100% of wholesale margin (8%-15%)   │  │ • 48,000+ Global Brands (7 Major Networks:   │
-│   directly to the shopper at checkout.       │  │   CJ, Impact, Awin, Admitad, Partnerize).    │
-│ • Category: Zero-return daily services       │  │ • Verticals Covered: Retail, Flights,        │
-│   (Food, Cabs, Groceries, Fast Fashion).     │  │   Hotels, SaaS Subscriptions, Pharmacy.      │
-│ • Merchants: Zomato, Swiggy, Uber, Domino's, │  │ • Delivery: Daily Bulk Sync (Cron) + Instant │
-│   DoorDash, Deliveroo, Blinkit, Zepto.       │  │   On-Demand Lookup via POST /catalog/coupons.│
-│ • Zero expired codes. Zero cashback waiting. │  │ • Cost: $0.00 upfront. No monthly seat fees. │
-│ • Instant App Deep-Links with pre-loaded     │  │ • Monetization: 65% publisher revenue share  │
-│   merchant wallet credits.                   │  │   on matched sales paid via Payoneer.        │
+│ • Passes 100% of wholesale margin directly   │  │ • 48,000+ Global Brands (7 Major Networks:   │
+│   to shopper at checkout (0% Agent Markup).  │  │   CJ, Impact, Awin, Admitad, Partnerize).    │
+│ • Flights: Duffel API (300+ Airlines Net Fare)│  │ • Coupons: Feedico Managed Catalog + India   │
+│ • Hotels: Agoda B2B / Hotelbeds Net Rates    │  │   Hyperlocal Master Registry (Honey model).  │
+│ • Comedy & Live Shows: Ticket Evolution API  │  │ • Software / SaaS: Secret B2B Partner API     │
+│ • Theme Parks & Sights: Viator / Tiqets API  │  │   ($1,000+ credits, 30% off partner tokens). │
+│ • 100% White-Label: Supplier invisible, zero │  │ • Legal Compliance: Clerk authentication     │
+│   competitor leaks. Zero gift card friction. │  │   satisfies Hotel Rate Parity law.           │
 └──────────────────────────────────────────────┘  └──────────────────────────────────────────────┘
 ```
 
@@ -46,11 +45,20 @@ ShopSmart AI is **NOT a generic coupon website**, nor a generic affiliate blog. 
 
 ### Routing Logic (How Links are Resolved)
 ```javascript
-if (merchant.hasDirectPartnership || merchant.category in ["food", "cabs", "groceries"]) {
-  // TIER 1: Runa Guaranteed Wholesale Deep-Link (100% Margin to User / Retention Driver)
-  return runa.generatePreloadedAppDeepLink(merchant);
+if (vertical === "flights") {
+  // TIER 1: Duffel API Headless NDC Wholesale Net Booking (0% Agent Markup)
+  return duffel.bookWholesaleFlight(bookingData);
+} else if (vertical === "events_comedy") {
+  // TIER 1: Ticket Evolution B2B Wholesale Live Ticket (White-Label)
+  return ticketEvolution.getWholesaleTicket(eventData);
+} else if (vertical === "attractions_parks") {
+  // TIER 1: Viator / Tiqets B2B Wholesale Pass (Instant Digital Barcode)
+  return viator.getAttractionPass(attractionData);
+} else if (vertical === "saas_software") {
+  // TIER 2: Secret B2B Partner Tokenized Gated Perks
+  return secret.getGatedPerkUrl(saasData);
 } else {
-  // TIER 2: Feedico Managed Catalog /go link (Travel, Flights, Hotels, SaaS, Retail - 65% Rev-Share)
+  // TIER 2: Feedico Managed Catalog /go link (Coupons & Retail - 65% Rev-Share)
   return feedico.getTrackedGoLink(merchant);
 }
 ```
@@ -72,6 +80,7 @@ if (merchant.hasDirectPartnership || merchant.category in ["food", "cabs", "groc
 | ❌ **Code Modification by Autonomous Watchdogs** | Autonomous bots/AI must NEVER edit, mutate, or "auto-fix" `.js`/`.jsx` files in production. Maintenance is strictly 100% passive, read-only observability. |
 | ❌ **RAG Mixed Inventory Pool (`consultAiShopkeeper`) in Shopping Search** | Blocked queries from reaching OpenWeb Ninja, force-fed a mixed 40-item pool (cameras + laptops + washing machines) into search responses, and corrupted category relevance. Removed permanently. |
 | ❌ **Hardcoded 'Today\'s Deals' Category Explorer (`today_deals`)** | Burned expensive OpenWeb Ninja API credits for non-intent browsers using hardcoded generic search queries (`laptop special offer deals`). Distracted from high-intent shopping search, pharmacy, verified coupons, and smart terminal. Permanently removed. |
+| ❌ **Runa / Gift Card Reselling & Wallet Loading Model** | Imposes heavy payment gateway processing overhead, KYC compliance, customer chargeback risks, digital code theft vulnerabilities, and high user UX friction. Permanently replaced with direct B2B Wholesale Net-Rate APIs and verified Honey-style promo codes. |
 
 ---
 
