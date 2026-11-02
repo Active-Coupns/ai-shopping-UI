@@ -6,7 +6,6 @@ import { verifyCryptoHandshake } from "@/lib/cryptoHandshake";
 import { getAdminSettings } from "@/services/admin";
 import { monetizeUrl } from "@/services/affiliate";
 import { searchOpenWebProducts, isExactProductQuery, isAuthenticPDP } from "@/services/openweb";
-import { addToInventoryPool, consultAiShopkeeper } from "@/services/semanticCache";
 import { recordSearchMetric } from "@/services/adminMetrics";
 import { applyAdaptiveSlowdown, recordSecurityIncident, checkBurstTripwire } from "@/services/securityRadar";
 import { clampString, checkSearchContentSafety } from "@/services/securityShield";
@@ -310,9 +309,6 @@ export async function POST(request) {
             });
           }
 
-          // Asynchronously enrich Central Store Inventory Pool from direct cache
-          addToInventoryPool(country, finalCachedProducts).catch(() => {});
-
           // Non-blocking telemetry for Admin monitoring
           recordSearchMetric({
             query: cleanQuery,
@@ -341,54 +337,6 @@ export async function POST(request) {
       }
     } catch (cacheErr) {
       console.warn("Redis cache read error:", cacheErr);
-    }
-
-    // 3.5 Intelligent RAG Shelf Gatekeeper (Broad & Conversational Query Fulfillment)
-    // If the exact query was not cached, check if the store's verified rolling inventory pool
-    // can fulfill this request (e.g. "best camera phone", "under 30000 phone", "headphones", etc.)
-    // without consuming external API quota or adding search latency.
-    if (!isUrlLookup && !isExactProduct) {
-      try {
-        const shopkeeperMatch = await consultAiShopkeeper(country, cleanQuery);
-        if (shopkeeperMatch && Array.isArray(shopkeeperMatch.products) && shopkeeperMatch.products.length >= 3) {
-          const quotaStatus = await checkUnifiedApiQuota({
-            userId,
-            clientIp,
-            deviceFingerprint: effectiveDeviceFingerprint,
-            isCacheHit: true,
-            limit: 10
-          });
-
-          // Non-blocking telemetry
-          recordSearchMetric({
-            query: cleanQuery,
-            clientIp,
-            isCacheHit: true,
-            country,
-            category: "ecommerce",
-            latencyMs: Date.now() - searchStartTime,
-            statusCode: 200
-          }).catch(() => {});
-
-          return NextResponse.json({
-            products: shopkeeperMatch.products,
-            coupons: [],
-            intent: "E-COMMERCE",
-            error: null,
-            searchesLeft: quotaStatus.remaining,
-            fromCache: true,
-            strategy: shopkeeperMatch.strategy || "AI_RAG_SHOPKEEPER",
-            reason: shopkeeperMatch.reason || "Fulfilled from store inventory pool"
-          }, {
-            status: 200,
-            headers: {
-              "Cache-Control": "public, s-maxage=1800, stale-while-revalidate=86400"
-            }
-          });
-        }
-      } catch (shopkeeperErr) {
-        console.warn("[Search Route] Shopkeeper gatekeeper bypassed safely:", shopkeeperErr?.message);
-      }
     }
 
     // 4. Admin Settings & Coupons
@@ -521,14 +469,11 @@ export async function POST(request) {
     const hasAnyFallback = cleanProducts.some(p => p.id?.startsWith("fallback-") || p.is_catalog_fallback);
     if (cleanProducts.length >= 1 && !hasAnyFallback) {
       try {
-        await Promise.all([
-          redis.set(cacheKey, JSON.stringify({ 
-            products: cleanProducts,
-            coupons: matchedStoreCoupons,
-            intent: "E-COMMERCE"
-          }), { ex: 86400 }),
-          addToInventoryPool(country, cleanProducts)
-        ]);
+        await redis.set(cacheKey, JSON.stringify({ 
+          products: cleanProducts,
+          coupons: matchedStoreCoupons,
+          intent: "E-COMMERCE"
+        }), { ex: 86400 });
       } catch (cacheWriteErr) {
         console.warn("Redis cache save error:", cacheWriteErr);
       }

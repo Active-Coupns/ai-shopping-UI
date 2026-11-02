@@ -18,9 +18,29 @@
 
 ## 📅 Daily Changelog & Feature Timeline
 
-### 🗓️ 2026-11-02 (TrustSheet Fail-Honest Architecture, Zero "N/A" Specs, Shimmer Skeletons & Mobile UI Polish)
+### 🗓️ 2026-11-02 (Search Engine Restoration, RAG Mixed Inventory Removal & Category Purity)
 
 * **Git Commit**: `[Pending Commit]`
+* **Commit Message**: `fix(search): remove RAG mixed inventory gatekeeper, restore pure OpenWeb Google Shopping pipeline and update GEMINI.md`
+* **Status**: ✅ 100% Tested & Verified, Ready for Push to `origin/main`
+* **Changes in this Commit**:
+  1. **Removed RAG Mixed Inventory Pool & Gatekeeper (`search/route.js`)**:
+     - Diagnosed and eradicated the query interception bug where `consultAiShopkeeper` was blocking OpenWeb Ninja queries and forcing responses from a mixed 37-item pool in Redis.
+     - Removed `consultAiShopkeeper` and `addToInventoryPool` completely from `src/app/api/search/route.js`.
+     - Flushed contaminated `cache:inventory:pool:v2:in` from Redis.
+     - Restored the direct, pure OpenWeb Ninja (Google Shopping) search pipeline for all retail and pharmacy queries.
+  2. **Preserved Clean Layer-1 Query Normalization**:
+     - Retained Hinglish/Hindi/English conversational noise cleaning and unit standardization.
+     - Preserved clean Redis query caching (`cache:search:v16:<country>:<cleanQuery>`) for 24-hour instant hits.
+  3. **Constitutional Memory Lock (`GEMINI.md`)**:
+     - Permanently recorded the ban on RAG mixed inventory pools in `GEMINI.md` to prevent any regression.
+  4. **Live Verification**:
+     - Tested 3 completely distinct categories (Air Fryer 4L, Running Shoes Men, Dolo 650 Tablet) with 0% contamination.
+     - Full production build: 190/190 routes compiled with 0 errors.
+
+### 🗓️ 2026-11-02 (TrustSheet Fail-Honest Architecture, Zero "N/A" Specs, Shimmer Skeletons & Mobile UI Polish)
+
+* **Git Commit**: [`fbf5932`](https://github.com/Active-Coupns/ai-shopping-UI/commit/fbf5932fe42bcd226d7adc1a6ddb33856dd6e3b5)
 * **Commit Message**: `fix(trustsheet): resolve url extraction bug, declutter to 6 core modules, add shimmer loaders and mobile ui polish`
 * **Status**: ✅ 100% Tested & Verified, Ready for Push to `origin/main`
 * **Changes in this Commit**:

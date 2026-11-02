@@ -61,6 +61,7 @@ if (merchant.hasDirectPartnership || merchant.category in ["food", "cabs", "groc
 | ❌ **Public Review Citations in TrustSheet** | Scraping and publishing third-party user reviews incurs legal and defamation liabilities. All TrustSheet analysis must be **strictly spec-grounded** from manufacturer datasheets. |
 | ❌ **Self-Ticketing / In-App Merchant of Record in Travel** | Avoids IATA licensing, 24/7 emergency support call centers, baggage disputes, and airline refund liabilities. |
 | ❌ **Code Modification by Autonomous Watchdogs** | Autonomous bots/AI must NEVER edit, mutate, or "auto-fix" `.js`/`.jsx` files in production. Maintenance is strictly 100% passive, read-only observability. |
+| ❌ **RAG Mixed Inventory Pool (`consultAiShopkeeper`) in Shopping Search** | Blocked queries from reaching OpenWeb Ninja, force-fed a mixed 40-item pool (cameras + laptops + washing machines) into search responses, and corrupted category relevance. Removed permanently. |
 
 ---
 
