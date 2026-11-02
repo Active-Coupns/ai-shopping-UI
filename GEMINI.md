@@ -71,6 +71,7 @@ if (merchant.hasDirectPartnership || merchant.category in ["food", "cabs", "groc
 | ❌ **Self-Ticketing / In-App Merchant of Record in Travel** | Avoids IATA licensing, 24/7 emergency support call centers, baggage disputes, and airline refund liabilities. |
 | ❌ **Code Modification by Autonomous Watchdogs** | Autonomous bots/AI must NEVER edit, mutate, or "auto-fix" `.js`/`.jsx` files in production. Maintenance is strictly 100% passive, read-only observability. |
 | ❌ **RAG Mixed Inventory Pool (`consultAiShopkeeper`) in Shopping Search** | Blocked queries from reaching OpenWeb Ninja, force-fed a mixed 40-item pool (cameras + laptops + washing machines) into search responses, and corrupted category relevance. Removed permanently. |
+| ❌ **Hardcoded 'Today\'s Deals' Category Explorer (`today_deals`)** | Burned expensive OpenWeb Ninja API credits for non-intent browsers using hardcoded generic search queries (`laptop special offer deals`). Distracted from high-intent shopping search, pharmacy, verified coupons, and smart terminal. Permanently removed. |
 
 ---
 

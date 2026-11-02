@@ -18,11 +18,35 @@
 
 ## 📅 Daily Changelog & Feature Timeline
 
-### 🗓️ 2026-11-02 (Search Engine Restoration, RAG Mixed Inventory Removal & Category Purity)
+### 🗓️ 2026-11-02 (Feature Cleanup: Complete Removal of Today's Deals & Category Explorer)
 
 * **Git Commit**: `[Pending Commit]`
-* **Commit Message**: `fix(search): remove RAG mixed inventory gatekeeper, restore pure OpenWeb Google Shopping pipeline and update GEMINI.md`
+* **Commit Message**: `feat(cleanup): completely remove Today's Deals feature, routes, and category explorer`
 * **Status**: ✅ 100% Tested & Verified, Ready for Push to `origin/main`
+* **Changes in this Commit**:
+  1. **Complete Removal of Today's Deals Feature**:
+     - Removed hardcoded deals queries and category explorer that burned expensive OpenWeb Ninja API credits for low-intent browsing.
+     - Deleted:
+       * `src/components/CategoryDealsExplorer.jsx`
+       * `src/components/DealsResultView.jsx`
+       * `src/app/api/deals/category/route.js` (and removed `src/app/api/deals` directory)
+       * `src/services/dealsService.js`
+  2. **Component & Navigation Polish**:
+     - Cleaned `src/components/SearchHero.jsx`: Removed "Today's Deals" tab, all `isDeals` conditional styling, badges, placeholders, and `<CategoryDealsExplorer />` JSX render.
+     - Cleaned `src/app/page.js`: Removed dynamic import of `DealsResultView`, state variables (`categoryDealsData`, `selectedDealCategory`), handlers (`handleSelectCategoryDeal`, `handleBackFromDeals`), and `{appState === "deals_results"}` rendering block.
+     - Cleaned `src/components/ZippyInteractiveMascot.jsx`: Removed `"today_deals"` avatar costume case.
+  3. **Constitutional Memory Lock (`GEMINI.md`)**:
+     - Added permanent architectural blacklisting in `GEMINI.md` to prevent any re-introduction of hardcoded generic deals explorers.
+  4. **Preserved Core Features**:
+     - Shopping Search, Coupons, Hardware TrustSheet, Travel Hub, OTT & Subscriptions, Virtual Try-On, and Saved Deals Drawer remain 100% operational.
+  5. **Production Build Verification**:
+     - Webpack build passed cleanly (`189/189` routes compiled with 0 errors).
+
+### 🗓️ 2026-11-02 (Search Engine Restoration, RAG Mixed Inventory Removal & Category Purity)
+
+* **Git Commit**: [`13106f2`](https://github.com/Active-Coupns/ai-shopping-UI/commit/13106f2)
+* **Commit Message**: `fix(search): remove RAG mixed inventory gatekeeper, restore pure OpenWeb Google Shopping pipeline, update logs & GEMINI.md`
+* **Status**: ✅ 100% Tested & Verified, Pushed to `origin/main`
 * **Changes in this Commit**:
   1. **Removed RAG Mixed Inventory Pool & Gatekeeper (`search/route.js`)**:
      - Diagnosed and eradicated the query interception bug where `consultAiShopkeeper` was blocking OpenWeb Ninja queries and forcing responses from a mixed 37-item pool in Redis.

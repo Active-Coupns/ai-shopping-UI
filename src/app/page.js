@@ -18,7 +18,6 @@ import { userJourneyTracker } from "@/services/userJourneyTracker";
 // Lazy-loaded components for optimal initial bundle footprint
 const RocketLoader = dynamic(() => import("@/components/RocketLoader"), { ssr: false });
 const CouponResultView = dynamic(() => import("@/components/CouponResultView"), { ssr: false });
-const DealsResultView = dynamic(() => import("@/components/DealsResultView"), { ssr: false });
 const InChatShoppingAgent = dynamic(() => import("@/components/InChatShoppingAgent"), { ssr: false });
 const ProductNotFoundState = dynamic(() => import("@/components/ProductNotFoundState"), { ssr: false });
 const SavedDealsDrawer = dynamic(() => import("@/components/SavedDealsDrawer"), { ssr: false });
@@ -140,8 +139,6 @@ export default function Home() {
   const [couponNotAvailable, setCouponNotAvailable] = useState(false);
   const [couponResultData, setCouponResultData] = useState(null);
   const [isCartAnalysis, setIsCartAnalysis] = useState(false);
-  const [categoryDealsData, setCategoryDealsData] = useState(null);
-  const [selectedDealCategory, setSelectedDealCategory] = useState("smartphones");
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
   const [isTravelAdvisorOpen, setIsTravelAdvisorOpen] = useState(false);
   const [travelAdvisorCategory, setTravelAdvisorCategory] = useState("flights");
@@ -699,35 +696,11 @@ export default function Home() {
     }
   };
 
-  const handleSelectCategoryDeal = async (categoryId) => {
-    if (!categoryId) return;
-    setSelectedDealCategory(categoryId);
-    setCategoryDealsData(null);
-    setIsApiLoading(true);
-    setAppState("deals_results");
-    setSearchIntent("TODAY_DEALS");
-    try {
-      const res = await fetch(`/api/deals/category?category=${encodeURIComponent(categoryId)}&country=${selectedCountry}`);
-      const data = await res.json();
-      setCategoryDealsData(data);
-    } catch (err) {
-      console.error("Category deals fetch error:", err);
-    } finally {
-      setIsApiLoading(false);
-    }
-  };
-
-  const handleBackFromDeals = () => {
-    setAppState("idle");
-    setSearchIntent("TODAY_DEALS");
-  };
-
   const handleReset = (returnTab = null) => {
     // Only accept returnTab if it's a valid string intent, not a SyntheticEvent
-    const isExplicitString = typeof returnTab === "string" && (returnTab === "COUPONS" || returnTab === "E-COMMERCE" || returnTab === "HEALTH" || returnTab === "TODAY_DEALS" || returnTab === "DEALS");
+    const isExplicitString = typeof returnTab === "string" && (returnTab === "COUPONS" || returnTab === "E-COMMERCE" || returnTab === "HEALTH");
     const wasInCoupons = appState === "coupon_results" || Boolean(couponResultData) || searchIntent === "COUPONS";
-    const wasInDeals = appState === "deals_results" || searchIntent === "TODAY_DEALS" || searchIntent === "DEALS";
-    const targetIntent = isExplicitString ? returnTab : (wasInCoupons ? "COUPONS" : wasInDeals ? "TODAY_DEALS" : "E-COMMERCE");
+    const targetIntent = isExplicitString ? returnTab : (wasInCoupons ? "COUPONS" : "E-COMMERCE");
 
     setAppState("idle");
     setSearchQuery("");
@@ -999,13 +972,12 @@ export default function Home() {
             >
               <SearchHero
                 country={selectedCountry}
-                initialTab={searchIntent === "SMART_TERMINAL" ? "smart_terminal" : searchIntent === "COUPONS" ? "coupons" : (searchIntent === "TODAY_DEALS" || searchIntent === "DEALS") ? "today_deals" : "ecommerce"}
+                initialTab={searchIntent === "SMART_TERMINAL" ? "smart_terminal" : searchIntent === "COUPONS" ? "coupons" : "ecommerce"}
                 onSubmit={handleSearchSubmit}
                 onCouponSearch={handleCouponSearch}
                 onAnalyzeCartScreenshot={handleAnalyzeCartScreenshot}
                 onOpenConcierge={handleOpenConcierge}
                 onOpenTrustSheet={handleOpenTrustSheet}
-                onSelectCategoryDeal={handleSelectCategoryDeal}
                 onOpenSubscriptions={() => setAppState("subscriptions")}
                 onOpenTravel={() => setAppState("travel")}
               />
@@ -1027,27 +999,6 @@ export default function Home() {
                 isCartAnalysis={isCartAnalysis}
                 isLoading={isApiLoading}
                 onReset={handleReset}
-              />
-            </motion.div>
-          )}
-
-          {/* CATEGORY DEALS RESULTS VIEW */}
-          {appState === "deals_results" && (
-            <motion.div
-              key="deals-results-state"
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }}
-              transition={{ duration: 0.3 }}
-              className="w-full"
-            >
-              <DealsResultView
-                dealsData={categoryDealsData}
-                isLoading={isApiLoading}
-                activeCategoryId={selectedDealCategory}
-                onSelectCategory={handleSelectCategoryDeal}
-                onBack={handleBackFromDeals}
-                onCompareProduct={handleDirectSearch}
               />
             </motion.div>
           )}

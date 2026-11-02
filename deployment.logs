@@ -2,47 +2,63 @@
 DEPLOYMENT LOGS - SHOPSMART AI
 ================================================================================
 
-[DEPLOYMENT TIMESTAMP] : 2026-11-02 14:35:00 UTC (Local: 2026-11-02 06:35:00 -08:00)
+[DEPLOYMENT TIMESTAMP] : 2026-11-02 15:10:00 UTC (Local: 2026-11-02 07:10:00 -08:00)
 [TARGET ENVIRONMENT]   : Production (Vercel) / origin main
-[BUILD STATUS]         : PASSED (npx next build --webpack: 190/190 routes compiled, 0 errors)
+[BUILD STATUS]         : PASSED (npx next build --webpack: 189/189 routes compiled, 0 errors)
 [STATUS]               : PENDING COMMIT & PUSH
 
 --------------------------------------------------------------------------------
 SUMMARY OF CHANGES & RESOLVED ISSUES
 --------------------------------------------------------------------------------
 
-1. RESTORATION OF ORIGINAL SHOPPING SEARCH PIPELINE & RAG INTERCEPTION REMOVAL
-   - Root Cause Diagnosed & Eliminated:
-     * Discovered that the RAG rolling inventory shelf (`consultAiShopkeeper` & `cache:inventory:pool:v2:in`) was greedily intercepting queries before they could reach OpenWeb Ninja.
-     * The inventory pool had merged 37 completely unrelated items (cameras, washing machines, laptops, phones, protein powder) into a single array.
-     * When queries had categories outside the 9 hardcoded types, it defaulted to "general", forced the LLM to pick from the shelf, and appended all other 34 mixed items (`[...matchedProducts, ...otherProducts]`) into the response.
-   - Core Remediation:
-     * Completely removed `consultAiShopkeeper` and `addToInventoryPool` from `src/app/api/search/route.js`.
-     * Restored the direct, clean OpenWeb Ninja (Google Shopping) search pipeline.
-     * Preserved Layer-1 multi-lingual query normalization (Hindi, Marathi, Hinglish noise cleaning).
-     * Preserved clean Redis query caching (`cache:search:v16:<country>:<cleanQuery>`) for 0-call instant semantic hits.
-     * Permanently deleted the contaminated mixed inventory pool (`cache:inventory:pool:v2:in`) from Redis.
-     * Added permanent constitutional ban on RAG mixed inventory pools in `GEMINI.md`.
-
-2. VERIFICATION & INTEGRITY TESTING
-   - Tested 3 completely distinct categories with 0% contamination:
-     * "Air Fryer 4L" -> 100% Air Fryers (Kent, Milton, Pigeon from Amazon.in, Zepto, Myntra)
-     * "Running Shoes Men" -> 100% Running Shoes (Reebok, Decathlon, Nike Vomero)
-     * "Dolo 650 Tablet" -> 100% Authentic Pharmacy/Medicine (Zepto, Apollo 24|7, PharmEasy)
-     * Contamination checks: 0% washing machine, 0% laptop, 0% camera.
-   - Production Webpack Build: 190/190 routes compiled with 0 errors.
+1. COMPLETE REMOVAL OF "TODAY'S DEALS" FEATURE & CATEGORY EXPLORER
+   - Rationale:
+     * Feature burned expensive OpenWeb Ninja API credits for low-intent browsers using hardcoded generic queries.
+     * Provided zero AI differentiation and added visual clutter to top tab navigation.
+     * Removed cleanly across all layers to ensure high reliability and architectural purity.
+   - Deleted Files:
+     * `src/components/CategoryDealsExplorer.jsx`
+     * `src/components/DealsResultView.jsx`
+     * `src/app/api/deals/category/route.js` (and removed `src/app/api/deals` directory)
+     * `src/services/dealsService.js`
+   - Modified Components & Routing:
+     * `src/components/SearchHero.jsx`: Removed deals tab, isDeals checks, CategoryDealsExplorer JSX, placeholder fallbacks, and unused query arrays.
+     * `src/app/page.js`: Removed dynamic import of DealsResultView, categoryDealsData/selectedDealCategory states, handleSelectCategoryDeal/handleBackFromDeals handlers, and deals_results view block.
+     * `src/components/ZippyInteractiveMascot.jsx`: Cleaned up "today_deals" avatar case.
+     * `GEMINI.md`: Permanently blacklisted Today's Deals category explorer from architecture constitution.
+   - Architectural Preservation:
+     * Core intents preserved: Shopping Search (1-call OpenWeb), Coupons (hyperlocal + Feedico catalog), Hardware TrustSheet, Travel Hub, OTT & Subscriptions, Virtual Try-On, and Saved Deals Drawer.
+   - Production Build Verification:
+     * 189/189 routes compiled cleanly with 0 errors.
 
 --------------------------------------------------------------------------------
-MODIFIED FILES
+MODIFIED / DELETED FILES
 --------------------------------------------------------------------------------
-- src/app/api/search/route.js
-- GEMINI.md
-- deployment.logs
-- DEVELOPMENT_LOG.md
+- [DELETED] src/app/api/deals/category/route.js
+- [DELETED] src/components/CategoryDealsExplorer.jsx
+- [DELETED] src/components/DealsResultView.jsx
+- [DELETED] src/services/dealsService.js
+- [MODIFIED] src/components/SearchHero.jsx
+- [MODIFIED] src/app/page.js
+- [MODIFIED] src/components/ZippyInteractiveMascot.jsx
+- [MODIFIED] GEMINI.md
+- [MODIFIED] deployment.logs
+- [MODIFIED] DEVELOPMENT_LOG.md
 
 ================================================================================
 PREVIOUS DEPLOYMENTS
 ================================================================================
+
+[DEPLOYMENT TIMESTAMP] : 2026-11-02 14:35:00 UTC (Local: 2026-11-02 06:35:00 -08:00)
+[COMMIT HASH]          : 13106f2
+[TARGET ENVIRONMENT]   : Production (Vercel) / origin main
+[BUILD STATUS]         : PASSED (npx next build --webpack: 190/190 routes compiled, 0 errors)
+[STATUS]               : PUSHED TO ORIGIN MAIN
+
+- Restoration of Original Shopping Search Pipeline & RAG Interception Removal
+- OpenWeb Ninja pure Google Shopping search restored
+- Contaminated cache:inventory:pool:v2:in removed
+- 0% cross-category contamination verified across multiple queries
 
 [DEPLOYMENT TIMESTAMP] : 2026-11-02 07:20:00 UTC (Local: 2026-11-01 23:20:00 -08:00)
 [COMMIT HASH]          : fbf5932

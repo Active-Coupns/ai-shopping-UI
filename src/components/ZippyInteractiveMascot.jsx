@@ -13,7 +13,7 @@ import rabbitMascots from "@/data/rabbitMascots.json";
  * - Clickable interaction: waves and greets the user
  */
 export default function ZippyInteractiveMascot({
-  category = "ecommerce", // "ecommerce" | "health" | "coupons" | "today_deals" | "smart_terminal"
+  category = "ecommerce", // "ecommerce" | "health" | "coupons" | "smart_terminal"
   onInteract = null
 }) {
   const [isWaving, setIsWaving] = useState(false);
@@ -98,14 +98,6 @@ export default function ZippyInteractiveMascot({
           badgeBg: "bg-purple-50 border-purple-200 text-purple-800",
           glow: "bg-purple-500/20",
           speech: "कूपन मैजिक ऑन! 🎟️ 1-क्लिक में सीक्रेट प्रोमो कोड अनलॉक करते हैं!"
-        };
-      case "today_deals":
-        return {
-          img: rabbitMascots.gym, // 3D Rabbit in Athletic Gym Suit & Dumbbell
-          role: "Speed Hunter Zippy",
-          badgeBg: "bg-rose-50 border-rose-200 text-rose-800",
-          glow: "bg-rose-500/20",
-          speech: "लाइव डील्स रडार एक्टिव! 🔥 60% तक के सबसे बड़े प्राइस ड्रॉप्स यहाँ हैं!"
         };
       case "smart_terminal":
         return {

@@ -24,7 +24,6 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { userJourneyTracker } from "@/services/userJourneyTracker";
 import StoreCardCarousel from "@/components/StoreCardCarousel";
-import CategoryDealsExplorer from "@/components/CategoryDealsExplorer";
 import { getCountryMeta } from "@/lib/countryConfig";
 
 const ECOM_QUERIES_IN = [
@@ -52,14 +51,6 @@ const UNIVERSAL_COUPON_QUERIES = [
 ];
 
 const COUPON_QUERIES_IN = UNIVERSAL_COUPON_QUERIES;
-
-const DEALS_QUERIES_IN = [
-  "Smartphone deals and offers",
-  "Wireless earbuds discount sale",
-  "Laptops special offer deals",
-  "Running shoes price drop",
-  "Smartwatch festival discounts"
-];
 
 const SMART_TERMINAL_QUERIES_IN = [
   "https://www.amazon.in/dp/B0CQ2889D7 (Samsung Galaxy S24)",
@@ -139,14 +130,6 @@ const QUICK_TRENDING_COUPONS_US = [
   { label: "📦 Amazon Deals", query: "Amazon" }
 ];
 
-const DEALS_QUERIES_US = [
-  "Unlocked 5G smartphone deals under $300",
-  "Sony noise cancelling headphones 40% off",
-  "Best laptop deals under $600",
-  "Nike & Adidas running shoes sale",
-  "Optimum Nutrition whey protein discount"
-];
-
 const SMART_TERMINAL_QUERIES_US = [
   "https://www.amazon.com/dp/B0CQ2889D7 (Samsung Galaxy S24)",
   "https://www.amazon.com/dp/B0DJ2XYZ (Apple iPhone 16)",
@@ -168,15 +151,12 @@ export default function SearchHero({
   onAnalyzeCartScreenshot,
   onOpenConcierge,
   onOpenTrustSheet,
-  onSelectCategoryDeal,
   onOpenSubscriptions,
   onOpenTravel
 }) {
   const [activeTab, setActiveTab] = useState(
     initialTab === "COUPONS" || initialTab === "coupons"
       ? "coupons"
-      : initialTab === "TODAY_DEALS" || initialTab === "today_deals" || initialTab === "DEALS" || initialTab === "deals"
-      ? "today_deals"
       : initialTab === "smart_terminal" || initialTab === "terminal"
       ? "smart_terminal"
       : initialTab || "ecommerce"
@@ -186,15 +166,13 @@ export default function SearchHero({
     if (initialTab) {
       if (initialTab === "COUPONS" || initialTab === "coupons") {
         setActiveTab("coupons");
-      } else if (initialTab === "TODAY_DEALS" || initialTab === "today_deals" || initialTab === "DEALS" || initialTab === "deals") {
-        setActiveTab("today_deals");
       } else if (initialTab === "smart_terminal" || initialTab === "terminal") {
         setActiveTab("smart_terminal");
       } else {
         setActiveTab(initialTab);
       }
     }
-  }, [initialTab]); // "ecommerce" | "health" | "coupons" | "today_deals" | "smart_terminal"
+  }, [initialTab]); // "ecommerce" | "health" | "coupons" | "smart_terminal"
   const [query, setQuery] = useState("");
   const [placeholder, setPlaceholder] = useState("");
   const [queryIndex, setQueryIndex] = useState(0);
@@ -304,13 +282,10 @@ export default function SearchHero({
   const isUS = String(country).toUpperCase() !== "IN";
   const isHealth = activeTab === "health";
   const isCoupons = activeTab === "coupons";
-  const isDeals = activeTab === "today_deals" || activeTab === "deals";
   const isSmartTerminal = activeTab === "smart_terminal" || activeTab === "terminal";
 
   const exampleQueries = isSmartTerminal
     ? (isUS ? SMART_TERMINAL_QUERIES_US : SMART_TERMINAL_QUERIES_IN)
-    : isDeals
-    ? (isUS ? DEALS_QUERIES_US : DEALS_QUERIES_IN)
     : isCoupons
     ? (isUS ? COUPON_QUERIES_US : COUPON_QUERIES_IN)
     : isHealth
@@ -471,11 +446,6 @@ export default function SearchHero({
               <Zap className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-600 animate-pulse fill-emerald-600" />
               <span>Next-Gen AI Smart Purchase Terminal • Money-Saver Desk</span>
             </div>
-          ) : isDeals ? (
-            <div className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full bg-rose-50 border border-rose-200 text-[10px] sm:text-[11px] font-bold text-rose-800 mb-2 shadow-2xs">
-              <Flame className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-rose-600 animate-pulse fill-rose-600" />
-              <span>Next-Gen Real-Time Deals Radar</span>
-            </div>
           ) : isCoupons ? (
             <div className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full bg-violet-50 border border-violet-200 text-[10px] sm:text-[11px] font-bold text-violet-800 mb-2 shadow-2xs">
               <Tag className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-violet-600 animate-pulse" />
@@ -499,10 +469,6 @@ export default function SearchHero({
               <>
                 Paste Product Link, <span className="bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 via-teal-600 to-indigo-600">Save Max Cash.</span>
               </>
-            ) : isDeals ? (
-              <>
-                Today&apos;s Verified Deals, <span className="bg-clip-text text-transparent bg-gradient-to-r from-amber-500 via-rose-500 to-violet-600">Instantly.</span>
-              </>
             ) : isCoupons ? (
               <>
                 Unlock Best Coupons, <span className="bg-clip-text text-transparent bg-gradient-to-r from-violet-600 via-fuchsia-600 to-amber-500">Max Savings.</span>
@@ -522,8 +488,6 @@ export default function SearchHero({
           <p className="text-[11px] sm:text-sm text-slate-500 font-medium mt-1 leading-snug">
             {isSmartTerminal
               ? "Paste any product URL to calculate store arbitrage + instant voucher savings + bank card perks."
-              : isDeals
-              ? "Automated live price drops and steep discounts detected across trusted merchants."
               : isCoupons
               ? "Live verified promo codes, instant cashback intelligence, and automated cart savings."
               : isHealth
@@ -580,23 +544,7 @@ export default function SearchHero({
           <span>Coupons</span>
         </button>
 
-        {/* 4. Today's Deals Tab */}
-        <button
-          type="button"
-          suppressHydrationWarning
-          onClick={() => setActiveTab("today_deals")}
-          className={`shrink-0 flex items-center justify-center gap-1 sm:gap-1.5 py-1.5 px-3 sm:px-3.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-            activeTab === "today_deals" || activeTab === "deals"
-              ? "bg-gradient-to-r from-amber-500 to-rose-500 text-white shadow-sm shadow-amber-500/20"
-              : "text-slate-500 hover:text-rose-600"
-          }`}
-        >
-          <Flame className="w-3.5 h-3.5 fill-current" />
-          <span className="hidden sm:inline">Today&apos;s Deals</span>
-          <span className="sm:hidden">Deals</span>
-        </button>
-
-        {/* 5. OTT & Subscriptions Tab */}
+        {/* 4. OTT & Subscriptions Tab */}
         <button
           type="button"
           suppressHydrationWarning
@@ -802,8 +750,6 @@ export default function SearchHero({
               placeholder || 
               (isSmartTerminal
                 ? "Paste any product link or URL..."
-                : isDeals
-                ? "Search deals across all categories..."
                 : isCoupons 
                 ? "Search any store, brand, or discount coupon..." 
                 : isHealth 
@@ -840,7 +786,7 @@ export default function SearchHero({
           </button>
 
           {/* AI Guide Me Button (Pre-Search Concierge) */}
-          {onOpenConcierge && !isCoupons && !isHealth && !isDeals && !isSmartTerminal && (
+          {onOpenConcierge && !isCoupons && !isHealth && !isSmartTerminal && (
             <button
               type="button"
               suppressHydrationWarning
@@ -860,8 +806,6 @@ export default function SearchHero({
             className={`px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-xl text-white text-xs sm:text-sm font-bold shadow-md transition-all active:scale-95 cursor-pointer shrink-0 ${
               isSmartTerminal
                 ? "bg-gradient-to-r from-emerald-600 via-teal-600 to-indigo-600 hover:opacity-95 shadow-emerald-500/25 flex items-center gap-1.5"
-                : isDeals
-                ? "bg-gradient-to-r from-amber-500 to-rose-500 hover:opacity-95 shadow-amber-500/20"
                 : isCoupons
                 ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:opacity-95 shadow-violet-500/20"
                 : isHealth
@@ -869,7 +813,7 @@ export default function SearchHero({
                 : "bg-gradient-to-r from-brand-indigo to-brand-violet hover:opacity-95 shadow-indigo-500/20"
             }`}
           >
-            {isSmartTerminal ? (<><span className="hidden sm:inline">Calculate </span>Savings</>) : isDeals ? "Find Deals" : isCoupons ? "Find Codes" : "Search"}
+            {isSmartTerminal ? (<><span className="hidden sm:inline">Calculate </span>Savings</>) : isCoupons ? "Find Codes" : "Search"}
           </button>
         </form>
 
@@ -907,20 +851,6 @@ export default function SearchHero({
           ))}
         </div>
       </motion.div>
-
-      {/* 3.5. CATEGORY DEALS EXPLORER (Deals Mode) */}
-      {isDeals && (
-        <div className="w-full mt-2">
-          <CategoryDealsExplorer
-            onSelectCategory={(catId) => {
-              if (onSelectCategoryDeal) {
-                onSelectCategoryDeal(catId);
-              }
-            }}
-            onCustomDealSearch={(q) => handlePromptClick(q)}
-          />
-        </div>
-      )}
 
       {/* 4. FEATURED STORES CAROUSEL (Coupons Mode) */}
       {isCoupons && (
