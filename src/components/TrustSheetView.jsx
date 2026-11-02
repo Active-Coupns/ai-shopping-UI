@@ -220,6 +220,196 @@ function ResearchProgressLoader({ inputVal, identifiedProduct }) {
   );
 }
 
+/**
+ * Universal Category Profile Resolver
+ * Grounded in actual product type to prevent hardware-specific questions,
+ * titles, and benchmark chips from showing up for perfumes, cosmetics, fashion, foods, etc.
+ */
+export function getProductCategoryProfile(category = "", title = "", isUS = false) {
+  const text = `${category} ${title}`.toLowerCase();
+
+  // 1. Fragrance / Perfume / Deodorants / Body Spray / Cologne
+  if (/fragrance|perfume|parfum|cologne|scent|deodorant|attar|eau de|body mist|edp|edt/.test(text)) {
+    return {
+      type: "fragrance",
+      assistantTitle: "Fragrance & Scent Truth Assistant",
+      assistantSub: "Ask about projection, longevity, scent profile, skin sensitivity, or authenticity.",
+      verdictTitle: "Fragrance Specialist’s Bottom-Line Verdict",
+      timelineTitle: "Fragrance Maceration & Shelf-Life Timeline",
+      timelineUnit: "Shelf Life",
+      defaultLifespan: "24-36 Months",
+      standardsTitle: "Essential Quality & Olfactory Benchmarks",
+      specsTitle: "Key Olfactory & Formulation Specs",
+      defaultChips: [
+        "How many hours does the projection and longevity last?",
+        "What are the top, middle, and base drydown notes?",
+        "Is it suitable for daily office wear or evening occasions?",
+        "Does it cause skin irritation or alcohol burn?"
+      ],
+      inputPlaceholder: "e.g. How long does the projection last? Is it alcohol-free or synthetic?..."
+    };
+  }
+
+  // 2. Beauty & Skincare / Personal Care / Haircare / Cosmetics
+  if (/skincare|serum|lotion|cream|sunscreen|shampoo|conditioner|face wash|cosmetic|makeup|lipstick|hair care|personal care|beauty|cleanser|moisturizer|lip balm|foundation|toner|scrub/.test(text)) {
+    return {
+      type: "beauty",
+      assistantTitle: "Beauty & Skincare Truth Assistant",
+      assistantSub: "Ask about skin types, comedogenic rating, active ingredients, or irritation.",
+      verdictTitle: "Dermatological & Ingredient Purity Verdict",
+      timelineTitle: "Freshness & Expiry Timeline (PAO)",
+      timelineUnit: "Period After Opening",
+      defaultLifespan: "12-18 Months",
+      standardsTitle: "Ingredient Safety & Quality Standards",
+      specsTitle: "Formulation & Clinical Benchmarks",
+      defaultChips: [
+        "Is it safe for sensitive or acne-prone skin?",
+        "What are the key active ingredients and concentrations?",
+        "Does it leave a greasy residue or white cast?",
+        "Can it be layered with other skincare products?"
+      ],
+      inputPlaceholder: "e.g. Is it non-comedogenic? Suitable for oily or sensitive skin?..."
+    };
+  }
+
+  // 3. Supplements & Nutrition / Fitness Wellness
+  if (/supplement|protein|creatine|vitamin|whey|nutrition|herbal|ayurvedic|bcaa|collagen|multivitamin|peanut butter|mass gainer/.test(text)) {
+    return {
+      type: "supplement",
+      assistantTitle: "Supplement & Nutrition Truth Assistant",
+      assistantSub: "Ask about label purity, 3rd-party lab tests, protein per scoop, or digestive tolerance.",
+      verdictTitle: "Nutritional Science & Consumer Purity Verdict",
+      timelineTitle: "Freshness & Shelf-Life Timeline",
+      timelineUnit: "Shelf Life",
+      defaultLifespan: "18-24 Months",
+      standardsTitle: "Nutritional Purity & Quality Standards",
+      specsTitle: "Verified Nutritional & Label Benchmarks",
+      defaultChips: [
+        "Is the protein purity 3rd-party lab certified?",
+        "Does it cause bloating, gas, or digestion issues?",
+        "Are there artificial sweeteners or hidden fillers?",
+        "Should I consult a certified nutritionist before starting?"
+      ],
+      inputPlaceholder: "e.g. Is it 3rd-party tested? Does it contain heavy metals or maltodextrin?..."
+    };
+  }
+
+  // 4. Software & SaaS / Subscriptions / Digital Services
+  if (/software|subscription|saas|cloud|vpn|antivirus|license|app|streaming|membership|storage tier/.test(text)) {
+    return {
+      type: "software",
+      assistantTitle: "Software & SaaS Truth Assistant",
+      assistantSub: "Ask about subscription tiers, auto-renewal, data export limits, or cancellations.",
+      verdictTitle: "SaaS Architect & Subscription Value Verdict",
+      timelineTitle: "Subscription Lifecycle & Renewal Timeline",
+      timelineUnit: "Billing Cycle",
+      defaultLifespan: "Active Term",
+      standardsTitle: "Reliability & Data Freedom Standards",
+      specsTitle: "Service Architecture & License Terms",
+      defaultChips: [
+        "Is the Free tier enough for casual work?",
+        "Can I export files if my subscription lapses?",
+        "Does it auto-renew without notification?",
+        "Are there cheaper or open-source alternatives?"
+      ],
+      inputPlaceholder: "e.g. Can I cancel anytime without penalty? What are storage limits?..."
+    };
+  }
+
+  // 5. Fashion / Apparel / Footwear / Accessories
+  if (/fashion|apparel|clothing|shoe|shoes|sneaker|sneakers|boot|boots|sandal|sandals|shirt|t-shirt|tshirt|jeans|dress|jacket|hoodie|fabric|cotton|footwear|wear|trouser|pant|kurta|saree|bag|backpack/.test(text)) {
+    return {
+      type: "fashion",
+      assistantTitle: "Style & Fit Truth Assistant",
+      assistantSub: "Ask about true-to-size fit, fabric breathability, color bleeding, or wash durability.",
+      verdictTitle: "Fabric & Material Durability Verdict",
+      timelineTitle: "Garment Durability & Wear Timeline",
+      timelineUnit: "Usable Life",
+      defaultLifespan: "2-3 Years",
+      standardsTitle: "Material Quality & Stitching Benchmarks",
+      specsTitle: "Fabric & Construction Specifications",
+      defaultChips: [
+        "Does it fit true to size or run small/large?",
+        "Is the fabric breathable in hot and humid weather?",
+        "Does the fabric shrink or bleed color after washing?",
+        "What is the return/exchange policy if size doesn't fit?"
+      ],
+      inputPlaceholder: "e.g. Should I size up or down? Is the fabric 100% pure cotton?..."
+    };
+  }
+
+  // 6. Grocery / Food / Beverages / Pantry
+  if (/grocery|food|snack|tea|coffee|oil|rice|edible|organic|spice|beverage|snack|chocolate|grain|wheat|flour/.test(text)) {
+    return {
+      type: "grocery",
+      assistantTitle: "Food & Quality Truth Assistant",
+      assistantSub: "Ask about shelf-life, storage requirements, ingredient purity, or allergens.",
+      verdictTitle: "Food Safety & Quality Truth Verdict",
+      timelineTitle: "Freshness & Storage Timeline",
+      timelineUnit: "Shelf Life",
+      defaultLifespan: "6-12 Months",
+      standardsTitle: "Food Grade & Purity Standards",
+      specsTitle: "Nutritional & Origin Specifications",
+      defaultChips: [
+        "What is the expected shelf life once opened?",
+        "Are there artificial preservatives or additives?",
+        "How should it be stored in hot or humid climates?",
+        "Does it contain common allergens (gluten, nuts, soy)?"
+      ],
+      inputPlaceholder: "e.g. What is the expiry duration? Are there preservatives or added sugar?..."
+    };
+  }
+
+  // 7. Tech / Hardware / Electronics / Appliances
+  if (/hardware|phone|smartphone|laptop|tablet|watch|smartwatch|earbuds|headphones|tv|television|monitor|gadget|charger|camera|console|fridge|refrigerator|washing machine|ac|air conditioner|vacuum|appliance|keyboard|mouse|audio|speaker|electronic|tech|processor|gpu|cpu/.test(text)) {
+    return {
+      type: "hardware",
+      assistantTitle: "Hardware Truth Assistant",
+      assistantSub: isUS 
+        ? "Ask about thermal throttling, real battery endurance, 120V charging, or US warranty."
+        : "Ask any direct question about thermal heating, real battery endurance, box contents, or warranty.",
+      verdictTitle: "Chief Hardware Engineer’s Bottom-Line Verdict",
+      timelineTitle: "Hardware Aging & Lifespan Timeline",
+      timelineUnit: "Lifespan",
+      defaultLifespan: "3.5 Years",
+      standardsTitle: "Must-Have Hardware Standards in a Quality Model",
+      specsTitle: "Category Hardware Benchmarks",
+      defaultChips: isUS ? [
+        "Does it throttle under high performance loads?",
+        "What is the real-world battery endurance?",
+        "Is a 120V fast charger included in the box?",
+        "What does the 1-year US manufacturer warranty cover?"
+      ] : [
+        "Does it heat up during heavy summer use?",
+        "What is the real-world battery backup?",
+        "Is a fast charger included in the box?",
+        "Does warranty cover scale or display issues?"
+      ],
+      inputPlaceholder: "e.g. Can the battery be replaced after 2 years? Does it overheat under load?..."
+    };
+  }
+
+  // 8. General Consumer Product (Universal Fallback)
+  return {
+    type: "general",
+    assistantTitle: "Product Truth Assistant",
+    assistantSub: "Ask about build quality, return terms, hidden caveats, or real user experiences.",
+    verdictTitle: "Product Specialist’s Bottom-Line Verdict",
+    timelineTitle: "Product Durability & Lifespan Timeline",
+    timelineUnit: "Expected Life",
+    defaultLifespan: "2-3 Years",
+    standardsTitle: "Quality & Reliability Standards",
+    specsTitle: "Verified Product Specifications",
+    defaultChips: [
+      "What are the most common return complaints?",
+      "Are there hidden trade-offs or caveats to be aware of?",
+      "Is the build quality durable for daily use?",
+      "What does the return or replacement policy cover?"
+    ],
+    inputPlaceholder: "e.g. What are the common caveats? Is it worth the price?..."
+  };
+}
+
 export default function TrustSheetView({
   initialQuery = "",
   country = "IN",
@@ -962,36 +1152,52 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
 
         {/* Component 2: Active Store / Page Coupons */}
         {coupons.length > 0 && (
-          <div className="space-y-2 pt-1">
+          <div className="space-y-2.5 pt-1">
             <div className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-slate-800">
               <Gift className="w-3.5 h-3.5 text-amber-600" />
               <span>Active Verified Coupons &amp; Promos</span>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {coupons.map((cp, cIdx) => {
                 const isCopied = copiedCouponCode === cp.code;
                 return (
-                  <div key={cIdx} className="p-3 rounded-2xl bg-white border border-amber-200/70 shadow-2xs flex items-center justify-between gap-2">
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-xs font-black text-indigo-950 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">
+                  <div key={cIdx} className="p-3.5 rounded-2xl bg-white border border-amber-200/80 shadow-2xs flex flex-col justify-between gap-2.5 hover:border-amber-300 transition-all">
+                    {/* Top row: Code badge + Copy button */}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="font-mono text-xs font-black tracking-wider text-indigo-950 bg-indigo-50/90 px-2.5 py-1 rounded-lg border border-dashed border-indigo-300 select-all shrink-0">
                           {cp.code}
                         </span>
-                        <span className="text-xs font-extrabold text-emerald-700">{cp.discountText}</span>
+                        <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200/70 shrink-0">
+                          Active
+                        </span>
                       </div>
-                      <p className="text-[10px] text-slate-500 font-medium mt-1 truncate">
-                        {cp.terms}
-                      </p>
+
+                      <button
+                        type="button"
+                        onClick={() => handleCopyCoupon(cp.code)}
+                        className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 flex items-center gap-1.5 ${
+                          isCopied
+                            ? "bg-emerald-600 text-white shadow-xs"
+                            : "bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 text-slate-700 border border-slate-200/80"
+                        }`}
+                      >
+                        {isCopied ? <Check className="w-3.5 h-3.5 text-white" /> : <Copy className="w-3.5 h-3.5" />}
+                        <span>{isCopied ? "Copied" : "Copy"}</span>
+                      </button>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => handleCopyCoupon(cp.code)}
-                      className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 text-slate-700 text-xs font-bold transition-all cursor-pointer shrink-0 flex items-center gap-1"
-                    >
-                      {isCopied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-                      <span>{isCopied ? "Copied" : "Copy"}</span>
-                    </button>
+                    {/* Bottom row: Discount headline & Terms */}
+                    <div className="space-y-0.5">
+                      <div className="text-xs sm:text-sm font-extrabold text-emerald-700 leading-snug">
+                        {cp.discountText}
+                      </div>
+                      {cp.terms && cp.terms !== cp.discountText && (
+                        <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
+                          {cp.terms}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 );
               })}
@@ -1095,49 +1301,15 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
     );
   };
 
-  // Reusable Hardware / Product Truth Assistant Desk
+  // Reusable Product Truth Assistant Desk (Dynamically Adapts to Any Product Category)
   const renderHardwareAssistant = () => {
-    const category = dossier?.product?.category || identifiedProduct?.category || "general";
-    const isSupplement = category === "supplement";
-    const isSoftware = category === "software_subscription";
+    const rawCategory = dossier?.product?.category || identifiedProduct?.category || "general";
+    const rawTitle = dossier?.product?.title || identifiedProduct?.title || "";
+    const categoryProfile = getProductCategoryProfile(rawCategory, rawTitle, isUS);
 
-    const assistantTitle = isSupplement
-      ? "Supplement Truth Assistant"
-      : isSoftware
-      ? "Software & SaaS Truth Assistant"
-      : "Hardware Truth Assistant";
-
-    const assistantSub = isSupplement
-      ? "Ask about label purity, 3rd-party lab tests, protein per scoop, or dietary consultation."
-      : isSoftware
-      ? "Ask about subscription tiers, cloud limits, export formats, or cancellation terms."
-      : "Ask any direct question about thermal heating, real battery endurance, box contents, or warranty.";
-
-    const defaultChips = isSupplement
-      ? [
-          "Is the protein purity 3rd-party lab certified?",
-          "Does it cause bloating or digestion issues?",
-          "Are there artificial sweeteners or fillers added?",
-          "Should I consult a nutritionist before starting?"
-        ]
-      : isSoftware
-      ? [
-          "Is the Free tier enough for casual work?",
-          "Can I export files if my subscription lapses?",
-          "Does it auto-renew without notification?",
-          "Are there cheaper or open-source alternatives?"
-        ]
-      : (isUS ? [
-          "Does it throttle under high performance loads?",
-          "What is the real-world battery endurance?",
-          "Is a 120V fast charger included in the box?",
-          "What does the 1-year US manufacturer warranty cover?"
-        ] : [
-          "Does it heat up during summer?",
-          "What is the real battery backup?",
-          "Is a fast charger included in the box?",
-          "Does warranty cover scale or display issues?"
-        ]);
+    const assistantTitle = categoryProfile.assistantTitle;
+    const assistantSub = categoryProfile.assistantSub;
+    const defaultChips = categoryProfile.defaultChips;
 
     return (
       <div className="p-5 sm:p-6 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-4">
@@ -1360,7 +1532,7 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
           type="text"
           value={assistantQuestion}
           onChange={(e) => setAssistantQuestion(e.target.value)}
-          placeholder="e.g. Can the battery be replaced after 2 years? Does it support 90fps gaming?..."
+          placeholder={categoryProfile.inputPlaceholder}
           className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-medium text-slate-900 focus:outline-hidden focus:bg-white focus:border-indigo-500 transition-all placeholder:text-slate-400"
         />
         <button
@@ -1637,6 +1809,9 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
       {phase === "dossier" && dossier && (() => {
         const isGeneric = Boolean(dossier.isGenericQuery || identifiedProduct?.isGenericQuery || dossier.product?.isGenericQuery);
         const smartQuery = dossier.betterAlternative?.searchQuery || dossier.betterAlternative?.title || dossier.product?.title || identifiedProduct?.title || "";
+        const activeCategory = dossier?.product?.category || identifiedProduct?.category || "general";
+        const activeTitle = dossier?.product?.title || identifiedProduct?.title || "";
+        const currentProfile = getProductCategoryProfile(activeCategory, activeTitle, isUS);
 
         return (
           <div className="space-y-6 animate-in fade-in duration-300">
@@ -1897,7 +2072,7 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
                         {dossier.shelfLife?.expectedYears || "4-6 Years"}
                       </div>
                       <p className="text-[11px] text-slate-500 font-medium mt-1">
-                        Standard hardware reliability
+                        {currentProfile.type === "hardware" ? "Standard hardware reliability" : "Expected usable duration"}
                       </p>
                     </div>
 
@@ -1925,7 +2100,7 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
                   <div className="p-5 sm:p-6 rounded-3xl bg-white border border-emerald-200/80 shadow-xs space-y-3">
                     <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-emerald-800">
                       <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                      <span>Must-Have Hardware Standards in a Quality Model</span>
+                      <span>{currentProfile.standardsTitle}</span>
                     </div>
                     <div className="space-y-2.5">
                       {(dossier.whereItExcels || []).map((item, idx) => (
@@ -1942,7 +2117,7 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
                     <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-xs">
                       <h4 className="text-xs font-black uppercase tracking-wider text-slate-800 mb-3 flex items-center gap-2">
                         <Cpu className="w-4 h-4 text-indigo-600" />
-                        <span>Category Hardware Benchmarks</span>
+                        <span>{currentProfile.specsTitle}</span>
                       </h4>
                       <div className="space-y-2 text-xs">
                         {dossier.keySpecs.map((spec, idx) => (
@@ -2178,13 +2353,7 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
               <div className="p-5 rounded-3xl bg-gradient-to-r from-indigo-900 via-indigo-950 to-slate-900 text-white shadow-md relative overflow-hidden">
                 <div className="flex items-center gap-2 mb-2 text-amber-300 text-xs font-black uppercase tracking-wider">
                   <ShieldCheck className="w-4 h-4 text-amber-300" />
-                  <span>
-                    {dossier?.product?.category === "supplement"
-                      ? "Nutritional Science & Consumer Purity Verdict"
-                      : dossier?.product?.category === "software_subscription"
-                      ? "SaaS Architect & Subscription Value Verdict"
-                      : "Chief Hardware Engineer’s Bottom-Line Verdict"}
-                  </span>
+                  <span>{currentProfile.verdictTitle}</span>
                 </div>
                 <p className="text-xs sm:text-sm font-medium leading-relaxed text-indigo-100">
                   {dossier.verdictSummary}
@@ -2273,20 +2442,10 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-slate-800">
                         <Clock className="w-4 h-4 text-indigo-600" />
-                        <span>
-                          {dossier?.product?.category === "supplement"
-                            ? "Freshness & Shelf-Life Timeline"
-                            : dossier?.product?.category === "software_subscription"
-                            ? "Subscription Lifecycle & Renewal Timeline"
-                            : "Hardware Aging & Lifespan Timeline"}
-                        </span>
+                        <span>{currentProfile.timelineTitle}</span>
                       </div>
                       <span className="text-[11px] font-black text-indigo-700 bg-indigo-50 border border-indigo-200 px-2.5 py-0.5 rounded-full">
-                        {dossier?.product?.category === "supplement"
-                          ? `Shelf Life: ${dossier.shelfLife?.expectedYears || "18-24 Months"}`
-                          : dossier?.product?.category === "software_subscription"
-                          ? `Term: ${dossier.shelfLife?.expectedYears || "Active Cycle"}`
-                          : `Lifespan: ${dossier.shelfLife?.expectedYears || "3.5 Years"}`}
+                        {currentProfile.timelineUnit}: {dossier.shelfLife?.expectedYears || currentProfile.defaultLifespan}
                       </span>
                     </div>
 
