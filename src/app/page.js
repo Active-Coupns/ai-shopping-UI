@@ -743,13 +743,13 @@ export default function Home() {
               <span className="text-base sm:text-xl md:text-2xl font-black tracking-tight text-slate-900 leading-none">
                 ShopSmart <span className="bg-gradient-to-r from-brand-indigo to-brand-violet bg-clip-text text-transparent">AI</span>
               </span>
-              <span className="text-[9px] font-bold text-slate-600 hidden sm:block">Compare Deals • AI Trial Room</span>
+              <span className="text-[9px] font-bold text-slate-600 hidden sm:block">AI Shopping • Trial Room • Travel</span>
             </div>
           </div>
 
           {/* 2. Center: Desktop Mode Tabs (Clean & Modern Segmented Nav) */}
           <div className="hidden md:flex items-center gap-1 p-1 bg-slate-100/90 rounded-2xl border border-slate-200/80 shadow-2xs backdrop-blur-md">
-            {/* Deals & Shopping Tab */}
+            {/* Shopping Search Tab */}
             <button
               type="button"
               suppressHydrationWarning
@@ -761,7 +761,7 @@ export default function Home() {
               }`}
             >
               <Search className={`w-3.5 h-3.5 ${appState !== "trial_room" && appState !== "purchase_terminal" && appState !== "trust_sheet" && appState !== "subscriptions" && appState !== "travel" ? "text-slate-900 stroke-[2.5]" : "text-slate-400"}`} />
-              <span>Search Deals</span>
+              <span>Shopping</span>
             </button>
 
             {/* AI Trust Sheet Tab */}
@@ -1273,7 +1273,7 @@ export default function Home() {
                   <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
                   <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
                 </div>
-                <span className="tracking-wide">Ask Deals AI</span>
+                <span className="tracking-wide">Ask Shopping AI</span>
                 <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-white/20 text-white font-black uppercase tracking-wider hidden sm:inline">
                   Live
                 </span>
@@ -1313,14 +1313,14 @@ export default function Home() {
               <span>Help & Support Tickets</span>
             </button>
             <span>•</span>
-            <span>&copy; 2026 ShopSmart AI. Live Deals & Studio.</span>
+            <span>&copy; 2026 ShopSmart AI. Smart Shopping & Studio.</span>
           </div>
         </div>
       </footer>
 
       {/* Mobile-Only Bottom Navigation Bar (Modern App Experience) */}
       <nav suppressHydrationWarning className="fixed bottom-0 inset-x-0 z-50 md:hidden bg-white/95 backdrop-blur-2xl border-t border-slate-200 shadow-[0_-4px_25px_rgba(0,0,0,0.08)] px-4 py-1.5 flex items-center justify-around">
-        {/* Tab 1: Deals Search */}
+        {/* Tab 1: Shopping Search */}
         <button suppressHydrationWarning
           type="button"
           onClick={() => setAppState("idle")}
@@ -1331,7 +1331,7 @@ export default function Home() {
           }`}
         >
           <Search className={`w-4.5 h-4.5 ${appState !== "trial_room" && appState !== "purchase_terminal" && appState !== "trust_sheet" ? "stroke-[2.5]" : "stroke-[1.75]"}`} />
-          <span className="text-[10px] tracking-tight">Deals</span>
+          <span className="text-[10px] tracking-tight">Shopping</span>
         </button>
 
         {/* Tab 2: AI Virtual Trial Room */}
