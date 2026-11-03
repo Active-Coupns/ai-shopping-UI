@@ -1067,7 +1067,11 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
                 alt="User Snapshot"
                 fill
                 unoptimized
-                className="object-cover object-center transition-all duration-300"
+                className={`object-cover object-center transition-all duration-300 ${
+                  viewMode === "tryon" && tryonResultImage
+                    ? "[image-rendering:-webkit-optimize-contrast] contrast-[1.03] saturate-[1.02]"
+                    : ""
+                }`}
                 sizes="(max-width: 768px) 100vw, 400px"
               />
 
