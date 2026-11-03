@@ -18,21 +18,33 @@
 
 ## 📅 Daily Changelog & Feature Timeline
 
-### 🗓️ 2026-11-03 (Decouple TrustSheet CTA from ProductCard to Prevent Score/Data Mismatch)
+### 🗓️ 2026-11-03 (Decouple TrustSheet CTA, UI Overhaul & Data-Driven E-Commerce Gate)
 
-* **Git Commit**: [`3d0a5dd`](https://github.com/Active-Coupns/ai-shopping-UI/commit/3d0a5dd)
-* **Commit Message**: `fix(ui): remove Run Trust Sheet CTA from ProductCard to eliminate search score mismatch`
-* **Status**: ✅ 100% Tested & Verified, Build Passing (189/189 routes)
+* **Git Commit**: [`e40e719`](https://github.com/Active-Coupns/ai-shopping-UI/commit/e40e719)
+* **Commit Message**: `feat(trustsheet): decouple from product card, overhaul hero UI, and add data-driven e-commerce classifier`
+* **Status**: ✅ 100% Tested & Verified Locally
 * **Changes in this Commit**:
   1. **Removed TrustSheet CTA from Product Cards (`src/components/ProductCard.jsx`)**:
-     - Removed the "Pre-Flight Reality Check & AI Trust Sheet" CTA button from inside the "About this product" drawer.
-     - Removed unused `onOpenTrustSheet` prop propagation from `src/app/page.js`, `src/components/ConversationalAiStudio.jsx`, and `src/components/SearchAiConciergeModal.jsx`.
-  2. **Eliminated Cross-Feature Data & AI Score Discrepancies**:
-     - Product Cards already show rich aggregated multi-store price comparisons, specs, and review insights.
-     - TrustSheet is kept strictly as an external URL analyzer (paste Amazon, Flipkart, etc. links directly from the header/hero), avoiding duplicate scraping and mismatched scores (e.g. 88 vs 81).
-     - Protects the user's daily credit allowance from being consumed unintentionally while browsing search cards.
-  3. **Clean Production Webpack Build**:
-     - `npx next build --webpack`: 189/189 routes compiled cleanly with 0 errors.
+     - Removed "Pre-Flight Reality Check & AI Trust Sheet" CTA button from search product card drawers.
+     - Cleaned up unused `onOpenTrustSheet` prop from `page.js`, `ConversationalAiStudio.jsx`, and `SearchAiConciergeModal.jsx`.
+     - Eliminated search score and store comparison discrepancies (e.g. 88 vs 81 score).
+     - Protected 10 daily user credits from accidental consumption while browsing search results.
+  2. **TrustSheet Hero Section UI Overhaul (`src/components/TrustSheetView.jsx`)**:
+     - Removed ungrounded latency promises ("in 10s") for complete brand honesty.
+     - Mobile-friendly single-row swipeable store pills (Amazon, Flipkart, Myntra, Nykaa, Croma, Brand D2C).
+     - Added high-impact Core USP Banner: "Stop Watching 20-Minute Videos & Scrolling Endless Reddit Threads (Saves 2 to 4 Hours of Endless Research)".
+     - Replaced plain text blocks with 4 vibrant, color-coded investigation bento cards:
+       * 🛑 Rose/Red: Filters Out Paid Influencers (Zero Sponsored Fluff)
+       * ⚠️ Amber/Gold: Reveals Unreported Faults (The Hidden Flaws)
+       * ⏳ Emerald/Mint: Tested for Indian Conditions (2-3 Year Life)
+       * 💰 Indigo/Purple: Brand Portals & Arbitrage (Secret Perks)
+     - Added bottom unified callout: "The End Result: One Honest Buy or Skip? Verdict".
+  3. **Universal Data-Driven LLM E-Commerce Classifier (`trustSheetService.js` & `api/trust-sheet/route.js`)**:
+     - Implemented Rule 0 `RETAIL E-COMMERCE CLASSIFICATION CHECK` in Groq prompt.
+     - Analyzes scraped page title, specifications, and breadcrumbs to detect non-retail portals (automotive like CarDekho/CarWale, real estate like 99acres, jobs, classifieds) without maintaining fragile domain blocklists.
+     - Correctly deducts 1 quota credit when a non-retail link is inspected, accurately accounting for Zyte scraping and LLM compute.
+     - Displays a dedicated respectful amber alert screen with remaining quota count and clean return action.
+     - 100% verified via live local testing against both CarDekho (car listing) and boAt (retail headphones).
 
 ### 🗓️ 2026-11-03 (TrustSheet Gate 0 Quota Enforcement & Supabase Lean User Activity Ledger)
 

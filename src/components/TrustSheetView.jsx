@@ -427,6 +427,7 @@ export default function TrustSheetView({
   const [userAnswers, setUserAnswers] = useState({});
   const [customRequirement, setCustomRequirement] = useState("");
   const [dossier, setDossier] = useState(null);
+  const [nonRetailNotice, setNonRetailNotice] = useState(null);
   const [error, setError] = useState(null);
   const [copied, setCopied] = useState(false);
   const [copiedQuery, setCopiedQuery] = useState(false);
@@ -511,6 +512,17 @@ export default function TrustSheetView({
         throw new Error(data.error || "Unable to retrieve product details. Please make sure the link is an exact product page.");
       }
 
+      if (data.isNonRetail) {
+        setNonRetailNotice({
+          title: data.product?.title || targetUrl,
+          category: data.unsupportedCategory || "Non-E-Commerce Category",
+          message: data.message,
+          remaining: data.remaining
+        });
+        setPhase("nonRetail");
+        return;
+      }
+
       // Merge existing product data so real image, real price, real url from alternative card are NEVER lost!
       const finalProduct = {
         ...data.product,
@@ -587,6 +599,17 @@ export default function TrustSheetView({
       const data = await res.json();
       if (!res.ok || !data.success) {
         throw new Error(data.error || "Failed to generate AI Trust Sheet.");
+      }
+
+      if (data.isNonRetail) {
+        setNonRetailNotice({
+          title: identifiedProduct?.title || "Non-Retail Entity",
+          category: data.unsupportedCategory || "Non-E-Commerce Category",
+          message: data.message,
+          remaining: data.remaining
+        });
+        setPhase("nonRetail");
+        return;
       }
 
       setDossier(data.trustSheet);
@@ -1672,35 +1695,63 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
             </div>
           </div>
         ) : (
-        <div className="max-w-3xl mx-auto py-8 sm:py-12 text-center">
-          
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-50/90 border border-indigo-200/80 text-indigo-700 text-xs font-bold uppercase tracking-wider mb-4 shadow-2xs">
-            <Sparkles className="w-3.5 h-3.5 text-indigo-600 animate-pulse" />
-            <span>Zero-Research Shopping • We Research For You</span>
+        <div className="max-w-3xl mx-auto py-6 sm:py-10 text-center relative px-2 sm:px-4">
+          {/* Subtle Ambient Backdrop Glows */}
+          <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 sm:w-96 h-80 sm:h-96 bg-gradient-to-tr from-indigo-500/10 via-purple-500/10 to-pink-500/5 rounded-full blur-3xl pointer-events-none" />
+
+          {/* Top Live Badge */}
+          <div className="relative inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/90 backdrop-blur-md border border-indigo-200/80 text-indigo-700 text-[11px] sm:text-xs font-bold tracking-wide mb-3 sm:mb-4 shadow-xs">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span>🇮🇳 AI E-COMMERCE REALITY CHECK • LIVE IN INDIA</span>
           </div>
 
-          <h1 className="text-2xl sm:text-3xl md:text-5xl font-black text-slate-900 tracking-tight mb-3 sm:mb-4 leading-tight">
-            Never Waste Hours on Product Research Again. <br className="hidden sm:inline" />
+          {/* Hero Headline (Clean & Authoritative, Zero False Time Claims) */}
+          <h1 className="relative text-2xl sm:text-4xl md:text-5xl font-black text-slate-900 tracking-tight mb-2 sm:mb-3 leading-tight">
+            Paste Any Product Link. <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-indigo via-indigo-600 to-brand-violet">
-              We Research The Entire Internet For You.
+              See The Raw Truth Before You Buy.
             </span>
           </h1>
 
-          <p className="text-xs sm:text-sm md:text-base text-slate-600 max-w-2xl mx-auto mb-8 font-medium leading-relaxed">
-            You don't need to spend hours watching review videos, decoding complex spec sheets, or browsing multiple tabs. Simply bring us the exact product link, and we'll research the product across the entire internet for you.
+          {/* Punchy 1-Liner Subtitle */}
+          <p className="relative text-xs sm:text-sm text-slate-600 max-w-lg mx-auto mb-4 font-medium leading-relaxed px-2">
+            Independent AI analysis of build flaws, 2-3 year durability & verified lowest prices across Indian stores.
           </p>
 
-          {/* Search Console Input Form (Strict URL Input) */}
+          {/* Interactive Supported Store Chips (Single Swipeable Row on Mobile) */}
+          <div className="relative flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1 justify-start sm:justify-center mb-4 max-w-xl mx-auto px-1">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0 mr-0.5">Works With:</span>
+            {[
+              { name: "Amazon.in", icon: "🛒" },
+              { name: "Flipkart", icon: "⚡" },
+              { name: "Myntra", icon: "👗" },
+              { name: "Nykaa", icon: "✨" },
+              { name: "Croma", icon: "📱" },
+              { name: "Brand D2C", icon: "🏷️" },
+            ].map((store) => (
+              <span 
+                key={store.name}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/90 hover:bg-indigo-50 hover:text-indigo-700 border border-slate-200/80 text-[10px] sm:text-[11px] font-bold text-slate-600 transition-all cursor-default shadow-2xs shrink-0"
+              >
+                <span>{store.icon}</span>
+                <span>{store.name}</span>
+              </span>
+            ))}
+          </div>
+
+          {/* Search Console Input Form (Strict URL Input with Smart Glow & Paste Button) */}
           <form 
             onSubmit={(e) => {
               e.preventDefault();
               handleIdentify(inputVal);
             }}
-            className="w-full max-w-2xl mx-auto mb-4"
+            className="relative w-full max-w-2xl mx-auto mb-2.5"
           >
-            <div className="flex items-center gap-1.5 sm:gap-2 bg-white border border-slate-200 rounded-2xl p-1.5 sm:p-2 shadow-lg shadow-slate-100/80 hover:border-indigo-300 focus-within:border-brand-indigo focus-within:ring-4 focus-within:ring-indigo-500/10 transition-all">
-              <div className="pl-2 sm:pl-2.5 shrink-0">
-                <ExternalLink className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600" />
+            <div className="flex items-center gap-1 sm:gap-2 bg-white/95 backdrop-blur-md border border-slate-200 rounded-2xl p-1.5 sm:p-2 shadow-lg shadow-indigo-500/5 hover:border-indigo-300 focus-within:border-brand-indigo focus-within:ring-4 focus-within:ring-indigo-500/15 transition-all">
+              <div className="pl-1.5 sm:pl-2 shrink-0">
+                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600">
+                  <ExternalLink className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                </div>
               </div>
 
               <input
@@ -1710,9 +1761,32 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
                   setInputVal(e.target.value);
                   if (error) setError(null);
                 }}
-                placeholder="Paste product page URL to research..."
-                className="w-full min-w-0 bg-transparent text-slate-800 text-xs sm:text-sm font-medium focus:outline-hidden px-1 placeholder:text-slate-400"
+                placeholder="Paste product link (Amazon, Flipkart, Myntra, Croma)..."
+                className="w-full min-w-0 bg-transparent text-slate-800 text-xs sm:text-sm font-semibold focus:outline-hidden px-1 placeholder:text-slate-400 placeholder:font-normal"
               />
+
+              {/* Paste from Clipboard Quick Action */}
+              {!inputVal && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      if (typeof navigator !== "undefined" && navigator.clipboard?.readText) {
+                        const text = await navigator.clipboard.readText();
+                        if (text && text.trim()) {
+                          setInputVal(text.trim());
+                          if (error) setError(null);
+                        }
+                      }
+                    } catch (_) {}
+                  }}
+                  className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 text-slate-500 text-[11px] font-bold transition-all shrink-0 cursor-pointer"
+                  title="Paste link from clipboard"
+                >
+                  <Copy className="w-3 h-3" />
+                  <span>Paste</span>
+                </button>
+              )}
 
               {inputVal && (
                 <button
@@ -1721,7 +1795,7 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
                     setInputVal("");
                     if (error) setError(null);
                   }}
-                  className="p-1 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors shrink-0"
+                  className="p-1 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors shrink-0 cursor-pointer"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -1730,67 +1804,231 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
               <button
                 type="submit"
                 disabled={!inputVal.trim()}
-                className="px-3 sm:px-6 py-2 sm:py-2.5 rounded-xl bg-gradient-to-r from-brand-indigo to-brand-violet hover:opacity-95 disabled:opacity-50 text-white font-extrabold text-xs sm:text-sm shadow-md shadow-indigo-500/20 cursor-pointer transition-all active:scale-95 shrink-0 flex items-center gap-1 sm:gap-1.5"
+                className="px-3.5 sm:px-6 py-2 sm:py-2.5 rounded-xl bg-gradient-to-r from-brand-indigo to-brand-violet hover:opacity-95 disabled:opacity-50 text-white font-extrabold text-xs sm:text-sm shadow-md shadow-indigo-500/25 cursor-pointer transition-all active:scale-95 shrink-0 flex items-center gap-1 sm:gap-1.5"
               >
-                <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-                <span className="sm:hidden">Research</span>
-                <span className="hidden sm:inline">Research For Me</span>
-                <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 hidden sm:inline" />
+                <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 text-amber-300 animate-pulse" />
+                <span className="sm:hidden">Inspect</span>
+                <span className="hidden sm:inline">Inspect Product</span>
+                <ChevronRight className="w-3.5 h-3.5 shrink-0 hidden sm:inline" />
               </button>
             </div>
           </form>
 
-          {/* Product Page Link Guideline Box */}
-          <div className="max-w-2xl mx-auto text-left p-4 rounded-2xl bg-slate-50/90 border border-slate-200/90 shadow-2xs">
-            <div className="flex items-start gap-3">
-              <div className="p-2 rounded-xl bg-indigo-100/80 text-indigo-700 shrink-0 mt-0.5">
-                <Info className="w-4 h-4" />
+          {/* Scope Pill */}
+          <div className="relative inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100/90 border border-slate-200/70 text-slate-500 text-[10px] sm:text-[11px] font-medium mb-8 shadow-2xs">
+            <ShoppingBag className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+            <span>Retail e-commerce only • Auto & real estate portals not supported</span>
+          </div>
+
+          {/* ============================================================== */}
+          {/* CORE USP: ZERO RESEARCH SHOPPING & WHAT WE SOLVE FOR THE USER   */}
+          {/* ============================================================== */}
+          <div className="relative max-w-2xl mx-auto text-left mb-8 space-y-4">
+            {/* The USP Hook Banner */}
+            <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-indigo-900 via-indigo-950 to-slate-900 text-white shadow-xl shadow-indigo-950/20 relative overflow-hidden">
+              <div className="absolute -top-12 -right-12 w-48 h-48 bg-indigo-500/20 rounded-full blur-2xl pointer-events-none" />
+              <div className="relative">
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-indigo-500/30 text-indigo-200 border border-indigo-400/30 text-[10px] font-extrabold uppercase tracking-wider mb-2">
+                  <Clock className="w-3 h-3 text-amber-300" />
+                  <span>Saves 2 to 4 Hours of Endless Research</span>
+                </div>
+                <h2 className="text-sm sm:text-base md:text-lg font-black tracking-tight mb-1 text-white">
+                  Stop Watching 20-Minute Videos & Scrolling Endless Reddit Threads.
+                </h2>
+                <p className="text-[11px] sm:text-xs text-indigo-200/90 leading-relaxed font-medium">
+                  Bring us any product link. We scan thousands of real owner reviews, teardowns, and store data across the entire internet to answer the only question that matters: <span className="text-amber-300 font-bold">"Is this product truly right for you?"</span>
+                </p>
               </div>
-              <div className="text-xs space-y-1">
-                <h4 className="font-bold text-slate-800">
-                  Bring an exact product page link for the best research:
+            </div>
+
+            {/* 4 Pillars: What We Research & Reveal (Colorful, Visual & Engaging) */}
+            <div>
+              <div className="flex items-center gap-1.5 mb-3 px-1">
+                <Sparkles className="w-4 h-4 text-brand-indigo shrink-0 animate-spin-slow" />
+                <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider">
+                  What Trust Sheet Investigates For You:
+                </h3>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Pillar 1: Rose / Red Accent */}
+                <div className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-br from-rose-50/90 via-white to-red-50/40 border border-rose-200/80 shadow-xs hover:shadow-md hover:border-rose-300 transition-all group">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-rose-500 to-red-500 text-white flex items-center justify-center font-bold text-xs shadow-xs shadow-rose-500/25 group-hover:scale-105 transition-transform">
+                      🛑
+                    </div>
+                    <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-rose-100/90 text-rose-800 border border-rose-200/80">
+                      Zero Sponsored Fluff
+                    </span>
+                  </div>
+                  <h4 className="text-xs sm:text-sm font-black text-slate-900 mb-1.5">
+                    Filters Out Paid Influencers
+                  </h4>
+                  <ul className="space-y-1 text-[11px] text-slate-600 font-medium">
+                    <li className="flex items-start gap-1.5">
+                      <span className="text-rose-500 font-bold shrink-0">✕</span>
+                      <span>Ignores scripted PR brand praise & paid review videos</span>
+                    </li>
+                    <li className="flex items-start gap-1.5">
+                      <span className="text-emerald-600 font-bold shrink-0">✓</span>
+                      <span>Surfaces real Reddit teardowns & long-term owner complaints</span>
+                    </li>
+                  </ul>
+                </div>
+
+                {/* Pillar 2: Amber / Orange Accent */}
+                <div className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-br from-amber-50/90 via-white to-orange-50/40 border border-amber-200/80 shadow-xs hover:shadow-md hover:border-amber-300 transition-all group">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-amber-500 to-orange-500 text-white flex items-center justify-center font-bold text-xs shadow-xs shadow-amber-500/25 group-hover:scale-105 transition-transform">
+                      ⚠️
+                    </div>
+                    <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100/90 text-amber-900 border border-amber-200/80">
+                      The Hidden Flaws
+                    </span>
+                  </div>
+                  <h4 className="text-xs sm:text-sm font-black text-slate-900 mb-1.5">
+                    Reveals Unreported Faults
+                  </h4>
+                  <ul className="space-y-1 text-[11px] text-slate-600 font-medium">
+                    <li className="flex items-start gap-1.5">
+                      <span className="text-amber-500 font-bold shrink-0">!</span>
+                      <span>Catches overheating, hinge play, flimsy plastics & speaker buzz</span>
+                    </li>
+                    <li className="flex items-start gap-1.5">
+                      <span className="text-amber-500 font-bold shrink-0">!</span>
+                      <span>Uncovers issues buyers only report after 3 to 6 months of daily use</span>
+                    </li>
+                  </ul>
+                </div>
+
+                {/* Pillar 3: Emerald / Mint Accent */}
+                <div className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-br from-emerald-50/90 via-white to-teal-50/40 border border-emerald-200/80 shadow-xs hover:shadow-md hover:border-emerald-300 transition-all group">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-600 text-white flex items-center justify-center font-bold text-xs shadow-xs shadow-emerald-500/25 group-hover:scale-105 transition-transform">
+                      ⏳
+                    </div>
+                    <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-100/90 text-emerald-900 border border-emerald-200/80">
+                      2-3 Year Life
+                    </span>
+                  </div>
+                  <h4 className="text-xs sm:text-sm font-black text-slate-900 mb-1.5">
+                    Tested for Indian Conditions
+                  </h4>
+                  <ul className="space-y-1 text-[11px] text-slate-600 font-medium">
+                    <li className="flex items-start gap-1.5">
+                      <span className="text-emerald-600 font-bold shrink-0">✓</span>
+                      <span>Assesses dust sealing, summer thermals & power surge tolerance</span>
+                    </li>
+                    <li className="flex items-start gap-1.5">
+                      <span className="text-emerald-600 font-bold shrink-0">✓</span>
+                      <span>Checks spare parts cost & authorized brand service center reputation</span>
+                    </li>
+                  </ul>
+                </div>
+
+                {/* Pillar 4: Indigo / Purple Accent */}
+                <div className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-br from-indigo-50/90 via-white to-purple-50/40 border border-indigo-200/80 shadow-xs hover:shadow-md hover:border-indigo-300 transition-all group">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-brand-indigo to-brand-violet text-white flex items-center justify-center font-bold text-xs shadow-xs shadow-indigo-500/25 group-hover:scale-105 transition-transform">
+                      💰
+                    </div>
+                    <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-100/90 text-indigo-900 border border-indigo-200/80">
+                      Secret Perks
+                    </span>
+                  </div>
+                  <h4 className="text-xs sm:text-sm font-black text-slate-900 mb-1.5">
+                    Brand Portals & Arbitrage
+                  </h4>
+                  <ul className="space-y-1 text-[11px] text-slate-600 font-medium">
+                    <li className="flex items-start gap-1.5">
+                      <span className="text-indigo-600 font-bold shrink-0">✓</span>
+                      <span>Unlocks official student & corporate portals (Apple, Samsung, boAt)</span>
+                    </li>
+                    <li className="flex items-start gap-1.5">
+                      <span className="text-indigo-600 font-bold shrink-0">✓</span>
+                      <span>Scans live price differences across Amazon, Flipkart & brand sites</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom Final Verdict Callout */}
+            <div className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-indigo-50/80 via-white to-purple-50/80 border border-indigo-200/80 shadow-xs flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-brand-indigo text-white flex items-center justify-center shrink-0 shadow-xs shadow-indigo-500/25">
+                <CheckCircle2 className="w-5 h-5 text-white" />
+              </div>
+              <div className="min-w-0">
+                <h4 className="text-xs sm:text-sm font-black text-slate-900">
+                  The End Result: One Honest "Buy or Skip?" Verdict
                 </h4>
-                <p className="text-slate-600 leading-relaxed text-[11px] sm:text-xs">
-                  Paste a direct link to the product's official page where specifications, pricing, and details are visible (from any store or brand website). This ensures we have the necessary data to research the product thoroughly across the entire internet.
+                <p className="text-[11px] text-slate-600 font-medium leading-snug">
+                  You get a weighted reality score and a clear, plain-English recommendation on whether this product is truly right for you.
                 </p>
               </div>
             </div>
           </div>
+        </div>
+        )
+      )}
 
-          {/* 3 Value Pillars */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-10 max-w-3xl mx-auto text-left">
-            <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-2xs">
-              <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-2.5">
-                <Clock className="w-4 h-4" />
+      {/* ============================================================== */}
+      {/* NON-RETAIL ENTITY DETECTED (Respectful, Clear & Helpful)       */}
+      {/* ============================================================== */}
+      {phase === "nonRetail" && nonRetailNotice && (
+        <div className="max-w-xl mx-auto py-8 sm:py-14 text-center animate-in fade-in duration-300 px-4">
+          <div className="p-6 sm:p-8 rounded-3xl bg-white border border-amber-200/90 shadow-xl shadow-amber-500/5 relative overflow-hidden text-left">
+            {/* Header Badge & Quota Tag */}
+            <div className="flex items-center justify-between mb-4">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-900 text-xs font-black uppercase tracking-wider">
+                <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                <span>{nonRetailNotice.category || "Non-E-Commerce Category"}</span>
               </div>
-              <h4 className="text-xs font-bold text-slate-900 mb-0.5">Save Hours of Time</h4>
-              <p className="text-[11px] text-slate-500 leading-relaxed">
-                No need to spend hours watching review videos, checking endless forums, or comparing tabs. We handle the heavy research for you.
+              {nonRetailNotice.remaining !== undefined && (
+                <span className="text-[11px] font-bold text-slate-400">
+                  Daily Checks: {nonRetailNotice.remaining}/10 Left
+                </span>
+              )}
+            </div>
+
+            {/* Entity Title */}
+            <h2 className="text-base sm:text-lg font-black text-slate-900 mb-2.5 leading-snug">
+              {nonRetailNotice.title}
+            </h2>
+
+            {/* Explanation Message from LLM */}
+            <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200/80 text-amber-950 text-xs sm:text-sm font-semibold leading-relaxed mb-5">
+              <p>{nonRetailNotice.message}</p>
+            </div>
+
+            {/* Helpful Scope Guidance */}
+            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 text-xs font-medium space-y-1.5 mb-6">
+              <div className="font-bold text-slate-800 flex items-center gap-1.5">
+                <ShoppingBag className="w-4 h-4 text-brand-indigo shrink-0" />
+                <span>Supported Retail Shopping Categories:</span>
+              </div>
+              <p className="text-[11px] text-slate-500 leading-relaxed font-normal">
+                Electronics, Gadgets, Laptops, Mobile Phones, Fashion, Footwear, Beauty, Skincare, Home & Kitchen Appliances from Amazon.in, Flipkart, Myntra, Nykaa, Croma, or official brand stores.
               </p>
             </div>
 
-            <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-2xs">
-              <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-2.5">
-                <ShieldCheck className="w-4 h-4" />
-              </div>
-              <h4 className="text-xs font-bold text-slate-900 mb-0.5">Researched Across The Web</h4>
-              <p className="text-[11px] text-slate-500 leading-relaxed">
-                We gather real-world feedback, community discussions, and specifications from across the internet to give you a well-rounded picture.
-              </p>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-2xs">
-              <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center mb-2.5">
-                <Coins className="w-4 h-4" />
-              </div>
-              <h4 className="text-xs font-bold text-slate-900 mb-0.5">Practical, Balanced Insights</h4>
-              <p className="text-[11px] text-slate-500 leading-relaxed">
-                Get an honest breakdown of practical benefits, realistic trade-offs, and estimated daily operating cost for everyday use.
-              </p>
+            {/* Return / Try Another Link CTA */}
+            <div className="flex items-center justify-between gap-3 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => {
+                  setInputVal("");
+                  setNonRetailNotice(null);
+                  setPhase("input");
+                }}
+                className="w-full py-2.5 px-4 rounded-xl bg-brand-indigo hover:bg-indigo-700 text-white font-extrabold text-xs sm:text-sm transition-all shadow-md shadow-indigo-500/20 flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Inspect an E-Commerce Product</span>
+              </button>
             </div>
           </div>
         </div>
-        )
       )}
 
       {/* ============================================================== */}

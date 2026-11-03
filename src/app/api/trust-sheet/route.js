@@ -85,6 +85,30 @@ export async function POST(request) {
         customRequirement: String(customRequirement || "").trim().slice(0, 300)
       });
 
+      // Handle Non-Retail Classification (Automotive, Real Estate, etc.)
+      if (dossierResult.isNonRetail) {
+        // Quota consumption: Deduct 1 credit as Zyte and LLM were actively utilized
+        let finalRemaining = preQuota.remaining;
+        if (!isTestBypass) {
+          const liveQuota = await checkUnifiedApiQuota({
+            userId,
+            clientIp,
+            isCacheHit: false, // Deduct 1 credit
+            limit: 10
+          });
+          finalRemaining = liveQuota.remaining;
+        }
+
+        return NextResponse.json({
+          success: true,
+          isNonRetail: true,
+          product: safeProduct,
+          unsupportedCategory: dossierResult.unsupportedCategory || "Non-Retail Category",
+          message: dossierResult.unsupportedMessage || "We analyzed this link, but it appears to be an automotive, real-estate, or non-retail portal listing. ShopSmart AI is designed exclusively for retail e-commerce shopping products (Electronics, Fashion, Beauty, Home & Appliances). Automotive, property, and classified portals are not supported.",
+          remaining: finalRemaining
+        });
+      }
+
       if (!dossierResult.success || !dossierResult.trustSheet) {
         return NextResponse.json(
           { success: false, error: dossierResult.error || "Failed to generate AI Trust Sheet for this product." },

@@ -634,6 +634,21 @@ ${answerLines ? `USER PREFERENCES FROM QUESTIONS:\n${answerLines}` : "USER SKIPP
 ${customReq ? `USER'S SPECIFIC PERSONAL CONCERN / REQUIREMENT:\n"${customReq}"` : ""}
 
 RULES FOR UNBIASED PRODUCT TRUTH:
+0. RETAIL E-COMMERCE CLASSIFICATION CHECK:
+   Determine whether this scraped entity is an authentic retail consumer shopping product (i.e. physical or digital goods purchased online with a standard checkout/cart and delivery: Electronics, Gadgets, Fashion, Apparel, Footwear, Beauty, Skincare, Cosmetics, Home & Kitchen, Appliances, Health, Personal Care, Sports, Books, Tools).
+   If this scraped entity is clearly NOT a standard retail consumer shopping product — specifically:
+   - Motor Vehicles / Automobiles / Two-Wheelers (Cars, Bikes, Scooters, Dealership listings, Test drive bookings like CarDekho, CarWale, BikeWale, Spinny, Cars24)
+   - Real Estate / Properties / Land / Apartments / Commercial Space (99acres, MagicBricks, Housing, NoBroker listings)
+   - Jobs / Vacancies / Career postings (Naukri, LinkedIn, Indeed)
+   - Matrimony / Dating / Social profiles
+   - Generic Informational Articles / News blogs with no direct retail shopping purchase
+   Then you MUST set:
+   "isRetailEcommerce": false,
+   "unsupportedCategory": "Automobile" | "Real Estate" | "Job Listing" | "Classifieds / Service",
+   "unsupportedMessage": "We analyzed this link, but it is an [Automobile / Real Estate / etc.] listing rather than an online retail shopping product. ShopSmart AI is designed exclusively for retail e-commerce shopping products (Electronics, Fashion, Beauty, Home & Appliances). Automotive and real-estate listings are not supported."
+   When isRetailEcommerce is false, you can set trustScore to 0 and other sections to minimal/null.
+   If it IS a valid retail consumer product, set "isRetailEcommerce": true, "unsupportedCategory": null, "unsupportedMessage": null, and proceed with the full analysis.
+
 1. SPEC & HARDWARE GROUNDING (ZERO 'N/A' RULE):
    Extract and declare 6 to 8 genuine, accurate engineering/hardware specifications in 'keySpecs' for this exact model (e.g. for a washing machine: Capacity, RPM Spin Speed, Inverter Motor Type, Star Energy Rating, Wash Programs, Tub Material, Voltage/Power). NEVER output 'N/A', 'Unknown', or 'Not specified'! State the official published manufacturer specification for this exact product model.
 2. WHERE IT EXCELS: 3 genuine strengths strictly grounded in these specifications.
@@ -688,6 +703,9 @@ RULES FOR UNBIASED PRODUCT TRUTH:
 
 Respond ONLY with valid, raw JSON (no markdown formatting, no backticks, no comments) using this schema:
 {
+  "isRetailEcommerce": true,
+  "unsupportedCategory": null,
+  "unsupportedMessage": null,
   "product": {
     "title": "${title}",
     "brand": "${product.brand || "Brand"}",
@@ -876,7 +894,25 @@ Respond ONLY with valid, raw JSON (no markdown formatting, no backticks, no comm
   }
 
   // ZERO DUMMY FALLBACK RULE: Only return genuine 100% AI-generated analysis grounded in real specs
-  if (!jsonResult || !jsonResult.trustScore) {
+  if (!jsonResult) {
+    return {
+      success: false,
+      error: "AI could not generate verified insights from authentic product specifications. Please try again."
+    };
+  }
+
+  // Handle Non-Retail Classification (Automotive, Real Estate, Jobs, Classifieds, etc.)
+  if (jsonResult.isRetailEcommerce === false) {
+    return {
+      success: true,
+      isNonRetail: true,
+      unsupportedCategory: jsonResult.unsupportedCategory || "Non-Retail Category",
+      unsupportedMessage: jsonResult.unsupportedMessage || "We analyzed this link, but it appears to be an automotive, real-estate, or non-retail portal listing. ShopSmart AI is designed exclusively for retail e-commerce shopping products (Electronics, Fashion, Beauty, Home & Appliances).",
+      trustSheet: jsonResult
+    };
+  }
+
+  if (!jsonResult.trustScore) {
     return {
       success: false,
       error: "AI could not generate verified insights from authentic product specifications. Please try again."

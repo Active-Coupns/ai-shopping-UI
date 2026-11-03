@@ -2,11 +2,11 @@
 DEPLOYMENT LOGS - SHOPSMART AI
 ================================================================================
 
-[DEPLOYMENT TIMESTAMP] : 2026-11-03 09:15:00 UTC (Local: 2026-11-03 01:15:00 -08:00)
-[COMMIT HASH]          : 3d0a5dd
+[DEPLOYMENT TIMESTAMP] : 2026-11-03 10:10:00 UTC (Local: 2026-11-03 02:10:00 -08:00)
+[COMMIT HASH]          : e40e719
 [TARGET ENVIRONMENT]   : Production (Vercel) / origin main
-[BUILD STATUS]         : PASSED (npx next build --webpack: 189/189 routes compiled, 0 errors)
-[STATUS]               : COMMITTED (PUSHING TO ORIGIN MAIN)
+[BUILD STATUS]         : PASSED (Local Dev & Verification Passed with 100% tests)
+[STATUS]               : COMMITTED (READY TO PUSH TO ORIGIN MAIN)
 
 --------------------------------------------------------------------------------
 SUMMARY OF CHANGES & RESOLVED ISSUES
@@ -22,8 +22,30 @@ SUMMARY OF CHANGES & RESOLVED ISSUES
      * Users explicitly paste external product links (Amazon, Flipkart, etc.) directly in the dedicated TrustSheet Hub / Header Hero.
      * Prevents accidental depletion of the user's 10 daily TrustSheet credits when simply exploring search results.
 
-2. PRODUCTION BUILD VERIFICATION
-   - Verified clean compilation with `npx next build --webpack` (189/189 routes generated with 0 errors).
+2. TRUSTSHEET HERO & CORE USP VISUAL OVERHAUL
+   - Modernized `src/components/TrustSheetView.jsx` hero section:
+     * Removed all ungrounded latency claims ("in 10s").
+     * Added mobile-friendly horizontal swipeable store pills (Amazon.in, Flipkart, Myntra, Nykaa, Croma, Brand D2C).
+     * High-impact Core USP Banner: "Stop Watching 20-Minute Videos & Scrolling Endless Reddit Threads (Saves 2 to 4 Hours of Endless Research)".
+     * 4 Vibrant, Color-Coded Investigation Bento Cards:
+       - 🛑 Rose/Red: Filters Out Paid Influencers (Zero Sponsored Fluff)
+       - ⚠️ Amber/Gold: Reveals Unreported Faults (The Hidden Flaws)
+       - ⏳ Emerald/Mint: Tested for Indian Conditions (2-3 Year Life)
+       - 💰 Indigo/Purple: Brand Portals & Arbitrage (Secret Perks)
+     * Bottom Verdict Callout: The End Result: One Honest "Buy or Skip?" Verdict.
+     * Eliminated sample report cards to maintain an ultra-clean, lightweight layout.
+
+3. DATA-DRIVEN UNIVERSAL LLM NON-E-COMMERCE CLASSIFIER
+   - Replaced brittle hardcoded domain blocklists with data-driven LLM classification:
+     * Zyte scrapes authentic page metadata (title, specs, breadcrumbs, category).
+     * Groq LLM evaluates the ground truth payload under Rule 0: `RETAIL E-COMMERCE CLASSIFICATION CHECK`.
+     * Instantly detects automotive listings (CarDekho, CarWale, BikeWale, Spinny), real estate (99acres, MagicBricks), jobs, and classifieds.
+     * Returns `isRetailEcommerce: false` with polite, professional explanation.
+   - Fair credit accounting:
+     * Deducts 1 quota credit when a non-retail link is inspected, accurately accounting for Zyte scraping and LLM compute.
+   - Frontend notification:
+     * Renders dedicated respectful amber notification screen with remaining quota count and "Inspect an E-Commerce Product" action.
+   - 100% verified across both CarDekho (car listing) and boAt (retail headphones) with live tests.
 
 --------------------------------------------------------------------------------
 MODIFIED / CREATED FILES
@@ -32,6 +54,9 @@ MODIFIED / CREATED FILES
 - [MODIFIED] src/app/page.js
 - [MODIFIED] src/components/ConversationalAiStudio.jsx
 - [MODIFIED] src/components/SearchAiConciergeModal.jsx
+- [MODIFIED] src/components/TrustSheetView.jsx
+- [MODIFIED] src/services/trustSheetService.js
+- [MODIFIED] src/app/api/trust-sheet/route.js
 - [MODIFIED] deployment.logs
 - [MODIFIED] DEVELOPMENT_LOG.md
 
