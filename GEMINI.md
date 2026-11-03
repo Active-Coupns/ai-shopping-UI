@@ -31,8 +31,9 @@ ShopSmart AI is **NOT a generic coupon website**, nor a generic affiliate blog. 
 │ • Hotels: Agoda B2B / Hotelbeds Net Rates    │  │   Hyperlocal Master Registry (Honey model).  │
 │ • Comedy & Live Shows: Ticket Evolution API  │  │ • Software / SaaS: Secret B2B Partner API     │
 │ • Theme Parks & Sights: Viator / Tiqets API  │  │   ($1,000+ credits, 30% off partner tokens). │
-│ • 100% White-Label: Supplier invisible, zero │  │ • Legal Compliance: Clerk authentication     │
-│   competitor leaks. Zero gift card friction. │  │   satisfies Hotel Rate Parity law.           │
+│ • 100% White-Label: Supplier invisible, zero │  │ • Guaranteed Savings Cards: Blackhawk Network │
+│   competitor leaks. Zero liability partners. │  │   / Giftcards.com, CardCash, Raise (Zero-Liab)│
+│ • Full Blueprint: STRATEGY_BLUEPRINT_PARTNERSHIP.md│ satisfies Hotel Rate Parity law.           │
 └──────────────────────────────────────────────┘  └──────────────────────────────────────────────┘
 ```
 
