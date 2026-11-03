@@ -560,7 +560,6 @@ export default function SearchAiConciergeModal({
                                 searchQuery={msg.searchQuery || ""}
                                 country={country}
                                 onOpenPriceAlert={onOpenPriceAlert}
-                                onOpenTrustSheet={onOpenTrustSheet}
                                 onTryInStudio={onTryInStudio}
                                 siblingProducts={msg.products}
                               />

@@ -2,8 +2,45 @@
 DEPLOYMENT LOGS - SHOPSMART AI
 ================================================================================
 
+[DEPLOYMENT TIMESTAMP] : 2026-11-03 09:15:00 UTC (Local: 2026-11-03 01:15:00 -08:00)
+[COMMIT HASH]          : 3d0a5dd
+[TARGET ENVIRONMENT]   : Production (Vercel) / origin main
+[BUILD STATUS]         : PASSED (npx next build --webpack: 189/189 routes compiled, 0 errors)
+[STATUS]               : COMMITTED (PUSHING TO ORIGIN MAIN)
+
+--------------------------------------------------------------------------------
+SUMMARY OF CHANGES & RESOLVED ISSUES
+--------------------------------------------------------------------------------
+
+1. PRODUCT CARD & TRUSTSHEET DECOUPLING (CROSS-FEATURE INTEGRITY)
+   - Completely removed "Pre-Flight Reality Check & AI Trust Sheet CTA" banner from `ProductCard.jsx` ("About this product" drawer / Ask AI section).
+   - Removed unused `onOpenTrustSheet` prop propagation from `src/app/page.js`, `src/components/ConversationalAiStudio.jsx`, and `src/components/SearchAiConciergeModal.jsx`.
+   - Prevented data and score discrepancies:
+     * Shopping Search cards display aggregated multi-store comparisons and verified review digests with high precision.
+     * Running TrustSheet from within a product card forced a secondary external scrape/synthesis by product title that could return differing specs, prices, or ratings (e.g., 88 vs 81 score).
+   - Kept TrustSheet as an exclusive standalone feature:
+     * Users explicitly paste external product links (Amazon, Flipkart, etc.) directly in the dedicated TrustSheet Hub / Header Hero.
+     * Prevents accidental depletion of the user's 10 daily TrustSheet credits when simply exploring search results.
+
+2. PRODUCTION BUILD VERIFICATION
+   - Verified clean compilation with `npx next build --webpack` (189/189 routes generated with 0 errors).
+
+--------------------------------------------------------------------------------
+MODIFIED / CREATED FILES
+--------------------------------------------------------------------------------
+- [MODIFIED] src/components/ProductCard.jsx
+- [MODIFIED] src/app/page.js
+- [MODIFIED] src/components/ConversationalAiStudio.jsx
+- [MODIFIED] src/components/SearchAiConciergeModal.jsx
+- [MODIFIED] deployment.logs
+- [MODIFIED] DEVELOPMENT_LOG.md
+
+================================================================================
+PREVIOUS DEPLOYMENTS
+================================================================================
+
 [DEPLOYMENT TIMESTAMP] : 2026-11-03 08:45:00 UTC (Local: 2026-11-03 00:45:00 -08:00)
-[COMMIT HASH]          : 13f7af5
+[COMMIT HASH]          : 77dc775
 [TARGET ENVIRONMENT]   : Production (Vercel) / origin main
 [BUILD STATUS]         : PASSED (npx next build --webpack: 189/189 routes compiled, 0 errors)
 [STATUS]               : PUSHED TO ORIGIN MAIN

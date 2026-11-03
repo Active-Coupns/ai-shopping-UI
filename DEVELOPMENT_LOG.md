@@ -18,9 +18,25 @@
 
 ## 📅 Daily Changelog & Feature Timeline
 
+### 🗓️ 2026-11-03 (Decouple TrustSheet CTA from ProductCard to Prevent Score/Data Mismatch)
+
+* **Git Commit**: [`3d0a5dd`](https://github.com/Active-Coupns/ai-shopping-UI/commit/3d0a5dd)
+* **Commit Message**: `fix(ui): remove Run Trust Sheet CTA from ProductCard to eliminate search score mismatch`
+* **Status**: ✅ 100% Tested & Verified, Build Passing (189/189 routes)
+* **Changes in this Commit**:
+  1. **Removed TrustSheet CTA from Product Cards (`src/components/ProductCard.jsx`)**:
+     - Removed the "Pre-Flight Reality Check & AI Trust Sheet" CTA button from inside the "About this product" drawer.
+     - Removed unused `onOpenTrustSheet` prop propagation from `src/app/page.js`, `src/components/ConversationalAiStudio.jsx`, and `src/components/SearchAiConciergeModal.jsx`.
+  2. **Eliminated Cross-Feature Data & AI Score Discrepancies**:
+     - Product Cards already show rich aggregated multi-store price comparisons, specs, and review insights.
+     - TrustSheet is kept strictly as an external URL analyzer (paste Amazon, Flipkart, etc. links directly from the header/hero), avoiding duplicate scraping and mismatched scores (e.g. 88 vs 81).
+     - Protects the user's daily credit allowance from being consumed unintentionally while browsing search cards.
+  3. **Clean Production Webpack Build**:
+     - `npx next build --webpack`: 189/189 routes compiled cleanly with 0 errors.
+
 ### 🗓️ 2026-11-03 (TrustSheet Gate 0 Quota Enforcement & Supabase Lean User Activity Ledger)
 
-* **Git Commit**: [`13f7af5`](https://github.com/Active-Coupns/ai-shopping-UI/commit/13f7af5)
+* **Git Commit**: [`77dc775`](https://github.com/Active-Coupns/ai-shopping-UI/commit/77dc775)
 * **Commit Message**: `feat(telemetry): integrate Supabase user activity ledger and enforce Gate 0 quota on TrustSheet`
 * **Status**: ✅ 100% Tested & Verified, Pushed to `origin/main`
 * **Changes in this Commit**:

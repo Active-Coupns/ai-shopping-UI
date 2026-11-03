@@ -514,7 +514,6 @@ export default function ConversationalAiStudio({
                           searchQuery={msg.searchQuery || ""}
                           country={country}
                           onOpenPriceAlert={onOpenPriceAlert}
-                          onOpenTrustSheet={onOpenTrustSheet}
                           siblingProducts={msg.products}
                         />
                       ))}

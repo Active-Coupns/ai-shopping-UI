@@ -1220,7 +1220,6 @@ export default function Home() {
                                 setIsPriceAlertModalOpen(true);
                               }}
                               onTryInStudio={handleTryInStudio}
-                              onOpenTrustSheet={handleOpenTrustSheet}
                               country={selectedCountry}
                             />
                           );
