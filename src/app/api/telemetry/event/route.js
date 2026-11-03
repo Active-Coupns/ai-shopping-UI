@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { redis } from "@/services/redis";
+import { supabase } from "@/lib/supabaseClient";
+import { getAuth } from "@clerk/nextjs/server";
 
 const MAX_HISTORY_ITEMS = 12;
 const JOURNEY_TTL_SECONDS = 30 * 24 * 60 * 60; // 30 Days
@@ -80,6 +82,12 @@ export async function POST(request) {
       return NextResponse.json({ error: "sessionId and eventType are required" }, { status: 400 });
     }
 
+    let serverUserId = null;
+    try {
+      const auth = getAuth(request);
+      serverUserId = auth?.userId || null;
+    } catch (_) {}
+
     const now = Date.now();
     const redisKey = `user:journey:${sessionId}`;
 
@@ -100,6 +108,7 @@ export async function POST(request) {
           firstSeen: now,
           lastSeen: now
         },
+        user: null,
         searches: [],
         clickedProducts: [],
         aiSummaries: [],
@@ -111,6 +120,20 @@ export async function POST(request) {
       };
     } else {
       currentJourney.session.lastSeen = now;
+    }
+
+    // Attach authenticated user information if available
+    const resolvedUserId = body.userId || serverUserId || currentJourney.user?.userId || null;
+    const resolvedUserEmail = body.userEmail || currentJourney.user?.email || null;
+    const resolvedUserName = body.userName || currentJourney.user?.name || null;
+
+    if (resolvedUserId || resolvedUserEmail) {
+      currentJourney.user = {
+        userId: resolvedUserId,
+        email: resolvedUserEmail,
+        name: resolvedUserName,
+        linkedAt: currentJourney.user?.linkedAt || now
+      };
     }
 
     // 2. Process specific event types
@@ -211,6 +234,55 @@ export async function POST(request) {
       await redis.incr(`telemetry:event:${eventType.toLowerCase()}`);
     } catch (saveErr) {
       console.warn("[Telemetry Event Save Warning]", saveErr);
+    }
+
+    // 5. Permanent Persistence to Supabase Database (Lean User Activity Ledger)
+    try {
+      const email = resolvedUserEmail || currentJourney.user?.email || null;
+      let details = "";
+      let category = payload.category || "shopping";
+
+      if (eventType === "SEARCH") {
+        details = String(payload.query || "").trim().slice(0, 150);
+        category = payload.mode || "shopping";
+      } else if (eventType === "PRODUCT_CLICK") {
+        details = `${payload.store || "Store"}: ${payload.title || ""} (${payload.price || "N/A"})`.slice(0, 200);
+        category = payload.category || "shopping";
+      } else if (eventType === "AI_SUMMARY_ASKED") {
+        details = `AI Review: ${payload.title || ""}`.slice(0, 150);
+        category = payload.category || "shopping";
+      } else if (eventType === "VISIT") {
+        details = `Page Visit (session #${currentJourney.session?.visitCount || 1})`;
+        category = "platform";
+      } else if (eventType === "USER_AUTH_SYNC") {
+        details = `User Login / Auth Sync (${email || "Signed In"})`;
+        category = "auth";
+      } else {
+        details = typeof payload === "string" ? payload : JSON.stringify(payload).slice(0, 150);
+      }
+
+      if (details) {
+        // Non-blocking async insert to Supabase event stream
+        supabase
+          .from("user_activity_ledger")
+          .insert({
+            user_email: email,
+            session_id: sessionId,
+            action: eventType,
+            category,
+            details
+          })
+          .then(({ error: sbErr }) => {
+            if (sbErr && !sbErr.message.includes("schema cache")) {
+              console.warn("[Activity Ledger Note]", sbErr.message);
+            }
+          })
+          .catch(err => {
+            console.warn("[Activity Ledger Sync Error]", err.message);
+          });
+      }
+    } catch (sbEx) {
+      console.warn("[Activity Ledger Exception]", sbEx.message);
     }
 
     return NextResponse.json({

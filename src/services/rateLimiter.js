@@ -1057,16 +1057,25 @@ export async function checkUnifiedApiQuota({
     deviceKey = `quota:device_abuse:${deviceHash}:${today}`;
   }
 
-  // If cache hit, do not increment quota - just return current remaining
+  // If cache hit, do not increment quota - just return current remaining and verify if user has quota left
   if (isCacheHit) {
     try {
+      let current = 0;
       const rawUser = await redis.get(userKey);
-      const current = parseInt(rawUser || "0", 10);
+      if (rawUser !== null && rawUser !== undefined) {
+        current = parseInt(rawUser || "0", 10);
+      } else {
+        const memKey = `${effectiveId}:${today}`;
+        current = inMemoryUnifiedQuota.get(memKey) || 0;
+      }
+      const isAllowed = current < limit;
       return {
-        allowed: true,
+        allowed: isAllowed,
         remaining: Math.max(0, limit - current),
         current,
-        isCacheHit: true
+        isCacheHit: true,
+        error: isAllowed ? undefined : "DAILY_QUOTA_EXHAUSTED",
+        message: isAllowed ? undefined : `Daily limit reached (${limit}/${limit} AI operations). Your quota resets tomorrow at 12:00 AM IST!`
       };
     } catch {
       return { allowed: true, remaining: limit, current: 0, isCacheHit: true };

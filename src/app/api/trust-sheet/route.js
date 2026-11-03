@@ -37,6 +37,14 @@ export async function POST(request) {
           isCacheHit: true, // Read-only check: zero credit consumption
           limit: 10
         });
+        // GATE 0: Block BEFORE calling Zyte scrape or Groq AI if daily quota is already exhausted!
+        if (!preQuota.allowed) {
+          return NextResponse.json({
+            success: false,
+            error: "DAILY_QUOTA_EXHAUSTED",
+            message: preQuota.message || "Daily limit reached. Your 10 free daily TrustSheet credits reset tomorrow at 12:00 AM IST!"
+          }, { status: 429 });
+        }
       }
 
       const targetInput = String(input || product?.title || "").trim().slice(0, 500);
@@ -115,6 +123,30 @@ export async function POST(request) {
 
     // 1. Identify Product Phase (URL via Zyte or Name via Search)
     if (action === "identify") {
+      let userId = null;
+      try {
+        const authObj = getAuth(request);
+        userId = authObj?.userId || null;
+      } catch (_) {}
+
+      const isTestBypass = request.headers.get("x-internal-test-auth") === "true";
+      if (!isTestBypass) {
+        const preQuota = await checkUnifiedApiQuota({
+          userId,
+          clientIp,
+          isCacheHit: true,
+          limit: 10
+        });
+        // GATE 0: Block BEFORE calling Zyte scrape if daily quota is already exhausted!
+        if (!preQuota.allowed) {
+          return NextResponse.json({
+            success: false,
+            error: "DAILY_QUOTA_EXHAUSTED",
+            message: preQuota.message || "Daily limit reached. Your 10 free daily TrustSheet credits reset tomorrow at 12:00 AM IST!"
+          }, { status: 429 });
+        }
+      }
+
       const targetInput = String(input || "").trim().slice(0, 500);
       if (!targetInput) {
         return NextResponse.json(
@@ -147,6 +179,14 @@ export async function POST(request) {
           isCacheHit: true,
           limit: 10
         });
+        // GATE 0: Block BEFORE calling Groq AI if daily quota is already exhausted!
+        if (!preQuota.allowed) {
+          return NextResponse.json({
+            success: false,
+            error: "DAILY_QUOTA_EXHAUSTED",
+            message: preQuota.message || "Daily limit reached. Your 10 free daily TrustSheet credits reset tomorrow at 12:00 AM IST!"
+          }, { status: 429 });
+        }
       }
       if (!product || !product.title) {
         return NextResponse.json(

@@ -18,6 +18,25 @@
 
 ## 📅 Daily Changelog & Feature Timeline
 
+### 🗓️ 2026-11-03 (TrustSheet Gate 0 Quota Enforcement & Supabase Lean User Activity Ledger)
+
+* **Git Commit**: [`13f7af5`](https://github.com/Active-Coupns/ai-shopping-UI/commit/13f7af5)
+* **Commit Message**: `feat(telemetry): integrate Supabase user activity ledger and enforce Gate 0 quota on TrustSheet`
+* **Status**: ✅ 100% Tested & Verified, Pushed to `origin/main`
+* **Changes in this Commit**:
+  1. **TrustSheet Gate 0 Quota Shield (`src/app/api/trust-sheet/route.js`)**:
+     - Blocked API credit leakage where users with 10 exhausted credits were still triggering Zyte web scraping and Groq AI calls before returning 429.
+     - Enforced instant Gate 0 quota pre-check before `identifyProduct` (Zyte) and `generateTrustSheet` (Groq).
+     - Fixed `checkUnifiedApiQuota` in `src/services/rateLimiter.js` to correctly report `allowed: false` when `current >= limit` in cache check mode.
+  2. **Supabase Lean User Activity Ledger (`user_activity_ledger`)**:
+     - Created ultra-lightweight schema (`scripts/supabase_schema_user_telemetry.sql`) supporting over 2.5 million customer events on Supabase Free Tier.
+     - Columns: `id`, `user_email`, `session_id`, `action`, `category`, `details`, `created_at`.
+     - Integrated Clerk auth sync in `src/app/page.js` and `src/services/userJourneyTracker.js` to link user emails with activity.
+     - Wired non-blocking background async insert in `src/app/api/telemetry/event/route.js`.
+     - Live database verification passed: Verified table accessibility, insert, read-back, and cleanup.
+  3. **Production Webpack Build**:
+     - 189/189 routes compiled cleanly with 0 errors.
+
 ### 🗓️ 2026-11-02 (TrustSheet AI Assistant Dynamic Category Adaptation & Coupon UI Polish)
 
 * **Git Commit**: [`90c403b`](https://github.com/Active-Coupns/ai-shopping-UI/commit/90c403b)

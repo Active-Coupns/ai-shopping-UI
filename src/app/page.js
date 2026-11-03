@@ -259,6 +259,15 @@ export default function Home() {
     } catch (e) {}
   }, []);
 
+  // Sync Authenticated Clerk User to User Journey & Supabase Permanent Database
+  useEffect(() => {
+    if (isSignedIn && clerkUser) {
+      const email = clerkUser.primaryEmailAddress?.emailAddress || clerkUser.emailAddresses?.[0]?.emailAddress || null;
+      const name = clerkUser.fullName || clerkUser.firstName || null;
+      userJourneyTracker.setAuthenticatedUser(clerkUser.id, email, name);
+    }
+  }, [isSignedIn, clerkUser]);
+
   const handleToggleBookmark = (product) => {
     if (!product) return;
     const prodId = product.id || product.product_id || product.title;

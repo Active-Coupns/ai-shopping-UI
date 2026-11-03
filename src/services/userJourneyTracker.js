@@ -9,7 +9,38 @@
 
 const SESSION_KEY = "shopsmart_session_id_v2";
 const MIRROR_KEY = "shopsmart_journey_mirror_v2";
+const AUTH_KEY = "shopsmart_user_auth_v1";
 const MAX_LOCAL_ITEMS = 8;
+
+let currentAuth = { userId: null, email: null, name: null };
+
+export function saveUserAuth(userId, email, name) {
+  currentAuth = {
+    userId: userId || null,
+    email: email || null,
+    name: name || null
+  };
+  try {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(AUTH_KEY, JSON.stringify(currentAuth));
+    }
+  } catch (_) {}
+}
+
+export function setAuthenticatedUser(userId, email, name) {
+  saveUserAuth(userId, email, name);
+}
+
+export function getAuthenticatedUser() {
+  if (currentAuth.userId || currentAuth.email) return currentAuth;
+  try {
+    if (typeof window !== "undefined") {
+      const raw = localStorage.getItem(AUTH_KEY);
+      if (raw) currentAuth = JSON.parse(raw);
+    }
+  } catch (_) {}
+  return currentAuth;
+}
 
 export function getSessionId() {
   if (typeof window === "undefined") return "server_session";
@@ -53,9 +84,17 @@ function updateLocalMirror(updater) {
 async function sendBeacon(eventType, payload) {
   if (typeof window === "undefined") return;
   const sessionId = getSessionId();
+  const auth = getAuthenticatedUser();
 
   try {
-    const body = JSON.stringify({ sessionId, eventType, payload });
+    const body = JSON.stringify({
+      sessionId,
+      userId: auth.userId || null,
+      userEmail: auth.email || null,
+      userName: auth.name || null,
+      eventType,
+      payload
+    });
     if (typeof navigator !== "undefined" && navigator.sendBeacon) {
       // Use Beacon API for 0ms delay during tab switches or navigation
       const blob = new Blob([body], { type: "application/json" });
@@ -74,6 +113,15 @@ async function sendBeacon(eventType, payload) {
 }
 
 export const userJourneyTracker = {
+  /**
+   * Set Clerk Authenticated User Info (Links lifetime email to user journey)
+   */
+  setAuthenticatedUser(userId, email, name) {
+    saveUserAuth(userId, email, name);
+    // Send a sync beacon so backend immediately connects the user in Supabase
+    sendBeacon("USER_AUTH_SYNC", { userId, email, name });
+  },
+
   /**
    * Log Page Visit
    */
