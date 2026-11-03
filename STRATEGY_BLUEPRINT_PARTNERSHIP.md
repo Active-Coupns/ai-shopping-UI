@@ -38,6 +38,7 @@ ShopSmart AI enables instant, guaranteed savings for shoppers globally across mu
 | **Hotels & Accommodations** | **Agoda B2B / Hotelbeds** | Agoda Partner Hub / Hotelbeds B2B | 🟡 Fast / Moderate | $0 (No deposit required) | Gated Wholesale Net Rates (Satisfies Hotel Rate Parity) |
 | **Events, Concerts & Comedy** | **Ticket Evolution API** | Ticket Evolution B2B Network | 🟡 Moderate (Developer Application) | $0 (Wholesale access) | Headless ticket broker inventory, white-label seat picker |
 | **Attractions & Theme Parks** | **Viator / Tiqets Partner API** | Tripadvisor Viator Partner API | 🟢 Fast Track | $0 (No minimum) | Instant digital barcode pass, 8%–10% rev-share |
+| **Intercity Buses & Rail** | **Distribusion API / Omio B2B** | `distribusion.com` / `omio.com/b2b` | 🟢 Developer Fast Track | $0 (Wholesale B2B) | Wholesale Net Fare API (0% markup passed to user; Europe/NA) |
 | **Software, SaaS & Cloud** | **Secret B2B Partner Network** | `joinsecret.com` Partner Program | 🟢 Fast | $0 (No minimum) | $1,000+ credits for AWS, Notion, Stripe; 30% user savings |
 
 ---
@@ -112,6 +113,12 @@ ShopSmart AI enables instant, guaranteed savings for shoppers globally across mu
 * **Model**: Gated perks offering up to $1,000+ cloud credits and 20%–50% discounts on tools like AWS, Notion, Airtable, HubSpot, Loom.
 * **Zero Liability Feature**: Secret verifies user eligibility and issues merchant coupons directly.
 
+### 4.6. Intercity Buses & Rail: Distribusion API / Omio B2B
+* **Approval Channel**: `distribusion.com` / `omio.com/b2b` Developer Portal.
+* **Model**: Wholesale Net Fares (`net_price`) across 500+ carriers in Europe and North America (National Express, Megabus, FlixBus, ALSA). 0% ShopSmart markup passes 100% of wholesale discount directly to the passenger.
+* **Zero Liability & Hosted Checkout**: Search runs on ShopSmart, but the user is handed off to the co-branded hosted checkout (`shopsmart.omio.com` or partner portal). Partner acts as Merchant of Record, processes payment, and issues the carrier QR code.
+* **Support Shield**: Carrier delays, schedule alterations, and cancellations are 100% handled by the transport operator and Omio's 24/7 operations team.
+
 ---
 
 ## 5. Step-by-Step Approval Checklist (When Ready to Apply)
@@ -159,6 +166,52 @@ flowchart TD
     PartnerCheckout --> PartnerFulfill["Partner Collects Payment, Delivers Digital Card & Handles 100% Support"]
     PartnerFulfill --> PassiveProfit["ShopSmart Receives Automatic Rev-Share Commission (Zero Liability)"]
 ```
+
+---
+
+## 7. Post-Booking Proactive Support Dispatcher (Zero-Liability Shield)
+
+To ensure that 0% of customer support requests, cancellation questions, or refund disputes ever reach ShopSmart, the system implements an automated **Proactive Deflection & Support Dispatcher**:
+
+### 7.1. Webhook Handshake (`/api/webhooks/travel-booking`)
+1. When a user books via Duffel Links, Omio, or Distribusion, the partner fires a secure server-to-server webhook containing:
+   - `order_id` / `pnr`
+   - `carrier_name` (e.g., British Airways, FlixBus, United Airlines)
+   - `user_email`
+   - `carrier_support_url` & `emergency_phone`
+   - `carrier_manage_booking_url`
+
+### 7.2. Automated Personalized "Care & Escalation" Email Dispatch
+ShopSmart immediately sends a branded, high-trust transactional email to the user:
+
+```
+Subject: 🎉 Booking Confirmed with ShopSmart Partner Savings! (PNR: ABC123XYZ)
+
+Hi [User Name],
+
+Congratulations! Your booking was successfully confirmed with exclusive ShopSmart wholesale savings.
+
+✈️ Carrier / Operator: British Airways (Flight BA-142) / FlixBus (Route #210)
+🎟️ Official PNR / Booking Ref: ABC123XYZ
+💰 Wholesale Savings Applied: €14.50 off official retail
+
+🛡️ IMPORTANT CUSTOMER CARE & ESCALATION GUIDE:
+Because your booking is legally issued directly by the carrier, any schedule changes, 
+delays, baggage claims, or cancellation refunds are 100% handled by their 24/7 operations team:
+
+• Direct 24/7 Helpline: [Carrier Direct Toll-Free Phone]
+• Official Support Portal: [Carrier Help Center URL]
+• Self-Service 1-Click Changes & Cancellations: [Manage Booking URL]
+• Did not receive your SMS / E-Ticket? Download directly via the link above.
+
+Have a wonderful trip, and thank you for saving with ShopSmart AI!
+```
+
+### 7.3. Why This Completely Eliminates Support Liability:
+* **Pre-emptive Clarity**: User never wonders "who do I call?" The email is in their inbox before they even leave the checkout screen.
+* **Direct Escalation**: Directs user directly to the airline or bus company's 24/7 operations center.
+* **Maximum Trust**: User feels ShopSmart is a high-class concierge that not only saved them money but gave them the exact direct carrier contact.
+* **ShopSmart Burden**: **0 support tickets, 0 refund queues, 0 liability.**
 
 ---
 **END OF BLUEPRINT — PERMANENT RECORD IN REPOSITORY**
