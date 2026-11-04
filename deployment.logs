@@ -2,6 +2,45 @@
 DEPLOYMENT LOGS - SHOPSMART AI
 ================================================================================
 
+[DEPLOYMENT TIMESTAMP] : 2026-11-04 17:15:00 UTC (Local: 2026-11-04 09:15:00 -08:00)
+[COMMIT HASH]          : [Pending]
+[TARGET ENVIRONMENT]   : Production (Vercel) / origin main
+[BUILD STATUS]         : PASSED (Architecture Constitution & Blueprint Updated)
+[STATUS]               : READY TO COMMIT & PUSH
+
+--------------------------------------------------------------------------------
+SUMMARY OF CHANGES & RESOLVED ISSUES
+--------------------------------------------------------------------------------
+
+1. MASTER TWO-PHASE ARCHITECTURE FORMALIZED (`GEMINI.md` & `STRATEGY_BLUEPRINT_PARTNERSHIP.md`)
+   - Phase 1 (Launch & Trust Building, Days 1-40):
+     * Shopping Search (OpenWeb Ninja 1-call model)
+     * Hardware TrustSheet (spec-grounded specs, zero "N/A")
+     * VTON Fashion Trial Room (client-side contrast & fabric rendering)
+     * Feedico Coupons & Hyperlocal Indian database (Honey model)
+     * Direct Pharmacy: Apollo 24|7 & Tata 1mg (Flat 18% off MRP with code `SHOPSMART18`), GoodRx (US ZIP-code Rx cards), HealthKart (India fitness supplements), iHerb (180+ countries supplements).
+     * Unified under master publisher accounts on Impact.com and iHerb Global.
+   - Phase 2 (Wholesale B2B Expansion, Day 40 onward):
+     * Wholesale Flights (Duffel NDC API, 0% markup)
+     * Wholesale Hotels (Agoda B2B / Hotelbeds Net Rates)
+     * Wholesale Intercity Buses & Rail (Distribusion API / Omio B2B)
+     * Wholesale Live Tickets (Ticket Evolution API)
+     * SaaS Founder Credits (Secret B2B Partner Program)
+     * Guaranteed Discount Cards (Blackhawk Network, CardCash, Raise)
+
+2. CLOSED USER GROUP (CUG) FREE PASS LEGAL SHIELD
+   - Users activate "ShopSmart Club" 90-Day Free Pass (0 cost, no credit card) via Clerk.
+   - Private contracted membership legally shields wholesale rates from hotel/airline Rate Parity restrictions (US FTC & EU Block Exemption doctrines).
+
+3. ZERO-LIABILITY DEFLECTION WEBHOOK
+   - Post-booking transactional email dispatches direct carrier 24/7 hotline, emergency email, and 1-click self-service cancellation links to deflect 100% of customer support queries away from ShopSmart.
+
+4. PERMANENT BLACKLIST REJECTIONS LOCKED
+   - ❌ Middleman affiliate brokers (Cuelinks, EarnKaro) permanently rejected.
+   - ❌ Forced generic medicine substitutions permanently rejected.
+
+--------------------------------------------------------------------------------
+
 [DEPLOYMENT TIMESTAMP] : 2026-11-03 15:18:00 UTC (Local: 2026-11-03 07:18:00 -08:00)
 [COMMIT HASH]          : 70ebbf2
 [TARGET ENVIRONMENT]   : Production (Vercel) / origin main

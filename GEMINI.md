@@ -1,68 +1,48 @@
 # ShopSmart AI — Master Architecture Constitution & Memory Lock
 **File:** `GEMINI.md` (Project Root)  
 **Status:** PERMANENT ARCHITECTURE LOCK & SINGLE SOURCE OF TRUTH  
-**Last Updated:** 2026-11-02  
+**Last Updated:** 2026-11-04  
 
 > **CRITICAL DIRECTIVE FOR ALL AI AGENTS & DEVELOPERS:**  
 > This file is the **immutable single source of truth** for ShopSmart AI. Before proposing any technical strategy, writing any code, or modifying existing features, you **MUST strictly read and adhere to all decisions, rejected paths, and architectural boundaries locked in this document**.  
-> **NEVER re-suggest a rejected idea. NEVER invent dummy data. NEVER hallucinate coupon codes.**
+> **NEVER re-suggest a rejected idea. NEVER invent dummy data. NEVER hallucinate coupon codes. NEVER introduce middleman affiliate networks (Cuelinks, EarnKaro).**
 
 ---
 
-## 1. Core Product Identity & Business Model (The Real Vision)
+## 1. Core Product Identity & Phased Architecture Roadmap
 
-ShopSmart AI is **NOT a generic coupon website**, nor a generic affiliate blog. It is an **AI-driven shopping and savings assistant** operating on a proven two-tier monetization model:
+ShopSmart AI is **NOT a generic coupon website**, nor a spammy affiliate blog. It is an **AI-driven shopping, pharmacy, and savings assistant** operating on a **Strict Two-Phase Phased Rollout**:
 
 ```
-┌──────────────────────────────────────────────────────────────────────────────────┐
-│                             SHOPSMART AI TWO-TIER MODEL                          │
-└────────────────────────────────────────┬─────────────────────────────────────────┘
-                                         │
-        ┌────────────────────────────────┴────────────────────────────────┐
-        ▼                                                                 ▼
-┌──────────────────────────────────────────────┐  ┌──────────────────────────────────────────────┐
-│  TIER 1: THE CORE USP & MONETIZATION ENGINE  │  │  TIER 2: MULTI-VERTICAL GLOBAL DATA ENGINE   │
-│  Zero-Markup Wholesale Net-Rate Engine       │  │  Free Organic Traffic, Travel & Coupons      │
-│  (Headless B2B White-Label REST APIs)        │  │  (Powered by Feedico & Secret B2B)           │
-├──────────────────────────────────────────────┤  ├──────────────────────────────────────────────┤
-│ • Passes 100% of wholesale margin directly   │  │ • 48,000+ Global Brands (7 Major Networks:   │
-│   to shopper at checkout (0% Agent Markup).  │  │   CJ, Impact, Awin, Admitad, Partnerize).    │
-│ • Flights: Duffel API (300+ Airlines Net Fare)│  │ • Coupons: Feedico Managed Catalog + India   │
-│ • Hotels: Agoda B2B / Hotelbeds Net Rates    │  │   Hyperlocal Master Registry (Honey model).  │
-│ • Comedy & Live Shows: Ticket Evolution API  │  │ • Software / SaaS: Secret B2B Partner API     │
-│ • Theme Parks & Sights: Viator / Tiqets API  │  │   ($1,000+ credits, 30% off partner tokens). │
-│ • 100% White-Label: Supplier invisible, zero │  │ • Guaranteed Savings Cards: Blackhawk Network │
-│   competitor leaks. Zero liability partners. │  │   / Giftcards.com, CardCash, Raise (Zero-Liab)│
-│ • Full Blueprint: STRATEGY_BLUEPRINT_PARTNERSHIP.md│ satisfies Hotel Rate Parity law.           │
-└──────────────────────────────────────────────┘  └──────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                        SHOPSMART TWO-PHASE ARCHITECTURE ROADMAP                        │
+├───────────────────────────────────────────┬────────────────────────────────────────────┤
+│ PHASE 1: DAY-1 LAUNCH & TRUST (DAYS 1-40) │ PHASE 2: WHOLESALE TRAVEL (DAY 40 ONWARD)  │
+├───────────────────────────────────────────┼────────────────────────────────────────────┤
+│ • Zero Legal Friction, 100% Compliant     │ • High-Leverage B2B Wholesale Fares        │
+│ • Shopping Search & Price Comparison      │ • Closed User Group (CUG) Free Club Pass   │
+│ • Hardware AI TrustSheet (Deep Specs)     │ • Flights: Duffel NDC Net Fares            │
+│ • Virtual Try-On (VTON Cloth Studio)      │ • Hotels: Agoda B2B / Hotelbeds Net Rates  │
+│ • Coupons: Feedico Managed Catalog        │ • Buses: Distribusion / Omio B2B Net Rates │
+│ • Pharmacy: Apollo 24|7 & Tata 1mg (IN)   │ • Events: Ticket Evolution Live Tickets    │
+│ • Rx Discounts: GoodRx API (US ZIP/Card)  │ • SaaS: Secret B2B Founder Credits         │
+│ • Supplements: iHerb (180+ Countries)     │ • Guaranteed Cards: Blackhawk/CardCash/Raise│
+│ • Supplements: HealthKart Lab-Certified   │ • Rate Parity Legal Shield via CUG         │
+│ • UK/CA Pharmacy: Pharmacy2U & Well.ca    │ • Zero In-App Payment Liability (Redirect) │
+│ • Single Master Account on Impact.com     │ • Full Blueprint: STRATEGY_BLUEPRINT_...   │
+└───────────────────────────────────────────┴────────────────────────────────────────────┘
 ```
 
-### Technical Integration Blueprint for Feedico (`api.feedico.io`)
-- **Primary Endpoint**: `POST https://api.feedico.io/api/v1/catalog/coupons`
-- **Authentication**: Bearer Token (`fdco_...` generated from partner dashboard post domain verification)
-- **Daily Cron Mode**: Batch pagination (`{"page": 1, "pageSize": 100}`) to refresh top 100 multi-vertical deals in Redis.
-- **On-Demand Search Mode**: Targeted merchant filter (`{"firmName": "<brand>", "pageSize": 20}`) responding in ~200ms.
-- **Fail-Honest Policy**: If Feedico has 0 active coupons for a brand, return honest "No active coupon available" (zero AI hallucination).
-
-### Routing Logic (How Links are Resolved)
-```javascript
-if (vertical === "flights") {
-  // TIER 1: Duffel API Headless NDC Wholesale Net Booking (0% Agent Markup)
-  return duffel.bookWholesaleFlight(bookingData);
-} else if (vertical === "events_comedy") {
-  // TIER 1: Ticket Evolution B2B Wholesale Live Ticket (White-Label)
-  return ticketEvolution.getWholesaleTicket(eventData);
-} else if (vertical === "attractions_parks") {
-  // TIER 1: Viator / Tiqets B2B Wholesale Pass (Instant Digital Barcode)
-  return viator.getAttractionPass(attractionData);
-} else if (vertical === "saas_software") {
-  // TIER 2: Secret B2B Partner Tokenized Gated Perks
-  return secret.getGatedPerkUrl(saasData);
-} else {
-  // TIER 2: Feedico Managed Catalog /go link (Coupons & Retail - 65% Rev-Share)
-  return feedico.getTrackedGoLink(merchant);
-}
-```
+### 1.1. Phase 1 vs Phase 2 Core Distinction
+1. **Phase 1 (Day-1 Launch & Trust Building, Days 1–40)**:
+   - Zero legal risks, zero Rate Parity concerns, immediate approval velocity.
+   - Built around the shopping search engine, spec-grounded TrustSheet, VTON cloth trial, Feedico verified coupons, and **direct pharmacy/supplement partnerships** (Tata 1mg, Apollo 24|7, GoodRx, iHerb, HealthKart).
+   - High customer lifetime value (LTV) and monthly repeat orders (daily consumables and medicines).
+2. **Phase 2 (Wholesale B2B Expansion, Day 40 onward)**:
+   - Activated after 30–40 days of verified user traffic and organic traction.
+   - High-ticket travel (Flights via Duffel, Hotels via Agoda B2B/Hotelbeds, Intercity Buses via Distribusion/Omio), Live Events (Ticket Evolution), and SaaS perks (Secret B2B).
+   - Legally shielded by the **"ShopSmart Club" 90-Day Free Pass (CUG Membership)** to bypass hotel/airline Rate Parity restrictions.
+   - Reference: see [`STRATEGY_BLUEPRINT_PARTNERSHIP.md`](file:///C:/Users/ASUS/.gemini/antigravity/scratch/ai-shopping-assistant/STRATEGY_BLUEPRINT_PARTNERSHIP.md) for full operational blueprints and approval ledgers.
 
 ---
 
@@ -70,18 +50,20 @@ if (vertical === "flights") {
 
 | Rejected Approach | Why It Was Permanently Rejected (The Real Reason) |
 | :--- | :--- |
+| ❌ **Third-Party Affiliate Brokers / Aggregators (Cuelinks, EarnKaro)** | Take heavy middleman revenue cuts (20%–40%), delay approval cycles for new domains, lack direct merchant API control, and fail to provide on-the-spot checkout discount codes for users. Permanently replaced by direct publisher integrations via Impact.com and iHerb. |
+| ❌ **Forced Generic Medicine Substitution for Prescribed Branded Drugs** | Forcing generic salt substitution when a patient searches for a doctor-prescribed branded medicine (e.g., Augmentin, Lipitor, Telma) destroys trust and introduces medical friction. ShopSmart preserves prescribed branded drugs, comparing authentic marketplace prices (Netmeds, PharmEasy, MRP) while delivering flat 18% partner discounts via Apollo 24|7 and Tata 1mg. |
 | ❌ **Scraping Brand Websites with Zyte for Coupons** | Brands do **NOT** publish coupon codes on homepages. Sites have constantly mutating React/Angular layouts that break weekly. Heavy WAF shields (Akamai/Cloudflare/DataDome) block datacenter IPs in US, UK, and CA. |
 | ❌ **Expensive B2B Coupon Subscriptions ($50–$100/mo)** | Platforms like CouponAPI.org ($49/mo) and LinkMyDeals ($3/store min 50 stores = $150/mo) impose heavy fixed monthly commitments before traction. Rejected in favor of $0/mo Feedico Partner Program. |
 | ❌ **AI-Generated / Hallucinated Coupon Codes (`SAVE10`, `${brand}SAVE`)** | Fake codes fail at merchant checkout, destroying customer trust. If a code is not verified from live feeds, return an honest "No active coupon available" message. |
 | ❌ **Traditional Post-Booking Cashback Portals (30–60 Day Wait)** | Users despise waiting 2 months for ₹50 cashback. Instant, on-the-spot checkout price cuts win every time. |
-| ❌ **Day-1 Direct Affiliate Applications (CJ / Impact / Awin)** | Direct brand applications (Nike, Samsung) take weeks to review and get declined for new sites without existing high traffic. Feedico bypasses this via pre-approved master accounts. |
+| ❌ **Day-1 Direct Brand Applications (Nike, Samsung on CJ / Awin)** | Direct tier-1 brand applications take weeks to review and get declined for new sites without existing high traffic. Feedico and master publisher networks bypass this. |
 | ❌ **Fake Fallbacks in TrustSheet (Replacing Washing Machine with Phone)** | Violates the Fail-Honest rule. If Zyte fails to scrape authentic PDP details, report the failure honestly instead of substituting a smartphone from OpenWeb. |
 | ❌ **Public Review Citations in TrustSheet** | Scraping and publishing third-party user reviews incurs legal and defamation liabilities. All TrustSheet analysis must be **strictly spec-grounded** from manufacturer datasheets. |
-| ❌ **Self-Ticketing / In-App Merchant of Record in Travel** | Avoids IATA licensing, 24/7 emergency support call centers, baggage disputes, and airline refund liabilities. |
+| ❌ **Self-Ticketing / In-App Merchant of Record in Travel or Pharmacy** | Avoids IATA licensing, drug dispensing liabilities, 24/7 emergency support call centers, baggage disputes, and airline refund liabilities. Hosted checkout / affiliate redirection only. |
 | ❌ **Code Modification by Autonomous Watchdogs** | Autonomous bots/AI must NEVER edit, mutate, or "auto-fix" `.js`/`.jsx` files in production. Maintenance is strictly 100% passive, read-only observability. |
-| ❌ **RAG Mixed Inventory Pool (`consultAiShopkeeper`) in Shopping Search** | Blocked queries from reaching OpenWeb Ninja, force-fed a mixed 40-item pool (cameras + laptops + washing machines) into search responses, and corrupted category relevance. Removed permanently. |
-| ❌ **Hardcoded 'Today\'s Deals' Category Explorer (`today_deals`)** | Burned expensive OpenWeb Ninja API credits for non-intent browsers using hardcoded generic search queries (`laptop special offer deals`). Distracted from high-intent shopping search, pharmacy, verified coupons, and smart terminal. Permanently removed. |
-| ❌ **Runa / Gift Card Reselling & Wallet Loading Model** | Imposes heavy payment gateway processing overhead, KYC compliance, customer chargeback risks, digital code theft vulnerabilities, and high user UX friction. Permanently replaced with direct B2B Wholesale Net-Rate APIs and verified Honey-style promo codes. |
+| ❌ **RAG Mixed Inventory Pool (`consultAiShopkeeper`) in Shopping Search** | Blocked queries from reaching OpenWeb Ninja, force-fed a mixed 40-item pool into search responses, and corrupted category relevance. Removed permanently. |
+| ❌ **Hardcoded 'Today\'s Deals' Category Explorer (`today_deals`)** | Burned expensive OpenWeb Ninja API credits for non-intent browsers. Distracted from high-intent shopping search, pharmacy, verified coupons, and smart terminal. Permanently removed. |
+| ❌ **Runa / Gift Card Reselling & Wallet Loading Model** | Imposes heavy payment gateway processing overhead, KYC compliance, customer chargeback risks, digital code theft vulnerabilities, and high user UX friction. Permanently replaced with direct B2B Wholesale Net-Rate APIs and verified promo codes. |
 
 ---
 
@@ -105,19 +87,74 @@ if (vertical === "flights") {
   5. Net Effective Savings Strategy & True Daily Cost (₹18/day).
   6. Spec-Grounded AI Assistant & On-Demand Multi-Store Comparison Drawer.
 
-### 3.3. Coupons & Deals Engine (`couponService.js`, `CouponCard.jsx`)
+### 3.3. Pharmacy, Branded Medicines & Supplements Hub (Phase 1 Priority)
+- **Direct Partner Network (Zero Middlemen)**:
+  * **India (Branded Rx & OTC)**: Apollo 24|7 & Tata 1mg via direct merchant/Impact.com accounts. Auto-applied exclusive promo code (`SHOPSMART18`) granting flat 15%–18% off MRP with free doorstep delivery.
+  * **India (Supplements)**: HealthKart Direct Partner Program. Batch lab-tested authentic sports nutrition & vitamins (Flat 10%–15% checkout discount).
+  * **United States (Prescriptions)**: GoodRx API (`goodrx.com/developer`). Real-time local pharmacy comparison (CVS vs Walgreens vs Walmart) and digital Rx discount cards driven by `Medicine + ZIP Code` input.
+  * **Global 180+ Countries (Supplements & Wellness)**: iHerb Global Partner Program (`iherb.com`). Auto-applied 10% coupon code across whey protein, omega-3, multivitamins, and clean skincare in local currencies.
+  * **UK & Canada**: Pharmacy2U (UK) and Well.ca (CA) via Impact.com master publisher account.
+- **Dual-Model UX Presentation**:
+  * **India & Global**: Unified Privilege Medicine Card displaying open-market comparison (PharmEasy, Netmeds, MRP) alongside an exclusive ShopSmart Partner Box with instant 18% checkout savings.
+  * **US GoodRx Flow**: Location-aware input (`Medicine + ZIP Code`) displaying local pharmacy discount cards.
+
+### 3.4. Coupons & Deals Engine (`couponService.js`, `CouponCard.jsx`)
 - **India Hyperlocal Layer**: Dedicated in-memory & Redis master registry (`MASTER_COUPON_DATABASE`) covering 50+ stores (Zomato, Swiggy, Blinkit, Zepto, Domino's, Myntra, Ajio, Nykaa).
-- **Global & E-commerce Layer**: Feedico Partner Program (`feedico.io`) ready catalog for US, UK, CA, AU, AE, IN ($0 cost, 65% rev-share).
-- **Core Savings Layer**: Runa (`runa.io`) wholesale digital value deep-links for Food, Cabs, Groceries.
+- **Global & E-commerce Layer**: Feedico Partner Program (`feedico.io`) ready catalog for US, UK, CA, AU, AE, IN ($0 cost, 65% rev-share, Bearer `fdco_` token).
 - **AI Cart Scanner (`calculateBestCartCoupon`)**: Gemini Vision detects store name and cart total from checkout screenshots, calculating highest net savings.
 
-### 3.4. Subscriptions & Software Hub (`SubscriptionsView.jsx`)
-- Pre-curated 6-country catalog (`subscriptionsCatalog.js`, `subscriptionsCatalogUS.js`, `subscriptionsCatalogAE.js`, etc.) for SaaS, OTT, AI tools, and Developer stacks.
-- On-Demand discovery powered by Groq/Gemini AI blueprints with verified tax/student write-off guides.
+### 3.5. Phase 2: Wholesale Travel & Subscriptions Hub
+- **Flights**: Duffel Headless NDC API (`duffel.com`) delivering wholesale net fares across 300+ airlines. 0% markup passed to traveler.
+- **Hotels**: Agoda B2B Partner Solutions & Hotelbeds Wholesale Net Rates.
+- **Intercity Buses & Rail**: Distribusion API & Omio B2B net fares across 500+ operators in Europe & North America (FlixBus, National Express, ALSA).
+- **Live Events & Concerts**: Ticket Evolution B2B Network (Sports, Concerts, Broadway).
+- **SaaS & Cloud**: Secret B2B Partner Program (`joinsecret.com`) for $1,000+ founder software credits.
+- **Legal Shield**: "ShopSmart Club" 90-Day Free Pass (CUG Membership Doctrine) to legally nullify hotel/airline Rate Parity restrictions.
+- **Proactive Deflection Webhook**: Instant post-booking transactional email containing carrier 24/7 direct helpline, emergency email, and 1-click self-service cancellation link to deflect 100% of customer support queries.
 
-### 3.5. Travel Hub (`TravelHubView.jsx`)
-- Curated airline, hotel, and ride-hailing deals across 6 countries.
-- On-Demand radar discovery with safe AI grounded fallback if external portals time out.
+### 3.6. Virtual Try-On (VTON Cloth Studio)
+- Strictly isolated **3 lifetime free trials** per device/account tracked via SHA-256 hardware fingerprints and IP rate-limiters in Redis (`vton:free_quota:account_lifetime:<id>`).
+- Client-side high-contrast fabric rendering: `[image-rendering:-webkit-optimize-contrast] contrast-[1.03] saturate-[1.02]`.
+
+---
+
+## 4. Multi-Country Strategy (6 Target Geographies)
+
+| Country Code | Currency | Primary Food & Cab Focus | Primary Pharmacy & Health Focus | Primary Retail & Coupon Focus |
+| :---: | :---: | :--- | :--- | :--- |
+| **IN** | ₹ (INR) | Zomato, Swiggy, Domino's, Uber India, Blinkit, Zepto | Apollo 24|7, Tata 1mg, HealthKart | Flipkart, Amazon.in, Myntra, Nykaa, Croma |
+| **US** | $ (USD) | DoorDash, Uber Eats, Uber US, Lyft, Starbucks, Chipotle | GoodRx API (Local CVS, Walgreens, Walmart) | Walmart, Target, Nike US, Best Buy, Sephora |
+| **GB / UK** | £ (GBP) | Deliveroo, Just Eat, Uber Eats UK, Bolt UK, Costa Coffee | Pharmacy2U, Boots, iHerb UK | ASOS, Currys, Argos, Marks & Spencer |
+| **CA** | C$ (CAD) | SkipTheDishes, DoorDash Canada, Uber Canada, Tim Hortons | Well.ca, Rexall, iHerb Canada | Canadian Tire, Best Buy Canada, Hudson's Bay |
+| **AU** | A$ (AUD) | Uber Australia, Didi Australia, Menulog | Chemist Warehouse, iHerb Australia | Woolworths, Coles, JB Hi-Fi, The Iconic |
+| **AE** | AED | Talabat, Careem, Noon Food, Deliveroo UAE | Life Pharmacy, Aster, iHerb UAE | Noon, Amazon.ae, Sharaf DG, Namshi |
+
+---
+
+## 5. Security & Rate-Limiting Protocols (Non-Negotiable)
+
+1. **"Read Open, Act Protected" Architecture**:
+   - Googlebot, crawlers, and unauthenticated visitors can browse all coupon listings, store catalogs, OTT plan matrices, and travel deals freely (**0 login friction, maximum SEO indexing**).
+   - Clerk authentication (`openSignIn()`) intercepts high-value write actions: revealing masked promo codes, clicking deep links, triggering VTON renders, accessing Phase 2 CUG wholesale net rates.
+2. **Unified 10-Daily AI Quota**:
+   - Centralized utility `checkUnifiedApiQuota({ limit: 10 })` enforces a daily limit of **10 AI operations per user** resetting at 12:00 AM IST via Redis sliding window counters.
+   - Cache hits and static browsing consume **0 credits**.
+3. **Environment & Keys Protection**:
+   - Production keys (OpenWeb Ninja, Gemini, Groq, Zyte, Redis, Clerk, Impact, Feedico) must remain strictly guarded.
+   - Never commit `.env` or `.env.local` files to Git.
+
+---
+
+## 6. Rules for All Future Code Changes
+
+1. **Check this file FIRST**: Before implementing any coupon, travel, search, pharmacy, or TrustSheet feature, verify it does not contradict Section 1, 2, or 3.
+2. **Zero Dummy Data**: If an API or scrape fails, fail honestly. Do not generate synthetic mock objects or fabricate imaginary coupon codes.
+3. **Keep Mobile UI Polished**: Always ensure flexbox containers have `min-w-0`, buttons have `shrink-0`, and modals have adequate bottom padding (`pb-24`) to prevent bottom navigation bar overlap.
+4. **Preserve Documentation**: Update `DEVELOPMENT_LOG.md` upon any production Git release.
+5. **No Middleman Networks**: Always prioritize direct merchant partner programs (Impact.com, iHerb, Feedico) over middleman affiliate networks (Cuelinks, EarnKaro).
+
+---
+**END OF CONSTITUTION — IMMUTABLE ARCHITECTURE LOCK**
 - Shimmer skeleton loaders for smooth UX during background sync.
 
 ### 3.6. Virtual Try-On (VTON)

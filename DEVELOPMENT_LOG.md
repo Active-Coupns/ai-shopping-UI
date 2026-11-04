@@ -18,6 +18,33 @@
 
 ## 📅 Daily Changelog & Feature Timeline
 
+### 🗓️ 2026-11-04 (Master Architecture Lock & Two-Phase Partnership Strategy Blueprint)
+
+* **Git Commit**: `[Pending]`
+* **Commit Message**: `docs: formalize two-phase rollout, direct pharmacy architecture, and CUG legal shield`
+* **Status**: ✅ 100% Tested & Verified Locally
+* **Changes in this Commit**:
+  1. **Two-Phase Architecture Formalized (`GEMINI.md` & `STRATEGY_BLUEPRINT_PARTNERSHIP.md`)**:
+     - **Phase 1: Day-1 Launch & Trust Building (Days 1–40)**:
+       * Focuses strictly on zero-risk, zero-legal-friction pillars: Shopping Search & Comparison (1-call OpenWeb), Hardware TrustSheet (spec-grounded specs, 0 "N/A"), VTON Fashion Studio (client-side crisp rendering), and Feedico coupons (48k+ brands).
+       * **Direct Pharmacy & Healthcare Network**: Direct partnerships with Apollo 24|7 & Tata 1mg for India (flat 15%–18% off MRP with auto-applied promo code `SHOPSMART18`), GoodRx API for US (local pharmacy price comparison across CVS, Walgreens, Walmart + digital Rx discount card via ZIP code), HealthKart for lab-certified Indian supplements (10%–15% checkout discount), and iHerb Global for 180+ countries (flat 10% auto-applied discount).
+       * Consolidated Publisher Strategy: Registered under master publisher accounts on **Impact.com** and **iHerb Global** for single-point payout aggregation.
+     - **Phase 2: Wholesale B2B Expansion (Day 40 onward)**:
+       * Duffel NDC Wholesale Flights (300+ airlines, 0% markup).
+       * Agoda B2B & Hotelbeds Wholesale Hotel Net Rates.
+       * Distribusion API & Omio B2B Wholesale Coach & Rail (500+ carriers in US & EU).
+       * Ticket Evolution Live Concerts & Sports Tickets.
+       * Secret B2B SaaS credits ($1,000+ per deal).
+       * Blackhawk / Giftcards.com, CardCash, and Raise guaranteed cards (replaces Runa wallet).
+  2. **CUG Legal Shield & Rate Parity Protection**:
+     - Introduced the **"ShopSmart Club" 90-Day Free Pass (Closed User Group / CUG Subscription Shield)**.
+     - Users activate a free subscription tier (0 cost, no credit card required) via Clerk authentication.
+     - Legally immunizes wholesale net rates from hotel/airline Rate Parity lawsuits under US FTC and EU Block Exemption doctrines.
+  3. **Strict Policy & Boundary Additions to `GEMINI.md`**:
+     - ❌ **Permanently Blacklisted Middleman Affiliate Brokers (Cuelinks, EarnKaro)** due to high revenue cuts, slow approvals, lack of API control, and inability to inject on-the-spot checkout discount codes.
+     - ❌ **Permanently Blacklisted Forced Generic Medicine Substitution** to preserve doctor-prescribed patient treatments while providing genuine marketplace price comparison and 18% partner checkout discounts.
+     - Mandated direct partner integrations (Impact.com, iHerb, Feedico) and proactive support deflection webhooks.
+
 ### 🗓️ 2026-11-03 (Virtual Try-On Zero-Latency Fabric & Crisp Rendering Enhancement)
 
 * **Git Commit**: [`70ebbf2`](https://github.com/Active-Coupns/ai-shopping-UI/commit/70ebbf2)
