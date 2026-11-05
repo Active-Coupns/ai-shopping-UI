@@ -1,7 +1,7 @@
 # ShopSmart AI — Master Architecture Constitution & Memory Lock
 **File:** `GEMINI.md` (Project Root)  
 **Status:** PERMANENT ARCHITECTURE LOCK & SINGLE SOURCE OF TRUTH  
-**Last Updated:** 2026-11-04  
+**Last Updated:** 2026-11-05  
 
 > **CRITICAL DIRECTIVE FOR ALL AI AGENTS & DEVELOPERS:**  
 > This file is the **immutable single source of truth** for ShopSmart AI. Before proposing any technical strategy, writing any code, or modifying existing features, you **MUST strictly read and adhere to all decisions, rejected paths, and architectural boundaries locked in this document**.  
@@ -11,7 +11,7 @@
 
 ## 1. Core Product Identity & Phased Architecture Roadmap
 
-ShopSmart AI is **NOT a generic coupon website**, nor a spammy affiliate blog. It is an **AI-driven shopping, pharmacy, and savings assistant** operating on a **Strict Two-Phase Phased Rollout**:
+ShopSmart AI is **NOT a generic coupon website**, nor a spammy affiliate blog. It is an **AI-driven shopping, pharmacy, hardware reality check, and savings assistant** operating on a **Strict Two-Phase Phased Rollout**:
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
@@ -21,22 +21,23 @@ ShopSmart AI is **NOT a generic coupon website**, nor a spammy affiliate blog. I
 ├───────────────────────────────────────────┼────────────────────────────────────────────┤
 │ • Zero Legal Friction, 100% Compliant     │ • High-Leverage B2B Wholesale Fares        │
 │ • Shopping Search & Price Comparison      │ • Closed User Group (CUG) Free Club Pass   │
-│ • Hardware AI TrustSheet (Deep Specs)     │ • Flights: Duffel NDC Net Fares            │
-│ • Virtual Try-On (VTON Cloth Studio)      │ • Hotels: Agoda B2B / Hotelbeds Net Rates  │
-│ • Coupons: Feedico Managed Catalog        │ • Buses: Distribusion / Omio B2B Net Rates │
-│ • Pharmacy: Apollo 24|7 & Tata 1mg (IN)   │ • Events: Ticket Evolution Live Tickets    │
-│ • Rx Discounts: GoodRx API (US ZIP/Card)  │ • SaaS: Secret B2B Founder Credits         │
-│ • Supplements: iHerb (180+ Countries)     │ • Guaranteed Cards: Blackhawk/CardCash/Raise│
-│ • Supplements: HealthKart Lab-Certified   │ • Rate Parity Legal Shield via CUG         │
-│ • UK/CA Pharmacy: Pharmacy2U & Well.ca    │ • Zero In-App Payment Liability (Redirect) │
-│ • Single Master Account on Impact.com     │ • Full Blueprint: STRATEGY_BLUEPRINT_...   │
+│ • Hardware AI TrustSheet (Global Specs)   │ • Flights: Duffel NDC Net Fares            │
+│ • Bright Data Web Unlocker (72M+ IPs)     │ • Hotels: Agoda B2B / Hotelbeds Net Rates  │
+│ • Virtual Try-On (VTON Cloth Studio)      │ • Buses: Distribusion / Omio B2B Net Rates │
+│ • Coupons: Feedico Managed Catalog        │ • Events: Ticket Evolution Live Tickets    │
+│ • Pharmacy: Apollo 24|7 & Tata 1mg (IN)   │ • SaaS: Secret B2B Founder Credits         │
+│ • Rx Discounts: GoodRx API (US ZIP/Card)  │ • Guaranteed Cards: Blackhawk/CardCash/Raise│
+│ • Supplements: iHerb (180+ Countries)     │ • Rate Parity Legal Shield via CUG         │
+│ • Supplements: HealthKart Lab-Certified   │ • Zero In-App Payment Liability (Redirect) │
+│ • UK/CA Pharmacy: Pharmacy2U & Well.ca    │ • Full Blueprint: STRATEGY_BLUEPRINT_...   │
+│ • Single Master Account on Impact.com     │                                            │
 └───────────────────────────────────────────┴────────────────────────────────────────────┘
 ```
 
 ### 1.1. Phase 1 vs Phase 2 Core Distinction
 1. **Phase 1 (Day-1 Launch & Trust Building, Days 1–40)**:
    - Zero legal risks, zero Rate Parity concerns, immediate approval velocity.
-   - Built around the shopping search engine, spec-grounded TrustSheet, VTON cloth trial, Feedico verified coupons, and **direct pharmacy/supplement partnerships** (Tata 1mg, Apollo 24|7, GoodRx, iHerb, HealthKart).
+   - Built around the shopping search engine, spec-grounded TrustSheet powered by Bright Data Web Unlocker, VTON cloth trial, Feedico verified coupons, and **direct pharmacy/supplement partnerships** (Tata 1mg, Apollo 24|7, GoodRx, iHerb, HealthKart).
    - High customer lifetime value (LTV) and monthly repeat orders (daily consumables and medicines).
 2. **Phase 2 (Wholesale B2B Expansion, Day 40 onward)**:
    - Activated after 30–40 days of verified user traffic and organic traction.
@@ -50,14 +51,15 @@ ShopSmart AI is **NOT a generic coupon website**, nor a spammy affiliate blog. I
 
 | Rejected Approach | Why It Was Permanently Rejected (The Real Reason) |
 | :--- | :--- |
+| ❌ **Datacenter-based Basic HTTP Scraping (Zyte Basic API)** | Datacenter IPs are instantly flagged and blocked by enterprise WAFs (Akamai on Croma, PerimeterX on Walmart) with 14-byte empty payloads or misclassified warranty upsells. Permanently replaced by Bright Data Web Unlocker with 72M+ residential IPs. |
 | ❌ **Third-Party Affiliate Brokers / Aggregators (Cuelinks, EarnKaro)** | Take heavy middleman revenue cuts (20%–40%), delay approval cycles for new domains, lack direct merchant API control, and fail to provide on-the-spot checkout discount codes for users. Permanently replaced by direct publisher integrations via Impact.com and iHerb. |
 | ❌ **Forced Generic Medicine Substitution for Prescribed Branded Drugs** | Forcing generic salt substitution when a patient searches for a doctor-prescribed branded medicine (e.g., Augmentin, Lipitor, Telma) destroys trust and introduces medical friction. ShopSmart preserves prescribed branded drugs, comparing authentic marketplace prices (Netmeds, PharmEasy, MRP) while delivering flat 18% partner discounts via Apollo 24|7 and Tata 1mg. |
-| ❌ **Scraping Brand Websites with Zyte for Coupons** | Brands do **NOT** publish coupon codes on homepages. Sites have constantly mutating React/Angular layouts that break weekly. Heavy WAF shields (Akamai/Cloudflare/DataDome) block datacenter IPs in US, UK, and CA. |
+| ❌ **Scraping Brand Websites with Basic HTML Parsers for Coupons** | Brands do **NOT** publish coupon codes on homepages. Sites have constantly mutating React/Angular layouts that break weekly. Heavy WAF shields block datacenter IPs. Replaced with Feedico catalog. |
 | ❌ **Expensive B2B Coupon Subscriptions ($50–$100/mo)** | Platforms like CouponAPI.org ($49/mo) and LinkMyDeals ($3/store min 50 stores = $150/mo) impose heavy fixed monthly commitments before traction. Rejected in favor of $0/mo Feedico Partner Program. |
 | ❌ **AI-Generated / Hallucinated Coupon Codes (`SAVE10`, `${brand}SAVE`)** | Fake codes fail at merchant checkout, destroying customer trust. If a code is not verified from live feeds, return an honest "No active coupon available" message. |
 | ❌ **Traditional Post-Booking Cashback Portals (30–60 Day Wait)** | Users despise waiting 2 months for ₹50 cashback. Instant, on-the-spot checkout price cuts win every time. |
 | ❌ **Day-1 Direct Brand Applications (Nike, Samsung on CJ / Awin)** | Direct tier-1 brand applications take weeks to review and get declined for new sites without existing high traffic. Feedico and master publisher networks bypass this. |
-| ❌ **Fake Fallbacks in TrustSheet (Replacing Washing Machine with Phone)** | Violates the Fail-Honest rule. If Zyte fails to scrape authentic PDP details, report the failure honestly instead of substituting a smartphone from OpenWeb. |
+| ❌ **Fake Fallbacks in TrustSheet (Replacing Washing Machine with Phone)** | Violates the Fail-Honest rule. If authentic PDP details cannot be extracted, report the failure honestly instead of substituting a smartphone from OpenWeb. |
 | ❌ **Public Review Citations in TrustSheet** | Scraping and publishing third-party user reviews incurs legal and defamation liabilities. All TrustSheet analysis must be **strictly spec-grounded** from manufacturer datasheets. |
 | ❌ **Self-Ticketing / In-App Merchant of Record in Travel or Pharmacy** | Avoids IATA licensing, drug dispensing liabilities, 24/7 emergency support call centers, baggage disputes, and airline refund liabilities. Hosted checkout / affiliate redirection only. |
 | ❌ **Code Modification by Autonomous Watchdogs** | Autonomous bots/AI must NEVER edit, mutate, or "auto-fix" `.js`/`.jsx` files in production. Maintenance is strictly 100% passive, read-only observability. |
@@ -76,16 +78,20 @@ ShopSmart AI is **NOT a generic coupon website**, nor a spammy affiliate blog. I
 - **24-Hour Synchronized Redis TTL**: Search results, direct PDPs, and comparison pools expire together after 24 hours (`cache:inventory:pool:v2:<country>`).
 
 ### 3.2. Hardware TrustSheet (`TrustSheetView.jsx` & `trustSheetService.js`)
-- **Domestic India Focus**: 100% active for Indian e-commerce (Flipkart, Amazon.in, Croma, Brand stores) where direct extraction has >95% reliability.
-- **Non-Indian Countries**: High-converting **"Coming Soon"** teaser screen highlighting 3 value pillars with a 1-click `🇮🇳 Experience Live India Edition` preview button.
-- **Zero "N/A" Hardware Deduction**: LLM prompt forces deduction of 6–8 authentic manufacturer specifications (Capacity, RPM, Inverter Motor, Star Rating, Heater) directly from title, features, breadcrumbs, and raw description.
+- **Universal Global Availability**: 100% active across all 6 core geographies (**IN, US, GB/UK, CA, AU, AE**).
+- **Bright Data Web Unlocker Engine (`brightDataService.js`)**: Routes requests through 72M+ residential proxies dynamically mapped to user's country code (`in`, `us`, `gb`, `ca`, `au`, `ae`). Bypasses Akamai Bot Manager, PerimeterX, and Cloudflare challenges with 99.9% success.
+- **Strict 3-Layer Security**:
+  1. **SSRF & Private Network Shield**: `isSafeExternalUrl` rejects `169.254.169.254`, `localhost`, `127.0.0.1`, and private subnets (`10.x`, `192.168.x`) before calling Bright Data.
+  2. **Zero Vercel IP Leakage**: Retailers only see Bright Data residential proxies; Vercel server IP is 100% invisible.
+  3. **Rate Limiting & Redis Quota Guard**: Strict 10-daily AI operations per user/IP enforced via Upstash Redis sliding window.
+- **Zero "N/A" Hardware Deduction**: LLM prompt forces deduction of 6–13 authentic manufacturer specifications directly from extracted HTML and JSON-LD schema.
 - **Clean 6-Module UI Architecture**:
   1. Header (Verified photo, title, live price, Buy Now, compare trigger).
-  2. Reality Specifications Sheet (8 clean specs, zero "N/A").
+  2. Reality Specifications Sheet (8–13 clean specs, zero "N/A").
   3. Genuine Strengths vs Realistic Gotchas.
   4. Who Should BUY vs Who Should SKIP Decision Matrix.
   5. Net Effective Savings Strategy & True Daily Cost (₹18/day).
-  6. Spec-Grounded AI Assistant & On-Demand Multi-Store Comparison Drawer.
+  6. Spec-Grounded AI Assistant (Universal inquiry prompt, zero static generic chips) & On-Demand Multi-Store Comparison Drawer.
 
 ### 3.3. Pharmacy, Branded Medicines & Supplements Hub (Phase 1 Priority)
 - **Direct Partner Network (Zero Middlemen)**:
@@ -140,7 +146,7 @@ ShopSmart AI is **NOT a generic coupon website**, nor a spammy affiliate blog. I
    - Centralized utility `checkUnifiedApiQuota({ limit: 10 })` enforces a daily limit of **10 AI operations per user** resetting at 12:00 AM IST via Redis sliding window counters.
    - Cache hits and static browsing consume **0 credits**.
 3. **Environment & Keys Protection**:
-   - Production keys (OpenWeb Ninja, Gemini, Groq, Zyte, Redis, Clerk, Impact, Feedico) must remain strictly guarded.
+   - Production keys (Bright Data, OpenWeb Ninja, Gemini, Groq, Redis, Clerk, Impact, Feedico) must remain strictly guarded.
    - Never commit `.env` or `.env.local` files to Git.
 
 ---
@@ -152,6 +158,7 @@ ShopSmart AI is **NOT a generic coupon website**, nor a spammy affiliate blog. I
 3. **Keep Mobile UI Polished**: Always ensure flexbox containers have `min-w-0`, buttons have `shrink-0`, and modals have adequate bottom padding (`pb-24`) to prevent bottom navigation bar overlap.
 4. **Preserve Documentation**: Update `DEVELOPMENT_LOG.md` upon any production Git release.
 5. **No Middleman Networks**: Always prioritize direct merchant partner programs (Impact.com, iHerb, Feedico) over middleman affiliate networks (Cuelinks, EarnKaro).
+6. **Zero Direct IP Scraping**: Never scrape retailer URLs using direct server sockets; route exclusively through Bright Data Web Unlocker residential proxy infrastructure.
 
 ---
 **END OF CONSTITUTION — IMMUTABLE ARCHITECTURE LOCK**

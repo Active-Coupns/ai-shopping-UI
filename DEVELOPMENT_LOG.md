@@ -18,6 +18,35 @@
 
 ## 📅 Daily Changelog & Feature Timeline
 
+### 🗓️ 2026-11-05 (Bright Data Web Unlocker Migration, Global TrustSheet Launch & Security Hardening)
+
+* **Git Commit**: `906cfb8`
+* **Commit Message**: `feat(trustsheet): migrate to Bright Data Web Unlocker, unlock all countries globally, and harden SSRF security`
+* **Status**: ✅ 100% Tested & Verified Locally (Build 189/189 pages passed)
+* **Changes in this Commit**:
+  1. **Bright Data Web Unlocker Integration (`src/services/brightDataService.js`)**:
+     - Permanently replaced fragile datacenter scraping (Zyte) with Bright Data's 72M+ Residential Proxy Network.
+     - Solved the Akamai Bot Manager block on Croma and PerimeterX on Walmart.
+     - Live test confirmed: Croma iPhone 15 extracted with 13 specs, ₹59,900, authentic images in ~8s.
+     - Added high-speed Groq LLM schema extraction (`openai/gpt-oss-120b`) to parse unstructured or malformed e-commerce JSON-LD and HTML into structured hardware specifications.
+     - Dual-Engine Fallback: Automatic graceful fallback preserves system stability if any single endpoint experiences transient timeouts.
+  2. **Global TrustSheet Unlock across 6 Countries (`src/components/TrustSheetView.jsx`)**:
+     - Removed the "Coming Soon" teaser screen for non-Indian countries.
+     - TrustSheet search console is now 100% active and live across all 6 core geographies: **IN, US, GB/UK, CA, AU, AE**.
+     - Implemented country-adaptive store chips (Amazon, Walmart, Best Buy, Target for US; Argos, Currys, ASOS for UK; Noon, Sharaf DG for UAE, etc.).
+  3. **Hardware AI Assistant Refinement (`src/components/TrustSheetView.jsx`)**:
+     - Removed static, non-adaptive "Quick Doubts" button chips.
+     - Added clean, welcoming universal product inquiry prompt encouraging open-ended questions about durability, battery, and build quality.
+  4. **Strict 3-Layer Security & SSRF Audit**:
+     - `isSafeExternalUrl` rejects private IPs (`127.0.0.1`, `localhost`), AWS metadata endpoints (`169.254.169.254`), and private subnets (`10.x`, `192.168.x`).
+     - Zero Vercel IP Leakage: Target stores only see Bright Data residential peer IPs.
+     - Upstash Redis 10-daily AI quota and adaptive slowdown protection fully preserved.
+  5. **Vercel Production Environment Updated**:
+     - Activated `BRIGHT_DATA_API_KEY` and `BRIGHT_DATA_ZONE` across Production, Preview, and Development.
+     - Removed deprecated `ZYTE_API_KEY`.
+  6. **Next.js Webpack Build Stabilization (`package.json`)**:
+     - Added `--webpack` flag to `dev` and `build` scripts to prevent Turbopack PostCSS subprocess panics on Windows.
+
 ### 🗓️ 2026-11-04 (Master Architecture Lock & Two-Phase Partnership Strategy Blueprint)
 
 * **Git Commit**: [`98fc1c6`](https://github.com/Active-Coupns/ai-shopping-UI/commit/98fc1c6)

@@ -1358,23 +1358,11 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
           </div>
         </div>
 
-        {/* Quick Suggestion Chips */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 no-scrollbar sm:flex-wrap">
-          <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 mr-1">
-            Quick Doubts:
-          </span>
-          {defaultChips.map((qChip, cIdx) => (
-            <button
-              key={cIdx}
-              type="button"
-              disabled={isAssistantLoading}
-              onClick={() => handleAskAssistant(qChip)}
-            className="px-2.5 py-1 rounded-xl text-[11px] font-semibold bg-slate-50 hover:bg-indigo-50 hover:text-indigo-700 border border-slate-200 text-slate-700 transition-all cursor-pointer disabled:opacity-50"
-          >
-            {qChip}
-          </button>
-        ))}
-      </div>
+        {/* Universal Product Inquiry Banner (Replaces static chips) */}
+        <div className="flex items-center gap-2 py-2 px-3.5 rounded-xl bg-slate-50/90 border border-slate-200/80 text-slate-600 text-[11px] font-medium leading-relaxed">
+          <Sparkles className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+          <span>Have a question about this product&apos;s real-world durability, performance, build quality, or hidden trade-offs? Ask below for an honest, spec-grounded answer.</span>
+        </div>
 
       {/* Conversation History / Output */}
       {assistantHistory.length > 0 && (
@@ -1616,85 +1604,9 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
       )}
 
       {/* ============================================================== */}
-      {/* STAGE 1: INPUT HERO CONSOLE (When on "input" phase)            */}
+      {/* STAGE 1: INPUT HERO CONSOLE (Universal Global Reality Engine)   */}
       {/* ============================================================== */}
       {phase === "input" && (
-        country && country.toUpperCase() !== "IN" ? (
-          <div className="max-w-3xl mx-auto py-10 sm:py-16 text-center animate-in fade-in duration-300">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 text-indigo-700 text-xs font-black uppercase tracking-wider mb-5 shadow-xs">
-              <Sparkles className="w-4 h-4 text-indigo-600 animate-spin-slow" />
-              <span>Expanding Globally • Arriving Soon in {countryMeta?.name || "Your Region"}</span>
-            </div>
-
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 tracking-tight mb-4 leading-tight">
-              Stop Guessing. <br className="hidden sm:inline" />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-indigo via-indigo-600 to-brand-violet">
-                The AI Product Truth Engine is Arriving Soon in {countryMeta?.name || "Global Stores"}.
-              </span>
-            </h1>
-
-            <p className="text-sm sm:text-base text-slate-600 max-w-2xl mx-auto mb-8 font-medium leading-relaxed">
-              Imagine pasting any product link from Amazon, Best Buy, or Walmart, and having our Chief Hardware AI dismantle marketing fluff, decode hidden trade-offs, reveal true daily costs, and tell you if it genuinely fits your life before you spend a single dollar.
-            </p>
-
-            {/* 3 Core Value Pill Pillars */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-left max-w-2xl mx-auto mb-8">
-              <div className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-xs space-y-1.5">
-                <div className="w-8 h-8 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold text-sm">
-                  🔍
-                </div>
-                <h4 className="text-xs font-black text-slate-900">Zero-Fluff Reality Specs</h4>
-                <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
-                  100% spec-grounded hardware truth without vendor marketing hype.
-                </p>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-xs space-y-1.5">
-                <div className="w-8 h-8 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600 font-bold text-sm">
-                  ⚖️
-                </div>
-                <h4 className="text-xs font-black text-slate-900">Buy vs. Skip Matrix</h4>
-                <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
-                  Decisive profiles: who extracts maximum value vs who will face regret.
-                </p>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-xs space-y-1.5">
-                <div className="w-8 h-8 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 font-bold text-sm">
-                  💰
-                </div>
-                <h4 className="text-xs font-black text-slate-900">True Daily Cost Waterfall</h4>
-                <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
-                  Store arbitrage, bank card discounts, and daily cost across lifespan.
-                </p>
-              </div>
-            </div>
-
-            {/* CTA: Try Live India Edition */}
-            <div className="p-6 rounded-3xl bg-gradient-to-r from-indigo-900 via-indigo-950 to-slate-900 text-white max-w-xl mx-auto text-center shadow-lg space-y-3">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold border border-emerald-500/30">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span>Currently Live in India</span>
-              </div>
-              <h3 className="text-base font-extrabold">Want to see how it works right now?</h3>
-              <p className="text-xs text-indigo-200/80 max-w-md mx-auto">
-                Our India edition is fully live with deep inspection for Flipkart, Amazon India, Croma, and brand stores.
-              </p>
-              <button
-                type="button"
-                onClick={() => {
-                  if (typeof window !== "undefined") {
-                    window.dispatchEvent(new CustomEvent("shopsmart:switch_country", { detail: { country: "IN" } }));
-                  }
-                }}
-                className="py-2.5 px-5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-black transition-all shadow-md cursor-pointer active:scale-95 inline-flex items-center gap-2"
-              >
-                <span>🇮🇳 Experience Live India Edition</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </div>
-        ) : (
         <div className="max-w-3xl mx-auto py-6 sm:py-10 text-center relative px-2 sm:px-4">
           {/* Subtle Ambient Backdrop Glows */}
           <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 sm:w-96 h-80 sm:h-96 bg-gradient-to-tr from-indigo-500/10 via-purple-500/10 to-pink-500/5 rounded-full blur-3xl pointer-events-none" />
@@ -1702,7 +1614,7 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
           {/* Top Live Badge */}
           <div className="relative inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/90 backdrop-blur-md border border-indigo-200/80 text-indigo-700 text-[11px] sm:text-xs font-bold tracking-wide mb-3 sm:mb-4 shadow-xs">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span>🇮🇳 AI E-COMMERCE REALITY CHECK • LIVE IN INDIA</span>
+            <span>{countryMeta?.flag || "🌐"} AI PRODUCT REALITY CHECK • LIVE IN {(countryMeta?.name || "Global").toUpperCase()}</span>
           </div>
 
           {/* Hero Headline (Clean & Authoritative, Zero False Time Claims) */}
@@ -1715,20 +1627,48 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
 
           {/* Punchy 1-Liner Subtitle */}
           <p className="relative text-xs sm:text-sm text-slate-600 max-w-lg mx-auto mb-4 font-medium leading-relaxed px-2">
-            Independent AI analysis of build flaws, 2-3 year durability & verified lowest prices across Indian stores.
+            Independent AI analysis of build flaws, 2-3 year durability &amp; verified lowest prices across {countryMeta?.name || "global"} stores.
           </p>
 
           {/* Interactive Supported Store Chips (Single Swipeable Row on Mobile) */}
           <div className="relative flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1 justify-start sm:justify-center mb-4 max-w-xl mx-auto px-1">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0 mr-0.5">Works With:</span>
-            {[
+            {((country || "IN").toUpperCase() === "US" ? [
+              { name: "Amazon.com", icon: "🛒" },
+              { name: "Walmart", icon: "⚡" },
+              { name: "Best Buy", icon: "📱" },
+              { name: "Target", icon: "🎯" },
+              { name: "Brand D2C", icon: "🏷️" },
+            ] : (country || "IN").toUpperCase() === "GB" || (country || "IN").toUpperCase() === "UK" ? [
+              { name: "Amazon UK", icon: "🛒" },
+              { name: "Argos", icon: "⚡" },
+              { name: "Currys", icon: "📱" },
+              { name: "ASOS", icon: "👗" },
+              { name: "Brand D2C", icon: "🏷️" },
+            ] : (country || "IN").toUpperCase() === "CA" ? [
+              { name: "Amazon.ca", icon: "🛒" },
+              { name: "Walmart CA", icon: "⚡" },
+              { name: "Best Buy CA", icon: "📱" },
+              { name: "Canadian Tire", icon: "🚗" },
+              { name: "Brand D2C", icon: "🏷️" },
+            ] : (country || "IN").toUpperCase() === "AU" ? [
+              { name: "Amazon.com.au", icon: "🛒" },
+              { name: "JB Hi-Fi", icon: "📱" },
+              { name: "Woolworths", icon: "🍎" },
+              { name: "Brand D2C", icon: "🏷️" },
+            ] : (country || "IN").toUpperCase() === "AE" ? [
+              { name: "Amazon.ae", icon: "🛒" },
+              { name: "Noon", icon: "⚡" },
+              { name: "Sharaf DG", icon: "📱" },
+              { name: "Brand D2C", icon: "🏷️" },
+            ] : [
               { name: "Amazon.in", icon: "🛒" },
               { name: "Flipkart", icon: "⚡" },
-              { name: "Myntra", icon: "👗" },
-              { name: "Nykaa", icon: "✨" },
               { name: "Croma", icon: "📱" },
+              { name: "Myntra", icon: "👗" },
+              { name: "Reliance", icon: "✨" },
               { name: "Brand D2C", icon: "🏷️" },
-            ].map((store) => (
+            ]).map((store) => (
               <span 
                 key={store.name}
                 className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/90 hover:bg-indigo-50 hover:text-indigo-700 border border-slate-200/80 text-[10px] sm:text-[11px] font-bold text-slate-600 transition-all cursor-default shadow-2xs shrink-0"
@@ -1969,7 +1909,6 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
             </div>
           </div>
         </div>
-        )
       )}
 
       {/* ============================================================== */}

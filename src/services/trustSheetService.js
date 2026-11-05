@@ -1,5 +1,5 @@
 import { redis } from "@/services/redis";
-import { extractProductWithZyte, detectCountryCode } from "@/services/zyteService";
+import { extractProductWithBrightData, detectCountryCode } from "@/services/brightDataService";
 import { executeSearchRequest, executeProductDetailsRequest, formatStoreName, parsePriceNum } from "@/services/openweb";
 import { getCouponsForStore } from "@/services/couponService";
 
@@ -527,31 +527,31 @@ export async function identifyProduct(input, country = "IN", existingProduct = n
     if (existingProduct.category) product.category = existingProduct.category;
   }
 
-  // If input is a URL, call Zyte to extract authentic product details directly from the source page
+  // If input is a URL, call Bright Data Web Unlocker to extract authentic product details directly from the source page
   if (isUrl && rawUrl) {
     try {
-      const zyteData = await extractProductWithZyte(rawUrl, { country: targetCountry });
-      if (zyteData && zyteData.success && zyteData.title) {
-        product.title = zyteData.title;
-        product.brand = zyteData.brand || "";
-        product.price = zyteData.price || "";
-        product.rawPrice = zyteData.rawPrice || null;
-        product.regularPrice = zyteData.regularPrice || "";
-        product.rawRegularPrice = zyteData.rawRegularPrice || null;
-        product.image = zyteData.image || "";
-        product.description = zyteData.description || "";
-        product.specifications = zyteData.specifications || [];
-        product.features = zyteData.features || [];
-        product.breadcrumbs = zyteData.breadcrumbs || [];
-        product.rating = zyteData.rating || null;
-        product.reviewCount = zyteData.reviewCount || null;
-        product.store = zyteData.brand || store;
+      const extractedData = await extractProductWithBrightData(rawUrl, { country: targetCountry });
+      if (extractedData && extractedData.success && extractedData.title) {
+        product.title = extractedData.title;
+        product.brand = extractedData.brand || "";
+        product.price = extractedData.price || "";
+        product.rawPrice = extractedData.rawPrice || null;
+        product.regularPrice = extractedData.regularPrice || "";
+        product.rawRegularPrice = extractedData.rawRegularPrice || null;
+        product.image = extractedData.image || "";
+        product.description = extractedData.description || "";
+        product.specifications = extractedData.specifications || [];
+        product.features = extractedData.features || [];
+        product.breadcrumbs = extractedData.breadcrumbs || [];
+        product.rating = extractedData.rating || null;
+        product.reviewCount = extractedData.reviewCount || null;
+        product.store = extractedData.brand || store;
       }
     } catch (e) {
-      console.warn("[TrustSheet] Zyte extraction error:", e.message);
+      console.warn("[TrustSheet] Extraction error:", e.message);
     }
 
-    // STRICT ZERO-FALLBACK RULE: If Zyte could not extract authentic details from this URL, FAIL HONESTLY!
+    // STRICT ZERO-FALLBACK RULE: If authentic details could not be extracted from this URL, FAIL HONESTLY!
     // Never fall back to arbitrary OpenWeb keyword searches, never substitute a smartphone or dummy data.
     if (!product.title) {
       return {

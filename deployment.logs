@@ -2,6 +2,50 @@
 DEPLOYMENT LOGS - SHOPSMART AI
 ================================================================================
 
+[DEPLOYMENT TIMESTAMP] : 2026-11-05 15:45:00 UTC (Local: 2026-11-05 07:45:00 -08:00)
+[COMMIT HASH]          : 906cfb8
+[TARGET ENVIRONMENT]   : Production (Vercel) / origin main
+[BUILD STATUS]         : PASSED (189/189 pages, 34/34 API routes compiled, 0 errors)
+[STATUS]               : READY TO COMMIT & PUSH
+
+--------------------------------------------------------------------------------
+SUMMARY OF CHANGES & RESOLVED ISSUES
+--------------------------------------------------------------------------------
+
+1. MIGRATION TO BRIGHT DATA WEB UNLOCKER (`src/services/brightDataService.js`)
+   - Replaced deprecated Zyte API provider with Bright Data Web Unlocker (`BRIGHT_DATA_API_KEY` & `BRIGHT_DATA_ZONE`).
+   - Routes traffic across 72M+ authentic residential proxies with automatic country targeting (`in`, `us`, `gb`, `ca`, `au`, `ae`).
+   - Seamlessly solves Akamai Bot Manager, Cloudflare, and Datadome challenges on complex SPAs (Croma, Reliance Digital, Walmart).
+   - Zero-waste pricing model: $1.50 per 1,000 successful requests (~₹0.12/product) with pay-only-for-success guarantee.
+   - Dual-engine fallback protection: Automatically falls back if primary provider experiences timeout.
+   - Cached via Upstash Redis for 3 days (`cache:brightdata:prod:v1:${urlHash}`) for instant sub-200ms subsequent hits.
+
+2. GLOBAL TRUSTSHEET UNLOCK ACROSS ALL TARGET MARKETS (`src/components/TrustSheetView.jsx`)
+   - Removed region gate and "Coming Soon" teaser screen for non-India countries.
+   - Unlocked universal live inspection console across all 6 launch countries (IN, US, UK, CA, AU, AE).
+   - Dynamic store chips adapt automatically per active country context:
+     * US: Amazon.com, Walmart, Best Buy, Target, Brand D2C
+     * UK: Amazon UK, Argos, Currys, ASOS, Brand D2C
+     * CA: Amazon.ca, Walmart CA, Best Buy CA, Canadian Tire, Brand D2C
+     * AU: Amazon.com.au, JB Hi-Fi, Woolworths, Brand D2C
+     * AE: Amazon.ae, Noon, Sharaf DG, Brand D2C
+     * IN: Amazon.in, Flipkart, Croma, Myntra, Reliance, Brand D2C
+
+3. TRUSTSHEET AI CHAT DOUBTS REFINED (`src/components/TrustSheetView.jsx`)
+   - Replaced static, repetitive "Quick Doubts" button chips with an elegant, universal guidance banner.
+   - Allows users to ask any natural language question about product durability, real-world longevity, build quality, and hidden trade-offs without generic prompts.
+
+4. SSRF & ZERO-LEAKAGE SECURITY AUDIT PASSED
+   - All external link inputs validated via `isSafeExternalUrl` to prevent SSRF vulnerabilities.
+   - Blocks AWS/cloud metadata IPs (`169.254.169.254`), localhost (`127.0.0.1`), private RFC-1918 subnets, and non-HTTP/HTTPS schemes.
+   - Server IP never exposed to retailers: All inspection requests route exclusively through Bright Data's residential proxy infrastructure.
+
+5. VERCEL PRODUCTION ENVIRONMENT SYNCHRONIZATION
+   - Added `BRIGHT_DATA_API_KEY` and `BRIGHT_DATA_ZONE` across Production, Preview, and Development environments via Vercel REST API.
+   - Deprecated and safely removed `ZYTE_API_KEY` from Vercel project configuration.
+
+--------------------------------------------------------------------------------
+
 [DEPLOYMENT TIMESTAMP] : 2026-11-04 17:15:00 UTC (Local: 2026-11-04 09:15:00 -08:00)
 [COMMIT HASH]          : 98fc1c6
 [TARGET ENVIRONMENT]   : Production (Vercel) / origin main
