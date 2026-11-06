@@ -25,11 +25,14 @@ ShopSmart AI is **NOT a generic coupon website**, nor a spammy affiliate blog. I
 │ • Bright Data Web Unlocker (72M+ IPs)     │ • Hotels: Agoda B2B / Hotelbeds Net Rates  │
 │ • Virtual Try-On (VTON Cloth Studio)      │ • Buses: Distribusion / Omio B2B Net Rates │
 │ • Coupons: Feedico Managed Catalog        │ • Events: Ticket Evolution Live Tickets    │
-│ • Pharmacy: Apollo 24|7 & Tata 1mg (IN)   │ • SaaS: Secret B2B Founder Credits         │
-│ • Rx Discounts: GoodRx API (US ZIP/Card)  │ • Guaranteed Cards: Blackhawk/CardCash/Raise│
-│ • Supplements: iHerb (180+ Countries)     │ • Rate Parity Legal Shield via CUG         │
-│ • Supplements: HealthKart Lab-Certified   │ • Zero In-App Payment Liability (Redirect) │
-│ • UK/CA Pharmacy: Pharmacy2U & Well.ca    │ • Full Blueprint: STRATEGY_BLUEPRINT_...   │
+│ • Pharmacy: Apollo 24|7 & Tata 1mg (IN)   │ • Guaranteed Cards: Blackhawk/CardCash/Raise│
+│ • Rx Discounts: GoodRx API (US ZIP/Card)  │ • Rate Parity Legal Shield via CUG         │
+│ • Supplements: iHerb (180+ Countries)     │ • Zero In-App Payment Liability (Redirect) │
+│ • Supplements: HealthKart Lab-Certified   │ • Full Blueprint: STRATEGY_BLUEPRINT_...   │
+│ • UK/CA Pharmacy: Pharmacy2U & Well.ca    │                                            │
+│ • Software & SaaS Savings Terminal (NEW): │                                            │
+│   - Tier 1 (Startups): Secret Credits     │                                            │
+│   - Tier 2 (Existing): NachoNacho + Vault │                                            │
 │ • Single Master Account on Impact.com     │                                            │
 └───────────────────────────────────────────┴────────────────────────────────────────────┘
 ```
@@ -37,11 +40,11 @@ ShopSmart AI is **NOT a generic coupon website**, nor a spammy affiliate blog. I
 ### 1.1. Phase 1 vs Phase 2 Core Distinction
 1. **Phase 1 (Day-1 Launch & Trust Building, Days 1–40)**:
    - Zero legal risks, zero Rate Parity concerns, immediate approval velocity.
-   - Built around the shopping search engine, spec-grounded TrustSheet powered by Bright Data Web Unlocker, VTON cloth trial, Feedico verified coupons, and **direct pharmacy/supplement partnerships** (Tata 1mg, Apollo 24|7, GoodRx, iHerb, HealthKart).
-   - High customer lifetime value (LTV) and monthly repeat orders (daily consumables and medicines).
+   - Built around the shopping search engine, spec-grounded TrustSheet powered by Bright Data Web Unlocker, VTON cloth trial, Feedico verified coupons, **direct pharmacy/supplement partnerships** (Tata 1mg, Apollo 24|7, GoodRx, iHerb, HealthKart), and **Verified SaaS & Software Savings Terminal** (Tier 1: Secret for Startups + Tier 2: NachoNacho & In-House Vault for Existing Users).
+   - High customer lifetime value (LTV) and monthly repeat orders (daily consumables, software renewals, and medicines).
 2. **Phase 2 (Wholesale B2B Expansion, Day 40 onward)**:
    - Activated after 30–40 days of verified user traffic and organic traction.
-   - High-ticket travel (Flights via Duffel, Hotels via Agoda B2B/Hotelbeds, Intercity Buses via Distribusion/Omio), Live Events (Ticket Evolution), and SaaS perks (Secret B2B).
+   - High-ticket travel (Flights via Duffel, Hotels via Agoda B2B/Hotelbeds, Intercity Buses via Distribusion/Omio), Live Events (Ticket Evolution), and Secondary Gift Card Liquidation Pools (Blackhawk/CardCash/Raise).
    - Legally shielded by the **"ShopSmart Club" 90-Day Free Pass (CUG Membership)** to bypass hotel/airline Rate Parity restrictions.
    - Reference: see [`STRATEGY_BLUEPRINT_PARTNERSHIP.md`](file:///C:/Users/ASUS/.gemini/antigravity/scratch/ai-shopping-assistant/STRATEGY_BLUEPRINT_PARTNERSHIP.md) for full operational blueprints and approval ledgers.
 

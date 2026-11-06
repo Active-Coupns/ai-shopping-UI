@@ -43,6 +43,10 @@
      - Upstash Redis 10-daily AI quota and adaptive slowdown protection fully preserved.
   5. **Vercel Production Environment Updated**:
      - Activated `BRIGHT_DATA_API_KEY` and `BRIGHT_DATA_ZONE` across Production, Preview, and Development.
+  6. **Phase 1 Software & SaaS Savings Terminal Formalized**:
+     - Upgraded from Phase 2 to Phase 1 in `STRATEGY_BLUEPRINT_PARTNERSHIP.md` and `GEMINI.md` to capture organic search intent (e.g. Canva Pro, Shopify deals).
+     - Locked Two-Tier Model: Tier 1 (New Startups) via Secret (`joinsecret.com`) for $1,000–$10,000 credits; Tier 2 (Existing Users) via NachoNacho (`nachonacho.com`) + In-House Verified Billing Codes (15%–30% instant checkout savings).
+     - User Savings prioritized as #1 objective; zero banking/fintech liability.
      - Removed deprecated `ZYTE_API_KEY`.
   6. **Next.js Webpack Build Stabilization (`package.json`)**:
      - Added `--webpack` flag to `dev` and `build` scripts to prevent Turbopack PostCSS subprocess panics on Windows.

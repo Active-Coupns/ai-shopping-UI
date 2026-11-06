@@ -18,13 +18,17 @@ To protect the business legally, avoid early regulatory friction, build verified
 ├───────────────────────────────────────────┼────────────────────────────────────────────┤
 │ • Zero Legal Friction, 100% Compliant     │ • High-Leverage B2B Wholesale Fares        │
 │ • Shopping Search & Price Comparison      │ • Closed User Group (CUG) Free Club Pass   │
-│ • Hardware AI TrustSheet (Deep Specs)     │ • Flights: Duffel NDC Net Fares            │
+│ • Hardware AI TrustSheet (Bright Data)    │ • Flights: Duffel NDC Net Fares            │
 │ • Virtual Try-On (VTON Cloth Studio)      │ • Hotels: Agoda B2B / Hotelbeds Net Rates  │
-│ • Coupons: Feedico Managed Catalog        │ • Buses: Distribusion / Omio B2B Net Rates │
+│ • Coupons: Feedico Managed Catalog (Global│ • Buses: Distribusion / Omio B2B Net Rates │
 │ • Pharmacy: Apollo 24|7 & Tata 1mg (IN)   │ • Events: Ticket Evolution Live Tickets    │
-│ • Rx Discounts: GoodRx API (US ZIP/Card)  │ • SaaS: Secret B2B Founder Credits         │
-│ • Supplements: iHerb (180+ Countries)     │ • Guaranteed Cards: Blackhawk/CardCash/Raise│
-│ • Travel/OTT: Kept in Discovery Mode      │ • Webhook + Proactive Deflection Email     │
+│ • Rx Discounts: GoodRx API (US ZIP/Card)  │ • Guaranteed Cards: Blackhawk/CardCash/Rais│
+│ • Supplements: iHerb (180+ Countries)     │ • Webhook + Proactive Deflection Email     │
+│ • Software & SaaS Savings Terminal (NEW): │                                            │
+│   - Tier 1 (Startups): Secret Credits     │                                            │
+│   - Tier 2 (Existing Users): NachoNacho   │                                            │
+│     + In-House Verified Billing Codes     │                                            │
+│ • Travel/OTT: Kept in Discovery Mode      │                                            │
 └───────────────────────────────────────────┴────────────────────────────────────────────┘
 ```
 
@@ -32,13 +36,15 @@ To protect the business legally, avoid early regulatory friction, build verified
 
 ## 2. Phase 1: Core Launch Architecture & Immediate Onboarding Partners
 
-In Phase 1, our primary objective is to launch the live domain, establish organic SEO ranking, build user trust, and generate clean affiliate revenue without middleman networks (zero Cuelinks/EarnKaro).
+In Phase 1, our primary objective is to launch the live domain, capture massive zero-cost organic search traffic (e.g. buyers actively searching for Canva Pro promo codes, Shopify deals, electronics discounts), establish verified user trust, and generate clean revenue without middleman networks (zero Cuelinks/EarnKaro).
 
 ### 2.1. Phase 1 Partner Matrix (Immediate Onboarding)
 
-| Vertical / Category | Primary Partner Platform | Network / Approval Channel | Model & User Value | ShopSmart Backend Revenue |
+| Vertical / Category | Primary Partner Platform | Network / Approval Channel | Model & User Value | ShopSmart Priority & Revenue |
 | :--- | :--- | :--- | :--- | :--- |
-| **Retail & E-commerce Coupons** | **Feedico Managed Catalog** (`api.feedico.io`) | Direct Partner (`fdco_` token) | Verified Honey-style promo codes for 48,000+ brands | 65% Revenue Share |
+| **Retail & E-commerce Coupons** | **Feedico Managed Catalog** (`api.feedico.io`) | Direct Partner (`fdco_` token) | Verified Honey-style promo codes for 48,000+ brands across 6 countries (IN, US, UK, CA, AU, AE) | 65% Revenue Share |
+| **Software Credits (Tier 1: Startups / New Accounts)** | **Secret B2B Partner Program** (`joinsecret.com`) | Free Community Partner Application ($0 cost) | $1,000–$10,000+ free cloud & SaaS credits for AWS, Stripe, HubSpot, Notion, Miro | $0 Upfront; Direct User Benefit (Primary) + Rev-Share |
+| **SaaS Subscriptions (Tier 2: Existing Active Users)** | **NachoNacho Partner API + In-House Verified Vault** (`nachonacho.com`) | Free Community Perks Partner + In-House Verified Billing Code Registry | Guaranteed 15%–30% instant billing reduction on Canva Pro, Zoom, Shopify, Hostinger, Adobe, NordVPN via Annual Switch & Billing Settings promo codes | **User Savings 1st Priority**; Zero-Liability, Zero-Fintech Hassle |
 | **Prescription Medicines (India)** | **Apollo 24|7 & Tata 1mg Direct** | Impact.com / Direct Partner Portal | **Exact prescribed branded medicine** at Flat 15%–18% off MRP (auto-applied code `SHOPSMART18`) | 3%–5% Order Commission |
 | **Prescription Discounts (US)** | **GoodRx Direct Partner API** | GoodRx Partner Portal / Impact.com | Medicine + ZIP Code lookup $\rightarrow$ Local CVS, Walgreens, Walmart comparison + Digital Rx card (20%–80% off) | Pay-Per-Claim ($2.50–$6.00/claim) |
 | **Global Supplements (180+ Countries)** | **iHerb Global Partner Program** | `iherb.com` Global Affiliate Portal | 100% Authentic lab-tested supplements (Creatine, Whey, Vitamins) with Flat 10% auto-applied discount | 5%–10% Global Rev-Share |
@@ -64,6 +70,39 @@ To prevent administrative overwhelm across multiple countries:
 * This single dashboard manages Apollo, Tata 1mg, GoodRx, Well.ca, and Pharmacy2U.
 * All global earnings across USD, GBP, CAD, and INR consolidate into one single corporate bank payout.
 
+### 2.3. Phase 1 Software & SaaS Savings Terminal (Two-Tier Architecture)
+
+To capture high-intent organic search volume (e.g. buyers searching for *"Canva Pro annual discount code"*, *"Shopify promo code"*, *"Hostinger renewal discount"*) and protect the core AI/VTON engines from expensive unmonetized GPU loads, Phase 1 integrates a dedicated **Verified SaaS & Software Savings Terminal**.
+
+#### A. Strategic Principles & User-First Priority
+1. **User Savings = 1st Priority**: Delivering a genuine, verified 15%–30% discount to the user at official checkout takes strict precedence over affiliate commission.
+2. **Zero Fintech & Zero Banking Liability**: Rejects virtual card issuance, credit card APIs, or banking license entanglements. Transactions always happen directly on the official software provider's website.
+3. **Zero Account Migration Friction**: Existing users never migrate data or delete accounts. They simply apply a verified billing code or switch plan cadences inside their existing dashboard settings.
+
+#### B. The Two-Tier Implementation Model
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│             SHOPSMART VERIFIED SOFTWARE SAVINGS ARCHITECTURE           │
+├───────────────────────────────────┬────────────────────────────────────┤
+│ TIER 1: STARTUPS & NEW ACCOUNTS   │ TIER 2: EXISTING ACTIVE SUBSCRIBERS│
+├───────────────────────────────────┼────────────────────────────────────┤
+│ • Platform: Secret (joinsecret)   │ • Platform: NachoNacho API +       │
+│ • Audience: First-time founders,  │   In-House Verified Code Vault     │
+│   fresh builders, students        │ • Audience: Active monthly payers  │
+│ • Benefit: $1,000–$10,000 credits │ • Benefit: Guaranteed 15%–30% off  │
+│   (AWS Activate, Stripe, HubSpot) │   (Canva, Zoom, Shopify, Hostinger)│
+│ • Approval: Free Community Partner│ • Approval: Community Perks Partner│
+│ • Upfront Cost: $0 (No Minimum)   │ • Upfront Cost: $0 (No Minimum)    │
+└───────────────────────────────────┴────────────────────────────────────┘
+```
+
+#### C. Exact Platforms to Join as Partner:
+1. **Secret (`joinsecret.com`)**: Join free *Community Perks Partner Program*. Delivers instant curated links for Tier 1 startups ($1,000+ AWS/Stripe credits). Zero monthly fees or volume commitments.
+2. **NachoNacho (`nachonacho.com`)**: Join free *Community & Incubator Perks Program*. Provides B2B pre-negotiated 15%–30% contractual SaaS discounts across 600+ tools for both existing and new accounts. Zero upfront cost.
+3. **ShopSmart In-House Verified Software Vault**: Hand-curated, zero-failure checkout codes for the Top 25 global tools (Canva Pro `ANNUAL20`, Zoom `SWITCH25`, Shopify $1/mo deal, Hostinger, Adobe, NordVPN) with exact 2-step billing instructions (`Settings ➔ Billing ➔ Promo Code`). Zero approval needed.
+4. **Impact.com Master Account**: Covers top enterprise SaaS brands (Canva, Shopify, Hostinger, BigCommerce, Namecheap, Semrush) under our single master publisher identity.
+
 ---
 
 ## 3. Phase 2: Wholesale Net-Rate Engine (Day 40+ Expansion)
@@ -83,7 +122,7 @@ Once the domain has 30–40 days of continuous operation, clean Google indexing,
 | **Events, Concerts & Comedy** | **Ticket Evolution API** | Ticket Evolution B2B Network | 🟡 Moderate (Developer Application) | $0 (Wholesale access) | Headless ticket broker inventory, white-label seat picker |
 | **Attractions & Theme Parks** | **Viator / Tiqets Partner API** | Tripadvisor Viator Partner API | 🟢 Fast Track | $0 (No minimum) | Instant digital barcode pass, 8%–10% rev-share |
 | **Intercity Buses & Rail** | **Distribusion API / Omio B2B** | `distribusion.com` / `omio.com/b2b` | 🟢 Developer Fast Track | $0 (Wholesale B2B) | Wholesale Net Fare API (0% markup passed to user; Europe/NA) |
-| **Software, SaaS & Cloud** | **Secret B2B Partner Network** | `joinsecret.com` Partner Program | 🟢 Fast | $0 (No minimum) | $1,000+ credits for AWS, Notion, Stripe; 30% user savings |
+| **Software, SaaS & Cloud (Advanced B2B Seats)** | **NachoNacho + Secret Partner Networks** | Fast-Track Partner Portal | 🟢 Fast | $0 (No minimum) | Phase 1 active; Phase 2 expands to wholesale agency seat pooling |
 
 ---
 
@@ -189,13 +228,18 @@ To ensure 100% legal immunity against Rate Parity lawsuits, hotel/airline cease-
     ├── Step 1.1: Register Master Publisher Account on Impact.com
     │   ├── Apply to: Tata 1mg & Apollo 24|7 (India Pharmacy)
     │   ├── Apply to: GoodRx (US Prescription Discounts)
-    │   └── Apply to: Pharmacy2U (UK) & Well.ca (Canada)
+    │   ├── Apply to: Pharmacy2U (UK) & Well.ca (Canada)
+    │   └── Apply to: Enterprise SaaS (Canva, Shopify, Hostinger, Namecheap)
     ├── Step 1.2: Register Global Partner Account on iHerb (`iherb.com`)
     │   └── Unlocks instant 10% auto-applied supplement discount across 180+ countries
     ├── Step 1.3: Apply to HealthKart Direct Partner Program
     │   └── Authentic lab-certified Indian fitness nutrition (Flat 10%-15% checkout discount)
-    └── Step 1.4: Complete Feedico Domain Verification (`feedico.io`)
-        └── Retrieve `fdco_` production Bearer token for live 48,000+ brand coupon catalog
+    ├── Step 1.4: Complete Feedico Domain Verification (`feedico.io`)
+    │   └── Retrieve `fdco_` production Bearer token for live 48,000+ brand coupon catalog
+    ├── Step 1.5: Join Secret Community Perks Program (`joinsecret.com`)
+    │   └── Free community partner status for Tier 1 startups ($1,000+ AWS/Stripe credits)
+    └── Step 1.6: Join NachoNacho Community Partner Program (`nachonacho.com`)
+        └── B2B perks access for Tier 2 existing active subscriptions (15%–30% off Canva, Zoom, etc.)
 
 [ ] PHASE 2: B2B WHOLESALE ONBOARDING (DAY 40 ONWARD - POST REPUTATION BUILD)
     ├── Step 2.1: Register Duffel Developer Account (`duffel.com`)
@@ -206,8 +250,8 @@ To ensure 100% legal immunity against Rate Parity lawsuits, hotel/airline cease-
     │   └── Connect 500+ European & North American coach operators
     ├── Step 2.4: Apply to Ticket Evolution B2B Network
     │   └── Access live sports, Broadway, and concert broker inventory
-    └── Step 2.5: Apply to Secret B2B Partner Program (`joinsecret.com`)
-        └── Unlock SaaS and founder cloud credits ($1,000+ per deal)
+    └── Step 2.5: Connect Guaranteed Discount Card Networks (Blackhawk / CardCash / Raise)
+        └── Unlock secondary gift card liquidation pool (2%–15% off retail)
 ```
 
 ---

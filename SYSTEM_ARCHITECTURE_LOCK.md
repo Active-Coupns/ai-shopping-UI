@@ -83,7 +83,7 @@ The entire user journey must consume **at most 2 external API calls** to RapidAP
   - Governs all external AI and scrape API calls across the platform using Upstash Redis sliding window counters (`unified:ai_quota:<user_id>:<YYYY-MM-DD>`).
   - Standardized daily limit: **10 AI operations** resetting daily at 12:00 AM IST.
 - **Operations That Consume Credits**:
-  1. Live Retail Product Search (`/api/search` via OpenWeb Ninja / Zyte) = 1 credit.
+  1. Live Retail Product Search (`/api/search` via OpenWeb Ninja / Bright Data) = 1 credit.
   2. Travel AI Itinerary Advisor (`/api/travel/advisor` via Gemini 2.5 Flash) = 1 credit.
   3. AI Hardware Trust Sheet 1-Shot Dossier Generation (`/api/trust-sheet` action `direct`/`generate` via Groq Qwen 2.5 / OpenAI GPT-OSS with OpenRouter fallback) = 1 credit (fresh live generation only; Redis cache hit = 0 credits).
 - **Operations Exempt from Credit Deduction (0 Credits - Unmetered)**:
