@@ -78,19 +78,25 @@ The entire user journey must consume **at most 2 external API calls** to RapidAP
     - **Product Search & Comparison (`ProductCard.jsx`, `page.js`)**: Search bar submission, Price Drop Alert bell icon, and "Compare Live Across 4 Stores" require sign-in.
     - **AI Hardware Trust Sheet (`TrustSheetView.jsx`)**: Product URL verification, Dossier generation, and Hardware Engineer Assistant chat require sign-in.
 
-### 5.2 Unified 10-Daily AI Credit Quota Engine
-- **Centralized Metering Utility (`checkUnifiedApiQuota({ limit: 10 })`)**:
-  - Governs all external AI and scrape API calls across the platform using Upstash Redis sliding window counters (`unified:ai_quota:<user_id>:<YYYY-MM-DD>`).
-  - Standardized daily limit: **10 AI operations** resetting daily at 12:00 AM IST.
+### 5.2 Universal Server-Side Credit Vault & 10-Daily AI Quota Engine
+- **Centralized Universal Credit Vault (`src/services/universalCreditVault.js` & `checkUnifiedApiQuota`)**:
+  - Serves as the single immutable authority across all platform endpoints.
+  - Enforces a standardized daily ceiling of **10 AI operations** resetting automatically every midnight (every 24 hours).
+  - Executed via atomic Upstash Redis Lua script (`ATOMIC_RATE_LIMIT_LUA`) with key `quota:universal_vault:<sha256_id>:<YYYY-MM-DD>`.
+  - Tri-layered identity anchor: Clerk `userId` (authenticated) + Client IP (`x-real-ip` / `cf-connecting-ip`) + Hardware Device Fingerprint (`hw_...`).
+  - Strict **zero client authority**: Client UI is strictly read-only and cannot increment or forge credits.
 - **Operations That Consume Credits**:
   1. Live Retail Product Search (`/api/search` via OpenWeb Ninja / Bright Data) = 1 credit.
   2. Travel AI Itinerary Advisor (`/api/travel/advisor` via Gemini 2.5 Flash) = 1 credit.
   3. AI Hardware Trust Sheet 1-Shot Dossier Generation (`/api/trust-sheet` action `direct`/`generate` via Groq Qwen 2.5 / OpenAI GPT-OSS with OpenRouter fallback) = 1 credit (fresh live generation only; Redis cache hit = 0 credits).
 - **Operations Exempt from Credit Deduction (0 Credits - Unmetered)**:
-  - Cache hits (products loaded from Redis or in-memory).
+  - Cache hits (`isCacheHit: true`): products, specs, and comparisons loaded from Redis or memory cost 0 credits.
   - Browsing existing scraped coupons and revealing codes.
   - Viewing catalog OTT plans and bundled telecom matrices.
   - Browsing curated flights, hotel deals, and booking strategy guides.
+  - User balance inspection (`UniversalCreditVault.getRemaining`) for Account modal.
+- **Quota Reached UI (`QuotaModal.jsx`)**:
+  - Global English error modal alerting users when all 10 operations have been used, highlighting the midnight reset and unrestricted access to store coupons and deals.
 - **Virtual Try-On Isolation**:
   - VTON remains on its dedicated **3 lifetime free trials** policy per device/account.
   - Enforced via SHA-256 hardware fingerprints and IP-level abuse detectors in Redis (`vton:free_quota:account_lifetime:<id>`).

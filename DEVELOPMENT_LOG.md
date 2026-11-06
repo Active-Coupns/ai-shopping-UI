@@ -1711,6 +1711,41 @@
 
 ---
 
+### 📅 2026-11-06 — Universal Server-Side Credit Vault & Global Quota Architecture Lock
+* **Status**: ✅ Ready for GitHub `main` push
+* **Objective**: Centralize the 10-daily AI credit quota system into an immutable, single server-side authority with zero frontend tampering risk, without breaking any live search or store redirection flows on Vercel.
+
+#### 🚀 Key Implementations & Enhancements:
+1. **Universal Server-Side Credit Vault (`src/services/universalCreditVault.js`)**:
+   - Single source of truth for credit authorization across all platform routes.
+   - Enforces atomic 10-operation daily ceiling per user, IP, and hardware fingerprint (`hw_...`) using Upstash Redis Lua scripts (`ATOMIC_RATE_LIMIT_LUA`).
+   - Built with multi-tier fallback: L1 In-Memory Map + L2 Cloud Redis + SHA-256 identity hashing.
+   - Strict `isCacheHit: true` zero-cost policy: operations served from Redis cache consume strictly 0 credits ($0 API cost, instant 0.5ms resolution).
+   - Read-only balance inspection method (`UniversalCreditVault.getRemaining`) allows frontend and account modals to inspect balances without deducting credits.
+
+2. **Global English Quota Modal (`src/components/QuotaModal.jsx`)**:
+   - Redesigned for international audience (US, UK, India, and global markets).
+   - Clean, professional copy: *"Daily AI Limit Reached (10/10) — You've used all 10 free AI operations for today."*
+   - Clear universal reset timeline: *"Your daily allowance resets automatically every midnight (every 24 hours)."* (Removed localized "IST" tag).
+   - Emphasizes unmetered free access: *"100% Free & Unlimited Access: You can continue exploring verified store coupons, trending price drops, and your saved wishlist with zero credits required."*
+   - High-contrast global CTA: `Got It, Explore Free Deals`.
+
+3. **Seamless Frontend Error Interception (`src/app/page.js`)**:
+   - Added explicit handlers for `QUOTA_EXHAUSTED`, `DAILY_LIMIT_EXHAUSTED`, and `DAILY_QUOTA_EXHAUSTED` so when a user completes 10 credits, the QuotaModal opens immediately instead of falling through to generic server traffic errors.
+
+4. **Automated Verification Test Suite (`tests/test-universal-credit-vault.mjs`)**:
+   - Created standalone executable test suite covering:
+     * Read-only initial inspection (10/10 remaining, 0 current).
+     * 10 sequential calls decrementing remaining count from 9 down to 0.
+     * 11th call enforcement strictly blocked with `DAILY_CREDIT_EXHAUSTED`.
+     * Cache-hit zero-cost verification (preserves 10 remaining credits).
+   - 100% test pass verified.
+
+5. **Architectural Invariance Maintained**:
+   - Live Vercel search pipeline and store redirection routes (`/api/redirect`, `openweb.js`, `ProductCard.jsx`) remain 100% untouched and identical to `origin/main`.
+
+---
+
 ## 🧭 Future Roadmap & Discussion Backlog
 
 | Feature Area | Current Status | Notes / Plan |

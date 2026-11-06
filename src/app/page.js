@@ -641,7 +641,7 @@ export default function Home() {
       }
     } catch (err) {
       console.error("Local search API request failed:", err);
-      if (err.message?.includes("403") || err.message?.includes("QuotaReached")) {
+      if (err.message?.includes("403") || err.message?.includes("QuotaReached") || err.message?.includes("QUOTA_EXHAUSTED") || err.message?.includes("DAILY_LIMIT_EXHAUSTED") || err.message?.includes("DAILY_QUOTA_EXHAUSTED")) {
         setSearchesLeft(0);
         setIsQuotaOpen(true);
       } else if (err.message?.includes("401") || err.message?.includes("Unauthorized")) {

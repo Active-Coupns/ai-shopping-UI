@@ -41,17 +41,23 @@ export default function QuotaModal({ isOpen, onClose }) {
         </div>
 
         {/* Content */}
-        <h3 className="text-lg font-bold text-white mb-2">Daily AI Limit Reached 🎯</h3>
-        <p className="text-xs text-slate-300 leading-relaxed mb-6">
-          You have used all 10 unified daily AI operations for today. Your daily quota resets every midnight at 12:00 AM IST. In the meantime, you can freely explore all store coupons, travel deals, and OTT subscriptions!
+        <h3 className="text-lg font-bold text-white mb-2">Daily AI Limit Reached (10/10)</h3>
+        <p className="text-xs text-slate-300 leading-relaxed mb-4">
+          You&apos;ve used all 10 free AI operations for today. Your daily allowance resets automatically every midnight (every 24 hours).
         </p>
+        <div className="p-3 mb-6 rounded-xl bg-slate-800/60 border border-slate-700/50 text-left">
+          <p className="text-[11px] font-semibold text-brand-violet mb-1">🏷️ 100% Free &amp; Unlimited Access</p>
+          <p className="text-[11px] text-slate-400 leading-snug">
+            You can continue exploring verified store coupons, trending price drops, and your saved wishlist with zero credits required.
+          </p>
+        </div>
 
         {/* CTA */}
         <button
           onClick={onClose}
           className="w-full py-2.5 rounded-xl bg-gradient-to-r from-brand-indigo to-brand-violet text-xs font-semibold text-white transition-all shadow-md active:scale-95 cursor-pointer hover:from-brand-indigo/90 hover:to-brand-violet/90"
         >
-          Got It, Thanks!
+          Got It, Explore Free Deals
         </button>
       </motion.div>
     </div>

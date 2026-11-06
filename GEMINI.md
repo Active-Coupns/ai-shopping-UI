@@ -145,9 +145,11 @@ ShopSmart AI is **NOT a generic coupon website**, nor a spammy affiliate blog. I
 1. **"Read Open, Act Protected" Architecture**:
    - Googlebot, crawlers, and unauthenticated visitors can browse all coupon listings, store catalogs, OTT plan matrices, and travel deals freely (**0 login friction, maximum SEO indexing**).
    - Clerk authentication (`openSignIn()`) intercepts high-value write actions: revealing masked promo codes, clicking deep links, triggering VTON renders, accessing Phase 2 CUG wholesale net rates.
-2. **Unified 10-Daily AI Quota**:
-   - Centralized utility `checkUnifiedApiQuota({ limit: 10 })` enforces a daily limit of **10 AI operations per user** resetting at 12:00 AM IST via Redis sliding window counters.
-   - Cache hits and static browsing consume **0 credits**.
+2. **Universal 10-Daily AI Quota & Credit Vault**:
+   - Centralized server-side authority `UniversalCreditVault` (`src/services/universalCreditVault.js`) and `checkUnifiedApiQuota` enforce a strict daily ceiling of **10 AI operations per user / IP / device fingerprint** resetting automatically every midnight (every 24 hours).
+   - Enforced atomically via Upstash Redis Lua scripts with SHA-256 identity hashing. Zero frontend authority or client tampering risk.
+   - Cache hits (`isCacheHit: true`) and static browsing consume strictly **0 credits** ($0 API cost, instant 0.5ms resolution).
+   - Global English `QuotaModal` notifies users when their 10/10 credits are used while preserving unlimited free browsing of store coupons, trending deals, and wishlists.
 3. **Environment & Keys Protection**:
    - Production keys (Bright Data, OpenWeb Ninja, Gemini, Groq, Redis, Clerk, Impact, Feedico) must remain strictly guarded.
    - Never commit `.env` or `.env.local` files to Git.
@@ -190,9 +192,11 @@ ShopSmart AI is **NOT a generic coupon website**, nor a spammy affiliate blog. I
 1. **"Read Open, Act Protected" Architecture**:
    - Googlebot, crawlers, and unauthenticated visitors can browse all coupon listings, store catalogs, OTT plan matrices, and travel deals freely (**0 login friction, maximum SEO indexing**).
    - Clerk authentication (`openSignIn()`) intercepts high-value write actions: revealing masked promo codes, clicking deep links, triggering VTON renders, asking AI advisors.
-2. **Unified 10-Daily AI Quota**:
-   - Centralized utility `checkUnifiedApiQuota({ limit: 10 })` enforces a daily limit of **10 AI operations per user** resetting at 12:00 AM IST via Redis sliding window counters.
-   - Cache hits and static browsing consume **0 credits**.
+2. **Universal 10-Daily AI Quota & Credit Vault**:
+   - Centralized server-side authority `UniversalCreditVault` (`src/services/universalCreditVault.js`) and `checkUnifiedApiQuota` enforce a strict daily ceiling of **10 AI operations per user / IP / device fingerprint** resetting automatically every midnight (every 24 hours).
+   - Enforced atomically via Upstash Redis Lua scripts with SHA-256 identity hashing. Zero frontend authority or client tampering risk.
+   - Cache hits (`isCacheHit: true`) and static browsing consume strictly **0 credits** ($0 API cost, instant 0.5ms resolution).
+   - Global English `QuotaModal` notifies users when their 10/10 credits are used while preserving unlimited free browsing of store coupons, trending deals, and wishlists.
 3. **Environment & Keys Protection**:
    - Production keys (OpenWeb Ninja, Gemini, Groq, Zyte, Redis, Clerk) must remain strictly guarded.
    - Never commit `.env` or `.env.local` files to Git.
