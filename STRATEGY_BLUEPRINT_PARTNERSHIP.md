@@ -42,7 +42,7 @@ In Phase 1, our primary objective is to launch the live domain, capture massive 
 
 | Vertical / Category | Primary Partner Platform | Network / Approval Channel | Model & User Value | ShopSmart Priority & Revenue |
 | :--- | :--- | :--- | :--- | :--- |
-| **Retail & E-commerce Coupons** | **Feedico Managed Catalog** (`api.feedico.io`) | Direct Partner (`fdco_` token) | Verified Honey-style promo codes for 48,000+ brands across 6 countries (IN, US, UK, CA, AU, AE) | 65% Revenue Share |
+| **Retail, Food, Cab & OTT Coupons** | **Feedico Managed Catalog** (`api.feedico.io`) | Direct Partner (`fdco_` token) | Verified Honey-style promo codes & tracking deep-links for 48,000+ brands (Amazon, Zomato, Swiggy, Uber, Disney+, Spotify, Paramount+) across 6 countries (IN, US, UK, CA, AU, AE) | $0 Deposit / Zero Liability; 65% Rev-Share |
 | **Software Credits (Tier 1: Startups / New Accounts)** | **Secret B2B Partner Program** (`joinsecret.com`) | Free Community Partner Application ($0 cost) | $1,000–$10,000+ free cloud & SaaS credits for AWS, Stripe, HubSpot, Notion, Miro | $0 Upfront; Direct User Benefit (Primary) + Rev-Share |
 | **SaaS Subscriptions (Tier 2: Existing Active Users)** | **NachoNacho Partner API + In-House Verified Vault** (`nachonacho.com`) | Free Community Perks Partner + In-House Verified Billing Code Registry | Guaranteed 15%–30% instant billing reduction on Canva Pro, Zoom, Shopify, Hostinger, Adobe, NordVPN via Annual Switch & Billing Settings promo codes | **User Savings 1st Priority**; Zero-Liability, Zero-Fintech Hassle |
 | **Prescription Medicines (India)** | **Apollo 24|7 & Tata 1mg Direct** | Impact.com / Direct Partner Portal | **Exact prescribed branded medicine** at Flat 15%–18% off MRP (auto-applied code `SHOPSMART18`) | 3%–5% Order Commission |
@@ -102,6 +102,34 @@ To capture high-intent organic search volume (e.g. buyers searching for *"Canva 
 2. **NachoNacho (`nachonacho.com`)**: Join free *Community & Incubator Perks Program*. Provides B2B pre-negotiated 15%–30% contractual SaaS discounts across 600+ tools for both existing and new accounts. Zero upfront cost.
 3. **ShopSmart In-House Verified Software Vault**: Hand-curated, zero-failure checkout codes for the Top 25 global tools (Canva Pro `ANNUAL20`, Zoom `SWITCH25`, Shopify $1/mo deal, Hostinger, Adobe, NordVPN) with exact 2-step billing instructions (`Settings ➔ Billing ➔ Promo Code`). Zero approval needed.
 4. **Impact.com Master Account**: Covers top enterprise SaaS brands (Canva, Shopify, Hostinger, BigCommerce, Namecheap, Semrush) under our single master publisher identity.
+
+### 2.4. Feedico, Retail Coupons & OTT/Entertainment: 5 Golden Execution Rules
+
+To capture massive organic search intent across e-commerce, food delivery (Zomato, Swiggy), ride-hailing (Uber), and OTT/entertainment subscriptions (Disney+, Spotify, Paramount+, Apple TV) without incurring any financial, inventory, or payment gateway liability, ShopSmart enforces **5 Golden Rules** for coupon and subscription deals:
+
+1. **Strictly Active & Valid Codes (Zero Dead/Expired Code Spam)**:
+   - Feedico delivers 48,000+ brand deals, but ShopSmart strictly filters out obsolete, stale, or expired codes.
+   - Users are never frustrated by fake 80% off "clickbait" codes. Every code displayed must be currently redeemable.
+
+2. **Transparent Condition Badges (No Hidden Traps)**:
+   - Every coupon card clearly displays explicit prerequisite tags before the user copies it:
+     - **User Eligibility**: `All Users` vs `New Users Only`.
+     - **Cart Minimums**: `Min Order: ₹999` / `Min Spend: $25`.
+     - **Payment/Card Restrictions**: `HDFC Bank Only`, `PayPal Only`, `UPI Exclusive`.
+   - Prevents cart abandonment and guarantees trust when the user reaches official checkout.
+
+3. **SEO-Optimized Coupon Density (3 to 5 Verified Offers per Brand)**:
+   - To dominate Google organic search (e.g., *"Zomato coupon code"*, *"Disney+ discount promo"*, *"Uber first ride coupon"*) and maximize SEO indexing, each brand page maintains a healthy catalog of **3 to 5 distinct, high-value offers** (e.g., 1 New User deal, 1 All-User sitewide discount, 1 Minimum Cart Value voucher, 1 Bank/Payment method offer).
+   - Brand pages are never left empty or thin, giving search engines deep structured data while giving shoppers multiple valid choices.
+
+4. **Automated Daily Sync & Midnight Pruning**:
+   - Automated server-side worker runs a delta sync with Feedico API every 24 hours.
+   - Nightly automated cron job at 12:00 AM (midnight) purges expired promos and updates new discount values into Redis/database cache, keeping the catalog ultra-fast and permanently fresh.
+
+5. **Community-Driven Health Guard (Honey-Style Live Feedback & Quarantine)**:
+   - Each coupon card features lightweight, 1-click user verification pills: `👍 Worked` / `👎 Expired`.
+   - **Automated Quarantine Threshold**: If any code accumulates 3 consecutive negative votes, it is immediately quarantined from search results until refreshed by Feedico sync or human verification.
+   - **Zero-Liability Deep-Linking**: 1-click flow copies promo code to clipboard and deep-links directly via Feedico's tracking URL to the merchant's official cart, keeping ShopSmart 100% free of checkout or refund liability.
 
 ---
 
