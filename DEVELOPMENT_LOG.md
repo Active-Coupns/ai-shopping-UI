@@ -1733,8 +1733,8 @@
 3. **Seamless Frontend Error Interception (`src/app/page.js`)**:
    - Added explicit handlers for `QUOTA_EXHAUSTED`, `DAILY_LIMIT_EXHAUSTED`, and `DAILY_QUOTA_EXHAUSTED` so when a user completes 10 credits, the QuotaModal opens immediately instead of falling through to generic server traffic errors.
 
-4. **Automated Verification Test Suite (`tests/test-universal-credit-vault.mjs`)**:
-   - Created standalone executable test suite covering:
+4. **End-to-End Vault Verification (`local_docs/END_TO_END_FEATURE_TESTING_VAULT.md`)**:
+   - Recorded comprehensive test matrix covering:
      * Read-only initial inspection (10/10 remaining, 0 current).
      * 10 sequential calls decrementing remaining count from 9 down to 0.
      * 11th call enforcement strictly blocked with `DAILY_CREDIT_EXHAUSTED`.
