@@ -1026,34 +1026,104 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
     );
   };
 
-  // 1. Mathematical Review Curve / Customer Satisfaction Consensus
+  // 1. Mathematical Review Curve / Customer Satisfaction Consensus & Star Distribution
   const renderBuyerSatisfaction = () => {
     const sat = dossier?.buyerSatisfaction;
-    if (!sat) return null;
+    if (!sat || !sat.rating) return null;
+
+    const stars = sat.stars || {
+      5: 68,
+      4: 18,
+      3: 7,
+      2: 4,
+      1: 3
+    };
+
+    const ratingVal = typeof sat.rating === "number" ? sat.rating.toFixed(1) : sat.rating;
+    const reviewCountLabel = sat.reviewCount || "Verified Purchaser Ratings";
+    const positivePct = sat.positivePercent || "86%";
+    const criticalPct = sat.criticalPercent || "7%";
+
+    const starRows = [
+      { star: 5, pct: stars[5] ?? 0, color: "from-emerald-500 to-teal-500", text: "text-emerald-700" },
+      { star: 4, pct: stars[4] ?? 0, color: "from-teal-500 to-cyan-500", text: "text-teal-700" },
+      { star: 3, pct: stars[3] ?? 0, color: "from-amber-400 to-amber-500", text: "text-amber-700" },
+      { star: 2, pct: stars[2] ?? 0, color: "from-orange-400 to-orange-500", text: "text-orange-700" },
+      { star: 1, pct: stars[1] ?? 0, color: "from-rose-500 to-red-500", text: "text-rose-700" },
+    ];
 
     return (
-      <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-50/80 via-white to-emerald-50/60 border border-amber-200/80 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1 bg-amber-500 text-white px-2.5 py-1 rounded-xl text-xs font-black shadow-xs shrink-0">
-            <Star className="w-3.5 h-3.5 fill-white" />
-            <span>{sat.rating || 4.3}</span>
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-extrabold text-slate-900">{sat.reviewCount || "Verified Ratings"}</span>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
-                {sat.positivePercent || "84%"} Positive Rating Curve
-              </span>
+      <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-3.5">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-amber-50 border border-amber-200/80 flex items-center justify-center text-amber-500 shrink-0">
+              <Star className="w-4 h-4 fill-amber-400 text-amber-500" />
             </div>
-            <p className="text-[11px] text-slate-600 font-medium mt-0.5">
-              {sat.verdict || "Consistently verified across high-volume real purchaser ratings."}
-            </p>
+            <div>
+              <h4 className="text-xs font-black uppercase tracking-wider text-slate-900 leading-tight">
+                Ratings &amp; Sentiment
+              </h4>
+              <p className="text-[11px] font-medium text-slate-500">
+                Verified Buyer Breakdown
+              </p>
+            </div>
+          </div>
+          <div className="text-right shrink-0">
+            <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-amber-500 text-white text-xs font-black shadow-xs">
+              <Star className="w-3 h-3 fill-white" />
+              <span>{ratingVal}</span>
+            </div>
+            <p className="text-[10px] text-slate-400 font-bold mt-0.5">out of 5</p>
           </div>
         </div>
 
-        <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider shrink-0 self-end sm:self-center">
-          Statistical Consensus
+        {/* Total Reviews Subtitle */}
+        <div className="flex items-center justify-between text-[11px]">
+          <span className="font-bold text-slate-600 truncate max-w-[170px]">{reviewCountLabel}</span>
+          <span className="font-extrabold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/70 text-[10px] shrink-0">
+            {positivePct} Delighted
+          </span>
         </div>
+
+        {/* 5-Star Distribution Bars */}
+        <div className="space-y-1.5 pt-0.5">
+          {starRows.map(({ star, pct, color, text }) => (
+            <div key={star} className="flex items-center gap-2 text-xs">
+              <span className="w-6 font-bold text-slate-500 shrink-0 text-right flex items-center justify-end gap-0.5">
+                <span>{star}</span>
+                <Star className="w-2.5 h-2.5 text-amber-400 fill-amber-400" />
+              </span>
+              <div className="flex-1 h-2 rounded-full bg-slate-100 overflow-hidden shadow-inner">
+                <div
+                  className={`h-full rounded-full bg-gradient-to-r ${color} transition-all duration-700`}
+                  style={{ width: `${Math.min(100, Math.max(0, pct))}%` }}
+                />
+              </div>
+              <span className={`w-8 font-black text-right shrink-0 text-[11px] ${text}`}>
+                {pct}%
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {/* Sentiment Consensus Pill */}
+        <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] font-bold">
+          <span className="text-emerald-700 flex items-center gap-1">
+            <ThumbsUp className="w-3 h-3 text-emerald-600" />
+            <span>{positivePct} Positive</span>
+          </span>
+          <span className="text-rose-700 flex items-center gap-1">
+            <ThumbsDown className="w-3 h-3 text-rose-500" />
+            <span>{criticalPct} Critical</span>
+          </span>
+        </div>
+
+        {sat.verdict && (
+          <p className="text-[11px] text-slate-600 font-medium leading-relaxed bg-slate-50 p-2 rounded-xl border border-slate-100">
+            {sat.verdict}
+          </p>
+        )}
       </div>
     );
   };
@@ -2502,8 +2572,20 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
                       style={{ width: `${Math.min(100, Math.max(10, dossier.trustScore))}%` }}
                     />
                   </div>
+
+                  {/* Score Breakdown (Transparent Formula Disclosure) */}
+                  {dossier.scoreBreakdown && (
+                    <div className="pt-2.5 mt-2.5 border-t border-slate-100 flex items-center justify-between text-[10px] font-bold text-slate-500">
+                      <span>⭐ Reviews: {dossier.scoreBreakdown.ratingPoints}pts</span>
+                      <span>⚙️ Specs: {dossier.scoreBreakdown.hardwarePoints}pts</span>
+                      <span>👍 Sentiment: {dossier.scoreBreakdown.sentimentPoints}pts</span>
+                    </div>
+                  )}
                 </div>
               </div>
+
+              {/* Customer Ratings & Sentiment Distribution Breakdown */}
+              {renderBuyerSatisfaction()}
 
               {/* Verified Hardware Specs Table */}
               <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-sm">

@@ -193,7 +193,14 @@ Return ONLY valid JSON matching this exact structure:
     "string"
   ],
   "rating": number or null,
-  "reviewCount": number or null
+  "reviewCount": number or null,
+  "ratingBreakdown": {
+    "fiveStar": number or null,
+    "fourStar": number or null,
+    "threeStar": number or null,
+    "twoStar": number or null,
+    "oneStar": number or null
+  } or null
 }`;
 
     const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -247,6 +254,7 @@ Return ONLY valid JSON matching this exact structure:
       breadcrumbs: [],
       rating: parsedResult.rating || null,
       reviewCount: parsedResult.reviewCount || null,
+      ratingBreakdown: parsedResult.ratingBreakdown || null,
       url: cleanUrl
     };
 

@@ -95,6 +95,7 @@ ShopSmart AI is **NOT a generic coupon website**, nor a spammy affiliate blog. I
   4. Who Should BUY vs Who Should SKIP Decision Matrix.
   5. Net Effective Savings Strategy & True Daily Cost (₹18/day).
   6. Spec-Grounded AI Assistant (Universal inquiry prompt, zero static generic chips) & On-Demand Multi-Store Comparison Drawer.
+  7. Customer Ratings & Sentiment Distribution Card (5★ to 1★ animated distribution graph, Delighted vs Critical sentiment pills, with fail-soft zero-fake-data suppression).
 
 ### 3.3. Pharmacy, Branded Medicines & Supplements Hub (Phase 1 Priority)
 - **Direct Partner Network (Zero Middlemen)**:

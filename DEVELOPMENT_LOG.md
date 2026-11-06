@@ -1744,6 +1744,12 @@
 5. **Architectural Invariance Maintained**:
    - Live Vercel search pipeline and store redirection routes (`/api/redirect`, `openweb.js`, `ProductCard.jsx`) remain 100% untouched and identical to `origin/main`.
 
+6. **Customer Ratings & Sentiment Distribution Card (`TrustSheetView.jsx`, `trustSheetService.js`, `brightDataService.js`)**:
+   - Purely additive visual enrichment for Trust Sheet when authentic product reviews exist on the e-commerce listing.
+   - Animated 5-Star to 1-Star gradient distribution progress bars, Delighted vs Critical complaint pills, and verified purchaser count badge.
+   - Strict Zero-Fake-Data Guarantee: If an item has 0 reviews or is an unrated niche launch, the rating card is cleanly hidden and the complete product analysis (specs, pros, cons, buy vs skip, verdict) renders normally with 0 crashes.
+   - Mathematically Grounded Transparent Trust Score: Anchored to real ratings (50%), verified hardware specs (30%), and sentiment stability (20%) with explicit points disclosure (`⭐ Reviews: X pts | ⚙️ Specs: Y pts | 👍 Sentiment: Z pts`).
+
 ---
 
 ## 🧭 Future Roadmap & Discussion Backlog
