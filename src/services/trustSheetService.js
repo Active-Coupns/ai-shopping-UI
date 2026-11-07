@@ -294,7 +294,7 @@ export function validateECommerceUrl(rawUrl = "") {
   if (parts.length > 0) {
     const rootName = parts[0];
     store = rootName.charAt(0).toUpperCase() + rootName.slice(1);
-    if (cleanHost.includes("amazon")) store = cleanHost.includes(".co.uk") ? "Amazon UK" : cleanHost.includes(".in") ? "Amazon India" : cleanHost.includes(".com") ? "Amazon US" : "Amazon";
+    if (cleanHost.includes("amazon")) store = cleanHost.includes(".co.uk") ? "Amazon UK" : cleanHost.includes(".in") ? "Amazon.in" : cleanHost.includes(".com") ? "Amazon US" : "Amazon";
     else if (cleanHost.includes("flipkart")) store = "Flipkart";
     else if (cleanHost.includes("myntra")) store = "Myntra";
     else if (cleanHost.includes("nykaa")) store = "Nykaa";
@@ -487,10 +487,10 @@ export async function identifyProduct(input, country = "IN", existingProduct = n
   }
 
   let targetCountry = String(country || "IN").toUpperCase();
-  if (isUrl) {
+  if (isUrl && !country) {
     const urlGeo = detectCountryCode(rawUrl);
-    if (urlGeo && (!country || country === "IN")) {
-      targetCountry = urlGeo;
+    if (urlGeo) {
+      targetCountry = String(urlGeo).toUpperCase();
     }
   }
 
@@ -546,7 +546,7 @@ export async function identifyProduct(input, country = "IN", existingProduct = n
         product.rating = extractedData.rating || null;
         product.reviewCount = extractedData.reviewCount || null;
         product.ratingBreakdown = extractedData.ratingBreakdown || null;
-        product.store = extractedData.brand || store;
+        product.store = store && store !== "Online Store" ? store : (extractedData.store || extractedData.brand || store || "Online Store");
       }
     } catch (e) {
       console.warn("[TrustSheet] Extraction error:", e.message);
@@ -964,7 +964,7 @@ Respond ONLY with valid, raw JSON (no markdown formatting, no backticks, no comm
     jsonResult.product.estimatedPrice = product.price;
   }
   if (product.url) jsonResult.product.url = product.url;
-  if (product.store && (!jsonResult.product.store || jsonResult.product.store === "Online Store")) {
+  if (product.store && product.store !== "Online Store") {
     jsonResult.product.store = product.store;
   }
   if (product.product_id) jsonResult.product.product_id = product.product_id;

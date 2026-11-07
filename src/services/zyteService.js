@@ -27,7 +27,7 @@ export function detectCountryCode(targetUrl) {
     const host = parsed.hostname;
     if (host.endsWith(".ca") || host.includes("amazon.ca") || host.includes("walmart.ca")) return "CA";
     if (host.endsWith(".co.uk") || host.endsWith(".uk") || host.includes("amazon.co.uk")) return "GB";
-    if (host.endsWith(".in") || host.includes("flipkart.com") || host.includes("amazon.in") || host.includes("croma.com") || host.includes("reliancedigital.in")) return "IN";
+    if (host.endsWith(".in") || host.includes("flipkart.com") || host.includes("amazon.in") || host.includes("myntra.com") || host.includes("nykaa.com") || host.includes("meesho.com") || host.includes("ajio.com") || host.includes("purplle.com") || host.includes("croma.com") || host.includes("reliancedigital.in") || host.includes("tatacliq.com") || host.includes("boat-lifestyle.com") || host.includes("firstcry.com") || host.includes("lenskart.com")) return "IN";
     if (host.endsWith(".com.au") || host.endsWith(".au") || host.includes("amazon.com.au")) return "AU";
     if (host.endsWith(".de") || host.includes("amazon.de")) return "DE";
     if (host.endsWith(".fr") || host.includes("amazon.fr")) return "FR";

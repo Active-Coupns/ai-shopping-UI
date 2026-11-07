@@ -524,6 +524,8 @@ export function getStoreDirectSearchFallback(storeName, productTitle, country = 
   if (lowerStore.includes("flipkart")) return `https://www.flipkart.com/search?q=${qEncoded}`;
   if (lowerStore.includes("croma")) return `https://www.croma.com/search?text=${qEncoded}`;
   if (lowerStore.includes("reliance")) return `https://www.reliancedigital.in/search?q=${qEncoded}`;
+  if (lowerStore.includes("nykaa")) return `https://www.nykaa.com/search/result/?q=${qEncoded}`;
+  if (lowerStore.includes("purplle")) return `https://www.purplle.com/search?q=${qEncoded}`;
   if (lowerStore.includes("myntra")) return `https://www.myntra.com/${qEncoded}`;
   if (lowerStore.includes("ajio")) return `https://www.ajio.com/search/?text=${qEncoded}`;
   if (lowerStore.includes("1mg")) return `https://www.1mg.com/search/all?name=${qEncoded}`;

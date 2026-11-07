@@ -34,7 +34,7 @@ export function detectCountryCode(targetUrl) {
     const host = parsed.hostname;
     if (host.endsWith(".ca") || host.includes("amazon.ca") || host.includes("walmart.ca")) return "ca";
     if (host.endsWith(".co.uk") || host.endsWith(".uk") || host.includes("amazon.co.uk") || host.includes("currys.co.uk") || host.includes("argos.co.uk")) return "gb";
-    if (host.endsWith(".in") || host.includes("flipkart.com") || host.includes("amazon.in") || host.includes("croma.com") || host.includes("reliancedigital.in") || host.includes("tatacliq.com")) return "in";
+    if (host.endsWith(".in") || host.includes("flipkart.com") || host.includes("amazon.in") || host.includes("myntra.com") || host.includes("nykaa.com") || host.includes("meesho.com") || host.includes("ajio.com") || host.includes("purplle.com") || host.includes("croma.com") || host.includes("reliancedigital.in") || host.includes("tatacliq.com") || host.includes("boat-lifestyle.com") || host.includes("firstcry.com") || host.includes("lenskart.com")) return "in";
     if (host.endsWith(".com.au") || host.endsWith(".au") || host.includes("amazon.com.au") || host.includes("jbhifi.com.au")) return "au";
     if (host.endsWith(".ae") || host.includes("amazon.ae") || host.includes("noon.com") || host.includes("sharafdg.com")) return "ae";
     if (host.endsWith(".com") || host.includes("amazon.com") || host.includes("bestbuy.com") || host.includes("walmart.com") || host.includes("target.com")) return "us";
@@ -74,6 +74,38 @@ export function isSafeExternalUrl(targetUrl) {
 }
 
 /**
+ * Fallback image extractor directly from raw page HTML (og:image, Amazon landingImage, ld+json)
+ */
+export function extractFallbackImage(html) {
+  if (!html || typeof html !== "string") return "";
+
+  // 1. og:image or twitter:image
+  const ogMatch = html.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i) ||
+                  html.match(/<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:image["']/i) ||
+                  html.match(/<meta[^>]*name=["']twitter:image["'][^>]*content=["']([^"']+)["']/i);
+  if (ogMatch && ogMatch[1] && ogMatch[1].startsWith("http")) return ogMatch[1].trim();
+
+  // 2. Amazon landing image / data-old-hires / dynamic image
+  const amzHires = html.match(/id=["']landingImage["'][^>]*data-old-hires=["']([^"']+)["']/i) ||
+                   html.match(/data-old-hires=["']([^"']+)["']/i);
+  if (amzHires && amzHires[1] && amzHires[1].startsWith("http")) return amzHires[1].trim();
+
+  const amzDyn = html.match(/data-a-dynamic-image=["']\{&quot;(https:[^&"']+)&quot;/i) ||
+                 html.match(/data-a-dynamic-image='\{"([^"]+)":/i);
+  if (amzDyn && amzDyn[1]) return amzDyn[1].trim();
+
+  const amzLanding = html.match(/<img[^>]*id=["']landingImage["'][^>]*src=["']([^"']+)["']/i);
+  if (amzLanding && amzLanding[1] && amzLanding[1].startsWith("http")) return amzLanding[1].trim();
+
+  // 3. JSON-LD schema image
+  const jsonLdImg = html.match(/"image":\s*["'](https:[^"']+)["']/i) ||
+                    html.match(/"image":\s*\[\s*["'](https:[^"']+)["']/i);
+  if (jsonLdImg && jsonLdImg[1]) return jsonLdImg[1].trim();
+
+  return "";
+}
+
+/**
  * Extract live structured product details (name, price, currency, image, specs)
  * via Bright Data Web Unlocker + Groq Multi-Model Schema Parser.
  *
@@ -83,7 +115,7 @@ export function isSafeExternalUrl(targetUrl) {
  * @param {number} [options.timeoutMs=45000] - Request timeout ceiling
  * @returns {Promise<Object|null>} Structured product object or null
  */
-export async function extractProductWithBrightData(targetUrl, { country = null, timeoutMs = 45000 } = {}) {
+export async function extractProductWithBrightData(targetUrl, { country = null, timeoutMs = 55000 } = {}) {
   const apiKey = getBrightDataApiKey();
   const zone = getBrightDataZone();
   if (!apiKey) {
@@ -108,8 +140,12 @@ export async function extractProductWithBrightData(targetUrl, { country = null, 
   } catch (_) {}
 
   // 2. Determine target country for residential proxy routing
+  // NOTE: For Amazon domains (amazon.in, amazon.com, amazon.co.uk), Amazon natively
+  // enforces catalog & currency by domain. Omitting the country restriction routes through
+  // the fastest global unlocker pool (25-35s) instead of congested local residential peers (50s+).
+  const isAmazon = cleanUrl.includes("amazon.");
   const rawCountry = country ? String(country).toLowerCase().trim() : null;
-  const targetCountry = rawCountry === "uk" ? "gb" : rawCountry || detectCountryCode(cleanUrl);
+  const targetCountry = isAmazon ? null : (rawCountry === "uk" ? "gb" : rawCountry || detectCountryCode(cleanUrl));
 
   try {
     // 3. Call Bright Data Web Unlocker API
@@ -123,7 +159,7 @@ export async function extractProductWithBrightData(targetUrl, { country = null, 
         zone: zone,
         url: cleanUrl,
         format: "raw",
-        country: targetCountry
+        ...(targetCountry ? { country: targetCountry } : {})
       }),
       signal: AbortSignal.timeout(timeoutMs)
     });
@@ -174,7 +210,7 @@ ${textSample.slice(0, 6000)}
 
 Return ONLY valid JSON matching this exact structure:
 {
-  "title": "string (full authentic product name without store suffixes)",
+  "title": "string (full authentic product name without store suffixes. IMPORTANT: Keep original language, NEVER translate to Hindi or other languages)",
   "brand": "string",
   "price": "string (formatted with currency symbol, e.g. ₹59,900 or $49.99)",
   "rawPrice": number,
@@ -237,6 +273,11 @@ Return ONLY valid JSON matching this exact structure:
 
     if (!parsedResult.title) return null;
 
+    let cleanImage = String(parsedResult.image || "").trim();
+    if (!cleanImage.startsWith("http")) {
+      cleanImage = extractFallbackImage(html);
+    }
+
     const finalProduct = {
       success: true,
       title: parsedResult.title || "",
@@ -246,7 +287,7 @@ Return ONLY valid JSON matching this exact structure:
       regularPrice: parsedResult.regularPrice || "",
       rawRegularPrice: typeof parsedResult.rawRegularPrice === "number" ? parsedResult.rawRegularPrice : parseFloat(parsedResult.rawRegularPrice) || null,
       currency: parsedResult.currency || (targetCountry === "in" ? "INR" : targetCountry === "gb" ? "GBP" : targetCountry === "ca" ? "CAD" : targetCountry === "ae" ? "AED" : "USD"),
-      image: parsedResult.image || "",
+      image: cleanImage || "",
       description: parsedResult.description || "",
       specifications: Array.isArray(parsedResult.specifications) ? parsedResult.specifications.filter(s => s && s.name && s.value) : [],
       features: Array.isArray(parsedResult.features) ? parsedResult.features : [],
@@ -269,12 +310,16 @@ Return ONLY valid JSON matching this exact structure:
   }
 
   // Dual-Engine Fallback: If Bright Data had a domain restriction or timeout, fall back to Zyte
-  try {
-    const zyteFallback = await extractProductWithZyte(cleanUrl, { country, timeoutMs: 25000 });
-    if (zyteFallback && zyteFallback.success && zyteFallback.title) {
-      return zyteFallback;
-    }
-  } catch (_) {}
+  // NOTE: Skip on Amazon/Flipkart where Zyte anti-bot blocks anyway, preventing the dreaded 70-second freeze!
+  const isHeavyStore = cleanUrl.includes("amazon.") || cleanUrl.includes("flipkart.");
+  if (!isHeavyStore) {
+    try {
+      const zyteFallback = await extractProductWithZyte(cleanUrl, { country, timeoutMs: 20000 });
+      if (zyteFallback && zyteFallback.success && zyteFallback.title) {
+        return zyteFallback;
+      }
+    } catch (_) {}
+  }
 
   return null;
 }

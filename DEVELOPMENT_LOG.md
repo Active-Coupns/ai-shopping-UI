@@ -18,6 +18,37 @@
 
 ## 📅 Daily Changelog & Feature Timeline
 
+### 🗓️ 2026-11-07 (TrustSheet Engine Hardening: Multi-Store Comparison, Loader Transparency & Scraper Optimization)
+
+* **Status**: ✅ 100% Tested & Verified Locally (ESLint 0 errors, dev server healthy)
+* **Files Modified**: `src/app/api/products/compare/route.js`, `src/components/TrustSheetView.jsx`, `src/services/brightDataService.js`, `src/services/openweb.js`, `src/services/trustSheetService.js`, `src/services/zyteService.js`, `DEVELOPMENT_LOG.md`
+* **Changes in this Release**:
+  1. **Multi-Store Price Benchmark Refactoring (`src/app/api/products/compare/route.js`)**:
+     - Permanently removed base store anchoring from the comparison drawer. The scraped base store, native currency price, and direct "Buy on [Store]" CTA already appear prominently in the top Hero Card.
+     - Implemented `isBaseStoreMatch` to exclude the base store and its domains from the alternative store drawer.
+     - Multi-Store Benchmark now exclusively shows competitor / alternative stores within the user's selected country and domestic currency (`₹` or `$`).
+     - Stores are sorted ascending by price, with the lowest alternative store receiving the `LOWEST` badge and subsequent stores showing relative price differences (`+₹...`).
+     - Bumped cache key to `cache:comp:v9:` to prevent stale responses.
+  2. **Loader Experience & Transparency Notice (`src/components/TrustSheetView.jsx`)**:
+     - Removed the rotating yellow tips card.
+     - Added a dedicated, consumer-facing audit card: `Why Deep Research Takes ~45–60 Seconds` (`Exhaustive Audit`) explaining the comprehensive inspection of hardware specifications, web-wide user reviews, and long-term durability.
+     - Eliminated all technical scraping/anti-bot/proxy jargon from consumer-facing UI.
+     - Added an upfront badge on the search hero: `Deep Truth Engine: Live specs & web-wide research takes ~45-60s`.
+  3. **UI Consistency: Full "Inspect Product" Search Button (`src/components/TrustSheetView.jsx`)**:
+     - Replaced responsive text collapse (`Inspect` on mobile vs `Inspect Product` on desktop) with full `Inspect Product` across all viewport sizes.
+     - Fixed unescaped JSX HTML entities (`&apos;`, `&quot;`).
+  4. **Scraper Latency, Translation & Country Detection (`src/services/brightDataService.js`, `src/services/zyteService.js`)**:
+     - Eliminated sequential 25s Zyte waterfall delay for Amazon/Flipkart URLs (saving ~25s of wasted wait time).
+     - Adjusted Bright Data timeout to 55s.
+     - Injected strict Groq instruction: `IMPORTANT: Keep original language, NEVER translate to Hindi or other languages`.
+     - Updated `detectCountryCode` to correctly recognize Indian `.com` retailers (`myntra.com`, `nykaa.com`, `meesho.com`, `ajio.com`, `purplle.com`) as `IN`.
+  5. **Data Extraction & Fallback Protection (`src/services/trustSheetService.js`, `src/components/TrustSheetView.jsx`)**:
+     - Fixed store name being overwritten by brand (`Amazon.in` vs `DJI`).
+     - Added `extractFallbackImage` to extract `og:image`, `landingImage`, or `ld+json` if standard selectors miss.
+     - Added safe SVG placeholder fallback for missing/broken product images to eliminate Next.js `<img src="" />` console errors.
+  6. **Cryptographic Request Handshake Verification**:
+     - Wired `generateHandshakeHeaders` into `/api/products/compare` and `/api/trust-sheet/generate` to shield against unauthorized external bot requests.
+
 ### 🗓️ 2026-11-06 (Pharmacy & Sports Nutrition Architecture Hardening: Tata 1mg Brand Alliance Lock)
 
 * **Status**: ✅ Strategy Blueprint & Master Architecture Constitution Synchronized

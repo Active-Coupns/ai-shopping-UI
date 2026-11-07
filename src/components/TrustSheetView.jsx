@@ -51,20 +51,14 @@ import {
 import { searchProducts } from "@/services/api";
 import { getCountryMeta, formatCountryPrice } from "@/lib/countryConfig";
 import { useUser, useClerk } from "@clerk/nextjs";
-
-const RESEARCH_INSIGHTS = [
-  "Paper specs don't always reflect daily reality. Sustained build quality and thermals matter more than headline numbers.",
-  "A product's true cost isn't just its purchase price — factoring expected lifespan and maintenance reveals its honest everyday value.",
-  "Realistic trade-offs exist in every product. The best purchase is the one whose trade-offs don't interfere with your daily routine.",
-  "Regional factors like local voltage variations, climate, and brand service presence directly impact long-term satisfaction."
-];
+import { generateHandshakeHeaders } from "@/lib/cryptoHandshake";
 
 const RESEARCH_MILESTONES = [
-  { threshold: 0, text: "Reading product specifications & verified details" },
-  { threshold: 7, text: "Reviewing user feedback & community discussions across the web" },
-  { threshold: 16, text: "Evaluating practical trade-offs, longevity & daily operating cost" },
-  { threshold: 25, text: "Assessing local regional compatibility & warranty reality" },
-  { threshold: 34, text: "Synthesizing your comprehensive Trust Sheet report" }
+  { threshold: 0, text: "Identifying authentic product variant & official store listing" },
+  { threshold: 12, text: "Deep-scanning technical specifications, hardware specs & ingredient sheet" },
+  { threshold: 25, text: "Benchmarking live market prices across top verified stores" },
+  { threshold: 40, text: "Analyzing real buyer feedback, long-term durability & hidden trade-offs" },
+  { threshold: 55, text: "Synthesizing Chief Hardware Engineer's Bottom-Line Verdict & Trust Score" }
 ];
 
 function ResearchProgressLoader({ inputVal, identifiedProduct }) {
@@ -87,17 +81,15 @@ function ResearchProgressLoader({ inputVal, identifiedProduct }) {
     domain = "";
   }
 
-  // Smooth realistic progress percentage up to 94%
+  // Smooth realistic progress percentage up to 96% calibrated over 65-75s
   const progressPercent = Math.min(
-    94,
-    elapsed <= 5 ? 12 + elapsed * 3 :
-    elapsed <= 15 ? 27 + (elapsed - 5) * 3 :
-    elapsed <= 25 ? 57 + (elapsed - 15) * 2 :
-    elapsed <= 35 ? 77 + (elapsed - 25) * 1.5 :
-    92 + (elapsed - 35) * 0.3
+    96,
+    elapsed <= 12 ? 8 + elapsed * 2.5 :
+    elapsed <= 25 ? 38 + (elapsed - 12) * 2.2 :
+    elapsed <= 40 ? 67 + (elapsed - 25) * 1.4 :
+    elapsed <= 55 ? 88 + (elapsed - 40) * 0.5 :
+    95 + (elapsed - 55) * 0.08
   );
-
-  const insightIndex = Math.floor(elapsed / 7) % RESEARCH_INSIGHTS.length;
 
   return (
     <div className="w-full max-w-2xl mx-auto py-10 md:py-14 text-center animate-in fade-in duration-300">
@@ -117,18 +109,18 @@ function ResearchProgressLoader({ inputVal, identifiedProduct }) {
         {/* Header Badge */}
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-bold uppercase tracking-wider mb-2.5">
           <Sparkles className="w-3.5 h-3.5 text-indigo-600 animate-spin-slow" />
-          <span>AI Research In Progress</span>
+          <span>Deep Investigative Research In Progress</span>
         </div>
 
         {/* Title */}
         <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mb-1">
-          Researching Across The Entire Internet...
+          Investigating Authentic Product Reality...
         </h2>
 
         {/* Domain Tag */}
         {domain ? (
           <p className="text-xs text-slate-500 max-w-md mx-auto mb-5 font-medium">
-            Gathering product data from{" "}
+            Analyzing live specifications and web-wide buyer reports for listing on{" "}
             <span className="font-bold text-indigo-700 bg-indigo-50/80 px-2 py-0.5 rounded-md border border-indigo-200/60 inline-flex items-center gap-1">
               <ExternalLink className="w-3 h-3 inline" />
               {domain}
@@ -136,7 +128,7 @@ function ResearchProgressLoader({ inputVal, identifiedProduct }) {
           </p>
         ) : (
           <p className="text-xs text-slate-500 max-w-md mx-auto mb-5 font-medium">
-            Reviewing product details and community feedback from across the web.
+            Analyzing live technical specifications and authentic community feedback across the web.
           </p>
         )}
 
@@ -197,19 +189,19 @@ function ResearchProgressLoader({ inputVal, identifiedProduct }) {
           })}
         </div>
 
-        {/* Rotating Smart Shopping Insight Card */}
-        <div className="max-w-md mx-auto p-3.5 rounded-2xl bg-amber-50/70 border border-amber-200/80 text-left shadow-2xs">
+        {/* Deep Research Time & Thoroughness Transparency Notice */}
+        <div className="max-w-md mx-auto p-3.5 rounded-2xl bg-indigo-50/70 border border-indigo-200/80 text-left shadow-2xs">
           <div className="flex items-start gap-2.5">
-            <div className="p-1.5 rounded-lg bg-amber-100/90 text-amber-700 shrink-0 mt-0.5">
-              <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+            <div className="p-1.5 rounded-lg bg-indigo-100/90 text-indigo-700 shrink-0 mt-0.5">
+              <Clock className="w-3.5 h-3.5 text-indigo-600" />
             </div>
-            <div className="text-xs space-y-0.5">
-              <div className="font-bold text-amber-950 text-[11px] uppercase tracking-wide flex items-center gap-1.5">
-                <span>Smart Shopping Insight</span>
-                <span className="text-[10px] text-amber-600 font-semibold">• Tip {insightIndex + 1} of 4</span>
+            <div className="text-xs space-y-1">
+              <div className="font-extrabold text-indigo-950 text-[11px] uppercase tracking-wide flex items-center justify-between">
+                <span>Why Deep Research Takes ~45–60 Seconds</span>
+                <span className="text-[9px] font-bold text-indigo-700 bg-indigo-200/60 px-2 py-0.5 rounded-full">Exhaustive Audit</span>
               </div>
-              <p className="text-amber-900/90 leading-relaxed text-[11px] sm:text-xs">
-                {RESEARCH_INSIGHTS[insightIndex]}
+              <p className="text-indigo-950/80 leading-relaxed text-[11px]">
+                To protect you from buyer&apos;s remorse, our AI thoroughly examines full technical specifications, cross-checks verified user reviews across the web, and audits real-world durability on your behalf. Genuine multi-source research takes a moment, but delivers 100% authentic truth.
               </p>
             </div>
           </div>
@@ -766,9 +758,17 @@ export default function TrustSheetView({
       try {
         const targetPId = dossier?.product?.product_id || identifiedProduct?.product_id || "";
 
+        let handshakeHeaders = {};
+        try {
+          handshakeHeaders = await generateHandshakeHeaders("/api/products/compare");
+        } catch (_) {}
+
         const res = await fetch("/api/products/compare", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            ...handshakeHeaders
+          },
           body: JSON.stringify({
             productId: targetPId,
             title: targetTitle,
@@ -777,7 +777,7 @@ export default function TrustSheetView({
             basePrice: targetPrice,
             baseStore: targetStore,
             baseLink: targetUrl,
-            country: dossier?.product?.country || identifiedProduct?.country || country || "IN"
+            country: country || "IN"
           })
         });
 
@@ -1814,20 +1814,25 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
               <button
                 type="submit"
                 disabled={!inputVal.trim()}
-                className="px-3.5 sm:px-6 py-2 sm:py-2.5 rounded-xl bg-gradient-to-r from-brand-indigo to-brand-violet hover:opacity-95 disabled:opacity-50 text-white font-extrabold text-xs sm:text-sm shadow-md shadow-indigo-500/25 cursor-pointer transition-all active:scale-95 shrink-0 flex items-center gap-1 sm:gap-1.5"
+                className="px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl bg-gradient-to-r from-brand-indigo to-brand-violet hover:opacity-95 disabled:opacity-50 text-white font-extrabold text-xs sm:text-sm shadow-md shadow-indigo-500/25 cursor-pointer transition-all active:scale-95 shrink-0 flex items-center gap-1.5"
               >
                 <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 text-amber-300 animate-pulse" />
-                <span className="sm:hidden">Inspect</span>
-                <span className="hidden sm:inline">Inspect Product</span>
-                <ChevronRight className="w-3.5 h-3.5 shrink-0 hidden sm:inline" />
+                <span>Inspect Product</span>
+                <ChevronRight className="w-3.5 h-3.5 shrink-0" />
               </button>
             </div>
           </form>
 
-          {/* Scope Pill */}
-          <div className="relative inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100/90 border border-slate-200/70 text-slate-500 text-[10px] sm:text-[11px] font-medium mb-8 shadow-2xs">
-            <ShoppingBag className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-            <span>Retail e-commerce only • Auto & real estate portals not supported</span>
+          {/* Scope Pill & Deep Truth Engine Expectation */}
+          <div className="flex flex-wrap items-center justify-center gap-2 mb-8">
+            <div className="relative inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100/90 border border-slate-200/70 text-slate-500 text-[10px] sm:text-[11px] font-medium shadow-2xs">
+              <ShoppingBag className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+              <span>Retail e-commerce only • Auto & real estate portals not supported</span>
+            </div>
+            <div className="relative inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50/90 border border-indigo-200/80 text-indigo-700 text-[10px] sm:text-[11px] font-bold shadow-2xs">
+              <Clock className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+              <span>Deep Truth Engine: Live specs & web-wide research takes ~45-60s</span>
+            </div>
           </div>
 
           {/* ============================================================== */}
@@ -1846,7 +1851,7 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
                   Stop Watching 20-Minute Videos & Scrolling Endless Reddit Threads.
                 </h2>
                 <p className="text-[11px] sm:text-xs text-indigo-200/90 leading-relaxed font-medium">
-                  Bring us any product link. We scan thousands of real owner reviews, teardowns, and store data across the entire internet to answer the only question that matters: <span className="text-amber-300 font-bold">"Is this product truly right for you?"</span>
+                  Bring us any product link. We scan thousands of real owner reviews, teardowns, and store data across the entire internet to answer the only question that matters: <span className="text-amber-300 font-bold">&quot;Is this product truly right for you?&quot;</span>
                 </p>
               </div>
             </div>
@@ -1970,7 +1975,7 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
               </div>
               <div className="min-w-0">
                 <h4 className="text-xs sm:text-sm font-black text-slate-900">
-                  The End Result: One Honest "Buy or Skip?" Verdict
+                  The End Result: One Honest &quot;Buy or Skip?&quot; Verdict
                 </h4>
                 <p className="text-[11px] text-slate-600 font-medium leading-snug">
                   You get a weighted reality score and a clear, plain-English recommendation on whether this product is truly right for you.
@@ -2390,8 +2395,8 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
               <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-sm text-center">
                 <div className="w-28 h-28 sm:w-40 sm:h-40 mx-auto rounded-2xl bg-slate-50 border border-slate-200/80 p-2 sm:p-3 mb-3 sm:mb-4 flex items-center justify-center overflow-hidden">
                   <img
-                    src={dossier.product?.image || identifiedProduct?.image}
-                    alt={dossier.product?.title}
+                    src={(dossier.product?.image || identifiedProduct?.image || "").trim() || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='1.5'%3E%3Crect width='18' height='18' x='3' y='3' rx='2'/%3E%3Ccircle cx='9' cy='9' r='2'/%3E%3Cpath d='m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21'/%3E%3C/svg%3E"}
+                    alt={dossier.product?.title || "Product"}
                     className="w-full h-full object-contain"
                     onError={(e) => {
                       e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='1.5'%3E%3Crect width='18' height='18' x='3' y='3' rx='2'/%3E%3Ccircle cx='9' cy='9' r='2'/%3E%3Cpath d='m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21'/%3E%3C/svg%3E";
@@ -2439,7 +2444,7 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
                       </div>
                       <div className="text-left min-w-0">
                         <div className="text-[11px] font-black leading-tight flex items-center gap-1.5">
-                          <span className="truncate">{isCompareOpen ? "Hide Price Comparison" : "Compare Live Store Prices"}</span>
+                          <span className="truncate">{isCompareOpen ? "Hide Price Comparison" : "Compare Other Stores"}</span>
                           <span className="px-1.5 py-0.2 rounded-full bg-indigo-500/30 text-indigo-200 text-[9px] font-bold shrink-0">On-Demand</span>
                         </div>
                         <p className="text-[10px] text-slate-400 font-normal truncate">
@@ -2456,11 +2461,11 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
                       <div className="flex items-center justify-between pb-1.5 border-b border-slate-200/80">
                         <span className="text-[10px] font-black uppercase tracking-wider text-slate-700 flex items-center gap-1">
                           <Tag className="w-3 h-3 text-indigo-600" />
-                          <span>Multi-Store Benchmark</span>
+                          <span>Alternative Stores ({countryMeta?.name || 'Verified Stores'})</span>
                         </span>
                         {liveStores && (
                           <span className="text-[9px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.2 rounded-full">
-                            {liveStores.length} Stores Verified
+                            {liveStores.length} Stores Found
                           </span>
                         )}
                       </div>
@@ -2483,7 +2488,7 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
                       {!isFetchingStores && liveStores && liveStores.length > 0 && (
                         <div className="space-y-1.5">
                           {liveStores.map((st, sIdx) => {
-                            const pCountry = (dossier?.product?.country || identifiedProduct?.country || country || "IN").toUpperCase();
+                            const pCountry = (country || "IN").toUpperCase();
                             const pSym = pCountry === "US" ? "$" : pCountry === "GB" ? "£" : pCountry === "CA" ? "C$" : pCountry === "AU" ? "A$" : pCountry === "AE" ? "AED " : "₹";
                             const formattedPrice = typeof st.price === "number"
                               ? `${pSym}${st.price.toLocaleString(pCountry === "IN" ? "en-IN" : "en-US", { minimumFractionDigits: pCountry === "IN" ? 0 : 2, maximumFractionDigits: 2 })}`

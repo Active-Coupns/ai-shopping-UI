@@ -74,7 +74,7 @@ export async function POST(request) {
 
     const fallbackKeySlug = cleanSearchQuery.slice(0, 40).toLowerCase().replace(/[^a-z0-9]/g, "");
     const cleanPId = String(productId || fallbackKeySlug).slice(-50).replace(/[^a-zA-Z0-9]/g, "");
-    const compCacheKey = `cache:comp:v8:${cleanPId}:${cleanCountry}`;
+    const compCacheKey = `cache:comp:v9:${cleanPId}:${cleanCountry}`;
 
     // 1. Check Redis Cache First (0.01ms - Costs ₹0)
     let cachedStores = null;
@@ -151,91 +151,112 @@ export async function POST(request) {
       }
     }
 
-    const parsedBasePrice = parsePriceNum(basePrice) || 1000;
+    function extractDomain(url) {
+      if (!url) return "";
+      try {
+        const parsed = new URL(url.startsWith("http") ? url : `https://${url}`);
+        return parsed.hostname.toLowerCase().replace(/^www\./, "");
+      } catch (_) {
+        return "";
+      }
+    }
+
+    function normalizeStoreKey(str) {
+      if (!str) return "";
+      return str.toLowerCase()
+        .replace(/^(https?:\/\/)?(www\.)?/, "")
+        .replace(/\.(com|in|co\.uk|org|net|ae|ca|us|store|io|co)(\/.*)?$/, "")
+        .replace(/inc\b|llc\b|ltd\b|corp\b|india\b|official\b|store\b/gi, "")
+        .replace(/[^a-z0-9]/g, "");
+    }
+
+    function isBaseStoreMatch(candidateStore, candidateUrl, bStore, bLink) {
+      const normCand = normalizeStoreKey(candidateStore);
+      const normBase = normalizeStoreKey(bStore);
+      if (normCand && normBase && (normCand === normBase || normCand.includes(normBase) || normBase.includes(normCand))) {
+        return true;
+      }
+      const candDomain = extractDomain(candidateUrl);
+      const baseDomain = extractDomain(bLink);
+      if (candDomain && baseDomain) {
+        const cd = candDomain.replace(/\.(com|in|co\.uk|org|net|ae|ca|us)$/, "");
+        const bd = baseDomain.replace(/\.(com|in|co\.uk|org|net|ae|ca|us)$/, "");
+        if (cd === bd || cd.includes(bd) || bd.includes(cd)) {
+          return true;
+        }
+      }
+      return false;
+    }
+
     const storeMap = new Map();
     const cleanBaseStore = formatStoreName(baseStore, country);
-    const baseStoreKey = cleanBaseStore.toLowerCase();
 
-    // 4. ANCHOR LOWEST: Base Store is Store 1 with is_lowest = true
-    const safeBaseLink = sanitizeOfferUrl(baseLink, cleanBaseStore, cleanSearchQuery, country) || getStoreDirectSearchFallback(cleanBaseStore, cleanSearchQuery, country);
-    storeMap.set(baseStoreKey, {
-      store_name: cleanBaseStore,
-      price: parsedBasePrice,
-      deal_link: safeBaseLink,
-      is_lowest: true,
-      is_verified: true,
-      diff_text: "LOWEST GUARANTEED ✓"
-    });
-
-    // 5. Populate Competitor Live Offers (Amazon, Flipkart, Croma, Reliance)
+    // 4. Populate Competitor / Alternative Live Offers ONLY (Base store is already featured at the top)
     (rawOffers || []).forEach(offer => {
       const rawStore = offer.store_name || "";
       const formattedStore = formatStoreName(rawStore, country);
       const sKey = formattedStore.toLowerCase();
+      const rawUrl = offer.product_page_url || offer.offer_page_url || offer.link;
 
-      // Upgrade base store deal_link if exact verified PDP offer is found
-      if (sKey === baseStoreKey) {
-        const rawUrl = offer.product_page_url || offer.offer_page_url || offer.link;
-        const cleanUrl = sanitizeOfferUrl(rawUrl, formattedStore, cleanSearchQuery, country);
-        if (cleanUrl && !cleanUrl.includes("google.com") && !cleanUrl.includes("ibp=") && !isSearchPageUrl(cleanUrl)) {
-          storeMap.get(baseStoreKey).deal_link = cleanUrl;
-        }
+      // Filter out user's base store (e.g. Swiftronics or Myntra)
+      if (isBaseStoreMatch(formattedStore, rawUrl, cleanBaseStore, baseLink)) {
         return;
       }
 
-      if (!isTrustedMerchant(formattedStore, offer.product_page_url || offer.offer_page_url || offer.link)) {
+      if (!isTrustedMerchant(formattedStore, rawUrl)) {
         return;
       }
 
       const offerPrice = parsePriceNum(offer.price || offer.product_price);
-      if (!offerPrice) return;
+      if (!offerPrice || offerPrice <= 0) return;
 
-      const rawUrl = offer.product_page_url || offer.offer_page_url || offer.link;
       const cleanUrl = sanitizeOfferUrl(rawUrl, formattedStore, cleanSearchQuery, country);
       if (!cleanUrl || cleanUrl.includes("google.com") || cleanUrl.includes("ibp=")) return;
 
       if (!storeMap.has(sKey) || storeMap.get(sKey).price > offerPrice) {
-        const diff = offerPrice - parsedBasePrice;
         storeMap.set(sKey, {
           store_name: formattedStore,
           price: offerPrice,
           deal_link: cleanUrl,
-          is_lowest: false,
-          is_verified: true,
-          diff_text: diff > 0 ? `+${meta.symbol}${diff.toLocaleString(meta.locale)}` : "Matching"
+          is_verified: true
         });
       }
     });
 
     // If Google Shopping details returned no competitors, check real Google Shopping search results for this title
-    if (storeMap.size < 2 && cleanSearchQuery && cleanSearchQuery !== "product") {
+    if (storeMap.size < 4 && cleanSearchQuery && cleanSearchQuery !== "product") {
       try {
         const fallbackSearchPromise = executeSearchRequest(cleanSearchQuery, cleanCountry);
-        const fallbackTimeout = new Promise(resolve => setTimeout(() => resolve([]), 4000));
+        const fallbackTimeout = new Promise(resolve => setTimeout(() => resolve([]), 8000));
         const searchProds = await Promise.race([fallbackSearchPromise, fallbackTimeout]);
         (searchProds || []).forEach(p => {
           const rawStore = p.store_name || "";
           const formattedStore = formatStoreName(rawStore, country);
           const sKey = formattedStore.toLowerCase();
-          if (sKey === baseStoreKey) return;
-          if (!isTrustedMerchant(formattedStore, p.product_page_url)) return;
+          const rawUrl = p.product_page_url || p.offer?.product_page_url;
+
+          // Filter out user's base store
+          if (isBaseStoreMatch(formattedStore, rawUrl, cleanBaseStore, baseLink)) {
+            return;
+          }
+
+          if (!isTrustedMerchant(formattedStore, rawUrl)) return;
 
           const pPrice = parsePriceNum(p.product_price || p.price);
           if (!pPrice || pPrice <= 0) return;
 
-          const rawUrl = p.product_page_url || p.offer?.product_page_url;
-          const cleanUrl = sanitizeOfferUrl(rawUrl, formattedStore, cleanSearchQuery, country);
-          if (!cleanUrl || cleanUrl.includes("google.com") || cleanUrl.includes("ibp=")) return;
+          let cleanUrl = sanitizeOfferUrl(rawUrl, formattedStore, cleanSearchQuery, country);
+          if (!cleanUrl || cleanUrl.includes("google.com") || cleanUrl.includes("ibp=")) {
+            cleanUrl = getStoreDirectSearchFallback(formattedStore, cleanSearchQuery, country);
+          }
+          if (!cleanUrl) return;
 
-          if (!storeMap.has(sKey)) {
-            const diff = pPrice - parsedBasePrice;
+          if (!storeMap.has(sKey) || storeMap.get(sKey).price > pPrice) {
             storeMap.set(sKey, {
               store_name: formattedStore,
               price: pPrice,
               deal_link: cleanUrl,
-              is_lowest: false,
-              is_verified: true,
-              diff_text: diff > 0 ? `+${meta.symbol}${diff.toLocaleString(meta.locale)}` : diff < 0 ? `-${meta.symbol}${Math.abs(diff).toLocaleString(meta.locale)}` : "Matching"
+              is_verified: true
             });
           }
         });
@@ -244,7 +265,24 @@ export async function POST(request) {
       }
     }
 
-    const finalStores = Array.from(storeMap.values()).slice(0, 4);
+    // Sort alternative stores ascending by price (cheapest alternative first)
+    const competitorStores = Array.from(storeMap.values()).sort((a, b) => a.price - b.price);
+
+    if (competitorStores.length > 0) {
+      const lowestPrice = competitorStores[0].price;
+      competitorStores.forEach((s, idx) => {
+        if (idx === 0) {
+          s.is_lowest = true;
+          s.diff_text = "LOWEST";
+        } else {
+          s.is_lowest = false;
+          const diff = s.price - lowestPrice;
+          s.diff_text = diff > 0 ? `+${meta.symbol}${diff.toLocaleString(meta.locale)}` : "Matching";
+        }
+      });
+    }
+
+    const finalStores = competitorStores.slice(0, 4);
 
     // 6. Preserve country=IN and currency=INR for Noise and D2C stores
     finalStores.forEach(s => {
