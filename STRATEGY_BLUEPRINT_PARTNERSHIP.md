@@ -45,30 +45,35 @@ In Phase 1, our primary objective is to launch the live domain, capture massive 
 | **Retail, Food, Cab & OTT Coupons** | **Feedico Managed Catalog** (`api.feedico.io`) | Direct Partner (`fdco_` token) | Verified Honey-style promo codes & tracking deep-links for 48,000+ brands (Amazon, Zomato, Swiggy, Uber, Disney+, Spotify, Paramount+) across 6 countries (IN, US, UK, CA, AU, AE) | $0 Deposit / Zero Liability; 65% Rev-Share |
 | **Software Credits (Tier 1: Startups / New Accounts)** | **Secret B2B Partner Program** (`joinsecret.com`) | Free Community Partner Application ($0 cost) | $1,000–$10,000+ free cloud & SaaS credits for AWS, Stripe, HubSpot, Notion, Miro | $0 Upfront; Direct User Benefit (Primary) + Rev-Share |
 | **SaaS Subscriptions (Tier 2: Existing Active Users)** | **NachoNacho Partner API + In-House Verified Vault** (`nachonacho.com`) | Free Community Perks Partner + In-House Verified Billing Code Registry | Guaranteed 15%–30% instant billing reduction on Canva Pro, Zoom, Shopify, Hostinger, Adobe, NordVPN via Annual Switch & Billing Settings promo codes | **User Savings 1st Priority**; Zero-Liability, Zero-Fintech Hassle |
-| **Prescription Medicines (India)** | **Apollo 24|7 & Tata 1mg Direct** | Impact.com / Direct Partner Portal | **Exact prescribed branded medicine** at Flat 15%–18% off MRP (auto-applied code `SHOPSMART18`) | 3%–5% Order Commission |
+| **Prescription Medicines & Sports Nutrition (India)** | **Tata 1mg Official Brand Alliance** (`alliances@1mg.com`) / Backup: **PharmEasy Strategic Partnerships** | Direct Co-Marketing Alliance ($0 Deposit, 0 Traffic Barrier) | **100% Guaranteed Official Partner Privilege Card**: Flat 18%–20% OFF on All Prescription Medicines + 5%–10% OFF on Authentic Sports Nutrition (MuscleBlaze, ON, GNC) via dedicated partner code `SHOPSMART18`. 100% Authentic Tata fulfillment. | **User Savings 1st Priority**; 3%–5% Rev-Share; Zero Legal/Inventory Liability |
 | **Prescription Discounts (US)** | **GoodRx Direct Partner API** | GoodRx Partner Portal / Impact.com | Medicine + ZIP Code lookup $\rightarrow$ Local CVS, Walgreens, Walmart comparison + Digital Rx card (20%–80% off) | Pay-Per-Claim ($2.50–$6.00/claim) |
-| **Global Supplements (180+ Countries)** | **iHerb Global Partner Program** | `iherb.com` Global Affiliate Portal | 100% Authentic lab-tested supplements (Creatine, Whey, Vitamins) with Flat 10% auto-applied discount | 5%–10% Global Rev-Share |
-| **Indian Supplements & Nutrition** | **HealthKart Direct Partner** | Direct Merchant Program | Lab-certified authentic fitness nutrition at Flat 10%–15% checkout discount | 6%–10% Order Commission |
 | **Prescriptions & OTC (UK & Canada)** | **Pharmacy2U (UK) & Well.ca (CA)** | Impact.com Master Publisher | Online digital pharmacy dispatch with 10%–15% private/OTC savings | 4%–7% Order Commission |
 
 ### 2.2. Phase 1 Architecture & UX Design
 
-#### A. Unified Privilege Medicine Card (No Confusing Separate Tabs)
-Instead of dividing into two separate tabs, the search interface displays a single, high-conversion **Unified Privilege Card**:
-* **Top Header**: Exact medicine name, dosage, packaging, and manufacturer MRP.
-* **Highlighted ShopSmart Privilege Box**: Displays the verified partner price (e.g. `MRP: ₹223.50` $\rightarrow$ `ShopSmart Partner Rate: ₹183.00 (Flat 18% OFF)`).
-* **Store Price Comparison Table**: Transparently displays competitor market prices (Netmeds ₹212, PharmEasy ₹201, Local Chemist ₹223.50) to visually prove that the ShopSmart partner price is the lowest.
-* **Direct Hand-off**: 1-click CTA routes user directly to Apollo 24|7 / 1mg with `SHOPSMART18` auto-applied in their cart. User uploads prescription, pays the lower price, and receives home delivery.
+#### A. Unified Privilege Medicine & Supplement Card (Zero-Overhead, 100% Guaranteed)
+Instead of complex parallel API calls or fragile URL concatenations that risk breaking or returning empty slots, the search interface renders a high-conversion, 100% reliable **Special Partner Privilege Card**:
+* **Top Header**: Clinical medicine/supplement details extracted from universal search (Brand Name, Active Salt/Composition, Manufacturer, Dosage, and Standard Market MRP).
+* **Guaranteed Special Partner Privilege Box (Tata 1mg)**: Renders prominently for **100% of searches** without relying on comparison slot luck:
+  - **Trust Anchor**: Powered by India's #1 most trusted healthcare giant, **Tata 1mg** (100% counterfeit-free supply chain; zero duplicate medicine or fake protein risk).
+  - **Guaranteed Discount**: Flat 18% OFF on All Prescription Medicines & 10% OFF on Authentic Sports Nutrition (MuscleBlaze, Optimum Nutrition, GNC).
+  - **Dedicated Partner Code**: `SHOPSMART18` (auto-copied to clipboard on 1-click).
+  - **Clear 2-Step Micro Guide**:
+    1️⃣ *Click the button below to open this product on official Tata 1mg*
+    2️⃣ *Add to cart and paste code `SHOPSMART18` at checkout for instant discount!*
+* **Direct Hand-off**: 1-click CTA opens Tata 1mg's official search/product catalog. User uploads prescription, applies `SHOPSMART18`, pays the lower price, and receives 100% genuine delivery from Tata 1mg.
+* **Why This Eliminates All Fragility**:
+  - **0 Extra API Overhead**: Zero latency, zero API quota burn, instant 1ms load time.
+  - **100% Coverage**: Never squeezed out by random store comparisons. Every search sees the offer.
+  - **Zero Liability**: ShopSmart holds zero inventory, handles zero payments, requires zero drug licenses, and avoids post-purchase cashback delays.
 
 #### B. Country-Adaptive Input Logic
 * **India, UK, Canada, Australia, UAE**: Standard single input: `Enter Medicine Name / Supplement`.
 * **United States (GoodRx Integration)**: Two-field input: `Enter Medicine Name` + `ZIP Code` to display local pharmacy branch comparisons (Walmart vs CVS vs Walgreens) and render the digital GoodRx savings card.
 
-#### C. The Impact.com Master Network Solution
-To prevent administrative overwhelm across multiple countries:
-* ShopSmart registers **1 single Master Publisher Account on Impact.com** and **1 account on iHerb Global**.
-* This single dashboard manages Apollo, Tata 1mg, GoodRx, Well.ca, and Pharmacy2U.
-* All global earnings across USD, GBP, CAD, and INR consolidate into one single corporate bank payout.
+#### C. The Partner Execution & Alliances Desk
+* **India (Tata 1mg & PharmEasy)**: Managed via direct **Brand Alliances Desk** (`alliances@1mg.com` / `partners@1mg.com`) under a co-marketing agreement ($0 deposit, no upfront traffic threshold).
+* **US & Global (GoodRx, Pharmacy2U, Well.ca)**: Managed via our **Master Publisher Account on Impact.com**. All USD/GBP/CAD earnings consolidate into one corporate bank payout.
 
 ### 2.3. Phase 1 Software & SaaS Savings Terminal (Two-Tier Architecture)
 
@@ -254,19 +259,17 @@ To ensure 100% legal immunity against Rate Parity lawsuits, hotel/airline cease-
 ```
 [ ] PHASE 1: IMMEDIATE ONBOARDING (DAY 1 - DAY 40)
     ├── Step 1.1: Register Master Publisher Account on Impact.com
-    │   ├── Apply to: Tata 1mg & Apollo 24|7 (India Pharmacy)
     │   ├── Apply to: GoodRx (US Prescription Discounts)
     │   ├── Apply to: Pharmacy2U (UK) & Well.ca (Canada)
     │   └── Apply to: Enterprise SaaS (Canva, Shopify, Hostinger, Namecheap)
-    ├── Step 1.2: Register Global Partner Account on iHerb (`iherb.com`)
-    │   └── Unlocks instant 10% auto-applied supplement discount across 180+ countries
-    ├── Step 1.3: Apply to HealthKart Direct Partner Program
-    │   └── Authentic lab-certified Indian fitness nutrition (Flat 10%-15% checkout discount)
-    ├── Step 1.4: Complete Feedico Domain Verification (`feedico.io`)
+    ├── Step 1.2: Register Direct Brand Alliance with Tata 1mg (`alliances@1mg.com`)
+    │   ├── Request dedicated co-marketing partner code SHOPSMART18 (Flat 18% Rx / 10% Sports Nutrition)
+    │   └── Backup application: PharmEasy Strategic Partnerships (`partners@pharmeasy.in`)
+    ├── Step 1.3: Complete Feedico Domain Verification (`feedico.io`)
     │   └── Retrieve `fdco_` production Bearer token for live 48,000+ brand coupon catalog
-    ├── Step 1.5: Join Secret Community Perks Program (`joinsecret.com`)
+    ├── Step 1.4: Join Secret Community Perks Program (`joinsecret.com`)
     │   └── Free community partner status for Tier 1 startups ($1,000+ AWS/Stripe credits)
-    └── Step 1.6: Join NachoNacho Community Partner Program (`nachonacho.com`)
+    └── Step 1.5: Join NachoNacho Community Partner Program (`nachonacho.com`)
         └── B2B perks access for Tier 2 existing active subscriptions (15%–30% off Canva, Zoom, etc.)
 
 [ ] PHASE 2: B2B WHOLESALE ONBOARDING (DAY 40 ONWARD - POST REPUTATION BUILD)

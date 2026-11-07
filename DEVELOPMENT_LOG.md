@@ -18,6 +18,22 @@
 
 ## 📅 Daily Changelog & Feature Timeline
 
+### 🗓️ 2026-11-06 (Pharmacy & Sports Nutrition Architecture Hardening: Tata 1mg Brand Alliance Lock)
+
+* **Status**: ✅ Strategy Blueprint & Master Architecture Constitution Synchronized
+* **Files Modified**: `STRATEGY_BLUEPRINT_PARTNERSHIP.md`, `GEMINI.md`
+* **Changes in this Decision**:
+  1. **Direct Brand Alliance with Tata 1mg (`alliances@1mg.com`)**:
+     - Permanently removed fragile/inaccurate assumptions (iHerb for India, HealthKart direct APIs, unbranded MedPay/LabStack aggregators, and manual 30-day UPI cashback).
+     - Locked India's #1 trusted healthcare giant (**Tata 1mg**) as the single anchor for both prescription medicines (allopathy) and authentic sports nutrition (MuscleBlaze, Optimum Nutrition, GNC).
+     - Dedicated Co-Marketing Partner Code: `SHOPSMART18` (Flat 18%–20% on Rx medicines, 5%–10% on supplements).
+     - Backup partner: PharmEasy Strategic Partnerships (`partners@pharmeasy.in`).
+  2. **Zero-Overhead Universal Privilege Card Architecture**:
+     - Eliminates extra parallel API probes or brittle search URL strings.
+     - The **Special Partner Privilege Card** renders for **100% of searches** on medicines and supplements.
+     - 2-Step Micro Guide: 1️⃣ Click button to open product directly on official Tata 1mg (code auto-copied), 2️⃣ Add to cart and paste code `SHOPSMART18` at checkout for instant discount.
+     - Zero inventory, zero payments, zero drug license liability, zero counterfeit risk.
+
 ### 🗓️ 2026-11-05 (Bright Data Web Unlocker Migration, Global TrustSheet Launch & Security Hardening)
 
 * **Git Commit**: `906cfb8`

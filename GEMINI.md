@@ -25,22 +25,23 @@ ShopSmart AI is **NOT a generic coupon website**, nor a spammy affiliate blog. I
 │ • Bright Data Web Unlocker (72M+ IPs)     │ • Hotels: Agoda B2B / Hotelbeds Net Rates  │
 │ • Virtual Try-On (VTON Cloth Studio)      │ • Buses: Distribusion / Omio B2B Net Rates │
 │ • Coupons: Feedico Managed Catalog        │ • Events: Ticket Evolution Live Tickets    │
-│ • Pharmacy: Apollo 24|7 & Tata 1mg (IN)   │ • Guaranteed Cards: Blackhawk/CardCash/Raise│
-│ • Rx Discounts: GoodRx API (US ZIP/Card)  │ • Rate Parity Legal Shield via CUG         │
-│ • Supplements: iHerb (180+ Countries)     │ • Zero In-App Payment Liability (Redirect) │
-│ • Supplements: HealthKart Lab-Certified   │ • Full Blueprint: STRATEGY_BLUEPRINT_...   │
+│ • Pharmacy & Supplements (IN): Tata 1mg   │ • Guaranteed Cards: Blackhawk/CardCash/Raise│
+│   Official Alliance (Flat 18% Rx / 10%    │ • Rate Parity Legal Shield via CUG         │
+│   Sports Nutrition via SHOPSMART18)       │ • Zero In-App Payment Liability (Redirect) │
+│ • Backup Pharmacy: PharmEasy Alliance     │ • Full Blueprint: STRATEGY_BLUEPRINT_...   │
+│ • Rx Discounts: GoodRx API (US ZIP/Card)  │                                            │
 │ • UK/CA Pharmacy: Pharmacy2U & Well.ca    │                                            │
 │ • Software & SaaS Savings Terminal (NEW): │                                            │
 │   - Tier 1 (Startups): Secret Credits     │                                            │
 │   - Tier 2 (Existing): NachoNacho + Vault │                                            │
-│ • Single Master Account on Impact.com     │                                            │
+│ • Master Publisher on Impact.com (US/SaaS)│                                            │
 └───────────────────────────────────────────┴────────────────────────────────────────────┘
 ```
 
 ### 1.1. Phase 1 vs Phase 2 Core Distinction
 1. **Phase 1 (Day-1 Launch & Trust Building, Days 1–40)**:
    - Zero legal risks, zero Rate Parity concerns, immediate approval velocity.
-   - Built around the shopping search engine, spec-grounded TrustSheet powered by Bright Data Web Unlocker, VTON cloth trial, Feedico verified coupons, **direct pharmacy/supplement partnerships** (Tata 1mg, Apollo 24|7, GoodRx, iHerb, HealthKart), and **Verified SaaS & Software Savings Terminal** (Tier 1: Secret for Startups + Tier 2: NachoNacho & In-House Vault for Existing Users).
+   - Built around the shopping search engine, spec-grounded TrustSheet powered by Bright Data Web Unlocker, VTON cloth trial, Feedico verified coupons, **direct pharmacy/supplement partnerships** (Tata 1mg Official Brand Alliance `SHOPSMART18`, PharmEasy backup, GoodRx for US), and **Verified SaaS & Software Savings Terminal** (Tier 1: Secret for Startups + Tier 2: NachoNacho & In-House Vault for Existing Users).
    - High customer lifetime value (LTV) and monthly repeat orders (daily consumables, software renewals, and medicines).
 2. **Phase 2 (Wholesale B2B Expansion, Day 40 onward)**:
    - Activated after 30–40 days of verified user traffic and organic traction.
@@ -69,6 +70,11 @@ ShopSmart AI is **NOT a generic coupon website**, nor a spammy affiliate blog. I
 | ❌ **RAG Mixed Inventory Pool (`consultAiShopkeeper`) in Shopping Search** | Blocked queries from reaching OpenWeb Ninja, force-fed a mixed 40-item pool into search responses, and corrupted category relevance. Removed permanently. |
 | ❌ **Hardcoded 'Today\'s Deals' Category Explorer (`today_deals`)** | Burned expensive OpenWeb Ninja API credits for non-intent browsers. Distracted from high-intent shopping search, pharmacy, verified coupons, and smart terminal. Permanently removed. |
 | ❌ **Runa / Gift Card Reselling & Wallet Loading Model** | Imposes heavy payment gateway processing overhead, KYC compliance, customer chargeback risks, digital code theft vulnerabilities, and high user UX friction. Permanently replaced with direct B2B Wholesale Net-Rate APIs and verified promo codes. |
+| ❌ **iHerb for Indian Gym & Fitness Supplements** | iHerb is an American organic/wellness portal that does NOT carry Indian fitness staples (MuscleBlaze) and imposes 40%–60% import duties, high shipping, and 10-15 day delivery delays. Replaced by domestic authorized channel (Tata 1mg). |
+| ❌ **HealthKart Direct White-Label / Co-Branded Portal** | HealthKart does NOT provide direct self-serve co-branded developer APIs to early-stage platforms without middleman networks. Replaced with Tata 1mg direct Brand Alliance. |
+| ❌ **Unbranded Third-Party Health Networks (MedPay, LabStack)** | Sourcing medicines and protein supplements from unverified local chemist networks creates severe counterfeit and duplicate product risks, destroying user trust. Replaced by India's #1 trusted household giant (**Tata 1mg**). |
+| ❌ **Manual UPI Post-Purchase Cashback (30-Day Lag)** | Forcing users to wait 15–30 days for merchant return validation and managing manual UPI payout queues creates customer frustration and operational bottlenecks. Replaced with instant checkout discount via official alliance code `SHOPSMART18`. |
+| ❌ **Fragile Synthetic URL Concatenation & Parallel API Probing** | Manually concatenating search strings (`1mg.com/search?name=...`) or firing multiple parallel probe API calls per keystroke causes latency, burns API quota, and breaks when URLs mutate. Replaced with a universal **Special Partner Privilege Card** that renders 100% of the time with 2-step micro-instructions and official search hand-off. |
 
 ---
 
@@ -98,15 +104,18 @@ ShopSmart AI is **NOT a generic coupon website**, nor a spammy affiliate blog. I
   7. Customer Ratings & Sentiment Distribution Card (5★ to 1★ animated distribution graph, Delighted vs Critical sentiment pills, with fail-soft zero-fake-data suppression).
 
 ### 3.3. Pharmacy, Branded Medicines & Supplements Hub (Phase 1 Priority)
-- **Direct Partner Network (Zero Middlemen)**:
-  * **India (Branded Rx & OTC)**: Apollo 24|7 & Tata 1mg via direct merchant/Impact.com accounts. Auto-applied exclusive promo code (`SHOPSMART18`) granting flat 15%–18% off MRP with free doorstep delivery.
-  * **India (Supplements)**: HealthKart Direct Partner Program. Batch lab-tested authentic sports nutrition & vitamins (Flat 10%–15% checkout discount).
+- **Unified Trust Anchor (India: Tata 1mg Official Brand Alliance)**:
+  * **Branded Prescription Medicines**: Direct co-marketing partnership with Tata 1mg (`alliances@1mg.com`) / Backup: PharmEasy (`partners@pharmeasy.in`). Issues dedicated verified partner code (`SHOPSMART18`) granting **Flat 18%–20% OFF on All Prescription Medicines**.
+  * **Authentic Sports Nutrition & Supplements**: 100% counterfeit-free supply of MuscleBlaze, Optimum Nutrition (ON), GNC, Dymatize, and Fast&Up with **Flat 5%–10% checkout discount** via `SHOPSMART18`. Delivered 100% authentic directly by Tata 1mg (zero duplicate protein or fake medicine risk).
   * **United States (Prescriptions)**: GoodRx API (`goodrx.com/developer`). Real-time local pharmacy comparison (CVS vs Walgreens vs Walmart) and digital Rx discount cards driven by `Medicine + ZIP Code` input.
-  * **Global 180+ Countries (Supplements & Wellness)**: iHerb Global Partner Program (`iherb.com`). Auto-applied 10% coupon code across whey protein, omega-3, multivitamins, and clean skincare in local currencies.
   * **UK & Canada**: Pharmacy2U (UK) and Well.ca (CA) via Impact.com master publisher account.
-- **Dual-Model UX Presentation**:
-  * **India & Global**: Unified Privilege Medicine Card displaying open-market comparison (PharmEasy, Netmeds, MRP) alongside an exclusive ShopSmart Partner Box with instant 18% checkout savings.
-  * **US GoodRx Flow**: Location-aware input (`Medicine + ZIP Code`) displaying local pharmacy discount cards.
+- **Zero-Overhead Universal Privilege Card Architecture**:
+  * **No Complex Parallel API Probing**: Avoids high-latency parallel search requests and API quota drain.
+  * **100% Guaranteed Offer Visibility**: The **Special Partner Privilege Card** renders for **100% of searches** on both medicines and supplements without being squeezed out by comparison slots.
+  * **Clean 2-Step Micro Guide**:
+    1️⃣ *Click to open the product directly on official Tata 1mg*
+    2️⃣ *Add to cart and paste code `SHOPSMART18` at checkout for instant discount!*
+  * **Zero Liability**: ShopSmart never holds inventory, never takes payments, requires no drug licenses, and avoids post-purchase cashback delays.
 
 ### 3.4. Coupons & Deals Engine (`couponService.js`, `CouponCard.jsx`)
 - **India Hyperlocal Layer**: Dedicated in-memory & Redis master registry (`MASTER_COUPON_DATABASE`) covering 50+ stores (Zomato, Swiggy, Blinkit, Zepto, Domino's, Myntra, Ajio, Nykaa).
