@@ -1,7 +1,7 @@
 # ShopSmart AI — Master Architecture Constitution & Memory Lock
 **File:** `GEMINI.md` (Project Root)  
 **Status:** PERMANENT ARCHITECTURE LOCK & SINGLE SOURCE OF TRUTH  
-**Last Updated:** 2026-11-05  
+**Last Updated:** 2026-11-07 (Universal Account Quota Engine & Cross-Device Sync)  
 
 > **CRITICAL DIRECTIVE FOR ALL AI AGENTS & DEVELOPERS:**  
 > This file is the **immutable single source of truth** for ShopSmart AI. Before proposing any technical strategy, writing any code, or modifying existing features, you **MUST strictly read and adhere to all decisions, rejected paths, and architectural boundaries locked in this document**.  
@@ -155,11 +155,17 @@ ShopSmart AI is **NOT a generic coupon website**, nor a spammy affiliate blog. I
 1. **"Read Open, Act Protected" Architecture**:
    - Googlebot, crawlers, and unauthenticated visitors can browse all coupon listings, store catalogs, OTT plan matrices, and travel deals freely (**0 login friction, maximum SEO indexing**).
    - Clerk authentication (`openSignIn()`) intercepts high-value write actions: revealing masked promo codes, clicking deep links, triggering VTON renders, accessing Phase 2 CUG wholesale net rates.
-2. **Universal 10-Daily AI Quota & Credit Vault**:
-   - Centralized server-side authority `UniversalCreditVault` (`src/services/universalCreditVault.js`) and `checkUnifiedApiQuota` enforce a strict daily ceiling of **10 AI operations per user / IP / device fingerprint** resetting automatically every midnight (every 24 hours).
-   - Enforced atomically via Upstash Redis Lua scripts with SHA-256 identity hashing. Zero frontend authority or client tampering risk.
-   - Cache hits (`isCacheHit: true`) and static browsing consume strictly **0 credits** ($0 API cost, instant 0.5ms resolution).
-   - Global English `QuotaModal` notifies users when their 10/10 credits are used while preserving unlimited free browsing of store coupons, trending deals, and wishlists.
+2. **Universal 10-Daily AI Quota & Cross-Device Account Sync Engine**:
+   - Centralized server-side authority `checkUnifiedApiQuota` (`src/services/rateLimiter.js`) and live query endpoint `/api/user/quota` enforce a strict daily ceiling of **10 paid operations per authenticated Clerk user account** (`user:${userId}`) resetting automatically at 12:00 AM IST.
+   - **Cross-Device Account Synchronization (Mobile <-> Laptop)**:
+     - Real-time balances are queryable via `GET /api/user/quota` (`Cache-Control: no-store`).
+     - Frontend automatically syncs quota on initial load, on Clerk authentication ready, and on window focus/tab visibility changes (`window.focus`, `visibilitychange`).
+     - Moving from mobile to laptop (or switching tabs) synchronizes the exact remaining credits instantly without requiring a hard page refresh.
+   - **Strict Data-Fetch Quota Rule**:
+     - Whenever our server calls an external paid data provider in the background (OpenWeb Ninja for search, Bright Data Web Unlocker / Zyte for TrustSheet PDP scraping, Multi-store Comparison Benchmark), **exactly 1 credit** is consumed from the user's daily quota.
+     - Cache hits (`isCacheHit: true`) and static browsing consume strictly **0 credits** ($0 API cost, instant sub-millisecond resolution).
+   - TrustSheet inspections and comparison drawers interlock with `onQuotaUpdate` callback to immediately reflect deducted balances in the account modal and main UI.
+   - Global `QuotaModal` notifies users when their 10/10 credits are used while preserving unlimited free browsing of store coupons, trending deals, and wishlists.
 3. **Environment & Keys Protection**:
    - Production keys (Bright Data, OpenWeb Ninja, Gemini, Groq, Redis, Clerk, Impact, Feedico) must remain strictly guarded.
    - Never commit `.env` or `.env.local` files to Git.
@@ -202,11 +208,17 @@ ShopSmart AI is **NOT a generic coupon website**, nor a spammy affiliate blog. I
 1. **"Read Open, Act Protected" Architecture**:
    - Googlebot, crawlers, and unauthenticated visitors can browse all coupon listings, store catalogs, OTT plan matrices, and travel deals freely (**0 login friction, maximum SEO indexing**).
    - Clerk authentication (`openSignIn()`) intercepts high-value write actions: revealing masked promo codes, clicking deep links, triggering VTON renders, asking AI advisors.
-2. **Universal 10-Daily AI Quota & Credit Vault**:
-   - Centralized server-side authority `UniversalCreditVault` (`src/services/universalCreditVault.js`) and `checkUnifiedApiQuota` enforce a strict daily ceiling of **10 AI operations per user / IP / device fingerprint** resetting automatically every midnight (every 24 hours).
-   - Enforced atomically via Upstash Redis Lua scripts with SHA-256 identity hashing. Zero frontend authority or client tampering risk.
-   - Cache hits (`isCacheHit: true`) and static browsing consume strictly **0 credits** ($0 API cost, instant 0.5ms resolution).
-   - Global English `QuotaModal` notifies users when their 10/10 credits are used while preserving unlimited free browsing of store coupons, trending deals, and wishlists.
+2. **Universal 10-Daily AI Quota & Cross-Device Account Sync Engine**:
+   - Centralized server-side authority `checkUnifiedApiQuota` (`src/services/rateLimiter.js`) and live query endpoint `/api/user/quota` enforce a strict daily ceiling of **10 paid operations per authenticated Clerk user account** (`user:${userId}`) resetting automatically at 12:00 AM IST.
+   - **Cross-Device Account Synchronization (Mobile <-> Laptop)**:
+     - Real-time balances are queryable via `GET /api/user/quota` (`Cache-Control: no-store`).
+     - Frontend automatically syncs quota on initial load, on Clerk authentication ready, and on window focus/tab visibility changes (`window.focus`, `visibilitychange`).
+     - Moving from mobile to laptop (or switching tabs) synchronizes the exact remaining credits instantly without requiring a hard page refresh.
+   - **Strict Data-Fetch Quota Rule**:
+     - Whenever our server calls an external paid data provider in the background (OpenWeb Ninja for search, Bright Data Web Unlocker / Zyte for TrustSheet PDP scraping, Multi-store Comparison Benchmark), **exactly 1 credit** is consumed from the user's daily quota.
+     - Cache hits (`isCacheHit: true`) and static browsing consume strictly **0 credits** ($0 API cost, instant sub-millisecond resolution).
+   - TrustSheet inspections and comparison drawers interlock with `onQuotaUpdate` callback to immediately reflect deducted balances in the account modal and main UI.
+   - Global `QuotaModal` notifies users when their 10/10 credits are used while preserving unlimited free browsing of store coupons, trending deals, and wishlists.
 3. **Environment & Keys Protection**:
    - Production keys (OpenWeb Ninja, Gemini, Groq, Zyte, Redis, Clerk) must remain strictly guarded.
    - Never commit `.env` or `.env.local` files to Git.
