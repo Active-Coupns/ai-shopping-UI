@@ -1090,7 +1090,7 @@ export async function checkUnifiedApiQuota({
       return {
         allowed: false,
         error: "IP_QUOTA_EXHAUSTED",
-        message: "Daily search and comparison limit reached for this network/device to protect against automated abuse.",
+        message: "Daily search and comparison limit reached for this network/device. Your quota resets tomorrow at 12:00 AM IST!",
         remaining: 0,
         current: ipCount
       };

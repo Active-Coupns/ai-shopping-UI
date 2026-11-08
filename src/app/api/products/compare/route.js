@@ -29,7 +29,7 @@ export async function POST(request) {
     return NextResponse.json({
       success: false,
       error: "FORBIDDEN_HANDSHAKE",
-      message: handshake.message || "Invalid security handshake. Automated bot access blocked."
+      message: handshake.message || "Server is experiencing high traffic. Please wait a moment and try again."
     }, { status: 403 });
   }
 

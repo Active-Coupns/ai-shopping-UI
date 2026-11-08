@@ -79,13 +79,13 @@ export async function verifyCryptoHandshake(request, expectedPath = "") {
     return {
       valid: false,
       reason: "MISSING_HANDSHAKE_HEADERS",
-      message: "Direct automated bot access is blocked. Please access via the official web application."
+      message: "Server is experiencing high traffic. Please refresh and try again."
     };
   }
 
   const reqTime = parseInt(timestamp, 10);
   if (isNaN(reqTime)) {
-    return { valid: false, reason: "MALFORMED_TIMESTAMP", message: "Malformed security timestamp." };
+    return { valid: false, reason: "MALFORMED_TIMESTAMP", message: "Server connection error. Please refresh and try again." };
   }
 
   const now = Date.now();
@@ -93,7 +93,7 @@ export async function verifyCryptoHandshake(request, expectedPath = "") {
     return {
       valid: false,
       reason: "EXPIRED_HANDSHAKE",
-      message: "Security handshake timestamp expired. Please refresh and try again."
+      message: "Session expired. Please refresh the page and try again."
     };
   }
 
@@ -106,7 +106,7 @@ export async function verifyCryptoHandshake(request, expectedPath = "") {
     return {
       valid: false,
       reason: "SIGNATURE_MISMATCH",
-      message: "Security signature verification failed. Unauthorized request signature."
+      message: "Request could not be verified. Please reload the page."
     };
   }
 

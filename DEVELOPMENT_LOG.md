@@ -52,6 +52,9 @@
      - Added automatic 2-attempt IP rotation in Bright Data Web Unlocker. If attempt 1 encounters anti-bot challenges or empty payload, it immediately rotates to a fresh residential IP peer (32s per attempt, 70s total ceiling).
      - Upgraded error handling: Replaced technical/bot wording with consumer-friendly 'Store server is currently very busy' notice, featuring an instant 1-click `[⚡ Try Again]` button that re-fires the inspection without re-typing or re-pasting the link.
      - Fixed In-App Chat Assistant input overflow: Added `min-w-0` to the `<input>` element and made the send button responsive (`hidden sm:inline` label), permanently preventing the button from pushing out or overflowing on narrow viewports.
+  8. **Zero Technical Leakage Security Masking Across All APIs (`src/lib/cryptoHandshake.js`, `src/app/api/products/compare/route.js`, `src/app/api/search/route.js`, `src/services/rateLimiter.js`)**:
+     - Permanently replaced all developer/internal security phrases (`bot`, `automated abuse`, `handshake headers`, `security signature`) with neutral enterprise messages (`Server is experiencing high traffic`, `Session expired. Please refresh the page`).
+     - Fully shields backend security architecture and scraping pipelines from competitors snooping in browser Network DevTools.
 
 ### 🗓️ 2026-11-06 (Pharmacy & Sports Nutrition Architecture Hardening: Tata 1mg Brand Alliance Lock)
 
