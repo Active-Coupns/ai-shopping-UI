@@ -59,7 +59,7 @@ export default function ProductNotFoundState({
           badgeText: "🏥 Healthcare & Medicine Advisory",
           badgeBg: "bg-emerald-50 border-emerald-200 text-emerald-800",
           title: `No Authorized Online Sellers Delivering “${searchQuery}”`,
-          description: "Prescription drugs and healthcare items often have strict local delivery licensing. For urgent medication or prescription fulfillment, we advise checking with your nearest licensed local pharmacy or verified medical platforms.",
+          description: "No authorized online delivery listings found for this exact name right now. Please check for spelling typos, or try searching by its generic salt name (e.g., 'Paracetamol', 'Azithromycin'). For prescription medicines, you can also search directly on verified partner portals below.",
           externalNotice: "Local Pharmacy Recommendation: Always consult a licensed doctor or pharmacist before substituting prescription medicine.",
           externalLinks: [
             {
@@ -185,7 +185,7 @@ export default function ProductNotFoundState({
         </h3>
 
         <p className="text-xs sm:text-sm text-slate-600 mb-6 leading-relaxed max-w-md mx-auto">
-          {apiError || "Zippy servers are experiencing extraordinarily high shopping traffic right now. To guarantee verified prices, please click retry or wait a few seconds."}
+          {apiError || "Shopping network servers are experiencing high traffic right now. To guarantee verified prices, please click retry or wait a few seconds."}
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">

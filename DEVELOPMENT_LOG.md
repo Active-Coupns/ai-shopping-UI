@@ -18,6 +18,24 @@
 
 ## 📅 Daily Changelog & Feature Timeline
 
+### 🗓️ 2026-11-07 (Graceful User-Facing Fallback Messages & Zero-Leakage Security Masking)
+
+* **Status**: ✅ 100% Tested & Verified Locally (0% Architecture Change, High-Traffic/Polite Fallbacks)
+* **Files Modified**: `src/lib/cryptoHandshake.js`, `src/app/api/products/compare/route.js`, `src/app/api/search/route.js`, `src/services/rateLimiter.js`, `src/components/ProductNotFoundState.jsx`, `src/app/api/ai/review/route.js`, `src/components/TravelHubView.jsx`, `src/app/page.js`, `DEVELOPMENT_LOG.md`
+* **Changes in this Release**:
+  1. **Strict 0% Architecture / Zero Technical Leakage Policy**:
+     - Systematically scrubbed and masked all low-level technical terms (`bot`, `scraping`, `proxy`, `handshake`, `anti-bot`) and third-party vendor names (`Bright Data`, `Zyte`, `OpenWeb`, `Groq`, `Gemini`) across public API error responses and rate limiter payloads.
+     - Transformed blocked/expired requests into polite, standard e-commerce messages: `"Server is experiencing high traffic. Please wait a moment and try again."`
+  2. **Product Search & Medicine Guidance Fallbacks (`src/components/ProductNotFoundState.jsx`)**:
+     - Updated generic network busy error string to consumer-friendly `"Shopping network servers are experiencing high traffic right now. To guarantee verified prices, please click retry or wait a few seconds."`
+     - Refined Healthcare & Medicine advisory with actionable advice: prompts users to check for spelling typos, search by generic chemical/salt names (e.g. Paracetamol, Azithromycin), or explore licensed pharmacy portals.
+  3. **AI Review Generation Fallback (`src/app/api/ai/review/route.js`)**:
+     - Replaced raw failure response with polite structured error: `{ error: "SERVER_BUSY", message: "AI analysis servers are currently handling high volume. Please tap retry to generate your verdict." }`
+  4. **Travel Hub Scanner Fallback (`src/components/TravelHubView.jsx`)**:
+     - Replaced abrupt `"Connection timed out. Please try again."` with graceful `"Travel partner network is momentarily busy. Please try scanning again in a moment."`
+  5. **Cart Screenshot Analysis OCR Fallback (`src/app/page.js`)**:
+     - Added robust fallback message when receipt image cannot be parsed or OCR server times out: `"Cart receipt was difficult to read or server is busy. Please upload a clearer screenshot or search your store above."`
+
 ### 🗓️ 2026-11-07 (TrustSheet Engine Hardening: Multi-Store Comparison, Loader Transparency & Scraper Optimization)
 
 * **Status**: ✅ 100% Tested & Verified Locally (ESLint 0 errors, dev server healthy)

@@ -697,9 +697,14 @@ export default function Home() {
         body: JSON.stringify({ imageBase64 })
       });
       const data = await res.json();
-      setCouponResultData(data);
+      if (!res.ok && !data.error) {
+        setCouponResultData({ success: false, error: data.message || "Cart receipt was difficult to read or server is busy. Please upload a clearer screenshot or search your store above." });
+      } else {
+        setCouponResultData(data);
+      }
     } catch (err) {
       console.error("Cart analysis error:", err);
+      setCouponResultData({ success: false, error: "Cart analysis service is temporarily busy. Please try again or search your store directly." });
     } finally {
       setIsApiLoading(false);
     }

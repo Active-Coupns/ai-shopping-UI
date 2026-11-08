@@ -239,7 +239,7 @@ export default function TravelHubView({
         setOnDemandError(data.error || "No active promo codes found right now.");
       }
     } catch (err) {
-      setOnDemandError("Connection timed out. Please try again.");
+      setOnDemandError("Travel partner network is momentarily busy. Please try scanning again in a moment.");
     } finally {
       clearTimeout(t1);
       clearTimeout(t2);

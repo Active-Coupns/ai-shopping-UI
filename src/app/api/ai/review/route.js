@@ -609,6 +609,9 @@ Always respond ONLY with a valid JSON object matching this schema:
 
   } catch (err) {
     console.error("AI Review API Error:", err);
-    return NextResponse.json({ error: "Failed to generate review" }, { status: 500 });
+    return NextResponse.json({ 
+      error: "SERVER_BUSY", 
+      message: "AI analysis servers are currently handling high volume. Please tap retry to generate your verdict." 
+    }, { status: 500 });
   }
 }
