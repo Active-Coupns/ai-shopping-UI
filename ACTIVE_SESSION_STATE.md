@@ -33,6 +33,7 @@
 | **UI State** | Ephemeral Client State (`useState(10)`) for Paid Credits | ❌ **REJECTED** | Resets on tab refresh and isolates phone vs laptop. Permanently replaced by server-side Redis authority. |
 | **Paid AI Storage** | External Vector DBs / Paid Memory Plugins | ❌ **REJECTED** | Unnecessary recurring cost & latency; our local Markdown ledgers + Antigravity brain provide superior accuracy for free. |
 | **Release** | Premature Git Push Before Founder Review | ❌ **REJECTED** | Code must be thoroughly audited, local build verified, and approved before pushing to remote `origin/main`. |
+| **Doc Cleanup** | 6 Obsolete/Conflicting Doc Files Purged | ✅ **APPROVED** | Purged outdated ScraperAPI specs (`COUPON_...`), merged `SYSTEM_ARCHITECTURE_LOCK` into `GEMINI.md`, removed dead scratch files. |
 
 ---
 

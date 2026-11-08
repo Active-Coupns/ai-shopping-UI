@@ -146,6 +146,7 @@ ShopSmart AI is **NOT a generic coupon website**, nor a spammy affiliate blog. I
 - **Call #1 (`/api/search`)**: Exactly **1 single API call** via OpenWeb Ninja. Returns 15–20 live products in ~1s. Exactly **3 cards** displayed (`slice(0, 3)`). Smart filter chips filter in-memory with **0 API calls**.
 - **Call #2 (`/api/products/compare`)**: Exactly **1 call** triggered **ONLY** when the user clicks the "Compare Prices" drawer.
 - **Strict Truthfulness**: NEVER synthesize fake stores with artificial markups. Only display verified direct PDP links.
+- **Direct PDP Sanitization**: URLs from Shopify stores (e.g. `gonoise.com`) must have regional query parameters stripped (`country`, `currency`) to prevent 404 redirections. In `ProductCard.jsx`, URLs containing `/search`, `/s?k=`, or `searchterm=` are strictly blocked from being falsely tagged as verified direct PDPs.
 - **24-Hour Synchronized Redis TTL**: Search results, direct PDPs, and comparison pools expire together after 24 hours (`cache:inventory:pool:v2:<country>`).
 
 ### 3.2. Hardware TrustSheet (`TrustSheetView.jsx` & `trustSheetService.js`)
