@@ -1614,14 +1614,14 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
           value={assistantQuestion}
           onChange={(e) => setAssistantQuestion(e.target.value)}
           placeholder={categoryProfile.inputPlaceholder}
-          className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-medium text-slate-900 focus:outline-hidden focus:bg-white focus:border-indigo-500 transition-all placeholder:text-slate-400"
+          className="flex-1 min-w-0 bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-medium text-slate-900 focus:outline-hidden focus:bg-white focus:border-indigo-500 transition-all placeholder:text-slate-400"
         />
         <button
           type="submit"
           disabled={!assistantQuestion.trim() || isAssistantLoading}
-          className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-black shadow-xs transition-all cursor-pointer flex items-center gap-1.5 shrink-0"
+          className="px-3 sm:px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-black shadow-xs transition-all cursor-pointer flex items-center gap-1.5 shrink-0"
         >
-          <span>Ask AI</span>
+          <span className="hidden sm:inline">Ask AI</span>
           <Send className="w-3.5 h-3.5" />
         </button>
       </form>
@@ -1657,19 +1657,35 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
         </div>
       </div>
 
-      {/* 2. Error Banner */}
+      {/* 2. Error Banner with 1-Click Retry */}
       {error && (
-        <div className="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs sm:text-sm font-semibold flex items-center gap-2.5 shadow-2xs">
-          <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0" />
-          <div className="flex-1">
-            <p>{error}</p>
+        <div className="mb-6 p-4 rounded-2xl bg-amber-50/90 border border-amber-200 text-amber-950 text-xs sm:text-sm font-semibold flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs animate-in fade-in duration-200">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
+            <p className="text-xs sm:text-sm leading-snug">{error}</p>
           </div>
-          <button 
-            onClick={() => setError(null)}
-            className="p-1 hover:bg-rose-100 rounded-lg text-rose-600 transition-colors"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+            {Boolean(inputVal && inputVal.trim()) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setError(null);
+                  handleIdentify(inputVal.trim());
+                }}
+                className="px-3.5 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-extrabold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer active:scale-95"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Try Again</span>
+              </button>
+            )}
+            <button 
+              type="button"
+              onClick={() => setError(null)}
+              className="p-1.5 hover:bg-amber-100 rounded-lg text-amber-700 transition-colors cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       )}
 

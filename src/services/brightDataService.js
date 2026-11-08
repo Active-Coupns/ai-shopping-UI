@@ -115,7 +115,7 @@ export function extractFallbackImage(html) {
  * @param {number} [options.timeoutMs=45000] - Request timeout ceiling
  * @returns {Promise<Object|null>} Structured product object or null
  */
-export async function extractProductWithBrightData(targetUrl, { country = null, timeoutMs = 55000 } = {}) {
+export async function extractProductWithBrightData(targetUrl, { country = null, timeoutMs = 70000 } = {}) {
   const apiKey = getBrightDataApiKey();
   const zone = getBrightDataZone();
   if (!apiKey) {
@@ -147,31 +147,52 @@ export async function extractProductWithBrightData(targetUrl, { country = null, 
   const rawCountry = country ? String(country).toLowerCase().trim() : null;
   const targetCountry = isAmazon ? null : (rawCountry === "uk" ? "gb" : rawCountry || detectCountryCode(cleanUrl));
 
-  try {
-    // 3. Call Bright Data Web Unlocker API
-    const res = await fetch("https://api.brightdata.com/request", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        zone: zone,
-        url: cleanUrl,
-        format: "raw",
-        ...(targetCountry ? { country: targetCountry } : {})
-      }),
-      signal: AbortSignal.timeout(timeoutMs)
-    });
+  let html = null;
+  const maxAttempts = 2;
+  const perAttemptTimeout = 32000; // 32s ceiling per attempt (64s total budget)
 
-    if (!res.ok) {
-      console.warn(`[BrightDataService] Unlocker returned HTTP ${res.status} for ${cleanUrl}`);
-      return null;
+  try {
+    // 3. Call Bright Data Web Unlocker API with automatic 1-retry IP rotation
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        const res = await fetch("https://api.brightdata.com/request", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${apiKey}`
+          },
+          body: JSON.stringify({
+            zone: zone,
+            url: cleanUrl,
+            format: "raw",
+            ...(targetCountry ? { country: targetCountry } : {})
+          }),
+          signal: AbortSignal.timeout(perAttemptTimeout)
+        });
+
+        if (res.ok) {
+          const text = await res.text();
+          if (text && text.length >= 500) {
+            html = text;
+            break; // Success!
+          } else {
+            console.warn(`[BrightDataService] Attempt ${attempt} returned tiny payload (${text ? text.length : 0} bytes) for ${cleanUrl}`);
+          }
+        } else {
+          console.warn(`[BrightDataService] Attempt ${attempt} returned HTTP ${res.status} for ${cleanUrl}`);
+        }
+      } catch (attErr) {
+        console.warn(`[BrightDataService] Attempt ${attempt} error for ${cleanUrl}: ${attErr.message}`);
+      }
+
+      // If attempt 1 failed, wait 600ms before rotating to fresh residential peer IP
+      if (attempt < maxAttempts) {
+        await new Promise(r => setTimeout(r, 600));
+      }
     }
 
-    const html = await res.text();
     if (!html || html.length < 500) {
-      console.warn(`[BrightDataService] Empty or tiny payload received for ${cleanUrl}`);
+      console.warn(`[BrightDataService] All ${maxAttempts} extraction attempts failed for ${cleanUrl}`);
       return null;
     }
 

@@ -4,7 +4,7 @@ import { getAuth } from "@clerk/nextjs/server";
 import { extractTrustedClientIp, checkUnifiedApiQuota } from "@/services/rateLimiter";
 import { applyAdaptiveSlowdown } from "@/services/securityRadar";
 
-export const maxDuration = 60;
+export const maxDuration = 80;
 
 export async function POST(request) {
   try {
@@ -65,7 +65,7 @@ export async function POST(request) {
 
       if (!idData.success || !idData.product || !idData.product.title) {
         return NextResponse.json(
-          { success: false, error: idData?.error || "Could not extract authentic product details from this link. Please check the URL." },
+          { success: false, error: idData?.error || "The store server is currently very busy. Please try again in a moment." },
           { status: 400 }
         );
       }

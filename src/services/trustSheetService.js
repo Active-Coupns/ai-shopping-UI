@@ -557,7 +557,7 @@ export async function identifyProduct(input, country = "IN", existingProduct = n
     if (!product.title) {
       return {
         success: false,
-        error: "Could not retrieve authentic product details from this link. The store page may be unavailable, restricted by anti-bot protections, or expired. Please check the URL or try another product link."
+        error: "The store server is currently very busy or experiencing temporary connection limits. Please try again in a moment."
       };
     }
   }
