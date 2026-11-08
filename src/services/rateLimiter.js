@@ -1032,8 +1032,8 @@ export async function checkUnifiedApiQuota({
   limit = 10,
   ipDailyLimit = 30
 }) {
-  // Allow seamless testing in local development environment
-  if (process.env.NODE_ENV === "development" && (clientIp === "127.0.0.1" || clientIp === "::1" || clientIp === "localhost")) {
+  // Allow seamless testing in local development environment for unauthenticated guests
+  if (process.env.NODE_ENV === "development" && !userId && (clientIp === "127.0.0.1" || clientIp === "::1" || clientIp === "localhost")) {
     return {
       allowed: true,
       remaining: 999,

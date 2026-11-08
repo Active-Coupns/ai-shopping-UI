@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, ShoppingBag, ArrowLeft, RefreshCw, Layers, ShieldAlert, Coins, Tag, AlertCircle, Shirt, User, Globe, Search, Pill, Heart, Scale, Bell, X, Zap, LifeBuoy, ShieldCheck, Tv, Plane } from "lucide-react";
+import { Sparkles, ShoppingBag, ArrowLeft, RefreshCw, ShieldAlert, Coins, Tag, AlertCircle, Shirt, User, Search, LifeBuoy, ShieldCheck, Tv, Plane } from "lucide-react";
 import { SignedIn, SignedOut, SignInButton, useUser, useClerk } from "@clerk/nextjs";
 import dynamic from "next/dynamic";
 import SearchHero from "@/components/SearchHero";
@@ -127,7 +127,6 @@ export default function Home() {
   const [appState, setAppState] = useState("idle"); // idle | searching | results | guide | trial_room
   const [searchQuery, setSearchQuery] = useState("");
   const [products, setProducts] = useState([]);
-  const [creditsRemaining, setCreditsRemaining] = useState(null);
   const [apiError, setApiError] = useState(null);
   const [isApiLoading, setIsApiLoading] = useState(false);
 
@@ -267,6 +266,43 @@ export default function Home() {
       userJourneyTracker.setAuthenticatedUser(clerkUser.id, email, name);
     }
   }, [isSignedIn, clerkUser]);
+
+  // Universal Server-Side Quota Synchronization (Cross-Device: Laptop, Mobile, Tablet)
+  useEffect(() => {
+    let isMounted = true;
+    const syncLiveQuota = async () => {
+      try {
+        const res = await fetch("/api/user/quota", {
+          cache: "no-store",
+          headers: { "Cache-Control": "no-cache" }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (isMounted && typeof data.searchesLeft === "number") {
+            setSearchesLeft(data.searchesLeft);
+          }
+        }
+      } catch (_) {}
+    };
+
+    if (isLoaded) {
+      syncLiveQuota();
+    }
+
+    // Tab Focus & Visibility Event Listener (Instant multi-device sync without page refresh)
+    const onWindowFocus = () => {
+      syncLiveQuota();
+    };
+
+    window.addEventListener("focus", onWindowFocus);
+    window.addEventListener("visibilitychange", onWindowFocus);
+
+    return () => {
+      isMounted = false;
+      window.removeEventListener("focus", onWindowFocus);
+      window.removeEventListener("visibilitychange", onWindowFocus);
+    };
+  }, [isLoaded, isSignedIn, clerkUser?.id, isAccountModalOpen]);
 
   const handleToggleBookmark = (product) => {
     if (!product) return;
@@ -967,6 +1003,7 @@ export default function Home() {
                 initialQuery={trustSheetQuery}
                 country={selectedCountry}
                 onBack={() => setAppState("idle")}
+                onQuotaUpdate={(rem) => setSearchesLeft(rem)}
                 onTriggerSearch={(q) => {
                   handleDirectSearch(q);
                 }}

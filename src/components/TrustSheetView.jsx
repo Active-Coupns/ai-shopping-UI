@@ -406,7 +406,8 @@ export default function TrustSheetView({
   initialQuery = "",
   country = "IN",
   onBack,
-  onTriggerSearch
+  onTriggerSearch,
+  onQuotaUpdate
 }) {
   const { isSignedIn } = useUser();
   const { openSignIn } = useClerk();
@@ -505,6 +506,9 @@ export default function TrustSheetView({
       }
 
       if (data.isNonRetail) {
+        if (typeof onQuotaUpdate === "function" && typeof data.remaining === "number") {
+          onQuotaUpdate(data.remaining);
+        }
         setNonRetailNotice({
           title: data.product?.title || targetUrl,
           category: data.unsupportedCategory || "Non-E-Commerce Category",
@@ -528,6 +532,9 @@ export default function TrustSheetView({
 
       setIdentifiedProduct(finalProduct);
       setDossier(data.trustSheet);
+      if (typeof onQuotaUpdate === "function" && typeof data.remaining === "number") {
+        onQuotaUpdate(data.remaining);
+      }
       setPhase("dossier");
     } catch (err) {
       setError(err.message || "An unexpected error occurred while inspecting product.");
@@ -594,6 +601,9 @@ export default function TrustSheetView({
       }
 
       if (data.isNonRetail) {
+        if (typeof onQuotaUpdate === "function" && typeof data.remaining === "number") {
+          onQuotaUpdate(data.remaining);
+        }
         setNonRetailNotice({
           title: identifiedProduct?.title || "Non-Retail Entity",
           category: data.unsupportedCategory || "Non-E-Commerce Category",
@@ -605,6 +615,9 @@ export default function TrustSheetView({
       }
 
       setDossier(data.trustSheet);
+      if (typeof onQuotaUpdate === "function" && typeof data.remaining === "number") {
+        onQuotaUpdate(data.remaining);
+      }
       setPhase("dossier");
     } catch (err) {
       setError(err.message || "Failed to generate AI Trust Sheet. Please try again.");
@@ -782,6 +795,9 @@ export default function TrustSheetView({
         });
 
         const data = await res.json();
+        if (typeof onQuotaUpdate === "function" && typeof data.remaining === "number") {
+          onQuotaUpdate(data.remaining);
+        }
         if (data.success && Array.isArray(data.stores) && data.stores.length > 0) {
           setLiveStores(data.stores);
         } else {
