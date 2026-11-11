@@ -31,7 +31,7 @@ export async function detectUserCountry() {
       const data = await res.json();
       const code = String(data?.country || "").toUpperCase();
       if (SUPPORTED_COUNTRIES[code]) {
-        console.log("[ShopSmart Geo] Detected country via IP:", code);
+        console.log("[Benefisto Geo] Detected country via IP:", code);
         return code;
       }
     }

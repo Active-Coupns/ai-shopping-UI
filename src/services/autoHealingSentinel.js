@@ -294,7 +294,7 @@ export async function runSentinelDiagnosticProbe(options = false) {
     try {
       console.log("[Auto-Healing Sentinel] Broken link pattern detected. Triggering AI Autonomous Healing Engine...");
       
-      const aiHealingPrompt = `You are ShopSmart URL Sanitization & Link Reliability Engineer.
+      const aiHealingPrompt = `You are Benefisto URL Sanitization & Link Reliability Engineer.
 An e-commerce aggregator returned this problematic redirect URL:
 "${brokenSampleUrl}"
 

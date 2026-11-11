@@ -1,5 +1,5 @@
 /**
- * ShopSmart AI — Smart Store & Merchant Entity Gatekeeper
+ * Benefisto — Smart Store & Merchant Entity Gatekeeper
  * 
  * Multi-layer intelligent verification for E-Commerce & Retail Stores:
  * 1. Catalog Fuzzy & Typo Matching against MASTER_COUPON_DATABASE
@@ -130,7 +130,7 @@ export async function verifyStoreEntity(rawQuery, country = "IN") {
   // 2. LAYER 2 & 3: Multi-Tier AI Entity Knowledge & Categorization
   let groqAnalysis = null;
   try {
-    const prompt = `You are the ShopSmart AI E-Commerce & Retail Store Gatekeeper.
+    const prompt = `You are the Benefisto E-Commerce & Retail Store Gatekeeper.
 A user searched for: "${query}" in the Coupons & Store Deals section for country "${country}".
 
 Analyze whether this refers to a real, authentic commercial e-commerce store, retail brand, food delivery app, fashion brand, electronics store, or beauty shop (e.g. "The Souled Store", "Snitch", "Boat", "Lenskart", "Mamaearth", "Nykaa", "Zara", "IKEA", "Decathlon", "Croma", "Sephora", "Lululemon").
@@ -156,7 +156,7 @@ OUTPUT JSON ONLY:
 
     const aiRes = await aiRouter.complete({
       prompt,
-      systemPrompt: "You are the ShopSmart AI E-Commerce & Retail Store Gatekeeper. Always respond in valid JSON.",
+      systemPrompt: "You are the Benefisto E-Commerce & Retail Store Gatekeeper. Always respond in valid JSON.",
       jsonMode: true,
       temperature: 0.1,
       maxTokens: 250,
@@ -249,7 +249,7 @@ OUTPUT JSON ONLY:
     isCategoryMatch: true,
     action: "STORE_ENTITY_VERIFIED",
     description: groqAnalysis.briefDescription,
-    guidanceMessage: `ShopSmart AI verified official portal for ${groqAnalysis.canonicalName} (${groqAnalysis.domain}).`
+    guidanceMessage: `Benefisto verified official portal for ${groqAnalysis.canonicalName} (${groqAnalysis.domain}).`
   };
 
   STORE_CACHE.set(cacheKey, result);

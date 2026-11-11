@@ -187,7 +187,7 @@ export async function POST(request) {
 
     let prompt = "";
     if (isMedicine) {
-      prompt = `You are ShopSmart Clinical AI & Pharmacopoeia Guide, providing objective clinical facts, chemical composition, and strict medical safety precautions for Indian medicines.
+      prompt = `You are Benefisto Clinical AI & Pharmacopoeia Guide, providing objective clinical facts, chemical composition, and strict medical safety precautions for Indian medicines.
 Analyze this pharmaceutical product:
 Medicine Title: "${productTitle}"
 Current Price: ${productPrice} at ${storeName}
@@ -213,7 +213,7 @@ Respond ONLY with a JSON object matching this schema:
   "trustScore": 99
 }`;
     } else if (isSupplement) {
-      prompt = `You are ShopSmart Nutrition AI & Supplement Purity Guide, analyzing authentic gym & health supplements in India.
+      prompt = `You are Benefisto Nutrition AI & Supplement Purity Guide, analyzing authentic gym & health supplements in India.
 Analyze this supplement product based on authentic metadata:
 Product: "${productTitle}"
 Current Price: ${productPrice} at ${storeName}
@@ -253,7 +253,7 @@ Respond ONLY with a valid JSON object matching this schema:
           `\nEnsure your commentary is coherent and naturally complements what the user has already inspected without contradictory advice.`
         : "";
 
-      prompt = `You are ShopSmart AI, an independent, trusted technical advisor and hardware specification analyst in India.
+      prompt = `You are Benefisto, an independent, trusted technical advisor and hardware specification analyst in India.
 Your mission is to provide an objective, authentic, and spec-grounded evaluation for this specific product.
 
 ETHOS & PHILOSOPHY:
@@ -383,7 +383,7 @@ Always respond ONLY with a valid JSON object matching this schema:
               "Content-Type": "application/json",
               "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
               "HTTP-Referer": "http://localhost:3000",
-              "X-Title": "ShopSmart AI"
+              "X-Title": "Benefisto"
             },
             body: JSON.stringify({
               model: orModel,

@@ -71,7 +71,7 @@ export default function CountryOnboardingModal({ isOpen, onConfirm, currentCount
               </h2>
 
               <p className="text-xs sm:text-sm text-indigo-200/90 max-w-md mx-auto font-medium leading-relaxed">
-                ShopSmart AI customizes verified discount coupons, live store comparisons, travel perks, and pricing currency strictly for your region.
+                Benefisto customizes verified discount coupons, live store comparisons, travel perks, and pricing currency strictly for your region.
               </p>
             </div>
           </div>

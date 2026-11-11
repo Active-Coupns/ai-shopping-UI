@@ -5,7 +5,7 @@ export const maxDuration = 30;
 export const dynamic = "force-dynamic";
 
 /**
- * ShopSmart AI — Master Coupon Database Audit & Verification Cron
+ * Benefisto — Master Coupon Database Audit & Verification Cron
  * Strictly protected by CRON_SECRET against unauthorized trigger.
  */
 export async function GET(request) {

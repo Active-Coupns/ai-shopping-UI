@@ -1,5 +1,5 @@
 /**
- * ShopSmart AI — Client-Side Hardware & Device Fingerprint Engine
+ * Benefisto — Client-Side Hardware & Device Fingerprint Engine
  * 
  * Features:
  * 1. Zero external dependencies (<3KB bundle footprint).
@@ -50,9 +50,9 @@ function getCanvasFingerprint() {
     ctx.fillStyle = "#f60";
     ctx.fillRect(125, 1, 62, 20);
     ctx.fillStyle = "#069";
-    ctx.fillText("ShopSmart AI 🐶🛍️ 2026", 2, 15);
+    ctx.fillText("Benefisto 🐶🛍️ 2026", 2, 15);
     ctx.fillStyle = "rgba(102, 204, 0, 0.7)";
-    ctx.fillText("ShopSmart AI 🐶🛍️ 2026", 4, 17);
+    ctx.fillText("Benefisto 🐶🛍️ 2026", 4, 17);
 
     // Quadratic bezier curve
     ctx.beginPath();

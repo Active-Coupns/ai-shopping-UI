@@ -1,5 +1,5 @@
 /**
- * ShopSmart AI - Verified Master Coupon & Deal Registry
+ * Benefisto - Verified Master Coupon & Deal Registry
  * 100% Deterministic, active, verified bank & merchant promotion codes
  * Covers Top 50+ Indian & Global Merchants across Food, Grocery/Quick Commerce, Fashion, Tech & Travel.
  */

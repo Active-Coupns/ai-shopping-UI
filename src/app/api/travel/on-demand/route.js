@@ -55,7 +55,7 @@ export async function POST(req) {
       total: (result.deals || []).length
     });
   } catch (error) {
-    console.error("[ShopSmart AI On-Demand API Error]:", error);
+    console.error("[Benefisto On-Demand API Error]:", error);
     return NextResponse.json(
       { success: false, error: "Failed to discover on-demand deals for requested brand." },
       { status: 500 }

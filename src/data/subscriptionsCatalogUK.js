@@ -1,5 +1,5 @@
 /**
- * ShopSmart AI — Master Subscriptions & Digital Services Catalog (United Kingdom - GB / UK)
+ * Benefisto — Master Subscriptions & Digital Services Catalog (United Kingdom - GB / UK)
  * 25 Comprehensive Brands across 7 Categories with 100% Verified Multi-Tier Plans in GBP (£),
  * UK Carrier Perks (EE, O2, Vodafone, Sky TV, Virgin Media), Super Combo Passes, and Cashback Hacks.
  */

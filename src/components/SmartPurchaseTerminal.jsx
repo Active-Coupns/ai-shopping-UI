@@ -344,7 +344,7 @@ export default function SmartPurchaseTerminal({
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-5 border-b border-slate-100">
               <div>
                 <span className="text-[11px] font-black uppercase tracking-widest text-brand-indigo block">
-                  ShopSmart AI Purchase Terminal
+                  Benefisto Purchase Terminal
                 </span>
                 <h2 className="text-lg sm:text-xl font-black text-slate-900">
                   The Net Savings Breakdown
@@ -446,7 +446,7 @@ export default function SmartPurchaseTerminal({
                   </div>
                   <div>
                     <div className="flex items-center gap-1.5">
-                      <span className="font-bold text-slate-900">ShopSmart Guaranteed Gift Card</span>
+                      <span className="font-bold text-slate-900">Benefisto Guaranteed Gift Card</span>
                       <span className="px-1.5 py-0.2 rounded-md bg-indigo-100 text-[10px] font-black text-indigo-700">
                         {voucherPercent}% OFF
                       </span>
@@ -711,7 +711,7 @@ export default function SmartPurchaseTerminal({
             <div className="flex items-center gap-2.5">
               <Headphones className="w-4 h-4 text-brand-indigo shrink-0" />
               <span>
-                <strong>ShopSmart SafePay Promise:</strong> 100% verified digital partner fulfillment. Dedicated 24x7 resolution helpline for instant code support.
+                <strong>Benefisto SafePay Promise:</strong> 100% verified digital partner fulfillment. Dedicated 24x7 resolution helpline for instant code support.
               </span>
             </div>
             <span className="font-bold text-slate-500 shrink-0">
@@ -742,7 +742,7 @@ export default function SmartPurchaseTerminal({
                   </div>
                   <div>
                     <h3 className="text-base font-black text-slate-900">
-                      ShopSmart × Hubble Voucher Desk
+                      Benefisto × Hubble Voucher Desk
                     </h3>
                     <p className="text-[11px] font-bold text-slate-500">
                       Official Partner Co-Branded Gateway
@@ -765,7 +765,7 @@ export default function SmartPurchaseTerminal({
                   <span className="font-bold text-slate-900">{currencySymbol}{originalStorePrice.toLocaleString()}</span>
                 </div>
                 <div className="flex items-center justify-between text-xs font-semibold text-emerald-700 mb-2">
-                  <span>ShopSmart Partner Discount ({voucherPercent}%):</span>
+                  <span>Benefisto Partner Discount ({voucherPercent}%):</span>
                   <span className="font-bold">- {currencySymbol}{voucherDiscountAmount.toLocaleString()}</span>
                 </div>
                 <div className="pt-2 border-t border-indigo-200/60 flex items-center justify-between text-sm font-black text-indigo-950">
@@ -783,10 +783,10 @@ export default function SmartPurchaseTerminal({
                 </span>
                 <div className="flex items-center justify-center gap-2">
                   <span className="font-mono text-base font-black tracking-wider text-slate-800 bg-white px-4 py-2 rounded-xl border border-slate-300">
-                    SHOPSMART-GIFT-X784
+                    benefisto-GIFT-X784
                   </span>
                   <button
-                    onClick={() => handleCopyCode("SHOPSMART-GIFT-X784")}
+                    onClick={() => handleCopyCode("benefisto-GIFT-X784")}
                     className="p-2.5 rounded-xl bg-brand-indigo hover:bg-indigo-700 text-white transition-colors cursor-pointer flex items-center gap-1 text-xs font-bold shadow-xs"
                   >
                     {isCopiedVoucher ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
@@ -798,7 +798,7 @@ export default function SmartPurchaseTerminal({
               {/* Security & Customer Helpline Note */}
               <div className="text-[11px] text-slate-500 leading-relaxed space-y-1 mb-5">
                 <p>• <strong>Instant SMS &amp; WhatsApp Delivery:</strong> Codes are delivered in 5 seconds directly to your phone.</p>
-                <p>• <strong>24x7 ShopSmart Resolution Desk:</strong> In the rare case of redemption delay, our support team will resolve or refund immediately.</p>
+                <p>• <strong>24x7 Benefisto Resolution Desk:</strong> In the rare case of redemption delay, our support team will resolve or refund immediately.</p>
               </div>
 
               <div className="flex gap-2.5">

@@ -142,7 +142,7 @@ export async function POST(request) {
     }
     const browsingNote = browsingLines.length > 0 ? `\nSESSION BROWSING SIGNALS (Use gently for relevant context, never creep out the user):\n${browsingLines.join("\n")}\n` : "";
 
-    const prompt = `You are ShopSmart AI Shopping Guide, an expert, honest, and friendly personal shopping consultant for an ${isUS ? "US" : "Indian"} e-commerce search platform.
+    const prompt = `You are Benefisto Shopping Guide, an expert, honest, and friendly personal shopping consultant for an ${isUS ? "US" : "Indian"} e-commerce search platform.
 
 YOUR MISSION & PHILOSOPHY:
 1. ADVISOR FIRST, SEARCH SECOND: You are a friendly, knowledgeable consultant. Never rush the buyer to search. If they are confused (e.g. "PC vs Laptop", "battery vs GPU", "which brand is best"), explain clearly in simple, natural terms in 2-3 sentences.
@@ -198,7 +198,7 @@ YOUR MISSION & PHILOSOPHY:
    - "budgetLimit": integer number if known, or null
 
 ROLE & PURPOSE BOUNDARY:
-- Your role is strictly ShopSmart AI Pre-Search Shopping Guide.
+- Your role is strictly Benefisto Pre-Search Shopping Guide.
 - You exist solely to help buyers discover products, clarify features/specs, compare options, and suggest search queries.
 - You do NOT generate essays, stories, blog articles, computer programs, or creative content.
 - If the user asks for non-shopping tasks (e.g. general essay writing, coding, bedtime stories), politely respond in 1-2 friendly sentences that your expertise is personal shopping guidance, and ask what product or category they would like to explore.
@@ -280,7 +280,7 @@ Respond ONLY with a valid JSON object matching this schema:
               "Content-Type": "application/json",
               "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
               "HTTP-Referer": "http://localhost:3000",
-              "X-Title": "ShopSmart Concierge"
+              "X-Title": "Benefisto Concierge"
             },
             body: JSON.stringify({
               model: orModel,

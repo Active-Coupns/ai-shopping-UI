@@ -1,5 +1,5 @@
 /**
- * ShopSmart AI — Platform-Wide Security Shield & Unified Protection Engine
+ * Benefisto — Platform-Wide Security Shield & Unified Protection Engine
  *
  * Provides zero-latency, high-performance security enforcement across:
  * 1. Content Moderation & Harmful Search Filtering (Illegal narcotics, weapons of violence, malware)
@@ -42,7 +42,7 @@ export function checkSearchContentSafety(rawQuery = "") {
     if (pattern.test(query)) {
       return {
         safe: false,
-        reason: "ShopSmart AI supports only lawful and safe shopping queries. Please search for consumer products or gadgets.",
+        reason: "Benefisto supports only lawful and safe shopping queries. Please search for consumer products or gadgets.",
         matchedCategory: "HARMFUL_SEARCH_QUERY"
       };
     }

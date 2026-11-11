@@ -1,5 +1,5 @@
 /**
- * ShopSmart AI — On-Demand Live Deals Discovery Engine
+ * Benefisto — On-Demand Live Deals Discovery Engine
  * 
  * Dynamically scans and structures verified promo codes, baggage perks,
  * and bank card offers for niche and unlisted brands on user request.
@@ -96,17 +96,17 @@ export async function discoverOnDemandDeals(brandName, category = "flights", cou
   if (ON_DEMAND_MEMORY_CACHE.has(cacheKey)) {
     const cached = ON_DEMAND_MEMORY_CACHE.get(cacheKey);
     if (Date.now() - cached.timestamp < 1000 * 60 * 60 * 24) {
-      console.log(`[ShopSmart AI On-Demand] Returning cached deals for ${normBrand} (${normCountry})`);
+      console.log(`[Benefisto On-Demand] Returning cached deals for ${normBrand} (${normCountry})`);
       return { success: true, fromCache: true, deals: cached.deals, brand: normBrand };
     }
   }
 
   // 1.5. STRICT GATEKEEPER: Groq AI & Domain Ping MUST verify entity BEFORE scraper is touched
-  console.log(`[ShopSmart AI On-Demand] Gatekeeper checking legitimacy for: "${normBrand}"...`);
+  console.log(`[Benefisto On-Demand] Gatekeeper checking legitimacy for: "${normBrand}"...`);
   const entityCheck = await verifyTravelEntity(normBrand, category, normCountry);
 
   if (!entityCheck.isRealEntity || entityCheck.action === "UNKNOWN_ENTITY") {
-    console.warn(`[ShopSmart AI On-Demand] Gatekeeper: "${normBrand}" not verified. Scraper will NOT be called.`);
+    console.warn(`[Benefisto On-Demand] Gatekeeper: "${normBrand}" not verified. Scraper will NOT be called.`);
     return {
       success: false,
       brand: normBrand,
@@ -116,7 +116,7 @@ export async function discoverOnDemandDeals(brandName, category = "flights", cou
   }
 
   if (entityCheck.action === "CATEGORY_MISMATCH") {
-    console.warn(`[ShopSmart AI On-Demand] Gatekeeper REJECTED: "${normBrand}" belongs to ${entityCheck.entityCategory}, not ${category}. Scraper will NOT be called.`);
+    console.warn(`[Benefisto On-Demand] Gatekeeper REJECTED: "${normBrand}" belongs to ${entityCheck.entityCategory}, not ${category}. Scraper will NOT be called.`);
     return {
       success: false,
       brand: entityCheck.canonicalName || normBrand,
@@ -129,7 +129,7 @@ export async function discoverOnDemandDeals(brandName, category = "flights", cou
   // Gatekeeper APPROVED: Use the canonical verified name and domain
   const verifiedBrand = entityCheck.canonicalName || normBrand;
   const verifiedDomain = entityCheck.domain || "";
-  console.log(`[ShopSmart AI On-Demand] Gatekeeper APPROVED: "${verifiedBrand}" (${verifiedDomain}). Instructing live scanner...`);
+  console.log(`[Benefisto On-Demand] Gatekeeper APPROVED: "${verifiedBrand}" (${verifiedDomain}). Instructing live scanner...`);
 
   const officialUrl = verifiedDomain
     ? (verifiedDomain.startsWith("http") ? verifiedDomain : `https://www.${verifiedDomain.replace(/^www\./, "")}`)
@@ -138,7 +138,7 @@ export async function discoverOnDemandDeals(brandName, category = "flights", cou
   // SSRF & Malicious Protocol Guard: Block localhost, 127.0.0.1, AWS metadata, private IPs
   const urlSafety = isSafeRedirectUrl(officialUrl);
   if (!urlSafety.safe) {
-    console.warn(`[ShopSmart AI On-Demand] SSRF Blocked for URL "${officialUrl}": ${urlSafety.reason}`);
+    console.warn(`[Benefisto On-Demand] SSRF Blocked for URL "${officialUrl}": ${urlSafety.reason}`);
     return {
       success: false,
       brand: verifiedBrand,
@@ -172,7 +172,7 @@ export async function discoverOnDemandDeals(brandName, category = "flights", cou
       }
     }
   } catch (err) {
-    console.warn(`[ShopSmart AI On-Demand] Live portal fetch timed out or blocked for ${normBrand}. Falling back to AI grounded extraction.`);
+    console.warn(`[Benefisto On-Demand] Live portal fetch timed out or blocked for ${normBrand}. Falling back to AI grounded extraction.`);
   }
 
   // 3. Synthesize and structure into OTT Deal Cards via Groq LLM
@@ -180,7 +180,7 @@ export async function discoverOnDemandDeals(brandName, category = "flights", cou
 
   if (GROQ_API_KEY) {
     try {
-      const prompt = `You are the ShopSmart AI Deals Engine.
+      const prompt = `You are the Benefisto Deals Engine.
 A user on-demand requested active verified promo codes, booking discounts, and fee-waiver saving strategies for brand: "${normBrand}" in category "${category}" for country "${normCountry}" (currency: ${currencySymbol}).
 
 ${scrapedText ? `RAW SCRAPED PORTAL TEXT:\n"""${scrapedText}"""\n` : `PORTAL URL: ${officialUrl}\n`}
@@ -249,7 +249,7 @@ REQUIREMENTS:
               expiryNote: deal.expiryNote || "Live Active Deal",
               isEvergreen: false,
               isOnDemand: true,
-              terms: deal.terms || `Verified via ShopSmart AI Live Radar for ${normCountry}. Apply at official checkout.`,
+              terms: deal.terms || `Verified via Benefisto Live Radar for ${normCountry}. Apply at official checkout.`,
               directUrl: officialUrl,
               badge: "⚡ LIVE DISCOVERED",
               accentColor: resolveBrandGradient(category)
@@ -258,7 +258,7 @@ REQUIREMENTS:
         }
       }
     } catch (llmErr) {
-      console.warn(`[ShopSmart AI On-Demand] LLM synthesis failed for ${normBrand}:`, llmErr.message);
+      console.warn(`[Benefisto On-Demand] LLM synthesis failed for ${normBrand}:`, llmErr.message);
     }
   }
 
@@ -282,7 +282,7 @@ REQUIREMENTS:
         expiryNote: "Live Active Deal",
         isEvergreen: false,
         isOnDemand: true,
-        terms: `Verified via ShopSmart AI Live Radar. Valid on official ${normBrand} online reservations.`,
+        terms: `Verified via Benefisto Live Radar. Valid on official ${normBrand} online reservations.`,
         directUrl: officialUrl,
         badge: "⚡ LIVE DISCOVERED",
         accentColor: resolveBrandGradient(category)

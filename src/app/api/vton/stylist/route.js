@@ -91,7 +91,7 @@ export async function POST(request) {
     // 5. High-IQ Conversational Stylist Brain (TryOn Discovery Engine)
     if (GROQ_API_KEY) {
       try {
-        const systemPrompt = `You are ShopSmart AI Virtual Trial Room Stylist — an insightful, high-taste, and inspiring personal fashion consultant.
+        const systemPrompt = `You are Benefisto Virtual Trial Room Stylist — an insightful, high-taste, and inspiring personal fashion consultant.
 
 YOUR PRIMARY IDENTITY & CORE BUSINESS MISSION:
 - Understand this deeply: We are NOT an e-commerce clothing shop. We DO NOT push inventory, force sales, or act like shopkeepers.

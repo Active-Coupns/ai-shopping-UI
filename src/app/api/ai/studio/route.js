@@ -136,7 +136,7 @@ export async function POST(request) {
         return NextResponse.json({
           success: false,
           error: "SECURITY_VIOLATION",
-          message: "ShopSmart AI only assists with retail product discovery and advice."
+          message: "Benefisto only assists with retail product discovery and advice."
         }, { status: 400 });
       }
     }
@@ -192,7 +192,7 @@ Respond strictly in JSON:
           `${idx + 1}. ${p.title} | Price: ₹${p.price} | Store: ${p.store || p.store_name || "Verified Store"}`
         ).join("\n");
 
-        const followUpInstruction = `You are ShopSmart AI, a trusted shopping advisor like ChatGPT.
+        const followUpInstruction = `You are Benefisto, a trusted shopping advisor like ChatGPT.
 The user has shortlisted/viewed these products on their screen:
 ${productSummaries}
 
@@ -221,7 +221,7 @@ Output strictly in JSON:
     // -----------------------------------------------------------------------------------
     // ACTION: QUESTIONNAIRE GENERATION (First turn: "Let me narrow it down for you")
     // -----------------------------------------------------------------------------------
-    const systemInstruction = `You are ShopSmart AI, an expert shopping concierge like ChatGPT.
+    const systemInstruction = `You are Benefisto, an expert shopping concierge like ChatGPT.
 When a user asks about buying any product (laptop, phone, headphones, shoes, medicine, supplement, TV, AC):
 1. Provide a warm, helpful 1-2 sentence intro offering honest buying advice for their budget/category.
 2. Generate an interactive questionnaire titled "Let me narrow it down for you" with exactly 2 or 3 high-impact multiple choice questions.

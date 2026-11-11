@@ -327,7 +327,7 @@ export default function SearchAiConciergeModal({
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <h3 className="text-sm font-black text-slate-900 tracking-tight truncate">
-                    ShopSmart <span className="text-brand-indigo">Ask AI</span>
+                    Benefisto <span className="text-brand-indigo">Ask AI</span>
                   </h3>
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-brand-indigo border border-indigo-200/80 whitespace-nowrap shrink-0">
                     AI GUIDE

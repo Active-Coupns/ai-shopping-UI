@@ -1,5 +1,5 @@
 /**
- * ShopSmart AI — Centralized AI Router & Multi-Model Resilience Gateway
+ * Benefisto — Centralized AI Router & Multi-Model Resilience Gateway
  *
  * Capabilities:
  * 1. Multi-Tiered AI Routing:
@@ -113,7 +113,7 @@ export async function completeAi({
           headers: {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${GROQ_API_KEY}`,
-            "User-Agent": "ShopSmart-AI/1.0"
+            "User-Agent": "Benefisto-AI/1.0"
           },
           body: JSON.stringify(reqBody),
           signal: AbortSignal.timeout(timeoutMs)
@@ -148,8 +148,8 @@ export async function completeAi({
             "Content-Type": "application/json",
             "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
             "HTTP-Referer": "http://localhost:3000",
-            "X-Title": "ShopSmart AI",
-            "User-Agent": "ShopSmart-AI/1.0"
+            "X-Title": "Benefisto",
+            "User-Agent": "Benefisto-AI/1.0"
           },
           body: JSON.stringify({
             model,
@@ -188,7 +188,7 @@ export async function completeAi({
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "User-Agent": "ShopSmart-AI/1.0"
+          "User-Agent": "Benefisto-AI/1.0"
         },
         body: JSON.stringify({
           contents: [{ parts: [{ text: `${systemPrompt}\n\n${prompt}` }] }],

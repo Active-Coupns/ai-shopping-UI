@@ -81,13 +81,13 @@ export default function ProductCard({
     if (e) e.stopPropagation();
     const store = selectedStore?.name || product.store_name || product.store || "Online Store";
     const price = formatPrice(selectedStore?.price || product.price, product.currency);
-    const shareText = `🔥 Found this deal on ShopSmart: *${product.title}* for only *${price}* at ${store}!\nCompare prices & AI review here:`;
-    const shareUrl = typeof window !== "undefined" ? window.location.href : "https://shopsmart-ai.com";
+    const shareText = `🔥 Found this deal on Benefisto: *${product.title}* for only *${price}* at ${store}!\nCompare prices & AI review here:`;
+    const shareUrl = typeof window !== "undefined" ? window.location.href : "https://benefisto.com";
 
     if (typeof navigator !== "undefined" && navigator.share) {
       try {
         await navigator.share({
-          title: `ShopSmart Deal: ${product.title}`,
+          title: `Benefisto Deal: ${product.title}`,
           text: shareText,
           url: shareUrl
         });
@@ -937,7 +937,7 @@ export default function ProductCard({
                       ? "Extracting real chemical composition, storage instructions, and clinical precautions."
                       : isSupplementCard
                       ? "Analyzing per-scoop protein content, allergen/lactose warnings, and authentic importer seals."
-                      : "ShopSmart AI is analyzing hardware architecture, component limits & price value."}
+                      : "Benefisto is analyzing hardware architecture, component limits & price value."}
                   </p>
                 </div>
               ) : aiAnalysis ? (

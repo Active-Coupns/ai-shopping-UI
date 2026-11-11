@@ -104,7 +104,7 @@ export async function POST(request) {
           isNonRetail: true,
           product: safeProduct,
           unsupportedCategory: dossierResult.unsupportedCategory || "Non-Retail Category",
-          message: dossierResult.unsupportedMessage || "We analyzed this link, but it appears to be an automotive, real-estate, or non-retail portal listing. ShopSmart AI is designed exclusively for retail e-commerce shopping products (Electronics, Fashion, Beauty, Home & Appliances). Automotive, property, and classified portals are not supported.",
+          message: dossierResult.unsupportedMessage || "We analyzed this link, but it appears to be an automotive, real-estate, or non-retail portal listing. Benefisto is designed exclusively for retail e-commerce shopping products (Electronics, Fashion, Beauty, Home & Appliances). Automotive, property, and classified portals are not supported.",
           remaining: finalRemaining
         });
       }

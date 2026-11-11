@@ -72,7 +72,7 @@ export async function curateProductsWithAi(query, products = [], country = "IN")
     s: p.store_name || p.store || "Online"
   }));
 
-  const prompt = `You are ShopSmart AI Product Quality & Curation Specialist.
+  const prompt = `You are Benefisto Product Quality & Curation Specialist.
 User search query: "${cleanQuery}" (Country: ${country})
 
 Candidate products extracted from search engines:
@@ -95,7 +95,7 @@ Respond ONLY with valid JSON:
   try {
     const aiResult = await aiRouter.complete({
       prompt,
-      systemPrompt: "You are ShopSmart AI Product Quality & Curation Specialist. Always respond in valid JSON.",
+      systemPrompt: "You are Benefisto Product Quality & Curation Specialist. Always respond in valid JSON.",
       jsonMode: true,
       temperature: 0.1,
       maxTokens: 300,

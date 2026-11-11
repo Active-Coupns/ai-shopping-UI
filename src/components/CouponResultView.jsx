@@ -449,8 +449,8 @@ export default function CouponResultView({
       desc: `Major Indian banks (HDFC, ICICI, Axis, SBI) run rotating day-of-the-week promotions on ${storeName} with instant 10% to 15% bill reductions.`
     },
     {
-      title: "Scan Your Cart with ShopSmart AI",
-      desc: `Before completing checkout, paste your cart screenshot into ShopSmart AI. Our AI vision instantly calculates which exact coupon produces the highest net rupee savings.`
+      title: "Scan Your Cart with Benefisto",
+      desc: `Before completing checkout, paste your cart screenshot into Benefisto. Our AI vision instantly calculates which exact coupon produces the highest net rupee savings.`
     }
   ];
 
@@ -458,11 +458,11 @@ export default function CouponResultView({
   const storeFaqs = [
     {
       q: `How do I apply a verified promo code on ${storeName}?`,
-      a: `To apply a promo code on ${storeName}: 1) Add your desired items to the cart and open checkout. 2) Look for the 'Apply Coupon' or 'Promo Code' input box. 3) Click 'Reveal & Copy' above on ShopSmart AI. The code will unmask and copy to your clipboard. 4) Paste the code in the ${storeName} checkout box to instantly enjoy your discount!`
+      a: `To apply a promo code on ${storeName}: 1) Add your desired items to the cart and open checkout. 2) Look for the 'Apply Coupon' or 'Promo Code' input box. 3) Click 'Reveal & Copy' above on Benefisto. The code will unmask and copy to your clipboard. 4) Paste the code in the ${storeName} checkout box to instantly enjoy your discount!`
     },
     {
       q: `Are these ${storeName} discount codes tested and working today?`,
-      a: `Yes! Every code on ShopSmart AI is tested daily against verified minimum order slabs and bank criteria. Unlike outdated aggregator sites that display expired codes, we only feature active universal cart discounts and real-time bank promotions.`
+      a: `Yes! Every code on Benefisto is tested daily against verified minimum order slabs and bank criteria. Unlike outdated aggregator sites that display expired codes, we only feature active universal cart discounts and real-time bank promotions.`
     },
     {
       q: `Can I use more than one coupon code on ${storeName}?`,
@@ -470,7 +470,7 @@ export default function CouponResultView({
     },
     {
       q: `What should I do if a promo code says 'Not Applicable'?`,
-      a: `If a code does not apply, check the minimum cart value shown on our card (e.g. ₹199 or ₹499). You can also upload your cart screenshot to ShopSmart AI to let our optimizer find the exact code matching your items.`
+      a: `If a code does not apply, check the minimum cart value shown on our card (e.g. ₹199 or ₹499). You can also upload your cart screenshot to Benefisto to let our optimizer find the exact code matching your items.`
     }
   ];
 

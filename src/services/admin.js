@@ -96,7 +96,7 @@ export async function getAdminSettings() {
     const res = await fetch("/api/admin/settings");
     if (res.ok) {
       const data = await res.json();
-      localStorage.setItem("shopsmart_admin_settings", JSON.stringify(data));
+      localStorage.setItem("benefisto_admin_settings", JSON.stringify(data));
       return normalizeSettings(data);
     }
   } catch (e) {
@@ -106,7 +106,7 @@ export async function getAdminSettings() {
   // 3. Fallback to localStorage
   try {
     if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("shopsmart_admin_settings");
+      const stored = localStorage.getItem("benefisto_admin_settings");
       if (stored) {
         return normalizeSettings(JSON.parse(stored));
       }
@@ -120,7 +120,7 @@ export async function saveAdminSettings(user, settings) {
   const normalized = normalizeSettings(settings);
   try {
     if (typeof window !== "undefined") {
-      localStorage.setItem("shopsmart_admin_settings", JSON.stringify(normalized));
+      localStorage.setItem("benefisto_admin_settings", JSON.stringify(normalized));
       
       const res = await fetch("/api/admin/settings", {
         method: "POST",

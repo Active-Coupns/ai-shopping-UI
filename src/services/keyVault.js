@@ -1,5 +1,5 @@
 /**
- * ShopSmart AI — Double-Blind Key Vault & Credential Shield
+ * Benefisto — Double-Blind Key Vault & Credential Shield
  *
  * Provides an isolated, memory-protected abstraction layer for all upstream
  * third-party credentials (OpenWeb Ninja, Gemini AI, Zyte, Groq, PixelAPI).

@@ -26,7 +26,7 @@ export async function generateMetadata({ params }) {
 
   if (!sub) {
     return {
-      title: "Subscription Plans & Savings Blueprint | ShopSmart AI",
+      title: "Subscription Plans & Savings Blueprint | Benefisto",
       description: "Compare digital subscription plans and claim free telecom bundle perks."
     };
   }
@@ -40,9 +40,9 @@ export async function generateMetadata({ params }) {
   const telecomNames = isAE ? "Etisalat/du" : (isAU ? "Optus/Telstra/Hubbl" : (isCA ? "Telus/Bell/Rogers" : (isUK ? "EE/O2/Sky" : (isUS ? "T-Mobile/Verizon" : "Jio/Airtel"))));
   const locale = isAE ? "en_AE" : (isAU ? "en_AU" : (isCA ? "en_CA" : (isUK ? "en_GB" : (isUS ? "en_US" : "en_IN"))));
 
-  const catchyTitle = `${sub.seo.catchyH1} | ShopSmart AI`;
+  const catchyTitle = `${sub.seo.catchyH1} | Benefisto`;
   const metaDesc = `Don't pay full price for ${sub.name}! Compare all ${sub.plans.length} tiers and unlock our verified 4-Level Savings Blueprint to get ${sub.name} for ${currency}0 via ${telecomNames} or up to 50% off with smart bundles.`;
-  const canonicalUrl = `https://shopsmart-ai.com/subscriptions/${sub.seo.slug}`;
+  const canonicalUrl = `https://benefisto.com/subscriptions/${sub.seo.slug}`;
 
   return {
     title: catchyTitle,
@@ -55,7 +55,7 @@ export async function generateMetadata({ params }) {
       title: catchyTitle,
       description: metaDesc,
       url: canonicalUrl,
-      siteName: "ShopSmart AI",
+      siteName: "Benefisto",
       locale: locale,
       type: "article",
     },
@@ -104,19 +104,19 @@ export default async function SubscriptionDetailPage({ params }) {
             "@type": "ListItem",
             "position": 1,
             "name": "Home",
-            "item": "https://shopsmart-ai.com"
+            "item": "https://benefisto.com"
           },
           {
             "@type": "ListItem",
             "position": 2,
             "name": "Digital Subscriptions",
-            "item": "https://shopsmart-ai.com"
+            "item": "https://benefisto.com"
           },
           {
             "@type": "ListItem",
             "position": 3,
             "name": sub.name,
-            "item": `https://shopsmart-ai.com/subscriptions/${sub.seo.slug}`
+            "item": `https://benefisto.com/subscriptions/${sub.seo.slug}`
           }
         ]
       },

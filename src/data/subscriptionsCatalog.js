@@ -1,5 +1,5 @@
 /**
- * ShopSmart AI — Master Subscriptions & Digital Services Catalog (India - IN)
+ * Benefisto — Master Subscriptions & Digital Services Catalog (India - IN)
  * 25 Comprehensive Brands across 7 Categories with 100% Verified Multi-Tier Plans,
  * Add-Ons, Telecom Perks, Gift Voucher Routes, and Super Combos.
  */

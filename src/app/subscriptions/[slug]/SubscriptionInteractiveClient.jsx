@@ -303,7 +303,7 @@ export default function SubscriptionInteractiveClient({ sub }) {
             </div>
             <div>
               <h2 className="text-sm sm:text-base font-black text-slate-950 leading-tight">
-                The ShopSmart 4-Level Savings Blueprint
+                The Benefisto 4-Level Savings Blueprint
               </h2>
               <p className="text-[10px] sm:text-xs text-slate-500 font-semibold line-clamp-1">
                 Protected Strategy Matrix: Legal discounts, vouchers & combo passes

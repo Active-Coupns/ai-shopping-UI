@@ -540,7 +540,7 @@ export default function SubscriptionsView({
           </div>
           <div>
             <h2 className="font-extrabold text-sm sm:text-base text-white">
-              ShopSmart AI Subscription Optimizer
+              Benefisto Subscription Optimizer
             </h2>
             <p className="text-xs text-indigo-200/80 font-medium max-w-xl">
               Don&apos;t pay full price upfront. Discover if your telecom provider or credit card unlocks complimentary access and bundled savings.
@@ -954,13 +954,13 @@ export default function SubscriptionsView({
       {!isLoadingSubs && filteredSubs.length === 0 && (
         <div className="max-w-2xl mx-auto my-6">
           {isVerifyingEntity ? (
-            /* Analyzing / Verifying Entity with ShopSmart AI */
+            /* Analyzing / Verifying Entity with Benefisto */
             <div className="p-8 rounded-3xl bg-white border border-slate-200 shadow-2xs flex flex-col items-center justify-center gap-3 text-center">
               <div className="w-10 h-10 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
                 <RefreshCw className="w-5 h-5 animate-spin" />
               </div>
               <p className="text-xs font-bold text-slate-700">
-                Analyzing platform &amp; verifying official channels with ShopSmart AI...
+                Analyzing platform &amp; verifying official channels with Benefisto...
               </p>
               <p className="text-[11px] text-slate-400">
                 Checking brand legitimacy and subscription match for &ldquo;{debouncedQuery || searchQuery}&rdquo;
@@ -1054,7 +1054,7 @@ export default function SubscriptionsView({
                       Discover verified 4-Level Savings Blueprint for &ldquo;{verifiedEntity.canonicalName}&rdquo;?
                     </h4>
                     <p className="text-xs text-slate-300 font-medium max-w-xl leading-relaxed">
-                      ShopSmart AI has verified the official portal for <strong>{verifiedEntity.canonicalName}</strong> ({verifiedEntity.domain}). Would you like ShopSmart AI to research {regionName} plans, screen limits, telecom bundles, and generate its verified 4-Level Savings Blueprint live?
+                      Benefisto has verified the official portal for <strong>{verifiedEntity.canonicalName}</strong> ({verifiedEntity.domain}). Would you like Benefisto to research {regionName} plans, screen limits, telecom bundles, and generate its verified 4-Level Savings Blueprint live?
                     </p>
                   </div>
                 </div>

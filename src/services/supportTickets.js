@@ -95,7 +95,7 @@ export async function getSupportTickets({ userId = null, userEmail = null, ids =
         replies: [
           {
             sender: "admin",
-            senderName: "ShopSmart Support",
+            senderName: "Benefisto Support",
             message: "Hello Ananya, the BOATHEAD code is valid for audio and wearables on orders above ₹999 on official boAt store.",
             timestamp: Date.now() - 3600000 * 1
           }
@@ -137,7 +137,7 @@ export async function getSupportTickets({ userId = null, userEmail = null, ids =
 export async function replyToSupportTicket({
   ticketId,
   sender = "admin", // admin | user
-  senderName = "ShopSmart Support",
+  senderName = "Benefisto Support",
   message = "",
   newStatus = null
 }) {

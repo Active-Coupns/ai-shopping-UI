@@ -1,5 +1,5 @@
 /**
- * ShopSmart AI — Master Subscriptions & Digital Services Catalog (United States - US)
+ * Benefisto — Master Subscriptions & Digital Services Catalog (United States - US)
  * 25 Comprehensive Brands across 7 Categories with 100% Verified Multi-Tier Plans in USD ($),
  * Telecom Carrier Perks (T-Mobile, Verizon, AT&T), Super Combo Bundles, and Retail Discounts.
  */

@@ -348,7 +348,7 @@ export default function AdminPage() {
           message: ticketReplyText.trim(),
           newStatus: ticketStatusUpdate,
           sender: "admin",
-          senderName: "ShopSmart Admin Support"
+          senderName: "Benefisto Admin Support"
         })
       });
 
@@ -681,7 +681,7 @@ export default function AdminPage() {
                     ENTERPRISE
                   </span>
                 </div>
-                <p className="text-[10px] text-slate-400 mt-0.5">ShopSmart AI Autonomous Governance</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">Benefisto Autonomous Governance</p>
               </div>
             </div>
           </div>
@@ -1592,7 +1592,7 @@ export default function AdminPage() {
                 <input
                   type="text"
                   required
-                  placeholder="Associate Tag (e.g. shopsmart-21)"
+                  placeholder="Associate Tag (e.g. benefisto-21)"
                   value={newTag.tag}
                   onChange={(e) => setNewTag({ ...newTag, tag: e.target.value })}
                   className="px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs font-bold text-white"

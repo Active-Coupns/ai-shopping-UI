@@ -1,5 +1,5 @@
 /**
- * ShopSmart AI — Smart Subscription & OTT Entity Gatekeeper
+ * Benefisto — Smart Subscription & OTT Entity Gatekeeper
  * 
  * Multi-layer intelligent verification:
  * 1. Catalog Fuzzy & Typo Matching against getSubscriptionsCatalog(country)
@@ -134,7 +134,7 @@ export async function verifySubscriptionEntity(rawQuery, country = "IN") {
   // 2. LAYER 2 & 3: Multi-Tier AI Entity Knowledge
   let groqAnalysis = null;
   try {
-    const prompt = `You are the ShopSmart AI Subscription Entity Gatekeeper.
+    const prompt = `You are the Benefisto Subscription Entity Gatekeeper.
 A user searched for: "${query}" in the Subscriptions & OTT section for country "${country}".
 
 Analyze whether this refers to a real, authentic commercial digital subscription, OTT streaming app, music/audio platform, cloud storage, fitness subscription, or digital pass.
@@ -158,7 +158,7 @@ OUTPUT JSON ONLY:
 
     const aiRes = await aiRouter.complete({
       prompt,
-      systemPrompt: "You are the ShopSmart AI Subscription Entity Gatekeeper. Always respond in valid JSON.",
+      systemPrompt: "You are the Benefisto Subscription Entity Gatekeeper. Always respond in valid JSON.",
       jsonMode: true,
       temperature: 0.1,
       maxTokens: 250,
@@ -238,7 +238,7 @@ OUTPUT JSON ONLY:
     isCategoryMatch: true,
     action: "SUBSCRIPTION_ENTITY_VERIFIED",
     description: groqAnalysis.briefDescription,
-    guidanceMessage: `ShopSmart AI verified official portal for ${groqAnalysis.canonicalName} (${groqAnalysis.domain}).`
+    guidanceMessage: `Benefisto verified official portal for ${groqAnalysis.canonicalName} (${groqAnalysis.domain}).`
   };
 
   ENTITY_CACHE.set(cacheKey, result);

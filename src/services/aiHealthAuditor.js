@@ -55,7 +55,7 @@ SYSTEM TELEMETRY SUMMARY (Last 6 Hours Window):
 - Recent Crash Samples: ${JSON.stringify((crashData.crashes || []).slice(0, 3).map(c => ({ msg: c.message, loc: c.location })))}
 `;
 
-    const prompt = `You are ShopSmart Autonomous Site Reliability Engineer & Health Auditor.
+    const prompt = `You are Benefisto Autonomous Site Reliability Engineer & Health Auditor.
 Analyze the following system telemetry metrics and determine the health state of the production platform:
 ${telemetryContext}
 

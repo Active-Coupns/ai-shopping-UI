@@ -1,5 +1,5 @@
 /**
- * ShopSmart AI — Cryptographic Request Handshake Engine
+ * Benefisto — Cryptographic Request Handshake Engine
  *
  * Implements a time-expiring rolling HMAC-SHA256 handshake between genuine
  * frontend user sessions and the backend API router.
@@ -10,7 +10,7 @@
  */
 
 // Internal cryptographic seed known only to the built application runtime
-const HANDSHAKE_SECRET_SEED = process.env.HANDSHAKE_SECRET_SEED || "shopsmart_sec_alpha_92f81c4e70b9";
+const HANDSHAKE_SECRET_SEED = process.env.HANDSHAKE_SECRET_SEED || "benefisto_sec_alpha_92f81c4e70b9";
 const TIME_WINDOW_MS = 30000; // 30-second rolling window tolerance
 
 /**

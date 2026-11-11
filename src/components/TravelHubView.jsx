@@ -207,7 +207,7 @@ export default function TravelHubView({
 
     setIsOnDemandScanning(true);
     setOnDemandError(null);
-    setScanStep("Initializing ShopSmart AI Live Radar...");
+    setScanStep("Initializing Benefisto Live Radar...");
 
     const t1 = setTimeout(() => {
       setScanStep(`Scanning official ${cleanBrand} booking channels...`);
@@ -418,13 +418,13 @@ export default function TravelHubView({
         {/* Deals Cards Grid (OTT Style Cards) */}
         {deals.length === 0 ? (
           isVerifyingEntity ? (
-            /* Analyzing / Verifying Entity with ShopSmart AI */
+            /* Analyzing / Verifying Entity with Benefisto */
             <div className="p-8 rounded-3xl bg-white border border-slate-200 shadow-2xs flex flex-col items-center justify-center gap-3 text-center">
               <div className="w-10 h-10 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
                 <Loader2 className="w-5 h-5 animate-spin" />
               </div>
               <p className="text-xs font-bold text-slate-700">
-                Analyzing platform &amp; verifying official channels with ShopSmart AI...
+                Analyzing platform &amp; verifying official channels with Benefisto...
               </p>
               <p className="text-[11px] text-slate-400">
                 Checking brand legitimacy and category match for &ldquo;{debouncedQuery || dealSearchQuery}&rdquo;
@@ -524,7 +524,7 @@ export default function TravelHubView({
                       Scan live verified deals for &ldquo;{verifiedEntity.canonicalName}&rdquo;?
                     </h4>
                     <p className="text-xs text-slate-300 font-medium max-w-xl leading-relaxed">
-                      ShopSmart AI has verified the official portal for <strong>{verifiedEntity.canonicalName}</strong> ({verifiedEntity.domain}). Would you like ShopSmart AI Live Radar to scan official channels to uncover active promo codes, baggage allowances, and bank card privileges?
+                      Benefisto has verified the official portal for <strong>{verifiedEntity.canonicalName}</strong> ({verifiedEntity.domain}). Would you like Benefisto Live Radar to scan official channels to uncover active promo codes, baggage allowances, and bank card privileges?
                     </p>
                   </div>
                 </div>
@@ -1352,7 +1352,7 @@ export default function TravelHubView({
       {/* 4. FOOTER ADVISORY NOTE */}
       <div className="text-center py-4 border-t border-slate-200/80">
         <p className="text-[11px] text-slate-400 font-medium">
-          ShopSmart AI provides strategic booking intelligence, fare rule analysis, and verified partner channels. Always inspect final ticket fares on official booking portals prior to payment.
+          Benefisto provides strategic booking intelligence, fare rule analysis, and verified partner channels. Always inspect final ticket fares on official booking portals prior to payment.
         </p>
       </div>
 

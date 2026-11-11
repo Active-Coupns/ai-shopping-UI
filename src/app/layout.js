@@ -13,23 +13,23 @@ const inter = Inter({
   subsets: ["latin"],
 });
 
-const defaultBaseUrl = process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://shopsmart-ai.com");
+const defaultBaseUrl = process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://benefisto.com");
 
 export const metadata = {
   metadataBase: new URL(defaultBaseUrl),
-  title: "ShopSmart AI - Intelligent Shopping Assistant & Lowest Price Deals",
+  title: "Benefisto - Intelligent Shopping Assistant & Lowest Price Deals",
   description: "Experience smart shopping. AI specifications analysis, verified discount coupons, and real-time lowest price comparison across Amazon, Flipkart, 1mg & more.",
   openGraph: {
-    title: "ShopSmart AI — Smarter Shopping, Instant Price Comparison & Deals",
+    title: "Benefisto — Smarter Shopping, Instant Price Comparison & Deals",
     description: "Compare lowest prices across Amazon, Flipkart, & top stores with Instant AI Review and Virtual Try-On.",
     url: defaultBaseUrl,
-    siteName: "ShopSmart AI",
+    siteName: "Benefisto",
     images: [
       {
         url: "/laptop.jpg",
         width: 1200,
         height: 630,
-        alt: "ShopSmart AI - Price Comparison & Smart Deals",
+        alt: "Benefisto - Price Comparison & Smart Deals",
       },
     ],
     locale: "en_IN",
@@ -37,7 +37,7 @@ export const metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "ShopSmart AI — Smarter Shopping, Instant Price Comparison & Deals",
+    title: "Benefisto — Smarter Shopping, Instant Price Comparison & Deals",
     description: "Compare lowest prices across Amazon, Flipkart, & top stores with Instant AI Review.",
     images: ["/laptop.jpg"],
   },

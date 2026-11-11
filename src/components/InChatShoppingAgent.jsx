@@ -221,7 +221,7 @@ export default function InChatShoppingAgent({
           ...prev,
           {
             role: "assistant",
-            text: "🔒 Sign-in required: Please sign in to your ShopSmart account to chat with the AI shopping assistant and get personalized recommendations.",
+            text: "🔒 Sign-in required: Please sign in to your Benefisto account to chat with the AI shopping assistant and get personalized recommendations.",
             isAuthPrompt: true
           }
         ]);

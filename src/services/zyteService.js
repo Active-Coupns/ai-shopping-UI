@@ -1,5 +1,5 @@
 /**
- * ShopSmart AI — Official Brand Offer & Coupon Engine (Powered by Zyte API)
+ * Benefisto — Official Brand Offer & Coupon Engine (Powered by Zyte API)
  *
  * Fetches 100% verified official promotional codes and offer pages directly from
  * brand D2C stores (e.g. boAt, Noise, Myntra, Domino's, Nike, Sephora) without

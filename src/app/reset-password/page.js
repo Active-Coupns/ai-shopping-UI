@@ -44,7 +44,7 @@ export default function ResetPasswordPage() {
               <ShoppingBag className="w-5 h-5" />
             </div>
             <span className="text-lg md:text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-100 to-slate-300">
-              ShopSmart <span className="text-brand-indigo">AI</span>
+              Benefisto <span className="text-brand-indigo">AI</span>
             </span>
           </div>
         </div>
@@ -92,7 +92,7 @@ export default function ResetPasswordPage() {
               </div>
               <h2 className="text-2xl font-bold text-white tracking-tight">Reset Password 🔒</h2>
               <p className="text-xs text-slate-400 mt-1.5">
-                Set a strong, new password for your ShopSmart AI account.
+                Set a strong, new password for your Benefisto account.
               </p>
             </div>
 
@@ -177,7 +177,7 @@ export default function ResetPasswordPage() {
             <span>AI powered shopping engine</span>
           </div>
           <div>
-            <span>Powered by Next.js & Framer Motion. &copy; 2026 ShopSmart AI.</span>
+            <span>Powered by Next.js & Framer Motion. &copy; 2026 Benefisto.</span>
           </div>
         </div>
       </footer>

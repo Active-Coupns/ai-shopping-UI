@@ -149,7 +149,7 @@ export function extractProductTitleFromUrl(urlStr) {
 }
 
 /**
- * Universal Regional Configuration Hub for ShopSmart AI
+ * Universal Regional Configuration Hub for Benefisto
  * Supports 6 Tier-1 Countries: IN, US, GB, CA, AU, AE
  */
 export const REGIONAL_PROFILES = {
@@ -333,7 +333,7 @@ export async function generateDynamicProductQuestions(product = {}) {
     ? product.specifications.slice(0, 6).map(s => `${s.name || s.key}: ${s.value}`).join(", ")
     : "";
 
-  const prompt = `You are ShopSmart AI's Universal Product Understanding Engine.
+  const prompt = `You are Benefisto's Universal Product Understanding Engine.
 Analyze this scraped e-commerce product:
 Title: "${title}"
 Brand: "${brand}"
@@ -660,7 +660,7 @@ export async function generateTrustSheet({
   // Build Answer Context
   const answerLines = Object.entries(answers).map(([k, v]) => `User Requirement [${k}]: ${v}`).join("\n");
 
-  const prompt = `You are ShopSmart AI's Universal Consumer Advocate & Product Truth Engineer.
+  const prompt = `You are Benefisto's Universal Consumer Advocate & Product Truth Engineer.
 Analyze this scraped e-commerce product with 100% spec-grounded honesty for a consumer in ${regionProfile.name} (${regionProfile.currency} ${regionProfile.symbol} currency):
 
 PRODUCT TITLE: "${title}"
@@ -684,7 +684,7 @@ RULES FOR UNBIASED PRODUCT TRUTH:
    Then you MUST set:
    "isRetailEcommerce": false,
    "unsupportedCategory": "Automobile" | "Real Estate" | "Job Listing" | "Classifieds / Service",
-   "unsupportedMessage": "We analyzed this link, but it is an [Automobile / Real Estate / etc.] listing rather than an online retail shopping product. ShopSmart AI is designed exclusively for retail e-commerce shopping products (Electronics, Fashion, Beauty, Home & Appliances). Automotive and real-estate listings are not supported."
+   "unsupportedMessage": "We analyzed this link, but it is an [Automobile / Real Estate / etc.] listing rather than an online retail shopping product. Benefisto is designed exclusively for retail e-commerce shopping products (Electronics, Fashion, Beauty, Home & Appliances). Automotive and real-estate listings are not supported."
    When isRetailEcommerce is false, you can set trustScore to 0 and other sections to minimal/null.
    If it IS a valid retail consumer product, set "isRetailEcommerce": true, "unsupportedCategory": null, "unsupportedMessage": null, and proceed with the full analysis.
 
@@ -946,7 +946,7 @@ Respond ONLY with valid, raw JSON (no markdown formatting, no backticks, no comm
       success: true,
       isNonRetail: true,
       unsupportedCategory: jsonResult.unsupportedCategory || "Non-Retail Category",
-      unsupportedMessage: jsonResult.unsupportedMessage || "We analyzed this link, but it appears to be an automotive, real-estate, or non-retail portal listing. ShopSmart AI is designed exclusively for retail e-commerce shopping products (Electronics, Fashion, Beauty, Home & Appliances).",
+      unsupportedMessage: jsonResult.unsupportedMessage || "We analyzed this link, but it appears to be an automotive, real-estate, or non-retail portal listing. Benefisto is designed exclusively for retail e-commerce shopping products (Electronics, Fashion, Beauty, Home & Appliances).",
       trustSheet: jsonResult
     };
   }
@@ -1154,7 +1154,7 @@ export async function askProductAssistant({ product = {}, dossier = {}, question
   if (JAILBREAK_REGEX.test(q)) {
     return {
       success: true,
-      answer: "ShopSmart AI guidelines prohibit system override requests. Please ask any specification, ingredient, or usage care question about this product."
+      answer: "Benefisto guidelines prohibit system override requests. Please ask any specification, ingredient, or usage care question about this product."
     };
   }
 
@@ -1179,7 +1179,7 @@ export async function askProductAssistant({ product = {}, dossier = {}, question
     }
   } catch (e) {}
 
-  const prompt = `You are ShopSmart AI's Universal Product Truth Advocate.
+  const prompt = `You are Benefisto's Universal Product Truth Advocate.
 Answer the consumer's question about this shortlisted product with 100% honesty, empathy, and spec-grounding:
 
 PRODUCT: "${title}" (${category})
@@ -1255,8 +1255,8 @@ Return ONLY raw JSON:
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${openRouterKey}`,
-          "HTTP-Referer": "https://shopsmart.ai",
-          "X-Title": "ShopSmart AI"
+          "HTTP-Referer": "https://benefisto.ai",
+          "X-Title": "Benefisto"
         },
         body: JSON.stringify({
           model: "google/gemini-2.0-flash-001",

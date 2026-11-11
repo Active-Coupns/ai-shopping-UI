@@ -833,7 +833,7 @@ export default function TrustSheetView({
 
   const handleCopySummary = () => {
     if (!dossier) return;
-    const summaryText = `🛡️ ShopSmart AI Trust Sheet: ${dossier.product?.title || identifiedProduct?.title}
+    const summaryText = `🛡️ Benefisto Trust Sheet: ${dossier.product?.title || identifiedProduct?.title}
 Trust Score: ${dossier.trustScore}/100 (${dossier.matchBadge})
 Verdict: ${dossier.verdictSummary}
 
@@ -851,7 +851,7 @@ ${isUS ? "🇺🇸 US Reality Check:" : "🇮🇳 Indian Reality Check:"}
 • Electrical/Thermal: ${dossier.regionalRealityCheck?.summerHeatTolerance || dossier.indianRealityCheck?.summerHeatTolerance || "Moderate"}
 • Service & Warranty: ${dossier.regionalRealityCheck?.serviceNetworkTier2Tier3 || dossier.indianRealityCheck?.serviceNetworkTier2Tier3 || "Standard brand network"}
 
-Verified on ShopSmart AI: https://shopsmart.ai`;
+Verified on Benefisto: https://benefisto.ai`;
 
     navigator.clipboard.writeText(summaryText);
     setCopied(true);
@@ -2207,7 +2207,7 @@ Verified on ShopSmart AI: https://shopsmart.ai`;
                       className="px-6 py-3 rounded-2xl bg-gradient-to-r from-brand-indigo via-indigo-600 to-brand-violet hover:opacity-95 text-white text-xs sm:text-sm font-black shadow-md shadow-indigo-500/25 transition-all cursor-pointer active:scale-95 flex items-center gap-2"
                     >
                       <Search className="w-4 h-4 text-white" />
-                      <span>🔍 Search Live Deals (Find In ShopSmart) ➔</span>
+                      <span>🔍 Search Live Deals (Find In Benefisto) ➔</span>
                     </button>
                   </div>
                 </div>

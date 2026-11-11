@@ -84,7 +84,7 @@ export async function PATCH(request) {
     const result = await replyToSupportTicket({
       ticketId,
       sender: sender || "admin",
-      senderName: senderName || "ShopSmart Admin Support",
+      senderName: senderName || "Benefisto Admin Support",
       message: resolvedMessage,
       newStatus: resolvedStatus
     });

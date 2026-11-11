@@ -247,7 +247,7 @@ export default function SubscriptionAiChatModal({
                 <div>
                   <div className="flex items-center gap-2">
                     <h3 className="font-extrabold text-sm sm:text-base text-white tracking-tight">
-                      ShopSmart AI OTT Concierge
+                      Benefisto OTT Concierge
                     </h3>
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -314,7 +314,7 @@ export default function SubscriptionAiChatModal({
                           <div className="w-5 h-5 rounded-lg bg-indigo-50 border border-indigo-200/60 flex items-center justify-center text-indigo-600">
                             <Bot className="w-3.5 h-3.5" />
                           </div>
-                          <span>ShopSmart Streaming Concierge</span>
+                          <span>Benefisto Streaming Concierge</span>
                         </div>
                         <span className="text-[10px] font-bold text-slate-400">
                           {msg.timestamp || "Just now"}

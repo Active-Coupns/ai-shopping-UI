@@ -7,9 +7,9 @@
  * Strict Principle: NEVER modifies or tampers with the user's raw search query.
  */
 
-const SESSION_KEY = "shopsmart_session_id_v2";
-const MIRROR_KEY = "shopsmart_journey_mirror_v2";
-const AUTH_KEY = "shopsmart_user_auth_v1";
+const SESSION_KEY = "benefisto_session_id_v2";
+const MIRROR_KEY = "benefisto_journey_mirror_v2";
+const AUTH_KEY = "benefisto_user_auth_v1";
 const MAX_LOCAL_ITEMS = 8;
 
 let currentAuth = { userId: null, email: null, name: null };

@@ -35,7 +35,7 @@ export default function SupportTicketModal({ isOpen, onClose }) {
     try {
       let storedIds = [];
       try {
-        const raw = localStorage.getItem("shopsmart_my_ticket_ids");
+        const raw = localStorage.getItem("benefisto_my_ticket_ids");
         if (raw) storedIds = JSON.parse(raw);
       } catch (e) {}
 
@@ -77,7 +77,7 @@ export default function SupportTicketModal({ isOpen, onClose }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          userEmail: userEmail || "guest@shopsmart.com",
+          userEmail: userEmail || "guest@benefisto.com",
           userName: userName || "Valued Shopper",
           category,
           subject,
@@ -89,10 +89,10 @@ export default function SupportTicketModal({ isOpen, onClose }) {
       if (data.success && data.ticket) {
         setSubmitSuccess(true);
         try {
-          const raw = localStorage.getItem("shopsmart_my_ticket_ids");
+          const raw = localStorage.getItem("benefisto_my_ticket_ids");
           const existingIds = raw ? JSON.parse(raw) : [];
           if (!existingIds.includes(data.ticket.id)) {
-            localStorage.setItem("shopsmart_my_ticket_ids", JSON.stringify([data.ticket.id, ...existingIds]));
+            localStorage.setItem("benefisto_my_ticket_ids", JSON.stringify([data.ticket.id, ...existingIds]));
           }
         } catch (e) {}
         setSubject("");

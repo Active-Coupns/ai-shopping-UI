@@ -64,7 +64,7 @@ export const SUBSCRIPTIONS_SEO_MAP = {
     faqs: [
       {
         question: "Does Netflix India offer an Annual discount plan?",
-        answer: "Netflix does not sell an official annual prepaid plan directly on their website; they only bill monthly. However, with ShopSmart AI's annualized calculation, Mobile is ₹1,788/yr, Basic is ₹2,388/yr, Standard is ₹5,988/yr, and Premium 4K is ₹7,788/yr."
+        answer: "Netflix does not sell an official annual prepaid plan directly on their website; they only bill monthly. However, with Benefisto's annualized calculation, Mobile is ₹1,788/yr, Basic is ₹2,388/yr, Standard is ₹5,988/yr, and Premium 4K is ₹7,788/yr."
       },
       {
         question: "How do I get Netflix for ₹0 free in India legally?",

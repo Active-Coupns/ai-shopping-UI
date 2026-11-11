@@ -1,5 +1,5 @@
 /**
- * ShopSmart AI — Zyte Live Travel Deals & Promo Scraper Engine
+ * Benefisto — Zyte Live Travel Deals & Promo Scraper Engine
  * Powered by Zyte API (ZYTE_API_KEY)
  * 
  * Extracts real-time promo codes, baggage perks, and bank discount offers

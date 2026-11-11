@@ -251,9 +251,9 @@ export default function Home() {
             .catch(() => {});
         } catch (_) {}
       });
-      const saved = localStorage.getItem("shopsmart_saved_deals");
+      const saved = localStorage.getItem("benefisto_saved_deals");
       if (saved) setSavedDeals(JSON.parse(saved));
-      const alerts = localStorage.getItem("shopsmart_price_alerts");
+      const alerts = localStorage.getItem("benefisto_price_alerts");
       if (alerts) setSavedAlerts(JSON.parse(alerts));
     } catch (e) {}
   }, []);
@@ -327,7 +327,7 @@ export default function Home() {
         updated = [itemToSave, ...prev];
       }
       try {
-        localStorage.setItem("shopsmart_saved_deals", JSON.stringify(updated));
+        localStorage.setItem("benefisto_saved_deals", JSON.stringify(updated));
       } catch (e) {}
       return updated;
     });
@@ -337,7 +337,7 @@ export default function Home() {
     setSavedDeals(prev => {
       const updated = prev.filter(p => (p.id || p.product_id || p.title) !== id);
       try {
-        localStorage.setItem("shopsmart_saved_deals", JSON.stringify(updated));
+        localStorage.setItem("benefisto_saved_deals", JSON.stringify(updated));
       } catch (e) {}
       return updated;
     });
@@ -346,7 +346,7 @@ export default function Home() {
   const handleClearAllSavedDeals = () => {
     setSavedDeals([]);
     try {
-      localStorage.removeItem("shopsmart_saved_deals");
+      localStorage.removeItem("benefisto_saved_deals");
     } catch (e) {}
   };
 
@@ -363,7 +363,7 @@ export default function Home() {
     setSavedAlerts(prev => {
       const updated = [alertItem, ...prev.filter(a => a.id !== alertItem.id)];
       try {
-        localStorage.setItem("shopsmart_price_alerts", JSON.stringify(updated));
+        localStorage.setItem("benefisto_price_alerts", JSON.stringify(updated));
       } catch (e) {}
       return updated;
     });
@@ -462,7 +462,7 @@ export default function Home() {
       const msg = String(event?.reason?.message || event?.reason || "");
       if (msg.includes("clerk") || msg.includes("Failed to fetch")) {
         event.preventDefault?.();
-        console.warn("[ShopSmart Auth] Handled Clerk background sync hiccup:", msg);
+        console.warn("[Benefisto Auth] Handled Clerk background sync hiccup:", msg);
       }
     };
     window.addEventListener("unhandledrejection", handleUnhandledRejection);
@@ -473,11 +473,11 @@ export default function Home() {
         handleCountryChange(targetC);
       }
     };
-    window.addEventListener("shopsmart:switch_country", handleCustomCountrySwitch);
+    window.addEventListener("benefisto:switch_country", handleCustomCountrySwitch);
 
     return () => {
       window.removeEventListener("unhandledrejection", handleUnhandledRejection);
-      window.removeEventListener("shopsmart:switch_country", handleCustomCountrySwitch);
+      window.removeEventListener("benefisto:switch_country", handleCustomCountrySwitch);
     };
   }, []);
 
@@ -502,7 +502,7 @@ export default function Home() {
     if (isLoaded && isSignedIn && clerkUser) {
       try {
         const metadataCountry = clerkUser.unsafeMetadata?.country;
-        const userConfirmedKey = `shopsmart_country_confirmed_${clerkUser.id}`;
+        const userConfirmedKey = `benefisto_country_confirmed_${clerkUser.id}`;
         const isUserConfirmedLocally = localStorage.getItem(userConfirmedKey);
 
         if (metadataCountry && SUPPORTED_COUNTRIES[String(metadataCountry).toUpperCase()]) {
@@ -514,11 +514,11 @@ export default function Home() {
           setIsCountryModalOpen(false);
         } else if (!isUserConfirmedLocally) {
           // Newly signed up user who has NEVER confirmed their shopping country!
-          console.log("[ShopSmart Onboarding] Triggering mandatory country setup for user:", clerkUser.id);
+          console.log("[Benefisto Onboarding] Triggering mandatory country setup for user:", clerkUser.id);
           setIsCountryModalOpen(true);
         }
       } catch (err) {
-        console.warn("[ShopSmart Onboarding] Error checking user country status:", err);
+        console.warn("[Benefisto Onboarding] Error checking user country status:", err);
       }
     } else {
       // If user is guest/logged out, never block them with the onboarding modal
@@ -532,7 +532,7 @@ export default function Home() {
     try {
       localStorage.setItem("user_selected_country", code);
       if (clerkUser?.id) {
-        localStorage.setItem(`shopsmart_country_confirmed_${clerkUser.id}`, "true");
+        localStorage.setItem(`benefisto_country_confirmed_${clerkUser.id}`, "true");
         // Persist to Clerk user profile so it syncs across all devices
         if (typeof clerkUser.update === "function") {
           clerkUser.update({
@@ -559,7 +559,7 @@ export default function Home() {
     try {
       localStorage.setItem("user_selected_country", code);
       if (clerkUser?.id) {
-        localStorage.setItem(`shopsmart_country_confirmed_${clerkUser.id}`, "true");
+        localStorage.setItem(`benefisto_country_confirmed_${clerkUser.id}`, "true");
         if (typeof clerkUser.update === "function") {
           clerkUser.update({
             unsafeMetadata: {
@@ -791,7 +791,7 @@ export default function Home() {
             </div>
             <div className="flex flex-col">
               <span className="text-base sm:text-xl md:text-2xl font-black tracking-tight text-slate-900 leading-none">
-                ShopSmart <span className="bg-gradient-to-r from-brand-indigo to-brand-violet bg-clip-text text-transparent">AI</span>
+                Benefisto <span className="bg-gradient-to-r from-brand-indigo to-brand-violet bg-clip-text text-transparent">AI</span>
               </span>
               <span className="text-[9px] font-bold text-slate-600 hidden sm:block">AI Shopping • Trial Room • Travel</span>
             </div>
@@ -1363,7 +1363,7 @@ export default function Home() {
               <span>Help & Support Tickets</span>
             </button>
             <span>•</span>
-            <span>&copy; 2026 ShopSmart AI. Smart Shopping & Studio.</span>
+            <span>&copy; 2026 Benefisto. Smart Shopping & Studio.</span>
           </div>
         </div>
       </footer>

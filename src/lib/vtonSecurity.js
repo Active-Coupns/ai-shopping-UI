@@ -143,7 +143,7 @@ export async function safeFetchImage(rawUrl, timeoutMs = 10000) {
     const res = await fetch(sanitizedUrl, {
       method: 'GET',
       headers: {
-        'User-Agent': 'ShopSmart-Secure-VTON-Validator/1.0',
+        'User-Agent': 'Benefisto-Secure-VTON-Validator/1.0',
         'Accept': 'image/jpeg,image/png,image/webp,image/*'
       },
       redirect: 'error', // STRICT NO-REDIRECTS

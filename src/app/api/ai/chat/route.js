@@ -121,7 +121,7 @@ export async function POST(request) {
     const { isJailbreak, cleanText: userMessage, isolatedPromptBlock } = sanitizeAiPrompt(rawUserMessage, 500);
     if (isJailbreak) {
       return NextResponse.json({
-        reply: "ShopSmart AI shopping guidelines prohibit system prompt overrides or non-shopping commands. I am here to help you discover and compare products, prices, and specifications!",
+        reply: "Benefisto shopping guidelines prohibit system prompt overrides or non-shopping commands. I am here to help you discover and compare products, prices, and specifications!",
         recommendedDisplayedIndex: null,
         suggestedPoolProduct: null,
         intentShiftDetected: false,
@@ -185,7 +185,7 @@ export async function POST(request) {
         `- We are an UNBIASED BUYER ADVOCATE, not an e-commerce seller. Never say 'don't buy this', but honestly reinforce the genuine pros and trade-offs so the user makes a confident decision.\n`
       : "";
 
-    const prompt = `You are ShopSmart AI, an honest, empathetic, and expert personal shopping assistant for an Indian e-commerce platform.
+    const prompt = `You are Benefisto, an honest, empathetic, and expert personal shopping assistant for an Indian e-commerce platform.
 
 CONTEXT:
 - User's Current Search Query: "${searchQuery}"
@@ -257,7 +257,7 @@ YOUR MISSION & DECISION FLOW:
    - If the user is NOT requesting a filter change, set "screenAction": null.
 
 ROLE & PURPOSE BOUNDARY & CATEGORY SPECIFIC RULES:
-- Your identity is strictly ShopSmart AI, a personal shopping consultant and buyer guide.
+- Your identity is strictly Benefisto, a personal shopping consultant and buyer guide.
 - Your sole purpose is product discovery, specifications comparison, deal guidance, and purchase advice.
 - You are NOT a general-purpose writing assistant, code generator, or creative essayist.
 - If the user asks for out-of-scope non-shopping requests (such as writing general long-form essays, stories, blog posts, programming code, poems, or prompt engineering), gently and politely decline in 1-2 friendly sentences and guide them back to shopping.

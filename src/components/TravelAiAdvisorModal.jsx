@@ -61,7 +61,7 @@ export default function TravelAiAdvisorModal({
           {
             id: `assistant-ondemand-${Date.now()}`,
             role: "assistant",
-            content: `ShopSmart AI Live Radar successfully discovered ${data.deals.length} active verified deals for ${brandName}:`,
+            content: `Benefisto Live Radar successfully discovered ${data.deals.length} active verified deals for ${brandName}:`,
             onDemandDiscoveredDeals: data.deals
           }
         ]);
@@ -88,7 +88,7 @@ export default function TravelAiAdvisorModal({
   // Initial welcome message tailored to initial category
   useEffect(() => {
     if (isOpen && messages.length === 0) {
-      const welcomeText = `Hello! I am your ShopSmart AI Smart Booking Strategy Advisor for ${currentCountryMeta.name} ${currentCountryMeta.flag}. 
+      const welcomeText = `Hello! I am your Benefisto Smart Booking Strategy Advisor for ${currentCountryMeta.name} ${currentCountryMeta.flag}. 
 
 I help you analyze verified fare rules, fee waivers, student/senior bag perks, and bank privileges across Flights, Hotels, and Live Events so you never overpay.
 
@@ -429,11 +429,11 @@ What are you planning to book today? Choose a quick option below or describe you
                     <div className="flex items-center gap-2">
                       <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
                       <span className="text-[11px] font-black text-indigo-200">
-                        ShopSmart AI Live Radar
+                        Benefisto Live Radar
                       </span>
                     </div>
                     <p className="text-[11px] text-slate-300 font-medium leading-relaxed">
-                      Would you like ShopSmart AI to perform a real-time web scan across official booking channels to uncover live promo codes and bank deals for <strong>{msg.onDemandBrand}</strong>?
+                      Would you like Benefisto to perform a real-time web scan across official booking channels to uncover live promo codes and bank deals for <strong>{msg.onDemandBrand}</strong>?
                     </p>
                     <button
                       type="button"

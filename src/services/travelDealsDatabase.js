@@ -1,5 +1,5 @@
 /**
- * ShopSmart AI — Master Travel, Hotels & Events Deals Database
+ * Benefisto — Master Travel, Hotels & Events Deals Database
  * Multi-Country Authoritative Catalog: IN, US, GB, CA, AU, AE
  * 
  * 20 to 26 Verified Active Deals PER COUNTRY across Flights, Hotels & Events

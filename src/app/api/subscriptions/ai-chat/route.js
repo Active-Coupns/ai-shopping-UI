@@ -171,7 +171,7 @@ export async function POST(request) {
     const currency = isAE ? "AED" : (isAU ? "A$" : (isCA ? "C$" : (isUK ? "£" : (isUS ? "$" : "₹"))));
 
     const systemPrompt = isAE
-      ? `You are ShopSmart AI Subscriptions & Streaming Concierge, an elite, friendly, and honest digital entertainment shopping advisor for the United Arab Emirates (UAE / AE).
+      ? `You are Benefisto Subscriptions & Streaming Concierge, an elite, friendly, and honest digital entertainment shopping advisor for the United Arab Emirates (UAE / AE).
 
 CRITICAL ARCHITECTURAL CONVERSATION PRINCIPLES:
 1. FIRST-PERSON USER ACTION CHIPS ONLY:
@@ -247,7 +247,7 @@ OUTPUT STRICTLY IN THIS JSON FORMAT:
 OFFICIAL UAE CATALOG CONTEXT:
 ${COMPACT_CATALOG_SUMMARY_AE}`
       : isAU
-      ? `You are ShopSmart AI Subscriptions & Streaming Concierge, an elite, friendly, and honest digital entertainment shopping advisor for Australia (AU).
+      ? `You are Benefisto Subscriptions & Streaming Concierge, an elite, friendly, and honest digital entertainment shopping advisor for Australia (AU).
 
 CRITICAL ARCHITECTURAL CONVERSATION PRINCIPLES:
 1. FIRST-PERSON USER ACTION CHIPS ONLY:
@@ -323,7 +323,7 @@ OUTPUT STRICTLY IN THIS JSON FORMAT:
 OFFICIAL AUSTRALIA CATALOG CONTEXT:
 ${COMPACT_CATALOG_SUMMARY_AU}`
       : isCA
-      ? `You are ShopSmart AI Subscriptions & Streaming Concierge, an elite, friendly, and honest digital entertainment shopping advisor for Canada (CA).
+      ? `You are Benefisto Subscriptions & Streaming Concierge, an elite, friendly, and honest digital entertainment shopping advisor for Canada (CA).
 
 CRITICAL ARCHITECTURAL CONVERSATION PRINCIPLES:
 1. FIRST-PERSON USER ACTION CHIPS ONLY:
@@ -399,7 +399,7 @@ OUTPUT STRICTLY IN THIS JSON FORMAT:
 OFFICIAL CANADA CATALOG CONTEXT:
 ${COMPACT_CATALOG_SUMMARY_CA}`
       : isUK
-      ? `You are ShopSmart AI Subscriptions & Streaming Concierge, an elite, friendly, and honest digital entertainment shopping advisor for the United Kingdom (UK / Great Britain).
+      ? `You are Benefisto Subscriptions & Streaming Concierge, an elite, friendly, and honest digital entertainment shopping advisor for the United Kingdom (UK / Great Britain).
 
 CRITICAL ARCHITECTURAL CONVERSATION PRINCIPLES:
 1. FIRST-PERSON USER ACTION CHIPS ONLY:
@@ -475,7 +475,7 @@ OUTPUT STRICTLY IN THIS JSON FORMAT:
 OFFICIAL UK CATALOG CONTEXT:
 ${COMPACT_CATALOG_SUMMARY_UK}`
       : isUS
-      ? `You are ShopSmart AI Subscriptions & Streaming Concierge, an elite, friendly, and honest digital entertainment shopping advisor for the United States (US).
+      ? `You are Benefisto Subscriptions & Streaming Concierge, an elite, friendly, and honest digital entertainment shopping advisor for the United States (US).
 
 CRITICAL ARCHITECTURAL CONVERSATION PRINCIPLES:
 1. FIRST-PERSON USER ACTION CHIPS ONLY:
@@ -550,7 +550,7 @@ OUTPUT STRICTLY IN THIS JSON FORMAT:
 
 OFFICIAL US CATALOG CONTEXT:
 ${COMPACT_CATALOG_SUMMARY_US}`
-      : `You are ShopSmart AI Subscriptions & OTT Concierge, a brilliant, warm, and highly professional digital entertainment shopping advisor for India.
+      : `You are Benefisto Subscriptions & OTT Concierge, a brilliant, warm, and highly professional digital entertainment shopping advisor for India.
 
 CRITICAL ARCHITECTURAL CONVERSATION PRINCIPLES:
 1. FIRST-PERSON USER ACTION CHIPS ONLY:
@@ -1376,7 +1376,7 @@ function generateCatalogFallbackStructured(query, isUS = false, isUK = false, is
     }
 
     return {
-      summary: "Welcome to ShopSmart AI Canada Streaming Concierge! We track all 25 top Canadian platforms (Crave, Netflix CA, Disney+ CA, Prime Video, Sportsnet+, TSN, CBC Gem) and verified perks from Telus Stream+ ($20/mo bundle), Bell Fibe TV, Rogers, Costco Canada, and RBC free DashPass. What would you like to watch?",
+      summary: "Welcome to Benefisto Canada Streaming Concierge! We track all 25 top Canadian platforms (Crave, Netflix CA, Disney+ CA, Prime Video, Sportsnet+, TSN, CBC Gem) and verified perks from Telus Stream+ ($20/mo bundle), Bell Fibe TV, Rogers, Costco Canada, and RBC free DashPass. What would you like to watch?",
       whereToWatch: {
         platform: "Canadian Streaming Platforms",
         cheapestRoute: "Telus Stream+ ($20/mo) or Free on CBC Gem ($0)"
@@ -1490,7 +1490,7 @@ function generateCatalogFallbackStructured(query, isUS = false, isUK = false, is
     }
 
     return {
-      summary: "Welcome to ShopSmart AI UK Streaming Concierge! We track all 25 top UK platforms (NOW TV, Sky Cinema, Netflix UK, Disney+ UK, Apple TV+, ITVX Premium, Prime Video UK) and verified perks from EE, O2 Priority, Vodafone, and TopCashback. What would you like to watch?",
+      summary: "Welcome to Benefisto UK Streaming Concierge! We track all 25 top UK platforms (NOW TV, Sky Cinema, Netflix UK, Disney+ UK, Apple TV+, ITVX Premium, Prime Video UK) and verified perks from EE, O2 Priority, Vodafone, and TopCashback. What would you like to watch?",
       whereToWatch: {
         platform: "UK Streaming Platforms",
         cheapestRoute: "Sky Stream (£18/mo) or EE Inclusive Extras (£0)"
@@ -1586,7 +1586,7 @@ function generateCatalogFallbackStructured(query, isUS = false, isUK = false, is
     }
 
     return {
-      summary: "Welcome to ShopSmart AI US Streaming Concierge! We track all 25 top US platforms (Netflix, Max, Disney+, Hulu, Apple TV+, Paramount+, Prime Video) and verified perks from T-Mobile, Verizon, Target, and Costco. What would you like to watch?",
+      summary: "Welcome to Benefisto US Streaming Concierge! We track all 25 top US platforms (Netflix, Max, Disney+, Hulu, Apple TV+, Paramount+, Prime Video) and verified perks from T-Mobile, Verizon, Target, and Costco. What would you like to watch?",
       whereToWatch: {
         platform: "US Streaming Platforms",
         cheapestRoute: "Disney/Hulu/Max Trio Bundle ($16.99/mo)"

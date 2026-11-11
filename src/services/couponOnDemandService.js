@@ -1,5 +1,5 @@
 /**
- * ShopSmart AI — On-Demand Live Store Coupon Discovery Engine
+ * Benefisto — On-Demand Live Store Coupon Discovery Engine
  * 
  * Dynamically discovers, structures, and returns verified promo codes,
  * new user welcomes, and bank privileges for unlisted e-commerce merchants.
@@ -38,17 +38,17 @@ export async function discoverOnDemandStoreCoupons(rawStoreName, country = "IN")
   if (STORE_ON_DEMAND_CACHE.has(cacheKey)) {
     const cached = STORE_ON_DEMAND_CACHE.get(cacheKey);
     if (Date.now() - cached.timestamp < 1000 * 60 * 60 * 24) {
-      console.log(`[ShopSmart AI Coupon On-Demand] Returning cached coupons for ${normStore}`);
+      console.log(`[Benefisto Coupon On-Demand] Returning cached coupons for ${normStore}`);
       return { success: true, fromCache: true, storeData: cached.storeData };
     }
   }
 
   // 2. STRICT GATEKEEPER: Groq MUST verify store entity before coupon generation
-  console.log(`[ShopSmart AI Coupon On-Demand] Gatekeeper checking legitimacy for: "${normStore}"...`);
+  console.log(`[Benefisto Coupon On-Demand] Gatekeeper checking legitimacy for: "${normStore}"...`);
   const entityCheck = await verifyStoreEntity(normStore, normCountry);
 
   if (!entityCheck.isRealEntity || entityCheck.action === "UNKNOWN_ENTITY") {
-    console.warn(`[ShopSmart AI Coupon On-Demand] Gatekeeper REJECTED: "${normStore}" is not a verified commercial store.`);
+    console.warn(`[Benefisto Coupon On-Demand] Gatekeeper REJECTED: "${normStore}" is not a verified commercial store.`);
     return {
       success: false,
       storeName: normStore,
@@ -80,13 +80,13 @@ export async function discoverOnDemandStoreCoupons(rawStoreName, country = "IN")
   const meta = getCountryMeta(normCountry);
   const currencySymbol = meta.symbol || "₹";
 
-  console.log(`[ShopSmart AI Coupon On-Demand] Gatekeeper APPROVED: "${canonicalName}" (${domain}). Structuring verified promo codes...`);
+  console.log(`[Benefisto Coupon On-Demand] Gatekeeper APPROVED: "${canonicalName}" (${domain}). Structuring verified promo codes...`);
 
   let generatedCoupons = null;
 
   if (GROQ_API_KEY) {
     try {
-      const prompt = `You are the ShopSmart AI E-Commerce Promo Code Architect for ${canonicalName} (${domain}) in country ${normCountry}.
+      const prompt = `You are the Benefisto E-Commerce Promo Code Architect for ${canonicalName} (${domain}) in country ${normCountry}.
 Generate 3 authentic, realistic, verified promo codes and cardholder savings for this specific merchant:
 
 1. Code 1: New Customer / Welcome Code (e.g. "WELCOME10", "FIRSTORDER", or specific brand welcome discount).

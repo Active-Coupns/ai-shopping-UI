@@ -1,5 +1,5 @@
 /**
- * ShopSmart AI — Master Subscriptions & Digital Services Catalog (Canada - CA)
+ * Benefisto — Master Subscriptions & Digital Services Catalog (Canada - CA)
  * 25 Comprehensive Brands across 7 Categories with 100% Verified Multi-Tier Plans in CAD (C$),
  * Canadian Carrier Perks (Telus Stream+, Bell Fibe/Crave, Rogers Ignite, RBC DashPass),
  * Super Combo Passes, and Cashback Hacks (Costco CA, Rakuten Canada, PC Optimum).

@@ -1,5 +1,5 @@
 /**
- * ShopSmart AI — Smart Entity & Domain Resolver Gatekeeper
+ * Benefisto — Smart Entity & Domain Resolver Gatekeeper
  * 
  * Multi-layer intelligent verification:
  * 1. Catalog Fuzzy & Typo Matching (Levenshtein distance & token similarity)
@@ -149,7 +149,7 @@ export async function verifyTravelEntity(rawQuery, activeCategory = "flights", c
   let groqAnalysis = null;
   try {
     const safeQuery = String(query || '').replace(/"/g, "'").trim();
-    const prompt = `You are the ShopSmart AI Entity Gatekeeper.
+    const prompt = `You are the Benefisto Entity Gatekeeper.
 A user typed the following search query: "${safeQuery}" in the "${activeCategory}" tab for country "${country}".
 
 Analyze whether this refers to a real, authentic commercial brand, company, app, airline, hotel, or booking website.
@@ -177,7 +177,7 @@ OUTPUT JSON ONLY:
 
     const aiRes = await aiRouter.complete({
       prompt,
-      systemPrompt: "You are the ShopSmart AI Entity Gatekeeper. Always respond in valid JSON.",
+      systemPrompt: "You are the Benefisto Entity Gatekeeper. Always respond in valid JSON.",
       jsonMode: true,
       temperature: 0.1,
       maxTokens: 250,
@@ -270,7 +270,7 @@ OUTPUT JSON ONLY:
     isCategoryMatch: true,
     action: "TRAVEL_ENTITY_VERIFIED",
     description: groqAnalysis.briefDescription,
-    guidanceMessage: `ShopSmart AI verified official portal for ${groqAnalysis.canonicalName} (${groqAnalysis.domain}).`
+    guidanceMessage: `Benefisto verified official portal for ${groqAnalysis.canonicalName} (${groqAnalysis.domain}).`
   };
 
   ENTITY_VERIFICATION_CACHE.set(cacheKey, result);

@@ -1,5 +1,5 @@
 /**
- * ShopSmart AI — Master Subscriptions & Digital Services Catalog (Australia - AU)
+ * Benefisto — Master Subscriptions & Digital Services Catalog (Australia - AU)
  * 25 Comprehensive Brands across 7 Categories with 100% Verified Multi-Tier Plans in AUD (A$),
  * Australian Carrier Perks (Optus SubHub 10% Off, Telstra Plus Kayo/Binge $12.50 Credit, Hubbl Stack & Save),
  * Super Combo Passes, and Cashback Hacks (Cashrewards AU, ShopBack AU, Woolworths Everyday Rewards).

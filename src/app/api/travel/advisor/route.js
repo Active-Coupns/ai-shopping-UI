@@ -70,7 +70,7 @@ export async function POST(req) {
     const currencySymbol = isAE ? "AED " : isAU ? "A$" : isCA ? "C$" : isUK ? "£" : isUS ? "$" : "₹";
 
     // 4. GROUNDED SYSTEM PROMPT (Professional, Dignified, User-First Strategy Advisor)
-    const systemPrompt = `You are the ShopSmart AI Smart Booking Strategy Advisor for ${country}.
+    const systemPrompt = `You are the Benefisto Smart Booking Strategy Advisor for ${country}.
 Your purpose is to help travelers and buyers uncover verified fare rules, fee-waiver checklists, baggage perks, and bank card entitlements across Flights, Hotels, and Live Events.
 
 TONE & BEHAVIORAL INVARIANTS:

@@ -420,7 +420,7 @@ export async function analyzeProductPurchaseStrategy({
       network: "Hubble & Xoxoday Direct Voucher Gateway",
       discountPercent: voucherDiscountPercent,
       savingsAmount: voucherDiscountAmount,
-      sampleCode: "SHOPSMART-GIFT-X784"
+      sampleCode: "benefisto-GIFT-X784"
     },
     bankOffer: {
       banks: "HDFC, ICICI, SBI Cards",

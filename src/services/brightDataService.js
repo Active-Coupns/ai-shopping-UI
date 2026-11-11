@@ -1,5 +1,5 @@
 /**
- * ShopSmart AI — Universal Product Extraction Engine (Powered by Bright Data Web Unlocker)
+ * Benefisto — Universal Product Extraction Engine (Powered by Bright Data Web Unlocker)
  *
  * Replaces fragile scraping with Bright Data's 72M+ Residential Proxy Network
  * to achieve 99.9% Akamai, Cloudflare, and PerimeterX bypass globally (Croma, Walmart, Amazon, Flipkart, etc.).
@@ -16,7 +16,7 @@ export function getBrightDataApiKey() {
 }
 
 export function getBrightDataZone() {
-  return (process.env.BRIGHT_DATA_ZONE || "web_unlocker1shopsmart").trim();
+  return (process.env.BRIGHT_DATA_ZONE || "web_unlocker1benefisto").trim();
 }
 
 export function getGroqApiKey() {
@@ -218,7 +218,7 @@ export async function extractProductWithBrightData(targetUrl, { country = null, 
       return null;
     }
 
-    const extractionPrompt = `You are ShopSmart AI's Master Product Understanding Engine.
+    const extractionPrompt = `You are Benefisto's Master Product Understanding Engine.
 Extract the complete, authentic product details from this e-commerce page HTML/Metadata.
 Target URL: ${cleanUrl}
 Page Title: ${pageTitle}
