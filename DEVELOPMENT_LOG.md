@@ -18,9 +18,9 @@
 
 ## 📅 Daily Changelog & Feature Timeline
 
-### 🗓️ 2026-11-12 (Investor Demo Defect Resolution & Strict 2-API Architecture Lock)
+### 🗓️ 2026-11-12 (Investor Demo Defect Resolution & Performance / Auth Hardening)
 
-* **Status**: ✅ End-to-End Verified across Non-Gadget Categories, Ready to Push
+* **Status**: ✅ End-to-End Verified across Non-Gadget Categories, Scroll Optimized & Auth Guard Active
 * **Core Achievements**:
   1. **Strict 2-API Call Architecture Locked**: Removed search prefetch loop in `/api/search` (which was consuming 6-7 credits). Restored 1-call search + 1-call on-demand comparison.
   2. **Store Isolation Shield Implemented**: Fixed `ProductCard.jsx` PID leaking and added anti-hijacking shield in `/api/redirect`. Competitor stores (Croma, Reliance Digital, Nykaa) never redirect to Flipkart.
@@ -30,10 +30,15 @@
   6. **Health & Pharmacy Loader Connected**: Connected `SearchHero.jsx` active tab to `RocketLoader.jsx` via `searchCategory`. Added Devanagari/Hindi and supplement brand triggers.
   7. **Auto-Healing Sentinel Cron Retained**: Preserved the 6-country canary probe in `vercel.json` and GitHub Actions for automated URL format change detection via Groq AI.
   8. **Benefisto Co-Pilot Advisor**: Multi-turn conversational advice verified in live tests across cookware, skincare, and supplement categories.
+  9. **High-FPS Scroll Optimization (60/120 FPS)**: Replaced Framer Motion JS physics spring calculations on `whileHover` with pure GPU-accelerated CSS `hover:-translate-y-1 will-change-transform`. Stripped expensive `backdrop-filter: blur(8px)` on repeating ProductCard containers, and added `content-visibility: auto` to bypass off-screen paints. Added instant spinner feedback on "Compare Stores" button to eliminate click latency.
+  10. **Google OAuth Back-Button Trap Elimination**: Implemented server-side redirect on `/sign-in` and `/sign-up` (if `userId` exists, immediate redirect to `/`) plus client-side `popstate` history guard in `src/app/page.js` to ensure pressing the browser's Back button never returns the user to Google's consent/continue screen (`accounts.google.com`).
 * **Files Modified**:
   - `src/app/api/products/compare/route.js`
   - `src/app/api/redirect/route.js`
+  - `src/app/globals.css`
   - `src/app/page.js`
+  - `src/app/sign-in/[[...sign-in]]/page.js`
+  - `src/app/sign-up/[[...sign-up]]/page.js`
   - `src/components/ProductCard.jsx`
   - `src/components/RocketLoader.jsx`
   - `src/components/SearchHero.jsx`

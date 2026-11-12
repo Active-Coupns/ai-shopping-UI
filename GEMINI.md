@@ -324,5 +324,14 @@ ShopSmart AI is **NOT a generic coupon website**, nor a spammy affiliate blog. I
 - `SearchHero.jsx` forwards `currentCategory` (e.g. `health`, `ecommerce`) through `page.js` to `RocketLoader`.
 - Searching in the Pharmacy tab, searching in Hindi/Devanagari, or querying major supplement brands (GNC, MuscleBlaze, Optimum Nutrition, etc.) strictly renders the dedicated Health & Pharmacy Radar (Tata 1mg, Apollo 24|7, PharmEasy, HealthKart).
 
+### 7.7. High-FPS Scroll Performance & GPU Acceleration Lock
+- Avoid JS physics calculations (`whileHover` with spring simulation) on repeating grid items (`ProductCard`). Use hardware-accelerated CSS transforms (`hover:-translate-y-1 will-change-transform`).
+- Banned heavy Gaussian `backdrop-filter: blur(...)` passes on repeating cards to prevent rasterizer jank during high-velocity scrolling.
+- Use `content-visibility: auto` to defer layout and paint passes for off-screen cards until scrolled into view.
+
+### 7.8. Auth History Guard & Anti-OAuth Loop Protocol
+- Never allow post-authentication browser "Back" navigation to drop users into third-party OAuth consent screens (`accounts.google.com` "Continue" prompt).
+- Enforce `popstate` interception in `src/app/page.js` and server-side redirect to `/` on `/sign-in` and `/sign-up` when `userId` exists.
+
 ---
 **END OF CONSTITUTION — IMMUTABLE ARCHITECTURE LOCK**

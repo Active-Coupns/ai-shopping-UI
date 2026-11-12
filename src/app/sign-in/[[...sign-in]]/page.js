@@ -1,8 +1,15 @@
+import { auth } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
 import { SignIn } from "@clerk/nextjs";
 import Link from "next/link";
 import { ShoppingBag, ArrowLeft } from "lucide-react";
 
-export default function SignInPage() {
+export default async function SignInPage() {
+  const { userId } = await auth();
+  if (userId) {
+    redirect("/");
+  }
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-slate-950 text-white relative">
       {/* Background Glow */}
@@ -29,7 +36,7 @@ export default function SignInPage() {
       </div>
 
       <div className="relative z-10 w-full max-w-sm flex justify-center">
-        <SignIn path="/sign-in" routing="path" signUpUrl="/sign-up" />
+        <SignIn path="/sign-in" routing="path" signUpUrl="/sign-up" fallbackRedirectUrl="/" forceRedirectUrl="/" />
       </div>
     </div>
   );

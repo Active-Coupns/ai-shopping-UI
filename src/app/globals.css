@@ -66,19 +66,15 @@ body::before {
   background: #94a3b8;
 }
 
-/* Enhanced Glassmorphism & Light utilities */
+/* Enhanced Clean Glassmorphism & High-Performance UI (GPU-Accelerated) */
 .glass-panel {
-  background: rgba(255, 255, 255, 0.94);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.98);
   border: 1px solid rgba(226, 232, 240, 0.9);
   box-shadow: 0 10px 30px -10px rgba(99, 102, 241, 0.08);
 }
 
 .glass-panel-accent {
-  background: linear-gradient(135deg, rgba(245, 247, 255, 0.94) 0%, rgba(255, 255, 255, 0.98) 100%);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: linear-gradient(135deg, rgba(248, 250, 255, 0.98) 0%, rgba(255, 255, 255, 0.99) 100%);
   border: 1px solid rgba(99, 102, 241, 0.25);
   box-shadow: 0 10px 35px 0 rgba(99, 102, 241, 0.08);
 }

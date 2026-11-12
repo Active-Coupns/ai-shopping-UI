@@ -403,18 +403,14 @@ export default function ProductCard({
   return (
     <>
       <motion.div
-        initial={{ opacity: 0, y: 25 }}
+        initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -25 }}
-        whileHover={{
-          y: -5,
-          borderColor: "rgba(99, 102, 241, 0.4)",
-          boxShadow: "0 16px 35px -10px rgba(99, 102, 241, 0.12)"
-        }}
-        transition={{ type: "spring", stiffness: 350, damping: 25 }}
+        exit={{ opacity: 0, y: -15 }}
+        transition={{ duration: 0.2 }}
         id={`product-${product.product_id || product.id || ""}`}
         data-product-id={product.product_id || product.id || ""}
-        className="glass-panel-accent rounded-3xl p-5.5 flex flex-col justify-between relative overflow-hidden shadow-lg border border-slate-200/90 bg-white/95 text-slate-900 transition-all duration-300 group"
+        className="rounded-3xl p-5.5 flex flex-col justify-between relative overflow-hidden shadow-md hover:shadow-xl border border-slate-200/90 hover:border-indigo-400/50 bg-white/98 text-slate-900 transition-all duration-200 hover:-translate-y-1 will-change-transform group"
+        style={{ contentVisibility: "auto", containIntrinsicSize: "0 520px" }}
       >
         {/* Top Info Section */}
         <div>
@@ -626,10 +622,20 @@ export default function ProductCard({
                         type="button"
                         data-testid="compare-stores-toggle"
                         onClick={handleToggleCompare}
-                        className="inline-flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 border border-indigo-300 text-[11px] font-extrabold text-indigo-900 shadow-2xs transition-all cursor-pointer active:scale-95"
+                        disabled={isFetchingStores}
+                        className="inline-flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 border border-indigo-300 text-[11px] font-extrabold text-indigo-900 shadow-2xs transition-all cursor-pointer active:scale-95 disabled:opacity-80"
                       >
-                        <span className="truncate">{isCompareOpen ? "Hide" : "Compare"} Stores</span>
-                        <ChevronDown className={`w-3.5 h-3.5 text-indigo-600 shrink-0 transition-transform duration-200 ${isCompareOpen ? "rotate-180" : ""}`} />
+                        {isFetchingStores ? (
+                          <>
+                            <div className="w-3 h-3 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin shrink-0" />
+                            <span className="truncate">Scanning Stores...</span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="truncate">{isCompareOpen ? "Hide" : "Compare"} Stores</span>
+                            <ChevronDown className={`w-3.5 h-3.5 text-indigo-600 shrink-0 transition-transform duration-200 ${isCompareOpen ? "rotate-180" : ""}`} />
+                          </>
+                        )}
                       </button>
                     </div>
                   </div>

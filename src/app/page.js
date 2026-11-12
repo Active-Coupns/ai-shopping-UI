@@ -268,6 +268,30 @@ export default function Home() {
     }
   }, [isSignedIn, clerkUser]);
 
+  // Auth History Guard: Intercepts popstate so pressing browser back never bounces user back into Google OAuth "Continue" screen
+  useEffect(() => {
+    if (isLoaded && isSignedIn && typeof window !== "undefined") {
+      const currentUrl = new URL(window.location.href);
+      if (currentUrl.searchParams.has("__clerk_status") || currentUrl.searchParams.has("redirect_url") || currentUrl.searchParams.has("created_user")) {
+        currentUrl.searchParams.delete("__clerk_status");
+        currentUrl.searchParams.delete("redirect_url");
+        currentUrl.searchParams.delete("created_user");
+        window.history.replaceState({ authed: true }, "", currentUrl.pathname);
+      } else {
+        window.history.replaceState({ authed: true }, "", window.location.href);
+      }
+
+      const handlePopState = (e) => {
+        if (!e.state || !e.state.authed) {
+          window.history.pushState({ authed: true }, "", window.location.pathname);
+        }
+      };
+
+      window.addEventListener("popstate", handlePopState);
+      return () => window.removeEventListener("popstate", handlePopState);
+    }
+  }, [isLoaded, isSignedIn]);
+
   // Universal Server-Side Quota Synchronization (Cross-Device: Laptop, Mobile, Tablet)
   useEffect(() => {
     let isMounted = true;
