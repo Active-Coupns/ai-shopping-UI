@@ -1,6 +1,41 @@
 ================================================================================
-DEPLOYMENT LOGS - SHOPSMART AI
+DEPLOYMENT LOGS - BENEFISTO PLATFORM
 ================================================================================
+
+[DEPLOYMENT TIMESTAMP] : 2026-11-12 14:24:00 UTC (Local: 2026-11-12 06:24:00 -08:00)
+[COMMIT HASH]          : 060fe83
+[TARGET ENVIRONMENT]   : Production (Vercel) / prod main (shopsmart01/benefisto-platform)
+[BUILD STATUS]         : PASSED (Verified across 4 synthetic categories & 3-turn adversarial pushback)
+[STATUS]               : COMMITTED & PUSHED TO PROD
+
+--------------------------------------------------------------------------------
+SUMMARY OF CHANGES & RESOLVED ISSUES
+--------------------------------------------------------------------------------
+
+1. IN-APP CHAT REBRANDED TO "BENEFISTO CO-PILOT — YOUR PERSONAL SHOPPING ADVISOR"
+   - Replaced generic and corporate chat headers with empathetic, human-like advisor persona.
+   - Enforced 4-6 lines maximum per response (WhatsApp/consultant style) across English and natural conversational Hinglish.
+   - Strict ban on internal system/architecture jargon ("inventory pool", "other pool products", "cache", "fallback", "database").
+   - Implemented natural discovery phrasing: "Maine market ke 15+ verified offers scan kiye aur aapke liye ek perfect match mila..."
+
+2. UNIVERSAL CATEGORY INTUITION DIRECTIVE INJECTED
+   - Laptops & Hardware: Evaluates true GPU TGP wattage (35W vs 75W vs 95W), thermal cooling architecture, single vs dual-channel RAM upgradability, display panel color gamut (IPS 300 nits vs TN 220 nits).
+   - Skincare & Personal Care: Categorizes by skin type (oily, acne-prone, sensitive, dry), active chemical compounds (Salicylic acid 1-2%, Niacinamide, Ceramides, Hyaluronic acid), comedogenic ratings, and warns against harsh sulfates/fragrances that trigger rebound oiliness.
+   - Health Supplements: Identifies Whey Isolate vs Concentrate for lactose sensitivity/bloating, cost per scoop, and prioritizes third-party lab certifications (Trustified, Labdoor, Informed Choice).
+   - Baby Care: Screens for 100% hypoallergenic, pediatrician safety, and zero parabens/phthalates.
+   - Diagnostic question-first behavior: When user inquiry is broad or ambiguous, asks 1-2 friendly diagnostic questions before recommending.
+
+3. MULTI-MODEL RESILIENCE & FAILOVER ENGINE
+   - Multi-model rotation across Groq high-speed models: `qwen/qwen3.8-27b`, `openai/gpt-oss-120b`, `openai/gpt-oss-20b`.
+   - Automatic cascade to OpenRouter (`liquid/lfm-2.5-2.6b:free`, `cohere/north-mini-code:free`) on rate limit (429) or latency.
+   - Intelligent grounded fallback that maintains identical 4-6 line WhatsApp tone.
+
+4. THREE CRITICAL POLISH FIXES APPLIED (`src/components/InChatShoppingAgent.jsx`)
+   - Fix 1 (Discovery Image Fallback): Replaced `poolProd.image` check with `(poolProd.image || poolProd.thumbnail)` so Google Shopping / OpenWeb Ninja thumbnails never render blank in chat.
+   - Fix 2 (Mobile Keyboard Protection): Changed chat scroll container from static `max-h-[480px]` to responsive `max-h-[320px] sm:max-h-[460px]`, preventing soft keyboard overlap on 360px-400px mobile screens.
+   - Fix 3 (Branding Consistency): Updated input placeholder to "Ask Benefisto Co-Pilot about these options..." and loading indicator to "Benefisto Co-Pilot is analyzing market options...".
+
+--------------------------------------------------------------------------------
 
 [DEPLOYMENT TIMESTAMP] : 2026-11-05 15:45:00 UTC (Local: 2026-11-05 07:45:00 -08:00)
 [COMMIT HASH]          : 906cfb8
