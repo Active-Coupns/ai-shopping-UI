@@ -296,4 +296,33 @@ ShopSmart AI is **NOT a generic coupon website**, nor a spammy affiliate blog. I
 4. **Preserve Documentation**: Update `DEVELOPMENT_LOG.md` upon any production Git release.
 
 ---
+
+## 7. Investor-Grade Search & Multi-Store PDP Reliability Lock (2026-11-12)
+
+### 7.1. Strict 2-API Call Architecture (Budget & Quota Defense)
+- **Call 1 (Search API `/api/search`)**: Executes exactly 1 fast OpenWeb Ninja search call (`searchOpenWebProducts`). Returns products in `<2.5s`. **NEVER** re-introduce pre-fetching enrichment loops (`enrichProductsWithDirectPdps`) on the search flow that burn multiple credits per query.
+- **Call 2 (Compare API `/api/products/compare`)**: Executes strictly on-demand when the user clicks "Compare Stores" on a specific product card. Consumes exactly 1 credit.
+- Total budget per complete search & compare flow = **Strictly 2 API Calls / 2 Credits**.
+
+### 7.2. Store Isolation Shield & Anti-Hijacking Protocol
+- Under no circumstances should clicking a competitor store (e.g. Croma, Reliance Digital, Nykaa, Tata 1mg) redirect to Flipkart or another unrelated platform.
+- `src/components/ProductCard.jsx` enforces store-isolated PID evaluation: comparison stores in the pricing matrix never inherit or pass the main card's Flipkart ID.
+- `src/app/api/redirect/route.js` enforces the Store Isolation Shield: if an affiliate or aggregator link resolves to a mismatched merchant domain, it intercepts and routes safely to the authentic clicked merchant's direct domain.
+
+### 7.3. Zero-Tolerance on Fake Search Fallbacks (`isAuthenticPDP`)
+- In price comparison tables, never force 4 stores by appending fake Amazon search links (`amazon.in/s?k=...`).
+- Only genuine merchant Product Detail Pages (PDPs) that pass `isAuthenticPDP(cleanUrl)` are rendered. If only 2 authentic stores exist, show those 2 authentic stores. Quality > Quantity.
+
+### 7.4. Shopsy Branding Transparency
+- All `shopsy.in` merchant offers are explicitly displayed with the label **"Shopsy by Flipkart"**, communicating the authentic Flipkart Assured backing and shared product catalog to users.
+
+### 7.5. Multi-Country Auto-Healing Sentinel Cron (Permanent Safeguard)
+- The scheduled Sentinel cron jobs in `vercel.json` and `.github/workflows/sentinel-health-probe.yml` are **permanent infrastructure assets** across 6 Tier-1 Countries (IN, US, UK, CA, AU, AE).
+- **Why it must never be deleted**: Google Shopping and aggregator networks frequently alter redirect and tracking parameters (e.g. `?url=`, `?dest=`, `?adurl=`). The Sentinel runs canary synthetic searches; if Google changes its format, Groq AI detects the new parameter and updates dynamic rules in Redis (`sentinel:dynamic_rules`) on-the-fly without requiring any developer intervention or code redeployment.
+
+### 7.6. Intent & Category-Aware Loading
+- `SearchHero.jsx` forwards `currentCategory` (e.g. `health`, `ecommerce`) through `page.js` to `RocketLoader`.
+- Searching in the Pharmacy tab, searching in Hindi/Devanagari, or querying major supplement brands (GNC, MuscleBlaze, Optimum Nutrition, etc.) strictly renders the dedicated Health & Pharmacy Radar (Tata 1mg, Apollo 24|7, PharmEasy, HealthKart).
+
+---
 **END OF CONSTITUTION — IMMUTABLE ARCHITECTURE LOCK**

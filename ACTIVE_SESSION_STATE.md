@@ -1,7 +1,7 @@
 # 🧭 Benefisto — Active Session State & Daily Handover Ledger
 **File:** `ACTIVE_SESSION_STATE.md` (Project Root)  
-**Last Updated:** 2026-11-12 11:25 IST  
-**Session Status:** IN-APP CHAT CO-PILOT FULLY POLISHED & MULTI-TURN VERIFIED (READY FOR FOUNDER REVIEW)
+**Last Updated:** 2026-11-12 17:30 IST / 09:30 PST  
+**Session Status:** INVESTOR DEMO DEFECTS FULLY RESOLVED, STRICT 2-API ARCHITECTURE LOCKED & VERIFIED, READY FOR GIT PUSH
 
 ---
 
@@ -9,23 +9,19 @@
 - **Production Status**: 
   - `https://www.benefisto.com` $\rightarrow$ **100% LIVE, SSL Encrypted, Cloudflare Protected**.
   - `https://sentinelx9.benefisto.com/admin` $\rightarrow$ **Secret Admin Control Room Verified & Active**.
-  - GitHub (`shopsmart01/benefisto-platform`) & Vercel (`benefisto-platform`) $\rightarrow$ Fully deployed with 27 production environment variables & Live Clerk Auth (`pk_live_...`).
-  - Old GitHub (`Active-Coupns`) & Old Vercel untouched and safe.
-- **In-App Chat Co-Pilot Upgrade & 3 Critical Polish Fixes Completed (Strictly Local — ZERO Git Push)**:
-  - Rebranded to: **"Benefisto Co-Pilot — Your Personal Shopping Advisor"** in `src/components/InChatShoppingAgent.jsx`.
-  - Fix 1 (Discovery Image Fallback): Patched `poolProd.image || poolProd.thumbnail` so Google Shopping/OpenWeb Ninja thumbnails never render blank.
-  - Fix 2 (Mobile Keyboard Protection): Changed chat scroll height to `max-h-[320px] sm:max-h-[460px]` preventing virtual keyboard collision on 360px–400px devices.
-  - Fix 3 (Branding Consistency): Updated input placeholder and loading spinner text from generic "AI" to "Benefisto Co-Pilot".
-  - Upgraded `src/app/api/ai/chat/route.js`:
-    1. Short, conversational, human WhatsApp-style tone (4–6 lines max, English or natural Hinglish).
-    2. Deep Universal Category Intuition (Laptops TGP/cooling/RAM, Skincare active chemicals/comedogenic rating, Supplements isolate/lactose/lab tests, Baby care hypoallergenic safety).
-    3. Natural discovery phrasing without technical terms ("inventory pool", "cache", "database").
-    4. Multi-model Groq rotation (`qwen/qwen3.8-27b`, `openai/gpt-oss-120b`, `openai/gpt-oss-20b`) + OpenRouter fallback.
-    5. Diagnostic question-first behavior for broad user inquiries.
-  - Multi-Turn Adversarial 3-Round Test: Passed with 98% rating (Full context retention, strict budget compliance, zero hallucination).
+  - GitHub (`shopsmart01/benefisto-platform`) & Vercel (`benefisto-platform`) $\rightarrow$ Fully deployed.
+- **Investor Demo Defect Fixes & Architecture Lock (Complete & Ready to Push)**:
+  1. **Strict 2-API Call Architecture Locked**: Search API = 1 credit, on-demand Compare API = 1 credit. Total = strictly 2 calls. No runaway loops.
+  2. **Store Isolation Shield**: Competitor links (Croma, Reliance Digital, Nykaa) never redirect to Flipkart. Competitor PID leaks blocked.
+  3. **Zero Fake Search Fallbacks**: Banned fake Amazon `/search?q=...` slaps in comparison table. Only authentic PDPs (`isAuthenticPDP`) allowed.
+  4. **Shopsy by Flipkart Labeling**: Added clear branding transparency for `shopsy.in` merchant offers.
+  5. **Grid Whitespace Elimination**: Added `items-start` to product grid and removed `h-full` on cards so expanded compare accordions don't stretch sibling cards with blank space.
+  6. **Pharmacy & Health Loader Connected**: `SearchHero` now forwards category to `RocketLoader`. Pharmacy tab, Hindi queries (`व्हे प्रोटीन`), and supplement brands (`GNC`, `MuscleBlaze`) strictly show Health & Pharmacy Radar.
+  7. **Auto-Healing Sentinel Cron Retained**: Preserved the 6-country canary probe in `vercel.json` and GitHub Actions for automated URL format change detection via Groq AI.
+  8. **Benefisto Co-Pilot Advisor**: Verified 100% functional, responsive, and natural across non-gadget categories (Cookware, Skincare, Supplements).
 - **Next Exact Mission**:
-  - Review with Founder.
-  - When approved, commit & push to GitHub/Vercel or proceed directly to research and draft the **5 Compliance & Legal Pages** (`/disclaimer`, `/privacy`, `/terms`, `/about`, `/contact`).
+  - Push commit to GitHub `prod/main` (`shopsmart01/benefisto-platform.git`).
+  - Proceed directly to research and draft the **5 Compliance & Legal Pages** (`/disclaimer`, `/privacy`, `/terms`, `/about`, `/contact`).
 
 ---
 

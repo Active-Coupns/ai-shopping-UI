@@ -134,6 +134,7 @@ export default function Home() {
   const [searchesLeft, setSearchesLeft] = useState(10);
   const [isQuotaOpen, setIsQuotaOpen] = useState(false);
   const [searchIntent, setSearchIntent] = useState("E-COMMERCE");
+  const [searchCategory, setSearchCategory] = useState("general");
   const [coupons, setCoupons] = useState([]);
   const [couponNotAvailable, setCouponNotAvailable] = useState(false);
   const [couponResultData, setCouponResultData] = useState(null);
@@ -608,7 +609,7 @@ export default function Home() {
     }
   };
 
-  const handleSearchSubmit = async (query, bypassGuide = false, isExactMatch = false, forceTerminal = false) => {
+  const handleSearchSubmit = async (query, bypassGuide = false, isExactMatch = false, forceTerminal = false, category = "general") => {
     if (!isSignedIn) {
       if (typeof openSignIn === "function") {
         openSignIn();
@@ -624,10 +625,10 @@ export default function Home() {
     const cleanQuery = String(query || "").replace(/\s+\(.*?\)$/, "").trim();
 
     // Direct Instant Search: Compares live across stores and renders deals
-    handleDirectSearch(cleanQuery, false, null, null, isExactMatch);
+    handleDirectSearch(cleanQuery, false, null, null, isExactMatch, category);
   };
 
-  const handleDirectSearch = async (query, isUrlLookup = false, sourceStore = null, sourceUrl = null, isExactMatch = false) => {
+  const handleDirectSearch = async (query, isUrlLookup = false, sourceStore = null, sourceUrl = null, isExactMatch = false, category = "general") => {
     if (!isSignedIn) {
       if (typeof openSignIn === "function") {
         openSignIn();
@@ -653,6 +654,7 @@ export default function Home() {
       resolvedUrl = info.canonicalUrl;
     }
 
+    setSearchCategory(category || "general");
     setActiveFilterChipId("all");
     setSearchQuery(resolvedTitle);
     setAiSessionLedger(prev => ({ ...prev, viewedReviews: {}, lastViewedProduct: null }));
@@ -1111,6 +1113,7 @@ export default function Home() {
               <RocketLoader
                 query={searchQuery}
                 country={selectedCountry}
+                category={searchCategory}
                 onComplete={handleLoaderComplete}
                 apiLoading={isApiLoading}
               />
@@ -1229,7 +1232,7 @@ export default function Home() {
                       country={selectedCountry}
                     />
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 items-start">
                       <AnimatePresence mode="popLayout">
                         {displayedProducts.map((product, idx) => {
                           const siblingProducts = displayedProducts.filter((_, i) => i !== idx);

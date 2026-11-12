@@ -183,8 +183,10 @@ export default function ProductCard({
       return targetUrl;
     }
 
-    // 3. Route through /api/redirect with product_id for 100% exact on-demand PDP resolution
-    const pId = productId || product?.product_id || "";
+    // 3. Route through /api/redirect with product_id for on-demand PDP resolution
+    // Store Isolation Shield: NEVER pass the main card's product_id to an alternative competitor store!
+    const isMainStore = !storeName || storeName.toLowerCase() === (product?.store_name || product?.source || "").toLowerCase();
+    const pId = isMainStore ? (productId || product?.product_id || "") : (productId || "");
     return `/api/redirect?product_id=${encodeURIComponent(pId)}&store=${encodeURIComponent(storeName || "Online Store")}&title=${encodeURIComponent(productTitle || "")}&fallback=${encodeURIComponent(targetUrl)}&region=${effectiveCountry}`;
   };
 
@@ -412,7 +414,7 @@ export default function ProductCard({
         transition={{ type: "spring", stiffness: 350, damping: 25 }}
         id={`product-${product.product_id || product.id || ""}`}
         data-product-id={product.product_id || product.id || ""}
-        className="glass-panel-accent rounded-3xl p-5.5 flex flex-col justify-between h-full relative overflow-hidden shadow-lg border border-slate-200/90 bg-white/95 text-slate-900 transition-all duration-300 group"
+        className="glass-panel-accent rounded-3xl p-5.5 flex flex-col justify-between relative overflow-hidden shadow-lg border border-slate-200/90 bg-white/95 text-slate-900 transition-all duration-300 group"
       >
         {/* Top Info Section */}
         <div>

@@ -396,13 +396,22 @@ export async function GET(request) {
         const storeSearch = getStoreDirectSearchFallback(store, title, region);
         return safeRedirect(storeSearch);
       }
-      // If user clicked a non-Amazon brand/store but fallback points to Amazon:
+      // Store Isolation Shield:
+      // If user clicked Store A (e.g. Croma, Reliance, Nike), but cleanFallback points to Store B (e.g. Flipkart, Amazon):
+      // NEVER redirect to the wrong competitor store! Redirect to Store A's canonical store search or domain.
       const cleanStore = storeLower.replace(/[^a-z0-9]/g, "");
-      if (cleanStore && !cleanStore.includes("amazon") && !cleanStore.includes("online") && !cleanStore.includes("store") && cleanFallback.includes("amazon.")) {
-        const storeSearch = getStoreDirectSearchFallback(store, title, region);
-        if (storeSearch && !storeSearch.includes("amazon.in")) {
-          return safeRedirect(storeSearch);
-        }
+      const isSpecificStore = cleanStore && !cleanStore.includes("online") && !cleanStore.includes("store");
+      if (isSpecificStore) {
+        try {
+          const fallbackHost = new URL(cleanFallback).hostname.toLowerCase();
+          const cleanHost = fallbackHost.replace(/^www\./, "").replace(/\.(com|in|co\.uk|org|net|ae|ca|us)$/, "");
+          const isHostMatch = fallbackHost.includes(cleanStore) || cleanStore.includes(cleanHost);
+          if (!isHostMatch) {
+            console.warn(`[Redirect Store Isolation] Prevented cross-store hijacking from "${store}" to "${fallbackHost}"`);
+            const storeSearch = getStoreDirectSearchFallback(store, title, region);
+            return safeRedirect(storeSearch);
+          }
+        } catch (e) {}
       }
       return safeRedirect(cleanFallback);
     }

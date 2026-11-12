@@ -28,7 +28,10 @@ const PHARMA_KEYWORDS = [
   "serum", "ointment", "collagen", "biotin", "d3", "b12", "ayurvedic", "ashwagandha", 
   "shilajit", "sunscreen", "shampoo", "hair", "soap", "moisturizer", "bandage", 
   "thermometer", "sanitizer", "cough", "fever", "cold", "pain", "digest", "probiotic",
-  "calcium", "zinc", "magnesium", "electrolyte", "ors", "pedialyte", "pharmacy"
+  "calcium", "zinc", "magnesium", "electrolyte", "ors", "pedialyte", "pharmacy",
+  "gnc", "muscleblaze", "myprotein", "optimum nutrition", "gold standard", "nutrabay",
+  "asitis", "as-it-is", "avvatar", "avatar", "nakpro", "fast&up", "fast & up", "isopure",
+  "dymatize", "muscletech", "nitrotech", "rule 1", "cellucor", "scitron", "labrada"
 ];
 
 const STORE_CONFIGS = {
@@ -118,7 +121,7 @@ const STORE_CONFIGS = {
   }
 };
 
-export default function RocketLoader({ query = "", country = "IN", onComplete, apiLoading }) {
+export default function RocketLoader({ query = "", country = "IN", category = "general", onComplete, apiLoading }) {
   const [currentStage, setCurrentStage] = useState(1);
   const [completedStages, setCompletedStages] = useState([]);
   const [progress, setProgress] = useState(0);
@@ -132,9 +135,12 @@ export default function RocketLoader({ query = "", country = "IN", onComplete, a
 
   // Determine if search query is Pharmacy / Supplement or General E-commerce
   const isPharma = useMemo(() => {
+    if (category === "health" || category === "pharmacy" || category === "medicine") return true;
     const q = (query || "").toLowerCase();
+    const hindiPharmaKeywords = ["व्हे", "प्रोटीन", "दवा", "गोली", "कैप्सूल", "सिरप", "विटामिन", "सप्लीमेंट", "ओमेगा", "क्रिएटिन"];
+    if (hindiPharmaKeywords.some(k => q.includes(k))) return true;
     return PHARMA_KEYWORDS.some(k => q.includes(k));
-  }, [query]);
+  }, [query, category]);
 
   const upperC = (country || "IN").toUpperCase();
   const countryKey = STORE_CONFIGS[upperC] ? upperC : "IN";

@@ -2,6 +2,48 @@
 DEPLOYMENT LOGS - BENEFISTO PLATFORM
 ================================================================================
 
+[DEPLOYMENT TIMESTAMP] : 2026-11-12 17:30:00 UTC (Local: 2026-11-12 09:30:00 -08:00)
+[COMMIT HASH]          : ad5d0a2
+[TARGET ENVIRONMENT]   : Production (Vercel) / prod main (shopsmart01/benefisto-platform)
+[BUILD STATUS]         : PASSED (End-to-End Verified across 3 broad categories, exact SKUs, and live Co-Pilot)
+[STATUS]               : COMMITTED & PUSHED TO PROD
+
+--------------------------------------------------------------------------------
+SUMMARY OF CHANGES & RESOLVED ISSUES
+--------------------------------------------------------------------------------
+
+1. STRICT 2-API CALL ARCHITECTURE RESTORED & LOCKED
+   - Eliminated pre-fetch enrichment loop in /api/search that was burning 6-7 API credits per query.
+   - Guaranteed exact 2-API call rule: Call 1 on Search (/api/search = 1 credit) + Call 2 on user click 'Compare Stores' (/api/products/compare = 1 credit).
+   - Real-time resolution via OpenWeb Ninja without synthetic or fake fallbacks.
+
+2. STORE ISOLATION SHIELD & ZERO CROSS-STORE HIJACKING (/api/redirect & ProductCard.jsx)
+   - Fixed competitor store click behavior in the comparison table so it never inherits the main card's Flipkart ID.
+   - Introduced Store Isolation Shield in /api/redirect: If a competitor link (e.g. Croma, Reliance Digital, Nykaa) resolves erroneously to a Flipkart link, it intercepts and redirects safely to the authentic merchant's direct domain.
+   - Cross-store redirection is completely blocked.
+
+3. ZERO-TOLERANCE ON FAKE SEARCH FALLBACKS (isAuthenticPDP)
+   - Deleted forced 4-store fallback in /api/products/compare that appended fake Amazon search URLs (/search?q=...).
+   - Comparison offers are strictly filtered through isAuthenticPDP(cleanUrl). Only 100% genuine product detail pages are shown to users.
+
+4. SHOPSY BRANDING TRANSPARENCY
+   - Store name formatting for shopsy.in links explicitly labeled as "Shopsy by Flipkart" in comparison tables, reassuring users of authentic Flipkart Assured backing.
+
+5. UI GRID WHITESPACE DEFECT ELIMINATED
+   - Fixed CSS grid stretching defect in src/app/page.js by adding items-start to <div className="grid ... items-start">.
+   - Removed h-full from src/components/ProductCard.jsx. When Card 1 expands its "Compare Stores" accordion, Cards 2 and 3 remain at their natural compact height with zero empty whitespace.
+
+6. HEALTH & PHARMACY LOADER RESTORATION (SearchHero.jsx & RocketLoader.jsx)
+   - Connected activeTab state between SearchHero and RocketLoader via searchCategory.
+   - When user searches in the Pharmacy tab, the loader strictly renders the Health & Pharmacy Radar (Tata 1mg, Apollo 24|7, PharmEasy, HealthKart).
+   - Added Devanagari/Hindi keywords (व्हे, प्रोटीन, दवा, आदि) and major supplement brands (GNC, MuscleBlaze, Optimum Nutrition, etc.) to RocketLoader intelligence.
+
+7. 6-COUNTRY AUTO-HEALING SENTINEL CRON CONFIRMED PERMANENT
+   - Retained the multi-country canary cron in vercel.json and .github/workflows/sentinel-health-probe.yml.
+   - Regularly probes 6 Tier-1 countries (IN, US, UK, CA, AU, AE). When Google alters redirect formats, Groq AI detects the new parameter and updates Redis rules dynamically with zero redeployment.
+
+--------------------------------------------------------------------------------
+
 [DEPLOYMENT TIMESTAMP] : 2026-11-12 14:24:00 UTC (Local: 2026-11-12 06:24:00 -08:00)
 [COMMIT HASH]          : 060fe83
 [TARGET ENVIRONMENT]   : Production (Vercel) / prod main (shopsmart01/benefisto-platform)

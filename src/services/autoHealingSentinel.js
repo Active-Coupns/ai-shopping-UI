@@ -246,10 +246,9 @@ export async function runSentinelDiagnosticProbe(options = false) {
         // 1. Forbidden domain validation (Cross-country pollution check)
         const hasForbidden = profile.forbiddenDomains.some(f => resolvedLower.includes(f));
 
-        // 2. Exact PDP or safe store check
-        const isExactPdp = resolvedLower.includes("/dp/") || resolvedLower.includes("/p/itm") || resolvedLower.includes("/product/") || resolvedLower.includes("/products/") || resolvedLower.includes("/p/");
-        const isSafeSearch = !resolvedLower.includes("google.com/search") && (resolvedLower.includes("/search") || resolvedLower.includes("/s?") || resolvedLower.includes("/s/"));
-        const isHealthy = !hasForbidden && (isExactPdp || isSafeSearch) && resolvedUrl.startsWith("http");
+        // 2. Strict Exact PDP verification (Search pages are never considered healthy PDPs)
+        const isExactPdp = resolvedLower.includes("/dp/") || resolvedLower.includes("/p/itm") || resolvedLower.includes("/product/") || resolvedLower.includes("/products/") || resolvedLower.includes("/p/") || resolvedLower.endsWith("/buy");
+        const isHealthy = !hasForbidden && isExactPdp && resolvedUrl.startsWith("http");
 
         if (!isHealthy) {
           brokenLinkDetected = true;

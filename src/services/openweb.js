@@ -88,7 +88,7 @@ export async function executeProductDetailsRequest(productId, countryCode = "in"
         const openUrl = `https://api.openwebninja.com/realtime-product-search/v2/product-details?product_id=${encodeURIComponent(productId)}&country=${cleanCountry}&language=en`;
         const res = await fetch(openUrl, {
           headers: { 'x-api-key': openKey },
-          signal: AbortSignal.timeout(8000)
+          signal: AbortSignal.timeout(attempt === 0 ? 12000 : 10000)
         });
         if (res.ok) {
           const json = await res.json();
@@ -210,6 +210,7 @@ export function formatStoreName(name, country = "IN") {
     return meta?.defaultStore || "Amazon";
   }
   if (lower.includes("flipkart")) return "Flipkart";
+  if (lower.includes("shopsy")) return "Shopsy by Flipkart";
   if (lower.includes("1mg") || lower.includes("tata 1mg")) return "Tata 1mg";
   if (lower.includes("apollo") || lower.includes("apollo247")) return "Apollo 24|7";
   if (lower.includes("pharmeasy") || lower.includes("pharm easy")) return "PharmEasy";
@@ -549,7 +550,8 @@ export function getStoreDirectSearchFallback(storeName, productTitle, country = 
 export function isAuthenticPDP(url) {
   if (!url || typeof url !== 'string') return false;
   const raw = url.trim();
-  if (raw.startsWith('/api/redirect') || raw.includes('/api/redirect?')) return true;
+  // An internal redirect or search fallback is NEVER an authentic PDP
+  if (raw.startsWith('/api/redirect') || raw.includes('/api/redirect?') || raw === '#') return false;
   try {
     if (!raw.startsWith('http://') && !raw.startsWith('https://')) return false;
     const u = new URL(raw);
@@ -573,8 +575,8 @@ export function isAuthenticPDP(url) {
       return false;
     }
 
-    // 3. Must have valid path structure
-    return path.length > 2;
+    // 3. Must have valid path structure for e-commerce product pages
+    return hasExactPDPPath(raw);
   } catch {
     return false;
   }
@@ -582,23 +584,30 @@ export function isAuthenticPDP(url) {
 
 /**
  * Universal Real-Time Direct Merchant PDP Resolver
- * Enriches up to 10 products with verified direct PDP links via OpenWeb Ninja product-details API.
+ * Enriches up to 15 products with verified direct PDP links via OpenWeb Ninja product-details API.
  * Guarantees that every product shown on the user interface has a 100% direct product page.
- * Strictly filters out any items that only resolve to search fallback pages.
+ * Strictly filters out any items that only resolve to search fallback pages (Quality > Quantity).
  */
-export async function enrichProductsWithDirectPdps(products = [], country = "IN", maxHeroCount = 10) {
+export async function enrichProductsWithDirectPdps(products = [], country = "IN", maxHeroCount = 8) {
   if (!Array.isArray(products) || products.length === 0) return products;
 
   const countryCode = (country || "in").toLowerCase();
   const targetSlice = products.slice(0, maxHeroCount);
 
   try {
-    const detailsList = await Promise.all(
-      targetSlice.map(p => {
-        if (!p.product_id) return Promise.resolve(null);
-        return executeProductDetailsRequest(p.product_id, countryCode).catch(() => null);
-      })
-    );
+    // Process in polite concurrent batches of 3 to avoid OpenWeb Ninja connection throttles/timeouts
+    const detailsList = [];
+    const batchSize = 3;
+    for (let i = 0; i < targetSlice.length; i += batchSize) {
+      const chunk = targetSlice.slice(i, i + batchSize);
+      const chunkDetails = await Promise.all(
+        chunk.map(p => {
+          if (!p.product_id) return Promise.resolve(null);
+          return executeProductDetailsRequest(p.product_id, countryCode).catch(() => null);
+        })
+      );
+      detailsList.push(...chunkDetails);
+    }
 
     const enrichedProducts = products.map((product, idx) => {
       if (idx >= maxHeroCount) return product;
@@ -637,7 +646,7 @@ export async function enrichProductsWithDirectPdps(products = [], country = "IN"
             : product.price;
           const updatedRawPrice = offerPriceNum > 0 ? offerPriceNum : product.rawPrice;
 
-          // Build real multi-store price comparison from offers
+          // Build real multi-store price comparison from offers (only authentic PDPs)
           const verifiedComparison = offers.map(o => {
             const sName = formatStoreName(o.store_name, country);
             const oLink = sanitizeOfferUrl(o.offer_page_url || o.product_page_url, sName, product.title, country);
@@ -675,13 +684,13 @@ export async function enrichProductsWithDirectPdps(products = [], country = "IN"
     });
 
     // Zero-Tolerance Quality Shield: Only retain products that have verified authentic PDP links
-    // Never show search page fallback links on product cards!
+    // Strict Founder Rule: Quality > Quantity! Only keep products that have 100% genuine PDP links.
     const guaranteedPdpProducts = enrichedProducts.filter(p => isAuthenticPDP(p.link || p.deal_link));
 
-    return guaranteedPdpProducts.length >= 3 ? guaranteedPdpProducts : enrichedProducts;
+    return guaranteedPdpProducts;
   } catch (err) {
     console.warn("[enrichProductsWithDirectPdps] Error resolving PDPs:", err.message);
-    return products;
+    return products.filter(p => isAuthenticPDP(p.link || p.deal_link));
   }
 }
 

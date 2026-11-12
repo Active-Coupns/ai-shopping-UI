@@ -372,12 +372,14 @@ export default function SearchHero({
       return;
     }
 
+    const currentCategory = isHealth ? "health" : "ecommerce";
+
     if (isCoupons && onCouponSearch) {
       onCouponSearch(finalQuery);
     } else if (isSmartTerminal) {
-      onSubmit(finalQuery, false, false, true);
+      onSubmit(finalQuery, false, false, true, currentCategory);
     } else {
-      onSubmit(finalQuery);
+      onSubmit(finalQuery, false, false, false, currentCategory);
     }
   };
 
@@ -390,12 +392,14 @@ export default function SearchHero({
     const activeSearchMode = isSmartTerminal ? "terminal" : isCoupons ? "coupons" : isHealth ? "medicine" : "shopping";
     userJourneyTracker.recordSearch(promptQuery, activeSearchMode);
 
+    const currentCategory = isHealth ? "health" : "ecommerce";
+
     if (isCoupons && onCouponSearch) {
       onCouponSearch(promptQuery);
     } else if (isSmartTerminal) {
-      onSubmit(promptQuery, false, false, true);
+      onSubmit(promptQuery, false, false, true, currentCategory);
     } else {
-      onSubmit(promptQuery);
+      onSubmit(promptQuery, false, false, false, currentCategory);
     }
   };
 

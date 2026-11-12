@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { getAuth } from "@clerk/nextjs/server";
 import { redis } from "@/services/redis";
 import { checkUnifiedApiQuota, extractTrustedClientIp } from "@/services/rateLimiter";
-import { executeProductDetailsRequest, executeSearchRequest, formatStoreName, isTrustedMerchant, sanitizeOfferUrl, isSearchPageUrl, parsePriceNum, getStoreDirectSearchFallback } from "@/services/openweb";
+import { executeProductDetailsRequest, executeSearchRequest, formatStoreName, isTrustedMerchant, sanitizeOfferUrl, isSearchPageUrl, parsePriceNum, getStoreDirectSearchFallback, isAuthenticPDP } from "@/services/openweb";
 import { extractBrandAndModel } from "@/services/autoHealingSentinel";
 import { verifyCryptoHandshake } from "@/lib/cryptoHandshake";
 
@@ -194,9 +194,12 @@ export async function POST(request) {
     // 4. Populate Competitor / Alternative Live Offers ONLY (Base store is already featured at the top)
     (rawOffers || []).forEach(offer => {
       const rawStore = offer.store_name || "";
-      const formattedStore = formatStoreName(rawStore, country);
-      const sKey = formattedStore.toLowerCase();
       const rawUrl = offer.product_page_url || offer.offer_page_url || offer.link;
+      let formattedStore = formatStoreName(rawStore, country);
+      if (rawUrl && rawUrl.includes("shopsy.in")) {
+        formattedStore = "Shopsy by Flipkart";
+      }
+      const sKey = formattedStore.toLowerCase();
 
       // Filter out user's base store (e.g. Swiftronics or Myntra)
       if (isBaseStoreMatch(formattedStore, rawUrl, cleanBaseStore, baseLink)) {
@@ -211,7 +214,7 @@ export async function POST(request) {
       if (!offerPrice || offerPrice <= 0) return;
 
       const cleanUrl = sanitizeOfferUrl(rawUrl, formattedStore, cleanSearchQuery, country);
-      if (!cleanUrl || cleanUrl.includes("google.com") || cleanUrl.includes("ibp=")) return;
+      if (!cleanUrl || cleanUrl.includes("google.com") || cleanUrl.includes("ibp=") || !isAuthenticPDP(cleanUrl)) return;
 
       if (!storeMap.has(sKey) || storeMap.get(sKey).price > offerPrice) {
         storeMap.set(sKey, {
@@ -223,11 +226,13 @@ export async function POST(request) {
       }
     });
 
-    // If Google Shopping details returned no competitors, check real Google Shopping search results for this title
-    if (storeMap.size < 4 && cleanSearchQuery && cleanSearchQuery !== "product") {
+    // Zero-Tolerance Quality Shield:
+    // Only if Google Shopping details returned 0 competitors, search for verified alternative offers.
+    // NEVER force 4 stores with fake search links! If 2 real stores exist, show those 2 real stores.
+    if (storeMap.size === 0 && cleanSearchQuery && cleanSearchQuery !== "product") {
       try {
         const fallbackSearchPromise = executeSearchRequest(cleanSearchQuery, cleanCountry);
-        const fallbackTimeout = new Promise(resolve => setTimeout(() => resolve([]), 8000));
+        const fallbackTimeout = new Promise(resolve => setTimeout(() => resolve([]), 5000));
         const searchProds = await Promise.race([fallbackSearchPromise, fallbackTimeout]);
         (searchProds || []).forEach(p => {
           const rawStore = p.store_name || "";
@@ -245,11 +250,11 @@ export async function POST(request) {
           const pPrice = parsePriceNum(p.product_price || p.price);
           if (!pPrice || pPrice <= 0) return;
 
-          let cleanUrl = sanitizeOfferUrl(rawUrl, formattedStore, cleanSearchQuery, country);
-          if (!cleanUrl || cleanUrl.includes("google.com") || cleanUrl.includes("ibp=")) {
-            cleanUrl = getStoreDirectSearchFallback(formattedStore, cleanSearchQuery, country);
+          const cleanUrl = sanitizeOfferUrl(rawUrl, formattedStore, cleanSearchQuery, country);
+          // Strictly reject any link that is not an authentic PDP! Never fall back to search pages.
+          if (!cleanUrl || cleanUrl.includes("google.com") || cleanUrl.includes("ibp=") || !isAuthenticPDP(cleanUrl)) {
+            return;
           }
-          if (!cleanUrl) return;
 
           if (!storeMap.has(sKey) || storeMap.get(sKey).price > pPrice) {
             storeMap.set(sKey, {
