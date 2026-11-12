@@ -115,52 +115,94 @@ export default function InChatShoppingAgent({
     }
   };
 
-  // Initial welcome message from AI tailored dynamically by category
+  // Initial welcome message from AI tailored dynamically by category with diagnostic consultative questions
   useEffect(() => {
     if (products && products.length > 0) {
       const qLower = (searchQuery || "").toLowerCase();
       const isMedicine = /\b(tablet|capsule|syrup|mg|dolo|calpol|telma|pantocid|pan\s*40|paracetamol|azithromycin|amoxicillin|metformin|cetirizine|allegra|combiflam)\b/i.test(qLower);
       const isSupplement = /\b(whey|protein|creatine|bcaa|isolate|casein|mass\s*gainer|multivitamin|fish\s*oil|omega\s*3)\b/i.test(qLower);
+      const isSkincare = /\b(facewash|face\s*wash|cleanser|serum|sunscreen|moisturizer|cream|salicylic|niacinamide|lotion|skin|acne)\b/i.test(qLower);
+      const isLaptopOrTech = /\b(laptop|macbook|notebook|pc|gaming|rtx|intel|ryzen|computer)\b/i.test(qLower);
+      const isBabyCare = /\b(baby|diaper|infant|newborn|wipes|baby\s*lotion|cerelac)\b/i.test(qLower);
 
       if (isMedicine) {
-        setMessages([
-          {
-            role: "assistant",
-            text: `I've found ${products.length} pharmacy results for "${searchQuery}". You can ask me what this medicine is typically prescribed for, compare store prices (1mg vs Apollo), or check generic alternatives. (Always consult a doctor before taking any medication).`,
-            quickFollowUps: [
-              "What is this medicine typically used for?",
-              "Compare pharmacy prices across stores",
-              "Are there generic salt alternatives?",
-              "What are the available pack sizes?"
-            ]
-          }
-        ]);
+        const welcome = {
+          role: "assistant",
+          text: `I've found verified pharmacy results for "${searchQuery}". You can ask about active chemical composition, therapeutic usage, or compare store prices (1mg vs Apollo). (Always consult a registered physician before taking medication).`,
+          quickFollowUps: [
+            "What is this medicine typically used for?",
+            "Compare pharmacy prices across stores",
+            "Are there generic salt alternatives?",
+            "What are the available pack sizes?"
+          ]
+        };
+        setMessages([welcome]);
+        setActiveFollowUps(welcome.quickFollowUps);
       } else if (isSupplement) {
-        setMessages([
-          {
-            role: "assistant",
-            text: `I've analyzed all ${products.length} health supplements found for "${searchQuery}". Ask me about protein per scoop, unflavored vs flavored options, beginner recommendations, or lab test certifications!`,
-            quickFollowUps: [
-              "Which one has the highest protein per scoop?",
-              "Which one is best for beginners on a budget?",
-              "Is Isolate better for lactose sensitivity?",
-              "Compare authentic store prices"
-            ]
-          }
-        ]);
+        const welcome = {
+          role: "assistant",
+          text: `Hi! I've analyzed the verified health supplements for "${searchQuery}". Ask me about Whey Isolate vs Concentrate for digestion, third-party lab certifications (Trustified/Labdoor), or cost per scoop!`,
+          quickFollowUps: [
+            "Whey Isolate vs Concentrate?",
+            "Certified third-party lab tested?",
+            "Highest protein per scoop?",
+            "Compare authentic store prices"
+          ]
+        };
+        setMessages([welcome]);
+        setActiveFollowUps(welcome.quickFollowUps);
+      } else if (isSkincare) {
+        const welcome = {
+          role: "assistant",
+          text: `Hi! I've scanned the verified market offers for "${searchQuery}". What's your skin type (oily, acne-prone, sensitive, or dry), or are you looking for specific active ingredients like Salicylic acid or Niacinamide?`,
+          quickFollowUps: [
+            "Best for oily / acne-prone skin?",
+            "Any pore-clogging chemicals?",
+            "Gentle for sensitive skin?",
+            "Compare prices across stores"
+          ]
+        };
+        setMessages([welcome]);
+        setActiveFollowUps(welcome.quickFollowUps);
+      } else if (isLaptopOrTech) {
+        const welcome = {
+          role: "assistant",
+          text: `Hi! I've reviewed the top laptop options for "${searchQuery}". Are you looking for high performance & gaming (TGP/thermals), coding & multitasking (RAM upgradability), or a lightweight laptop with long battery life?`,
+          quickFollowUps: [
+            "Check GPU TGP & cooling",
+            "Is RAM upgradable?",
+            "Best battery for travel?",
+            "Best value under my budget"
+          ]
+        };
+        setMessages([welcome]);
+        setActiveFollowUps(welcome.quickFollowUps);
+      } else if (isBabyCare) {
+        const welcome = {
+          role: "assistant",
+          text: `Hi! I've reviewed the verified baby care options for "${searchQuery}". All items are screened for pediatrician safety, zero parabens, and hypoallergenic ingredients. How can I help you choose?`,
+          quickFollowUps: [
+            "Is it 100% tear-free & safe?",
+            "Are there harsh sulfates or parabens?",
+            "Pediatrician recommended?",
+            "Compare best value packs"
+          ]
+        };
+        setMessages([welcome]);
+        setActiveFollowUps(welcome.quickFollowUps);
       } else {
-        setMessages([
-          {
-            role: "assistant",
-            text: `I've analyzed all ${products.length} products found for "${searchQuery}". Ask me anything—I can compare the 3 on your screen, pull other hidden matches from our inventory, or advise on better alternatives!`,
-            quickFollowUps: [
-              "Which one is the best value for money?",
-              "Compare battery life & performance",
-              "Is the most expensive one worth the extra cost?",
-              "What if I need heavy gaming or 4K editing?"
-            ]
-          }
-        ]);
+        const welcome = {
+          role: "assistant",
+          text: `Hi! I've analyzed all ${products.length} verified market offers for "${searchQuery}". Tell me your exact use-case or budget, and I'll help you pick the right one!`,
+          quickFollowUps: [
+            "Which one is the best value for money?",
+            "Compare battery life & performance",
+            "Any hidden catches or trade-offs?",
+            "Find options under a lower budget"
+          ]
+        };
+        setMessages([welcome]);
+        setActiveFollowUps(welcome.quickFollowUps);
       }
     }
   }, [searchQuery, products.length]);
@@ -360,16 +402,16 @@ export default function InChatShoppingAgent({
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5 flex-wrap">
                 <h3 className="font-extrabold text-xs sm:text-base text-white tracking-tight">
-                  <span className="sm:hidden">Ask AI Advisor</span>
-                  <span className="hidden sm:inline">Ask AI About These Products</span>
+                  <span className="sm:hidden">Benefisto Co-Pilot</span>
+                  <span className="hidden sm:inline">Benefisto Co-Pilot — Your Personal Shopping Advisor</span>
                 </h3>
                 <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-[9px] font-extrabold text-emerald-300 whitespace-nowrap shrink-0">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  <span>Live</span>
+                  <span>Live Advisor</span>
                 </span>
               </div>
               <p className="text-[10px] sm:text-[11px] text-slate-300 font-medium truncate mt-0.5">
-                Compare {products.length} options & get instant advice
+                Deep product diagnosis, honest specs & deal comparisons across {products.length} options
               </p>
             </div>
           </div>
@@ -416,7 +458,7 @@ export default function InChatShoppingAgent({
               )}
 
               {/* Chat Stream */}
-              <div ref={chatScrollRef} className="p-3 sm:p-5 md:p-6 max-h-[480px] overflow-y-auto space-y-3.5 sm:space-y-4 bg-slate-50/50">
+              <div ref={chatScrollRef} className="p-3 sm:p-5 md:p-6 max-h-[320px] sm:max-h-[460px] overflow-y-auto space-y-3.5 sm:space-y-4 bg-slate-50/50">
                 {messages.map((msg, mIdx) => {
                   const isUser = msg.role === "user";
                   const recDisplayedProd = (msg.recommendedDisplayedIndex !== undefined && msg.recommendedDisplayedIndex !== null)
@@ -533,9 +575,9 @@ export default function InChatShoppingAgent({
                             </div>
 
                             <div className="flex items-start gap-3">
-                              {poolProd.image && (
+                              {(poolProd.image || poolProd.thumbnail) && (
                                 <img 
-                                  src={poolProd.image} 
+                                  src={poolProd.image || poolProd.thumbnail} 
                                   alt={poolProd.title} 
                                   className="w-16 h-16 sm:w-18 sm:h-18 object-contain rounded-xl bg-slate-50 border border-slate-200/70 p-1.5 shrink-0" 
                                 />
@@ -644,7 +686,7 @@ export default function InChatShoppingAgent({
                 {isLoading && (
                   <div className="flex items-center gap-2.5 text-xs text-indigo-700 font-bold p-2 bg-indigo-50/60 rounded-xl border border-indigo-100 max-w-fit">
                     <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                    <span>AI Shopping Advisor is analyzing hardware specs...</span>
+                    <span>Benefisto Co-Pilot is analyzing market options...</span>
                   </div>
                 )}
               </div>
@@ -655,7 +697,7 @@ export default function InChatShoppingAgent({
                   type="text"
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
-                  placeholder={isListening ? "Listening... speak now in English or Hindi..." : "Ask AI about these products..."}
+                  placeholder={isListening ? "Listening... speak now in English or Hindi..." : "Ask Benefisto Co-Pilot about these options..."}
                   className={`min-w-0 flex-1 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl border text-xs sm:text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none transition-all ${
                     isListening
                       ? "bg-rose-50/80 border-rose-300 ring-2 ring-rose-400/20"
