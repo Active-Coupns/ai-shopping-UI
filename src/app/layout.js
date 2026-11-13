@@ -14,7 +14,7 @@ const inter = Inter({
   subsets: ["latin"],
 });
 
-const defaultBaseUrl = process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://benefisto.com");
+const defaultBaseUrl = process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://www.benefisto.com");
 
 export const metadata = {
   metadataBase: new URL(defaultBaseUrl),

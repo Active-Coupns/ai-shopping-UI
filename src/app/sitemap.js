@@ -1,7 +1,7 @@
 import { getAllSubscriptionSlugs } from "@/data/subscriptionsSeoData";
 
 export default function sitemap() {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://benefisto.com");
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://www.benefisto.com");
 
   const staticRoutes = [
     {

@@ -39,6 +39,13 @@ const isPublicRoute = createRouteMatcher([
 
 const handler = clerkMiddleware(
   async (auth, req) => {
+    // 1. Sentinelx9 Subdomain Auto-Routing:
+    // If accessing sentinelx9.benefisto.com at root '/', automatically rewrite to '/admin'
+    const host = req.headers.get("host") || "";
+    if (host.startsWith("sentinelx9.") && req.nextUrl.pathname === "/") {
+      return NextResponse.rewrite(new URL("/admin", req.url));
+    }
+
     if (!isPublicRoute(req)) {
       await auth.protect();
     }
