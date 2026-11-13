@@ -237,6 +237,14 @@ export default function AdminPage() {
     }
   };
 
+  // Safety timeout: If Clerk auth JS is delayed or blocked by network, never hang on loading spinner indefinitely
+  useEffect(() => {
+    const fallbackTimer = setTimeout(() => {
+      setLoading(false);
+    }, 2500);
+    return () => clearTimeout(fallbackTimer);
+  }, []);
+
   // Rapid 2.5s real-time live scanner when Security Radar tab is active
   useEffect(() => {
     if (activeTab !== "security") return;
