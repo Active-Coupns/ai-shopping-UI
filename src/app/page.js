@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, ShoppingBag, ArrowLeft, RefreshCw, ShieldAlert, Coins, Tag, AlertCircle, Shirt, User, Search, LifeBuoy, ShieldCheck, Tv, Plane } from "lucide-react";
+import { Sparkles, ShoppingBag, ArrowLeft, RefreshCw, ShieldAlert, Coins, Tag, AlertCircle, Shirt, User, Search, LifeBuoy, ShieldCheck, Tv, Plane, Mail } from "lucide-react";
 import { SignedIn, SignedOut, SignInButton, useUser, useClerk } from "@clerk/nextjs";
 import dynamic from "next/dynamic";
 import SearchHero from "@/components/SearchHero";
@@ -1374,34 +1374,80 @@ export default function Home() {
 </main>
 
       {/* Footer */}
-      <footer suppressHydrationWarning className="relative z-10 w-full py-4 pb-24 md:pb-6 text-center text-[11px] sm:text-xs text-slate-500 border-t border-slate-200/80 glass-panel border-x-0 border-b-0">
-        <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-2.5 sm:gap-4">
-          <div className="flex items-center gap-1.5 text-slate-600">
-            <Sparkles className="w-3.5 h-3.5 text-brand-indigo" />
-            <span className="font-medium">AI-powered shopping decision engine & price comparison</span>
+      <footer suppressHydrationWarning className="relative z-10 w-full pt-8 pb-32 md:pb-10 border-t border-slate-200/80 bg-white/70 backdrop-blur-md">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Top Brand & Tagline Bar */}
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4 pb-6 border-b border-slate-200/60">
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-white shadow-sm">
+                <ShoppingBag className="w-4 h-4" />
+              </div>
+              <div className="text-left">
+                <span className="font-extrabold text-sm text-slate-900 tracking-tight">Benefisto <span className="text-brand-indigo">AI</span></span>
+                <p className="text-[11px] text-slate-500 font-medium">Universal AI-Powered Shopping Decision Engine & Price Comparison</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <a
+                href="mailto:support@benefisto.com"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200/80 text-[11px] font-semibold text-slate-700 transition-colors"
+              >
+                <Mail className="w-3.5 h-3.5 text-brand-indigo" />
+                <span>support@benefisto.com</span>
+              </a>
+              <div className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-semibold border border-emerald-200/60">
+                <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                <span>Global Compliance</span>
+              </div>
+            </div>
           </div>
-          <div className="flex flex-wrap items-center justify-center gap-3 text-slate-500">
-            <Link href="/about" className="hover:text-indigo-600 font-medium transition-colors">About</Link>
-            <span>•</span>
-            <Link href="/privacy" className="hover:text-indigo-600 font-medium transition-colors">Privacy</Link>
-            <span>•</span>
-            <Link href="/terms" className="hover:text-indigo-600 font-medium transition-colors">Terms</Link>
-            <span>•</span>
-            <Link href="/disclaimer" className="hover:text-indigo-600 font-medium transition-colors">Disclaimer</Link>
-            <span>•</span>
-            <Link href="/contact" className="hover:text-indigo-600 font-medium transition-colors">Contact</Link>
-            <span>•</span>
-            <button
-              type="button"
-              suppressHydrationWarning
-              onClick={() => setIsSupportModalOpen(true)}
-              className="text-indigo-600 hover:text-indigo-800 font-semibold hover:underline cursor-pointer flex items-center gap-1"
-            >
-              <LifeBuoy className="w-3 h-3" />
-              <span>Support</span>
-            </button>
-            <span>•</span>
-            <span>&copy; 2026 Benefisto AI. All rights reserved.</span>
+
+          {/* Middle Nav Links (Optimized Grid on Mobile for Fat-Finger Tapping, Inline on Desktop) */}
+          <div className="py-5 flex flex-col md:flex-row items-center justify-between gap-4">
+            <nav aria-label="Legal and Trust" className="w-full md:w-auto">
+              <ul className="grid grid-cols-3 sm:flex sm:flex-wrap items-center justify-center gap-2 sm:gap-4 text-xs font-medium text-slate-600">
+                <li>
+                  <Link href="/about" className="block text-center px-2.5 py-1.5 rounded-lg hover:bg-slate-100 hover:text-indigo-600 transition-colors">
+                    About
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/privacy" className="block text-center px-2.5 py-1.5 rounded-lg hover:bg-slate-100 hover:text-indigo-600 transition-colors">
+                    Privacy
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/terms" className="block text-center px-2.5 py-1.5 rounded-lg hover:bg-slate-100 hover:text-indigo-600 transition-colors">
+                    Terms
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/disclaimer" className="block text-center px-2.5 py-1.5 rounded-lg hover:bg-slate-100 hover:text-indigo-600 transition-colors">
+                    Disclaimer
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/contact" className="block text-center px-2.5 py-1.5 rounded-lg hover:bg-slate-100 hover:text-indigo-600 transition-colors">
+                    Contact
+                  </Link>
+                </li>
+                <li>
+                  <button
+                    type="button"
+                    suppressHydrationWarning
+                    onClick={() => setIsSupportModalOpen(true)}
+                    className="w-full text-center px-2.5 py-1.5 rounded-lg text-indigo-600 hover:bg-indigo-50 font-semibold transition-colors inline-flex items-center justify-center gap-1 cursor-pointer"
+                  >
+                    <LifeBuoy className="w-3.5 h-3.5" />
+                    <span>Support</span>
+                  </button>
+                </li>
+              </ul>
+            </nav>
+
+            <p className="text-[11px] text-slate-400 text-center md:text-right font-normal">
+              &copy; 2026 Benefisto AI. Operating across 6 global retail jurisdictions. All rights reserved.
+            </p>
           </div>
         </div>
       </footer>

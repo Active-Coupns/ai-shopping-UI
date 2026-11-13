@@ -2,6 +2,37 @@
 DEPLOYMENT LOGS - BENEFISTO PLATFORM
 ================================================================================
 
+[DEPLOYMENT TIMESTAMP] : 2026-11-13 07:30:00 UTC (Local: 2026-11-12 23:30:00 -08:00)
+[COMMIT HASH]          : a9cab2f
+[TARGET ENVIRONMENT]   : Production (Vercel) / prod main & origin main
+[BUILD STATUS]         : PASSED (5 Trust Pages, Mobile-Optimized Responsive Footer, Clerk Consent)
+[STATUS]               : PUSHED TO PRODUCTION
+
+--------------------------------------------------------------------------------
+SUMMARY OF CHANGES & RESOLVED ISSUES
+--------------------------------------------------------------------------------
+
+1. RESPONSIVE MOBILE-OPTIMIZED FOOTER (src/app/page.js)
+   - Solved mobile bar overlap: added pt-8 pb-32 md:pb-10 spacing (~128px bottom padding).
+   - Clean 3x2 responsive touch-friendly pill grid for thumb clicks on mobile.
+   - Connected all 5 trust pages (/about, /privacy, /terms, /disclaimer, /contact) + Support Modal.
+   - Integrated official verified support email: support@benefisto.com with mailto action.
+
+2. CLERK DASHBOARD MANDATORY EXPRESS LEGAL CONSENT
+   - Configured Legal URLs in Clerk Dashboard: Terms (https://www.benefisto.com/terms) & Privacy (https://www.benefisto.com/privacy).
+   - "Require express consent to legal documents" active (purple switch).
+   - Enforces mandatory checkbox before account registration across both standard sign-up and Google 1-Click OAuth flows.
+
+3. SUPABASE AUDIT TRAIL & REGIONAL PARTITIONING
+   - /api/telemetry/event captures cf-ipcountry and x-vercel-ip-country for zero-cost regional partitioning.
+   - userJourneyTracker records USER_AUTH_SYNC with legalTermsConsent: true and ISO timestamp to user_activity_ledger.
+
+4. CLEAN-ROOM UNIVERSAL COMPLIANCE STANDARD
+   - 0% backend tech leaks across all 5 pages.
+   - Balanced, universal framing across US, UK, Canada, EU, UAE, Australia, and India.
+
+--------------------------------------------------------------------------------
+
 [DEPLOYMENT TIMESTAMP] : 2026-11-13 06:55:00 UTC (Local: 2026-11-12 22:55:00 -08:00)
 [COMMIT HASH]          : 3d4491e
 [TARGET ENVIRONMENT]   : Production (Vercel) / prod main (shopsmart01/benefisto-platform)

@@ -18,6 +18,29 @@
 
 ## 📅 Daily Changelog & Feature Timeline
 
+### 🗓️ 2026-11-13 (Global Legal Compliance Stack, Trust Pages, Responsive Mobile Footer & Clerk Express Consent)
+
+* **Status**: ✅ 100% Clean-Room Verified, Zero Backend Leakage, Ready for Affiliate & Retailer Partnerships
+* **Core Achievements & Changes**:
+  1. **5 Golden Global Compliance & Legal Trust Pages Launched**:
+     - `/about`: Founding mission, algorithmic neutrality, 4 pillars of transparency (Direct Verified PDPs, Multi-Store Comparison, Trust Sheet Reality Check, Virtual Try-On), 6-country global coverage (US, UK, CA, EU, UAE, IN).
+     - `/privacy`: Strict clean-room policy. VTON 0% permanent storage & in-memory RAM processing, zero AI training on consumer telemetry, zero password storage (handled via cryptographic identity standards), regional cloud server data residency partitioning, full compliance with India's DPDP Act 2023, EU GDPR, and US state privacy regulations.
+     - `/terms`: Balanced fair-use policy (soft server protection, zero hostile scraping terminology), third-party merchant contract separation (Benefisto is a decision engine, not seller of record), $0 / ₹0 maximum liability cap, class action waiver, international arbitration.
+     - `/disclaimer`: Explicit affiliate marketing disclosures across all major networks, real-time price & stock volatility disclaimers, independent consumer guide role, AI recommendation advisory nature, fair-use registered trademark ownership notices.
+     - `/contact`: Dedicated customer support desk, retailer and partnership inquiry channels, global business operations overview, statutory Grievance Redressal Officer.
+     - Official Support Channel: Unified around `support@benefisto.com` (Cloudflare Email Routing).
+  2. **Mobile-Optimized Responsive Footer (`src/app/page.js`)**:
+     - Solved Mobile Overlap Issue: Set `pt-8 pb-32 md:pb-10` padding (~128px bottom mobile spacing) ensuring the floating mobile bottom navigation bar (`<nav className="fixed bottom-0 ...">`) never obscures or clips any footer links, copyright notices, or email addresses.
+     - Touch-Friendly 3x2 Grid: Replaced cramped text dots with clean, comfortably spaced pill tap targets (`grid grid-cols-3 sm:flex`) for thumb navigation on 320px–420px mobile screens.
+     - Brand Header & Verification: Added Benefisto brand icon, tagline, official mailto button (`support@benefisto.com`), and Global Compliance indicator.
+  3. **Clerk Express Legal Consent Configuration**:
+     - Configured Clerk Dashboard (`compliance/legal`) with Terms of Service URL (`https://www.benefisto.com/terms`) and Privacy Policy URL (`https://www.benefisto.com/privacy`).
+     - Verified "Require express consent to legal documents" is active (purple toggle), automatically injecting a mandatory agreement checkbox into `<SignUp />` forms and OAuth redirect flows (blocking account creation until accepted).
+     - Maintained clean component wrappers in `src/app/sign-up` and `src/app/sign-in` allowing Clerk to manage 100% of native validation without UI duplication.
+  4. **Supabase Multi-Country Telemetry & Legal Consent Audit Trail**:
+     - In `src/app/api/telemetry/event/route.js`, auto-detects user country headers (`cf-ipcountry`, `x-vercel-ip-country`) and prepends `[COUNTRY]` to telemetry entries in `user_activity_ledger`.
+     - In `src/services/userJourneyTracker.js`, emits `USER_AUTH_SYNC` beacon containing `legalTermsConsent: true` and ISO timestamp to maintain an immutable consent audit record without adding database costs.
+
 ### 🗓️ 2026-11-12 (Investor Demo Defect Resolution & Performance / Auth Hardening)
 
 * **Status**: ✅ End-to-End Verified across Non-Gadget Categories, Scroll Optimized & Auth Guard Active

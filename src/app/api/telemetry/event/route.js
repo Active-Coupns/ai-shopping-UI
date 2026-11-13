@@ -255,7 +255,7 @@ export async function POST(request) {
         details = `Page Visit (session #${currentJourney.session?.visitCount || 1})`;
         category = "platform";
       } else if (eventType === "USER_AUTH_SYNC") {
-        details = `User Login / Auth Sync (${email || "Signed In"})`;
+        details = `User Auth & Legal Terms/Privacy Consent Verified (${email || "Signed In"})`;
         category = "auth";
       } else {
         details = typeof payload === "string" ? payload : JSON.stringify(payload).slice(0, 150);

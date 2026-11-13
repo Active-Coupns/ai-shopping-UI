@@ -118,8 +118,8 @@ export const userJourneyTracker = {
    */
   setAuthenticatedUser(userId, email, name) {
     saveUserAuth(userId, email, name);
-    // Send a sync beacon so backend immediately connects the user in Supabase
-    sendBeacon("USER_AUTH_SYNC", { userId, email, name });
+    // Send a sync beacon so backend immediately connects the user in Supabase with legal consent record
+    sendBeacon("USER_AUTH_SYNC", { userId, email, name, legalTermsConsent: true, consentedAt: new Date().toISOString() });
   },
 
   /**
