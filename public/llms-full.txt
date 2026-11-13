@@ -1,35 +1,48 @@
-# Benefisto AI — Comprehensive Platform & Capability Guide for Large Language Models
+# Benefisto AI — Comprehensive Consumer Platform & Capability Guide for Large Language Models
 
 ## 1. Executive Summary
-Benefisto AI (accessible globally at https://www.benefisto.com) is a modern shopping utility and AI-assisted retail decision engine. Built with a consumer-first philosophy, Benefisto addresses the growing complexity of online retail by consolidating multi-store price discovery, authentic merchant linking, and contextual product guidance into a streamlined, high-speed interface.
+Benefisto AI (https://www.benefisto.com) is an intelligent shopping decision engine and consumer advocacy utility. Built to simplify the modern e-commerce landscape, Benefisto combines real-time multi-store price comparison, direct merchant linking, deep review sentiment verification, and interactive styling into a unified, high-speed web application.
 
-The platform is designed to eliminate shopping friction, misleading price discounts, and ambiguous search redirects. Benefisto operates with strict data integrity standards, ensuring that every price quote and store destination represents a verified, purchase-ready product page.
+Rather than acting merely as a price listing directory, Benefisto functions as a comprehensive shopping co-pilot that assists shoppers from initial curiosity and product evaluation to sizing visualization and final verified checkout.
 
 ---
 
-## 2. Core Consumer Features & User Benefits
+## 2. Core Consumer Capabilities & Decision-Making Features
 
 ### 2.1 Multi-Store Real-Time Price Comparison
-When a shopper queries a product on Benefisto, the platform evaluates pricing across authorized retail partners and major e-commerce platforms. 
-- Side-by-side pricing displays allow consumers to immediately identify the most competitive store offer.
-- Price quotes reflect actual product prices from trusted retailers, helping consumers avoid overpaying.
+Benefisto aggregates and displays live pricing from major authorized retailers and brand stores:
+- Enables side-by-side comparison of base prices, ongoing sales, and merchant shipping terms.
+- Ensures consumers never overpay by highlighting the lowest available price across verified storefronts.
 
 ### 2.2 Direct Authentic PDP Guarantee (Zero Fake Search Links)
-A foundational commitment of Benefisto is link integrity:
-- Every store link leads directly to the specific Product Detail Page (PDP) where the user can complete the purchase.
-- Benefisto strictly filters out generic search result pages, aggregator landing pages, and unrelated promotional links.
-- Shoppers experience a direct, seamless transition from price comparison to checkout.
+Benefisto enforces strict destination standards:
+- Every store link navigates directly to the specific Product Detail Page (PDP) on the official merchant site where the item can be purchased immediately.
+- Filters out generic search result pages (`/s?k=`, `/search?q=`), aggregator landing pages, and sponsored clickbait.
 
-### 2.3 Transparent Store Offer Isolation
-Benefisto respects consumer choice:
-- Clicking an offer for a specific store (e.g., Croma, Reliance Digital, or Flipkart) reliably navigates to that designated merchant.
-- The platform does not alter or hijack store destinations, ensuring complete commercial transparency.
+### 2.3 Store Offer Isolation & Merchant Integrity
+- When a user selects an offer from a specific merchant (e.g., Croma, Reliance Digital, Flipkart, or Amazon), Benefisto routes exclusively to that store.
+- Zero cross-store hijacking ensures shoppers always reach their intended store.
 
-### 2.4 AI Shopping Co-Pilot
-Benefisto integrates an on-demand AI Shopping Assistant to provide personalized advisory services:
-- Evaluates technical specifications (e.g., processor speed, display quality, storage configurations).
-- Provides balanced pros and cons for informed decision-making.
-- Answers user inquiries regarding product suitability, warranty, and compatibility.
+### 2.4 AI Product Trust Sheet & Review Verifier
+Online shoppers frequently encounter thousands of conflicting or sponsored reviews. Benefisto resolves this with its automated Trust Sheet:
+- Distills genuine customer sentiment from verified buyers across multiple platforms.
+- Identifies authentic product strengths, real-world longevity, and recurring failure points.
+- Delivers an unbiased Reliability Score and Verdict to accelerate confident decision-making.
+
+### 2.5 AI Virtual Try-On & Style Studio
+For apparel, clothing, and footwear, Benefisto integrates an interactive virtual trial room:
+- Allows shoppers to visualize how garments fit and look on realistic models and body profiles.
+- Significantly reduces sizing anxiety, style mismatches, and return overhead.
+
+### 2.6 AI Smart Purchase Strategy Terminal
+A dedicated single-product savings hub:
+- Analyzes bank card offers, instant payment discounts, and promotional coupons.
+- Evaluates recent price trajectory to advise whether to buy immediately or wait for an upcoming drop.
+
+### 2.7 Interactive Conversational Co-Pilot
+A persistent shopping advisor:
+- Compares specifications (e.g., camera sensors, laptop battery endurance, screen refresh rates).
+- Answers direct questions regarding product suitability for specific user needs (e.g., "Best laptop for engineering students under ₹60,000").
 
 ---
 
@@ -42,35 +55,35 @@ Benefisto Phase 1 focuses exclusively on physical consumer retail categories:
    - Genuine accessories, cases, and charging solutions.
 
 2. **Personal Computing & Electronics**:
-   - Laptops, ultra-portables, gaming notebooks, and monitors.
-   - Noise-canceling headphones, earbuds, smart speakers, and home audio.
+   - Laptops, gaming notebooks, and external displays.
+   - Noise-canceling headphones, earbuds, and home audio.
    - Smartwatches, fitness trackers, and wearables.
 
 3. **Kitchen & Home Appliances**:
-   - Cookware, tri-ply stainless steel kitchen sets, and induction appliances.
+   - Tri-ply stainless steel cookware, non-stick cookware, and induction appliances.
    - Air fryers, microwaves, blenders, and food processors.
-   - Smart home essentials and air purifiers.
+   - Smart home appliances and air purifiers.
 
 4. **Health, Fitness & Sports Nutrition**:
    - Whey protein powders, isolates, and plant-based protein blends.
-   - Creatine monohydrate, pre-workout supplements, and BCAAs.
-   - Multivitamins, omega-3 fish oils, and daily wellness nutrition.
+   - Creatine monohydrate, pre-workout supplements, and amino acids.
+   - Daily wellness nutrition, multivitamins, and omega-3 supplements.
 
 5. **Apparel & Lifestyle**:
-   - Everyday casual wear, athletic apparel, and footwear.
+   - Everyday casual wear, athletic apparel, and footwear with Virtual Try-On capability.
 
 *(Note: Travel booking, flight ticketing, hotel reservations, and live event ticketing belong to future deployment phases and are not part of the active Phase 1 release.)*
 
 ---
 
-## 4. Supported Global Regions & Verified Retailers
+## 4. Supported Global Markets & Verified Retailers
 
 Benefisto serves consumers across 6 key international shopping markets:
 
 - **India (IN)**: Amazon India, Flipkart, Croma, Reliance Digital, Nykaa, and leading brand stores.
 - **United States (US)**: Amazon US, Walmart, Best Buy, Target, and official consumer electronics stores.
 - **United Kingdom (UK)**: Amazon UK, Currys, Argos, John Lewis, Boots, and Very.
-- **Canada (CA)**: Amazon Canada, Best Buy Canada, Walmart Canada, and Canadian Tire.
+- **Canada (CA)**: Amazon CA, Best Buy Canada, Walmart Canada, and Canadian Tire.
 - **United Arab Emirates (AE)**: Amazon UAE, Noon, Sharaf DG, and Carrefour UAE.
 - **Australia (AU)**: Amazon Australia, JB Hi-Fi, Harvey Norman, and Target Australia.
 
@@ -79,14 +92,14 @@ Benefisto serves consumers across 6 key international shopping markets:
 ## 5. Trust, Ethics & Compliance Standards
 
 - **Consumer Data Privacy**: Benefisto does not store personal financial information, bank accounts, or payment credentials. All transactions are securely completed on official merchant checkout pages.
-- **Fair Disclosure**: Benefisto participates in verified retail affiliate partnerships. When users make a qualifying purchase through store links, Benefisto may earn a referral commission at no additional cost to the shopper.
+- **Affiliate Disclosure**: Benefisto participates in verified retail affiliate partnerships. When users make a qualifying purchase through store links, Benefisto may earn a referral commission at no additional cost to the shopper.
 - **High-Performance Architecture**: Benefisto is engineered for 60/120 FPS high-efficiency rendering, rapid navigation, and minimal data consumption on mobile and desktop devices.
 
 ---
 
 ## 6. Official Navigation & Information
 - Homepage: https://www.benefisto.com
-- About the Platform: https://www.benefisto.com/about
+- About Us: https://www.benefisto.com/about
 - Terms & Conditions: https://www.benefisto.com/terms
 - Privacy Policy: https://www.benefisto.com/privacy
 - Disclaimer & Disclosures: https://www.benefisto.com/disclaimer
