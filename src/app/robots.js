@@ -5,10 +5,23 @@ export default function robots() {
     rules: [
       {
         userAgent: "*",
-        allow: "/",
+        allow: [
+          "/",
+          "/about",
+          "/privacy",
+          "/terms",
+          "/disclaimer",
+          "/contact",
+          "/llms.txt",
+          "/llms-full.txt",
+          "/manifest.json"
+        ],
         disallow: [
           "/admin",
           "/admin/",
+          "/sentinelx9",
+          "/sentinelx9/",
+          "/purchase_terminal",
           "/api/",
           "/sign-in",
           "/sign-up",
