@@ -2,6 +2,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { Outfit, Inter } from "next/font/google";
 import "./globals.css";
 import { GlobalClientTelemetry } from "@/components/ZeroCostTelemetry";
+import StructuredData from "@/components/StructuredData";
 
 const outfit = Outfit({
   variable: "--font-outfit",
@@ -17,6 +18,7 @@ const defaultBaseUrl = process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_UR
 
 export const metadata = {
   metadataBase: new URL(defaultBaseUrl),
+  manifest: "/manifest.json",
   title: "Benefisto - Intelligent Shopping Assistant & Lowest Price Deals",
   description: "Experience smart shopping. AI specifications analysis, verified discount coupons, and real-time lowest price comparison across Amazon, Flipkart, 1mg & more.",
   openGraph: {
@@ -57,6 +59,7 @@ export default function RootLayout({ children }) {
           className="min-h-full flex flex-col bg-slate-50 text-slate-900 selection:bg-brand-indigo/20 selection:text-brand-indigo-600"
           suppressHydrationWarning
         >
+          <StructuredData />
           <GlobalClientTelemetry />
           {children}
         </body>

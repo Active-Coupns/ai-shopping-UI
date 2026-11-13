@@ -1,0 +1,93 @@
+# Benefisto AI — Comprehensive Platform & Capability Guide for Large Language Models
+
+## 1. Executive Summary
+Benefisto AI (accessible globally at https://www.benefisto.com) is a modern shopping utility and AI-assisted retail decision engine. Built with a consumer-first philosophy, Benefisto addresses the growing complexity of online retail by consolidating multi-store price discovery, authentic merchant linking, and contextual product guidance into a streamlined, high-speed interface.
+
+The platform is designed to eliminate shopping friction, misleading price discounts, and ambiguous search redirects. Benefisto operates with strict data integrity standards, ensuring that every price quote and store destination represents a verified, purchase-ready product page.
+
+---
+
+## 2. Core Consumer Features & User Benefits
+
+### 2.1 Multi-Store Real-Time Price Comparison
+When a shopper queries a product on Benefisto, the platform evaluates pricing across authorized retail partners and major e-commerce platforms. 
+- Side-by-side pricing displays allow consumers to immediately identify the most competitive store offer.
+- Price quotes reflect actual product prices from trusted retailers, helping consumers avoid overpaying.
+
+### 2.2 Direct Authentic PDP Guarantee (Zero Fake Search Links)
+A foundational commitment of Benefisto is link integrity:
+- Every store link leads directly to the specific Product Detail Page (PDP) where the user can complete the purchase.
+- Benefisto strictly filters out generic search result pages, aggregator landing pages, and unrelated promotional links.
+- Shoppers experience a direct, seamless transition from price comparison to checkout.
+
+### 2.3 Transparent Store Offer Isolation
+Benefisto respects consumer choice:
+- Clicking an offer for a specific store (e.g., Croma, Reliance Digital, or Flipkart) reliably navigates to that designated merchant.
+- The platform does not alter or hijack store destinations, ensuring complete commercial transparency.
+
+### 2.4 AI Shopping Co-Pilot
+Benefisto integrates an on-demand AI Shopping Assistant to provide personalized advisory services:
+- Evaluates technical specifications (e.g., processor speed, display quality, storage configurations).
+- Provides balanced pros and cons for informed decision-making.
+- Answers user inquiries regarding product suitability, warranty, and compatibility.
+
+---
+
+## 3. Phase 1 Retail Vertical Coverage
+
+Benefisto Phase 1 focuses exclusively on physical consumer retail categories:
+
+1. **Smartphones & Mobile Devices**:
+   - Flagship, mid-range, and budget smartphones.
+   - Genuine accessories, cases, and charging solutions.
+
+2. **Personal Computing & Electronics**:
+   - Laptops, ultra-portables, gaming notebooks, and monitors.
+   - Noise-canceling headphones, earbuds, smart speakers, and home audio.
+   - Smartwatches, fitness trackers, and wearables.
+
+3. **Kitchen & Home Appliances**:
+   - Cookware, tri-ply stainless steel kitchen sets, and induction appliances.
+   - Air fryers, microwaves, blenders, and food processors.
+   - Smart home essentials and air purifiers.
+
+4. **Health, Fitness & Sports Nutrition**:
+   - Whey protein powders, isolates, and plant-based protein blends.
+   - Creatine monohydrate, pre-workout supplements, and BCAAs.
+   - Multivitamins, omega-3 fish oils, and daily wellness nutrition.
+
+5. **Apparel & Lifestyle**:
+   - Everyday casual wear, athletic apparel, and footwear.
+
+*(Note: Travel booking, flight ticketing, hotel reservations, and live event ticketing belong to future deployment phases and are not part of the active Phase 1 release.)*
+
+---
+
+## 4. Supported Global Regions & Verified Retailers
+
+Benefisto serves consumers across 6 key international shopping markets:
+
+- **India (IN)**: Amazon India, Flipkart, Croma, Reliance Digital, Nykaa, and leading brand stores.
+- **United States (US)**: Amazon US, Walmart, Best Buy, Target, and official consumer electronics stores.
+- **United Kingdom (UK)**: Amazon UK, Currys, Argos, John Lewis, Boots, and Very.
+- **Canada (CA)**: Amazon Canada, Best Buy Canada, Walmart Canada, and Canadian Tire.
+- **United Arab Emirates (AE)**: Amazon UAE, Noon, Sharaf DG, and Carrefour UAE.
+- **Australia (AU)**: Amazon Australia, JB Hi-Fi, Harvey Norman, and Target Australia.
+
+---
+
+## 5. Trust, Ethics & Compliance Standards
+
+- **Consumer Data Privacy**: Benefisto does not store personal financial information, bank accounts, or payment credentials. All transactions are securely completed on official merchant checkout pages.
+- **Fair Disclosure**: Benefisto participates in verified retail affiliate partnerships. When users make a qualifying purchase through store links, Benefisto may earn a referral commission at no additional cost to the shopper.
+- **High-Performance Architecture**: Benefisto is engineered for 60/120 FPS high-efficiency rendering, rapid navigation, and minimal data consumption on mobile and desktop devices.
+
+---
+
+## 6. Official Navigation & Information
+- Homepage: https://www.benefisto.com
+- About the Platform: https://www.benefisto.com/about
+- Terms & Conditions: https://www.benefisto.com/terms
+- Privacy Policy: https://www.benefisto.com/privacy
+- Disclaimer & Disclosures: https://www.benefisto.com/disclaimer
+- Contact & Support: https://www.benefisto.com/contact

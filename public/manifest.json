@@ -1,0 +1,25 @@
+{
+  "name": "Benefisto AI - Shopping Assistant & Lowest Price Deals",
+  "short_name": "Benefisto",
+  "description": "Real-time AI shopping assistant and transparent multi-store price comparison across Amazon, Flipkart, Croma, Reliance Digital, and top retailers.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#4f46e5",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/laptop.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/laptop.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["shopping", "productivity", "utilities"]
+}

@@ -1,7 +1,7 @@
 # 🧭 Benefisto — Active Session State & Daily Handover Ledger
 **File:** `ACTIVE_SESSION_STATE.md` (Project Root)  
-**Last Updated:** 2026-11-12 19:45 IST / 11:45 PST  
-**Session Status:** SCROLL LAG OPTIMIZATION & AUTH HISTORY GUARD PUSHED TO PRODUCTION (`6170c1f`)
+**Last Updated:** 2026-11-13 05:40 IST / 2026-11-12 21:40 PST  
+**Session Status:** AI DISCOVERABILITY, ROBOTS SHIELD, SCHEMA.ORG & PWA STACK CREATED
 
 ---
 
@@ -9,13 +9,15 @@
 - **Production Status**: 
   - `https://www.benefisto.com` $\rightarrow$ **100% LIVE, SSL Encrypted, Cloudflare Protected**.
   - `https://sentinelx9.benefisto.com/admin` $\rightarrow$ **Secret Admin Control Room Verified & Active**.
-  - GitHub (`shopsmart01/benefisto-platform`) & Vercel (`benefisto-platform`) $\rightarrow$ Fully deployed (`6170c1f`).
-- **Scroll Lag Optimization & Auth History Guard**:
-  1. **Scroll Lag & Button Latency Fixed**: Replaced Framer Motion JS `whileHover` with hardware-accelerated CSS `hover:-translate-y-1 will-change-transform`. Removed heavy `backdrop-filter: blur(8px)` on product cards. Added `content-visibility: auto` to defer off-screen card layout. Added instant visual feedback spinner to "Compare Stores" button.
-  2. **Auth History Guard Added**: Injected `popstate` interceptor so browser Back button after Google OAuth never bounces user back into the Google OAuth consent/continue screen. Added server-side auth guard in `/sign-in` and `/sign-up` to redirect signed-in users directly to `/`.
-  3. **Strict 2-API Architecture & Store Isolation Shield**: Preserved and active.
+  - GitHub (`shopsmart01/benefisto-platform`) & Vercel (`benefisto-platform`) $\rightarrow$ Production synchronized.
+- **AI Discoverability & Defense Files Created**:
+  1. **Crawler & Endpoint Defense**: `public/robots.txt` disallows all internal endpoints (`/api/`, `/sentinelx9/`, `/purchase_terminal/`).
+  2. **Clean-Room AI Guides**: `public/llms.txt` and `public/llms-full.txt` created with 100% consumer-value messaging and zero internal backend/scraping mentions.
+  3. **Schema.org Knowledge Graph**: `src/components/StructuredData.jsx` added to `src/app/layout.js` (WebSite, SoftwareApplication, Organization).
+  4. **PWA & Search Index**: `public/manifest.json` and `public/sitemap.xml` active.
 - **Next Exact Mission**:
-  - Proceed directly to research and draft the **5 Compliance & Legal Pages** (`/disclaimer`, `/privacy`, `/terms`, `/about`, `/contact`).
+  - Push commit to GitHub `prod/main` (`shopsmart01/benefisto-platform.git`).
+  - Proceed directly to build the **5 Compliance & Legal Pages** (`/disclaimer`, `/privacy`, `/terms`, `/about`, `/contact`).
 
 ---
 

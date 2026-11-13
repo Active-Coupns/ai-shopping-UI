@@ -1,0 +1,24 @@
+# ==============================================================================
+# Benefisto AI (https://www.benefisto.com) — Robots & AI Crawler Directives
+# ==============================================================================
+
+User-agent: *
+Allow: /
+Allow: /about
+Allow: /privacy
+Allow: /terms
+Allow: /disclaimer
+Allow: /contact
+Allow: /llms.txt
+Allow: /llms-full.txt
+Allow: /manifest.json
+
+# Internal Service & Endpoint Boundaries
+Disallow: /api/
+Disallow: /sentinelx9/
+Disallow: /purchase_terminal
+Disallow: /sign-in/
+Disallow: /sign-up/
+
+# Sitemap Location
+Sitemap: https://www.benefisto.com/sitemap.xml

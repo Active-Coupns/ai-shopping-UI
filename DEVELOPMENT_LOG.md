@@ -32,7 +32,15 @@
   8. **Benefisto Co-Pilot Advisor**: Multi-turn conversational advice verified in live tests across cookware, skincare, and supplement categories.
   9. **High-FPS Scroll Optimization (60/120 FPS)**: Replaced Framer Motion JS physics spring calculations on `whileHover` with pure GPU-accelerated CSS `hover:-translate-y-1 will-change-transform`. Stripped expensive `backdrop-filter: blur(8px)` on repeating ProductCard containers, and added `content-visibility: auto` to bypass off-screen paints. Added instant spinner feedback on "Compare Stores" button to eliminate click latency.
   10. **Google OAuth Back-Button Trap Elimination**: Implemented server-side redirect on `/sign-in` and `/sign-up` (if `userId` exists, immediate redirect to `/`) plus client-side `popstate` history guard in `src/app/page.js` to ensure pressing the browser's Back button never returns the user to Google's consent/continue screen (`accounts.google.com`).
+  11. **AI Discoverability (GEO), Reverse-Engineering Shield & PWA Stack**: Deployed `public/robots.txt` (blocking internal API & admin routes from scrapers), `public/llms.txt` and `public/llms-full.txt` (clean-room Phase 1 shopping capabilities & LLM recommendation triggers with 0% tech leakage), `public/sitemap.xml`, `public/manifest.json` (PWA installability), and `src/components/StructuredData.jsx` (Schema.org WebSite, SoftwareApplication, and Organization JSON-LD).
 * **Files Modified**:
+  - `public/llms-full.txt`
+  - `public/llms.txt`
+  - `public/manifest.json`
+  - `public/robots.txt`
+  - `public/sitemap.xml`
+  - `src/components/StructuredData.jsx`
+  - `src/app/layout.js`
   - `src/app/api/products/compare/route.js`
   - `src/app/api/redirect/route.js`
   - `src/app/globals.css`
