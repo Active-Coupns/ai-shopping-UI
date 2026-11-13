@@ -262,6 +262,10 @@ export async function POST(request) {
       }
 
       if (details) {
+        // Multi-Country Virtual Regional Partition (Zero Cost)
+        const userCountry = String(payload.country || request.headers.get("cf-ipcountry") || request.headers.get("x-vercel-ip-country") || "IN").toUpperCase().slice(0, 4);
+        const regionalDetails = `[${userCountry}] ${details}`;
+
         // Non-blocking async insert to Supabase event stream
         supabase
           .from("user_activity_ledger")
@@ -270,7 +274,7 @@ export async function POST(request) {
             session_id: sessionId,
             action: eventType,
             category,
-            details
+            details: regionalDetails
           })
           .then(({ error: sbErr }) => {
             if (sbErr && !sbErr.message.includes("schema cache")) {

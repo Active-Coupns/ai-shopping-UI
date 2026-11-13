@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS public.user_activity_ledger (
     session_id TEXT NOT NULL,                           -- Anonymous device / session token
     action TEXT NOT NULL,                               -- SEARCH | PRODUCT_CLICK | AI_SUMMARY_ASKED | VISIT | USER_AUTH_SYNC
     category TEXT DEFAULT 'shopping',                   -- shopping | fragrance | electronics | travel | pharma | ott | platform
-    details TEXT NOT NULL,                              -- Human-readable intent e.g. "Red Edition Perfume 50ml" or "Amazon: iPhone 15 (₹69,999)"
+    details TEXT NOT NULL,                              -- Human-readable intent with [COUNTRY] tag e.g. "[IN] Amazon: iPhone 15" or "[US] Best Buy: MacBook"
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
