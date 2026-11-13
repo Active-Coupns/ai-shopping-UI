@@ -2,6 +2,31 @@
 DEPLOYMENT LOGS - BENEFISTO PLATFORM
 ================================================================================
 
+[DEPLOYMENT TIMESTAMP] : 2026-11-13 06:55:00 UTC (Local: 2026-11-12 22:55:00 -08:00)
+[COMMIT HASH]          : 3d4491e
+[TARGET ENVIRONMENT]   : Production (Vercel) / prod main (shopsmart01/benefisto-platform)
+[BUILD STATUS]         : PASSED (5 Core Compliance & Legal Pages + Supabase Regional Partition)
+[STATUS]               : READY TO COMMIT & PUSH
+
+--------------------------------------------------------------------------------
+SUMMARY OF CHANGES & RESOLVED ISSUES
+--------------------------------------------------------------------------------
+
+1. THE GOLDEN COMPLIANCE & LEGAL SHIELD (5 PRODUCTION-GRADE PAGES)
+   - Created src/app/disclaimer/page.js (/disclaimer): Affiliate marketing disclosure (FTC 16 CFR Part 255 & Indian E-Commerce Rules), real-time price & stock volatility, independent guide role, and AI output non-warranty.
+   - Created src/app/privacy/page.js (/privacy): Virtual Try-On 0% permanent storage & ephemeral in-memory RAM processing, zero AI model training, zero password storage (Clerk & Google OAuth), regional cloud data segmentation, and user rights under DPDP Act 2023 / GDPR.
+   - Created src/app/terms/page.js (/terms): Balanced fair-use policy (soft server & rate protection without hostile scraping threats), third-party merchant contract separation, limitation of liability capped to ₹0 / $0, class action waiver, and Indian jurisdiction (Maharashtra).
+   - Created src/app/about/page.js (/about): Benefisto founding mission, 4 pillars of transparency (Direct PDPs, Real-Time Multi-Store, Trust Sheet, Virtual Try-On), algorithmic neutrality, and 6-country global coverage.
+   - Created src/app/contact/page.js (/contact): Customer support desk, retailer partnership inquiry, digital operations overview, and statutory Grievance Redressal Officer under Rule 3(2) of Indian IT Rules 2021.
+   - All 5 pages connected via official support channel: support@benefisto.com.
+   - Connected all 5 pages directly to the homepage footer in src/app/page.js.
+
+2. SUPABASE ZERO-COST MULTI-COUNTRY REGIONAL PARTITION
+   - Injected geolocation country tag extraction in /api/telemetry/event via Vercel/Cloudflare headers (cf-ipcountry, x-vercel-ip-country).
+   - Tagged all activity ledger events with [COUNTRY] prefix, maintaining 100% regional data segmentation across 6 target markets on Supabase Free Tier at $0 cost.
+
+--------------------------------------------------------------------------------
+
 [DEPLOYMENT TIMESTAMP] : 2026-11-13 05:40:00 UTC (Local: 2026-11-12 21:40:00 -08:00)
 [COMMIT HASH]          : bcb0399
 [TARGET ENVIRONMENT]   : Production (Vercel) / prod main (shopsmart01/benefisto-platform)

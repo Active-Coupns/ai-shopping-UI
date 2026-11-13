@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, ShoppingBag, ArrowLeft, RefreshCw, ShieldAlert, Coins, Tag, AlertCircle, Shirt, User, Search, LifeBuoy, ShieldCheck, Tv, Plane } from "lucide-react";
 import { SignedIn, SignedOut, SignInButton, useUser, useClerk } from "@clerk/nextjs";
@@ -1373,13 +1374,23 @@ export default function Home() {
 </main>
 
       {/* Footer */}
-      <footer suppressHydrationWarning className="relative z-10 w-full py-3 pb-24 md:pb-6 text-center text-[10px] sm:text-xs text-slate-500 border-t border-slate-200/80 glass-panel border-x-0 border-b-0">
-        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-1.5 sm:gap-4">
-          <div className="flex items-center gap-1">
-            <Sparkles className="w-3 h-3 text-brand-indigo" />
-            <span>AI powered shopping & virtual trial engine</span>
+      <footer suppressHydrationWarning className="relative z-10 w-full py-4 pb-24 md:pb-6 text-center text-[11px] sm:text-xs text-slate-500 border-t border-slate-200/80 glass-panel border-x-0 border-b-0">
+        <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-2.5 sm:gap-4">
+          <div className="flex items-center gap-1.5 text-slate-600">
+            <Sparkles className="w-3.5 h-3.5 text-brand-indigo" />
+            <span className="font-medium">AI-powered shopping decision engine & price comparison</span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center justify-center gap-3 text-slate-500">
+            <Link href="/about" className="hover:text-indigo-600 font-medium transition-colors">About</Link>
+            <span>•</span>
+            <Link href="/privacy" className="hover:text-indigo-600 font-medium transition-colors">Privacy</Link>
+            <span>•</span>
+            <Link href="/terms" className="hover:text-indigo-600 font-medium transition-colors">Terms</Link>
+            <span>•</span>
+            <Link href="/disclaimer" className="hover:text-indigo-600 font-medium transition-colors">Disclaimer</Link>
+            <span>•</span>
+            <Link href="/contact" className="hover:text-indigo-600 font-medium transition-colors">Contact</Link>
+            <span>•</span>
             <button
               type="button"
               suppressHydrationWarning
@@ -1387,10 +1398,10 @@ export default function Home() {
               className="text-indigo-600 hover:text-indigo-800 font-semibold hover:underline cursor-pointer flex items-center gap-1"
             >
               <LifeBuoy className="w-3 h-3" />
-              <span>Help & Support Tickets</span>
+              <span>Support</span>
             </button>
             <span>•</span>
-            <span>&copy; 2026 Benefisto. Smart Shopping & Studio.</span>
+            <span>&copy; 2026 Benefisto AI. All rights reserved.</span>
           </div>
         </div>
       </footer>

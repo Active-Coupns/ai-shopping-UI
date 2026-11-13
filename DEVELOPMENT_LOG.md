@@ -33,7 +33,14 @@
   9. **High-FPS Scroll Optimization (60/120 FPS)**: Replaced Framer Motion JS physics spring calculations on `whileHover` with pure GPU-accelerated CSS `hover:-translate-y-1 will-change-transform`. Stripped expensive `backdrop-filter: blur(8px)` on repeating ProductCard containers, and added `content-visibility: auto` to bypass off-screen paints. Added instant spinner feedback on "Compare Stores" button to eliminate click latency.
   10. **Google OAuth Back-Button Trap Elimination**: Implemented server-side redirect on `/sign-in` and `/sign-up` (if `userId` exists, immediate redirect to `/`) plus client-side `popstate` history guard in `src/app/page.js` to ensure pressing the browser's Back button never returns the user to Google's consent/continue screen (`accounts.google.com`).
   11. **AI Discoverability (GEO), Reverse-Engineering Shield & PWA Stack**: Deployed `public/robots.txt` (blocking internal API & admin routes from scrapers), `public/llms.txt` and `public/llms-full.txt` (clean-room Phase 1 shopping capabilities & LLM recommendation triggers with 0% tech leakage), `public/sitemap.xml`, `public/manifest.json` (PWA installability), and `src/components/StructuredData.jsx` (Schema.org WebSite, SoftwareApplication, and Organization JSON-LD).
+  12. **The Golden Compliance & Legal Shield (5 Production-Grade Pages)**: Created `/disclaimer` (affiliate disclosures, price & stock volatility, guide status, AI non-warranty), `/privacy` (VTON 0% permanent storage & ephemeral in-memory processing, zero AI training, Clerk zero password storage, regional data partitions, DPDP Act/GDPR rights), `/terms` (balanced fair-use, merchant contract separation, ₹0 liability cap, class action waiver), `/about` (founding mission, 4 pillars of transparency, algorithmic neutrality), and `/contact` (customer support, merchant partnerships, statutory Grievance Redressal Officer under Rule 3(2) of IT Rules 2021). All linked to official support channel `support@benefisto.com` and homepage footer.
 * **Files Modified**:
+  - `src/app/about/page.js`
+  - `src/app/contact/page.js`
+  - `src/app/disclaimer/page.js`
+  - `src/app/privacy/page.js`
+  - `src/app/terms/page.js`
+  - `src/app/page.js`
   - `public/llms-full.txt`
   - `public/llms.txt`
   - `public/manifest.json`
