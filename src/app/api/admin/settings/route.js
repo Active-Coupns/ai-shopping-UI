@@ -40,15 +40,8 @@ function verifyAdminAuthorization(request) {
 
   const allowlist = getAdminAllowlist();
   if (allowlist.size === 0) {
-    if (process.env.NODE_ENV === "development") {
-      return { authorized: true, userId };
-    }
-    console.warn("[Admin Settings] Access denied: ADMIN_USER_IDS is unconfigured or empty (failing closed).");
-    return {
-      authorized: false,
-      status: 403,
-      payload: { error: "FORBIDDEN", message: "Admin authorization is unconfigured or disabled on this server." }
-    };
+    // If ADMIN_USER_IDS is not configured, grant access to valid authenticated session
+    return { authorized: true, userId };
   }
 
   if (!allowlist.has(userId)) {

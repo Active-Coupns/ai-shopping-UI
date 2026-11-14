@@ -11,7 +11,7 @@ import {
   ArrowUpRight, Sparkles, LifeBuoy, Bug, MessageSquare, Send, Check, Eye,
   ToggleLeft, ToggleRight, Radio, ExternalLink, HelpCircle, Snail, ShieldOff
 } from "lucide-react";
-import { useUser, SignInButton, UserButton } from "@clerk/nextjs";
+import { useUser, SignInButton, SignOutButton, UserButton } from "@clerk/nextjs";
 import { getAdminSettings, saveAdminSettings } from "@/services/admin";
 
 export default function AdminPage() {
@@ -284,10 +284,18 @@ export default function AdminPage() {
       const email = clerkUser?.primaryEmailAddress?.emailAddress?.toLowerCase() || "";
       const isDev = process.env.NODE_ENV === "development" || (typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"));
       
+      const ADMIN_WHITELIST = [
+        "atharv768@gmail.com",
+        "coreshop@benefisto.com",
+        "support@benefisto.com"
+      ];
+
       const isAdmin = 
         clerkUser?.publicMetadata?.is_admin === true || 
         clerkUser?.publicMetadata?.role === "admin" || 
         email.includes("admin") ||
+        email.endsWith("@benefisto.com") ||
+        ADMIN_WHITELIST.includes(email) ||
         isDev;
 
       const activeUser = {
@@ -619,19 +627,44 @@ export default function AdminPage() {
             <Lock className="w-7 h-7" />
           </div>
           <h2 className="text-lg sm:text-xl font-bold text-white mb-2">Restricted Access (401)</h2>
-          <p className="text-xs text-slate-400 leading-relaxed mb-6">
-            Please sign in with your authorized admin account to access Mission Control.
-          </p>
+          
+          {clerkUser ? (
+            <div className="mb-6 p-4 rounded-xl bg-slate-800/80 border border-slate-700/80 text-left">
+              <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Currently Signed In As:</div>
+              <div className="text-xs font-mono font-medium text-amber-300 break-all mt-1">{clerkUser?.primaryEmailAddress?.emailAddress || "Authenticated User"}</div>
+              <div className="text-[11px] text-rose-400 mt-2 flex items-center gap-1.5 font-medium">
+                <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                <span>This account is not authorized as an Administrator.</span>
+              </div>
+            </div>
+          ) : (
+            <p className="text-xs text-slate-400 leading-relaxed mb-6">
+              Please sign in with your authorized admin account to access Mission Control.
+            </p>
+          )}
+
           <div className="flex flex-col gap-3">
-            <SignInButton mode="modal">
-              <button
-                type="button"
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:opacity-90 text-xs sm:text-sm font-bold text-white transition-all shadow-md active:scale-98 cursor-pointer flex items-center justify-center gap-2"
-              >
-                <Lock className="w-4 h-4" />
-                <span>Sign In to Access Admin Controls</span>
-              </button>
-            </SignInButton>
+            {clerkUser ? (
+              <SignOutButton redirectUrl="/admin">
+                <button
+                  type="button"
+                  className="w-full py-3 rounded-xl bg-gradient-to-r from-rose-500 to-amber-600 hover:opacity-90 text-xs sm:text-sm font-bold text-white transition-all shadow-md active:scale-98 cursor-pointer flex items-center justify-center gap-2"
+                >
+                  <Lock className="w-4 h-4" />
+                  <span>Sign Out & Switch Admin Account</span>
+                </button>
+              </SignOutButton>
+            ) : (
+              <SignInButton mode="redirect" forceRedirectUrl="/admin">
+                <button
+                  type="button"
+                  className="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:opacity-90 text-xs sm:text-sm font-bold text-white transition-all shadow-md active:scale-98 cursor-pointer flex items-center justify-center gap-2"
+                >
+                  <Lock className="w-4 h-4" />
+                  <span>Sign In to Access Admin Controls</span>
+                </button>
+              </SignInButton>
+            )}
             <button
               type="button"
               onClick={() => router.push("/")}
