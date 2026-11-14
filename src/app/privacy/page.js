@@ -15,6 +15,7 @@ import {
   AlertCircle, 
   Trash2, 
   ShieldAlert, 
+  Scale, 
   Mail 
 } from "lucide-react";
 
