@@ -1,9 +1,23 @@
 import Link from "next/link";
-import { ShoppingBag, ArrowLeft, ShieldCheck, AlertCircle, ExternalLink, HelpCircle, Scale } from "lucide-react";
+import { 
+  ShoppingBag, 
+  ArrowLeft, 
+  ShieldCheck, 
+  AlertCircle, 
+  ExternalLink, 
+  HelpCircle, 
+  Scale, 
+  DollarSign, 
+  Clock, 
+  Cpu, 
+  HeartPulse, 
+  Tag, 
+  Mail 
+} from "lucide-react";
 
 export const metadata = {
   title: "Disclaimer & Affiliate Disclosures — Benefisto AI",
-  description: "Official legal disclaimer, affiliate relationship disclosures, price accuracy policy, and fair use notices for Benefisto AI.",
+  description: "Official legal disclaimer, Amazon Associates disclosure, FTC affiliate marketing relationship disclosures, real-time price volatility notices, and non-professional advice disclaimers for Benefisto AI.",
 };
 
 export default function DisclaimerPage() {
@@ -37,15 +51,21 @@ export default function DisclaimerPage() {
       <main className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 py-12">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-semibold mb-4">
           <ShieldCheck className="w-3.5 h-3.5" />
-          <span>Official Consumer & Affiliate Disclosure</span>
+          <span>Statutory Consumer & Affiliate Disclosures</span>
         </div>
 
         <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight mb-3">
           Disclaimer & Legal Disclosures
         </h1>
         <p className="text-sm text-slate-400 mb-8">
-          Last Updated: November 2026 • Effective Globally Across All Supported Markets
+          Last Updated: November 2026 • Effective Across All 6 Supported Retail Jurisdictions
         </p>
+
+        {/* Highlighted Compliance Notice */}
+        <div className="p-5 rounded-2xl bg-indigo-950/30 border border-indigo-500/30 mb-8 text-xs text-indigo-200/90 leading-relaxed">
+          <strong className="text-white font-semibold block mb-1">Clear Consumer Notice:</strong>
+          Benefisto AI is a free shopping decision engine, deal aggregator, and virtual style preview tool. We are not an online retailer or merchant. When you click on product links on our platform, you will be redirected to the respective third-party merchant&apos;s website. Benefisto participates in affiliate advertising programs and may earn a commission on qualifying purchases at zero additional cost to you.
+        </div>
 
         <div className="space-y-8 text-slate-300 text-sm leading-relaxed">
           {/* Section 1: Independent Shopping Guide */}
@@ -55,89 +75,174 @@ export default function DisclaimerPage() {
               <h2>1. Independent Shopping Guide (We Are Not a Merchant or Seller)</h2>
             </div>
             <p className="mb-3">
-              Benefisto (<strong>https://www.benefisto.com</strong>) operates solely as an independent, technology-driven shopping decision engine, price discovery platform, and consumer advisory utility.
+              Benefisto (<strong>https://www.benefisto.com</strong>) operates strictly as an independent technological intermediary, consumer shopping decision engine, and retail price discovery guide.
             </p>
             <p className="mb-3">
-              <strong>Benefisto does not sell, warehouse, ship, fulfill, or invoice any physical or digital products.</strong> We do not operate an e-commerce marketplace, nor do we act as an authorized reseller for any featured brand. Any commercial transaction—including payment processing, billing, order confirmation, shipping, delivery, returns, exchanges, warranties, and after-sales support—occurs exclusively on the third-party merchant’s official website (e.g., Amazon, Walmart, Best Buy, Target, Currys, Argos, Flipkart, Croma, and official brand stores).
+              <strong>We do not sell, warehouse, inventory, ship, deliver, or invoice any goods or services.</strong> We do not operate an e-commerce marketplace, nor do we act as an authorized reseller, manufacturer, or logistics distributor for any brand or merchant displayed on our platform.
             </p>
-            <p>
-              Under international intermediary safe harbor standards and Section 79 of the Indian Information Technology Act, 2000, Benefisto operates as an independent informational intermediary and price discovery facilitator.
+            <p className="mb-3">
+              Any commercial transaction—including payment execution, credit/debit card processing, order confirmation, shipping logistics, physical packaging, product warranties, return requests, and customer service issues—takes place <strong>exclusively and directly on the external merchant&apos;s official website</strong> (such as Amazon, Walmart, Best Buy, Target, Currys, Argos, Flipkart, Croma, or official brand storefronts).
+            </p>
+            <p className="text-xs text-slate-400">
+              * Pursuant to Section 79 of the Indian Information Technology Act, 2000, Section 230 of the United States Communications Decency Act, and the EU e-Commerce Directive, Benefisto disclaims direct liability for merchant transactions, product defects, or third-party retailer conduct.
             </p>
           </section>
 
-          {/* Section 2: Affiliate Marketing Disclosure */}
+          {/* Section 2: Amazon Associates & Global Affiliate Disclosure */}
           <section className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80">
             <div className="flex items-center gap-2.5 mb-3 text-white font-bold text-base">
-              <ExternalLink className="w-5 h-5 text-emerald-400" />
-              <h2>2. Affiliate Marketing Disclosure (FTC 16 CFR Part 255 & Indian E-Commerce Rules)</h2>
+              <DollarSign className="w-5 h-5 text-emerald-400" />
+              <h2>2. Amazon Associates & Retail Affiliate Marketing Disclosures</h2>
             </div>
             <p className="mb-3">
-              In full compliance with the Federal Trade Commission (FTC) Guides Concerning the Use of Endorsements and Testimonials in Advertising (16 CFR Part 255) and the Consumer Protection (E-Commerce) Rules, 2020:
+              In full compliance with the Federal Trade Commission (FTC) Guides Concerning the Use of Endorsements and Testimonials in Advertising (16 CFR Part 255), the UK Advertising Standards Authority (ASA) CAP Code, and the Indian Consumer Protection (E-Commerce) Rules, 2020:
+            </p>
+            
+            {/* Amazon Associates Official Required Clause */}
+            <div className="p-4 rounded-xl bg-slate-900/90 border border-amber-500/30 mb-4">
+              <span className="text-amber-400 font-bold block mb-1 text-xs uppercase tracking-wider">Official Amazon Operating Agreement Disclosure:</span>
+              <p className="text-sm font-semibold text-white italic">
+                &quot;As an Amazon Associate, Benefisto earns from qualifying purchases.&quot;
+              </p>
+            </div>
+
+            <p className="mb-3">
+              <strong>Affiliate Relationship Disclosure:</strong> In addition to the Amazon Services LLC Associates Program, Benefisto participates in various verified retail affiliate marketing networks. When you click on product comparison links, deal buttons, or merchant banners on our Platform and complete a purchase on the merchant’s website, <strong>Benefisto may receive a small referral commission or advertising fee from the merchant at ABSOLUTELY ZERO ADDITIONAL COST TO YOU</strong>.
             </p>
             <p className="mb-3">
-              Benefisto participates in retail affiliate marketing programs. When you click on product links, store comparison offers, or deal buttons on our platform and complete a qualifying purchase on a merchant website, <strong>Benefisto may earn a referral commission or advertising fee from the merchant at absolutely ZERO extra cost to you</strong>.
+              You pay the exact same standard retail price (or lower, when utilizing verified coupons or store promotions) whether you click through our links or navigate directly to the merchant. These affiliate commissions fund our cloud infrastructure, allowing us to keep our search engine, Trust Sheets, and Virtual Trial Room 100% free and accessible to all consumers.
             </p>
-            <p>
-              You pay the exact same standard retail price (or lower, when utilizing verified coupons or store discounts) whether you purchase through our links or navigate directly to the merchant. These referral fees enable us to keep Benefisto’s AI comparison engine, Trust Sheet synthesizer, and Virtual Try-On studio 100% free and accessible to consumers worldwide.
+            <p className="text-xs text-slate-400">
+              Our editorial and algorithmic recommendations are mathematically derived from verified customer reviews and public technical specifications. We do not accept paid compensation to artificially inflate a product’s rating or promote inferior merchandise.
             </p>
           </section>
 
           {/* Section 3: Real-Time Price Volatility & Stock Availability */}
           <section className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80">
             <div className="flex items-center gap-2.5 mb-3 text-white font-bold text-base">
-              <AlertCircle className="w-5 h-5 text-amber-400" />
-              <h2>3. Real-Time Price Volatility & Stock Availability Disclaimer</h2>
+              <Clock className="w-5 h-5 text-amber-400" />
+              <h2>3. Real-Time Price Volatility & Stock Availability Disclaimers</h2>
             </div>
             <p className="mb-3">
-              E-commerce retail prices, promotional vouchers, delivery charges, and inventory levels are dynamic and change rapidly based on merchant algorithms, flash sales, regional taxes, and stock depletion.
+              Retail prices, discount vouchers, delivery surcharges, import taxes, and stock levels are dynamic and subject to frequent, instantaneous changes by third-party retailers without prior notice.
             </p>
             <p className="mb-3">
-              While Benefisto deploys real-time resolution protocols to provide the most current pricing available, <strong>all pricing, product availability, specifications, and deal terms are provided on an &quot;AS-IS&quot; and &quot;AS-AVAILABLE&quot; basis</strong> without warranties of any kind.
+              While Benefisto strives to provide real-time, highly accurate pricing through automated resolution pipelines, <strong>all pricing, discounts, and inventory statuses are provided strictly on an &quot;AS-IS&quot; and &quot;AS-AVAILABLE&quot; informational basis</strong>. Due to merchant API limits or server cache windows, occasional pricing latency may occur between our guide and the merchant storefront.
             </p>
-            <p>
-              Shoppers are solely responsible for reviewing and confirming the final checkout price, shipping conditions, seller ratings, and warranty details directly on the merchant’s official checkout page before making a payment. Benefisto shall not be liable for any discrepancy between prices displayed on our guide and the final checkout amount charged by the merchant.
+            <p className="mb-3">
+              <strong>Final Checkout Price Is Binding:</strong> The definitive, binding purchase price is strictly the price displayed on the external merchant&apos;s checkout page at the exact moment of transaction completion. You are solely responsible for reviewing and confirming the total checkout price, applicable sales tax or GST, shipping fees, seller ratings, and return policies before making a payment.
+            </p>
+            <p className="text-xs text-slate-400">
+              Benefisto accepts no responsibility or financial liability for any variance between the estimated prices shown on our guide and the actual amount charged at merchant checkout.
             </p>
           </section>
 
-          {/* Section 4: AI Co-Pilot & Trust Sheet Advisory Nature */}
+          {/* Section 4: AI Shopping Assistant & Algorithmic Neutrality */}
           <section className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80">
             <div className="flex items-center gap-2.5 mb-3 text-white font-bold text-base">
-              <HelpCircle className="w-5 h-5 text-purple-400" />
-              <h2>4. AI Co-Pilot, Trust Sheet & Algorithmic Neutrality</h2>
+              <Cpu className="w-5 h-5 text-purple-400" />
+              <h2>4. AI Shopping Assistant, Trust Sheets & Algorithmic Scoring</h2>
             </div>
             <p className="mb-3">
-              Our AI Shopping Co-Pilot, Product Trust Sheets, and Purchase Strategy Terminal synthesize public technical specifications and verified consumer feedback to assist in product evaluation.
+              Our AI Shopping Assistant, Product Trust Sheets, and Purchase Strategy metrics synthesize public technical specifications and thousands of verified consumer reviews into concise, structured shopping summaries.
             </p>
-            <ul className="list-disc list-inside space-y-2 mb-3 text-slate-400">
-              <li><strong>Algorithmic Neutrality:</strong> Recommendations are mathematically derived from verified public data. Benefisto does not accept paid placements to artificially inflate or disparage any product, manufacturer, or merchant.</li>
-              <li><strong>Advisory Only:</strong> AI outputs are informational guides. They do not constitute certified medical, dietary (for nutritional supplements), financial, or legal advice.</li>
-              <li><strong>Personal Assessment:</strong> Product suitability depends on individual consumer requirements. Users should exercise their own judgment or consult qualified professionals where applicable.</li>
+            <ul className="list-disc list-inside space-y-2 text-slate-400 mb-3 ml-2">
+              <li><strong>Mathematical Neutrality:</strong> Scoring metrics and review sentiment syntheses are algorithmically generated without bias. Benefisto does not alter product scores in exchange for commercial sponsorships or advertising revenue.</li>
+              <li><strong>Informational Guidance Only:</strong> AI summaries, feature highlights, and sentiment analyses are provided solely for general consumer shopping guidance. They reflect historical consumer patterns and publicly published specifications.</li>
+              <li><strong>Independent Verification Recommended:</strong> Because manufacturers periodically update product revisions, firmware, and packaging without notice, consumers are encouraged to verify critical technical specifications directly with the manufacturer before purchase.</li>
             </ul>
           </section>
 
-          {/* Section 5: Nominative Fair Use of Trademarks */}
+          {/* Section 5: Non-Professional Advice & Specialized Products Safe Harbor */}
           <section className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80">
             <div className="flex items-center gap-2.5 mb-3 text-white font-bold text-base">
-              <ShieldCheck className="w-5 h-5 text-indigo-400" />
-              <h2>5. Nominative Fair Use of Trademarks & Brand Assets</h2>
+              <HeartPulse className="w-5 h-5 text-red-400" />
+              <h2>5. Non-Professional Advice & Health/Specialized Products Safe Harbor</h2>
             </div>
             <p className="mb-3">
-              All third-party product names, brand names, retail store marks, logos, and registered trademarks (including but not limited to Amazon, Walmart, Best Buy, Target, Currys, Apple, Samsung, Nike, and others) displayed on this platform are the property of their respective trademark holders.
+              Content and AI guidance available on Benefisto do not constitute professional advice of any nature:
+            </p>
+            <div className="space-y-3 mb-3">
+              <div className="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800">
+                <span className="text-red-400 font-bold text-xs block mb-1">Health, Supplements & Medical Devices:</span>
+                <p className="text-xs text-slate-400">
+                  Any product comparison or review involving nutritional supplements, vitamins, fitness equipment, over-the-counter wellness products, or medical apparatus is strictly for informational discovery. <strong>Benefisto does not provide medical, dietary, or healthcare advice.</strong> Always consult a qualified physician or healthcare professional before taking any supplement or using any health-related product, and carefully inspect manufacturer warning labels.
+                </p>
+              </div>
+              <div className="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800">
+                <span className="text-blue-400 font-bold text-xs block mb-1">Financial & Legal Products:</span>
+                <p className="text-xs text-slate-400">
+                  Calculated price savings, discount estimations, or subscription cost comparisons do not constitute certified financial, tax, or legal advice.
+                </p>
+              </div>
+              <div className="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800">
+                <span className="text-amber-400 font-bold text-xs block mb-1">Electrical, Automotive & Safety Machinery:</span>
+                <p className="text-xs text-slate-400">
+                  For consumer electronics, high-voltage appliances, automotive tools, or child safety products, consumers must observe all manufacturer safety instructions, certified ratings (e.g., UL, CE, ISI), and installation guidelines.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          {/* Section 6: Virtual Trial Room (VTON) Simulation Notice */}
+          <section className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80">
+            <div className="flex items-center gap-2.5 mb-3 text-white font-bold text-base">
+              <HelpCircle className="w-5 h-5 text-indigo-400" />
+              <h2>6. Virtual Trial Room (VTON) Simulation Notice</h2>
+            </div>
+            <p className="mb-3">
+              The Benefisto Virtual Trial Room provides simulated 2D/3D visual approximations of how garments and apparel might look when worn.
+            </p>
+            <ul className="list-disc list-inside space-y-1.5 text-slate-400 mb-3 ml-2">
+              <li><strong>Visual Guidance Simulation:</strong> Previews are generated using computational rendering and do not guarantee an exact physical match to the delivered garment.</li>
+              <li><strong>Material & Fit Variations:</strong> Fabric elasticity, weave texture, stiffness, real-world drape, stitching tolerances, and screen color calibrations (RGB vs. physical dye) will naturally differ from digital screen simulations upon physical merchant delivery.</li>
+              <li><strong>Merchant Sizing Charts:</strong> Always consult the merchant&apos;s specific size guide, waist/chest measurements, and customer sizing reviews before placing an apparel order.</li>
+            </ul>
+          </section>
+
+          {/* Section 7: Nominative Fair Use of Trademarks */}
+          <section className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80">
+            <div className="flex items-center gap-2.5 mb-3 text-white font-bold text-base">
+              <Tag className="w-5 h-5 text-cyan-400" />
+              <h2>7. Nominative Fair Use of Brand Names & Trademarks</h2>
+            </div>
+            <p className="mb-3">
+              All third-party brand names, company names, store logos, registered trademarks, and product designations (including but not limited to Amazon, Walmart, Best Buy, Target, Currys, Argos, Flipkart, Croma, Apple, Samsung, Sony, Nike, and adidas) referenced on Benefisto are the intellectual property of their respective trademark holders.
             </p>
             <p>
-              Their inclusion on Benefisto is strictly for identification, consumer price comparison, and descriptive informational purposes under the doctrine of <strong>Nominative Fair Use</strong>. Benefisto is an independent entity and claims no official endorsement, direct sponsorship, or formal corporate affiliation with these trademark owners unless expressly stated.
+              Their inclusion on our platform is strictly for product identification, comparative price discovery, and factual descriptive reporting under the legal doctrine of <strong>Nominative Fair Use</strong>. Benefisto is an independent shopping utility; the display of third-party trademarks does not imply any direct corporate sponsorship, official partnership, or commercial endorsement of Benefisto by these brand owners, except where formally established via verified affiliate operating agreements.
             </p>
           </section>
 
-          {/* Section 6: Contact & Questions */}
-          <section className="p-6 rounded-2xl bg-indigo-950/40 border border-indigo-500/20">
-            <h2 className="text-white font-bold text-base mb-2">Questions Regarding Our Disclosures?</h2>
-            <p className="mb-3 text-slate-300">
-              For questions, clarifications, or compliance inquiries concerning our affiliate relationships or disclaimers, please reach out to our official compliance desk:
+          {/* Section 8: External Merchant Hyperlinks */}
+          <section className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80">
+            <div className="flex items-center gap-2.5 mb-3 text-white font-bold text-base">
+              <ExternalLink className="w-5 h-5 text-emerald-400" />
+              <h2>8. External Merchant Hyperlinks & Independent Domains</h2>
+            </div>
+            <p className="mb-3">
+              Benefisto contains outgoing links directing consumers to independent third-party commercial storefronts. Once you click a link and navigate away from <code>benefisto.com</code>, you are operating within an external website governed entirely by that merchant’s own privacy policies, user agreements, and commercial checkout practices.
             </p>
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 font-mono text-xs text-indigo-300">
+            <p>
+              Benefisto has no control over external server availability, checkout security, malicious third-party scripts on external domains, or merchant transaction processing. We recommend that you review the terms and privacy practices of any merchant website you visit.
+            </p>
+          </section>
+
+          {/* Section 9: Compliance Contact & Inquiries */}
+          <section className="p-6 rounded-2xl bg-indigo-950/40 border border-indigo-500/20">
+            <div className="flex items-center gap-2.5 mb-2 text-white font-bold text-base">
+              <Mail className="w-4 h-4 text-indigo-400" />
+              <h2>Compliance & Disclosure Desk</h2>
+            </div>
+            <p className="mb-3 text-slate-300">
+              For questions regarding our affiliate relationships, pricing resolution protocols, or statutory compliance disclosures, please contact our compliance desk:
+            </p>
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 font-mono text-xs text-indigo-300 mb-3">
               <span>support@benefisto.com</span>
             </div>
+            <p className="text-xs text-slate-400">
+              Benefisto AI • Universal Shopping Decision Engine & Price Discovery Guide
+            </p>
           </section>
         </div>
 
