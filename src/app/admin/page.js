@@ -284,18 +284,16 @@ export default function AdminPage() {
       const email = clerkUser?.primaryEmailAddress?.emailAddress?.toLowerCase() || "";
       const isDev = process.env.NODE_ENV === "development" || (typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"));
       
+      // Strict Zero-Trust Founder Whitelist: Only these exact emails or Clerk Dashboard verified admins can enter
       const ADMIN_WHITELIST = [
         "atharv768@gmail.com",
-        "coreshop@benefisto.com",
-        "support@benefisto.com"
+        "coreshop@benefisto.com"
       ];
 
       const isAdmin = 
+        ADMIN_WHITELIST.includes(email) ||
         clerkUser?.publicMetadata?.is_admin === true || 
         clerkUser?.publicMetadata?.role === "admin" || 
-        email.includes("admin") ||
-        email.endsWith("@benefisto.com") ||
-        ADMIN_WHITELIST.includes(email) ||
         isDev;
 
       const activeUser = {
