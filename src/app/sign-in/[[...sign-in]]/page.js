@@ -4,10 +4,13 @@ import { SignIn } from "@clerk/nextjs";
 import Link from "next/link";
 import { ShoppingBag, ArrowLeft } from "lucide-react";
 
-export default async function SignInPage() {
+export default async function SignInPage({ searchParams }) {
+  const sp = await searchParams;
+  const redirectUrl = sp?.redirect_url || "/";
+
   const { userId } = await auth();
   if (userId) {
-    redirect("/");
+    redirect(redirectUrl);
   }
 
   return (
@@ -36,7 +39,7 @@ export default async function SignInPage() {
       </div>
 
       <div className="relative z-10 w-full max-w-sm flex justify-center">
-        <SignIn path="/sign-in" routing="path" signUpUrl="/sign-up" fallbackRedirectUrl="/" forceRedirectUrl="/" />
+        <SignIn path="/sign-in" routing="path" signUpUrl="/sign-up" fallbackRedirectUrl={redirectUrl} forceRedirectUrl={redirectUrl} />
       </div>
     </div>
   );

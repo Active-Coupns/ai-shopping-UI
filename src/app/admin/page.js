@@ -643,25 +643,30 @@ export default function AdminPage() {
 
           <div className="flex flex-col gap-3">
             {clerkUser ? (
-              <SignOutButton redirectUrl="/admin">
-                <button
-                  type="button"
-                  className="w-full py-3 rounded-xl bg-gradient-to-r from-rose-500 to-amber-600 hover:opacity-90 text-xs sm:text-sm font-bold text-white transition-all shadow-md active:scale-98 cursor-pointer flex items-center justify-center gap-2"
-                >
-                  <Lock className="w-4 h-4" />
-                  <span>Sign Out & Switch Admin Account</span>
-                </button>
-              </SignOutButton>
+              <a
+                href="/sign-in?redirect_url=https://sentinelx9.benefisto.com"
+                onClick={async (e) => {
+                  try {
+                    if (typeof window !== "undefined" && window.Clerk) {
+                      e.preventDefault();
+                      await window.Clerk.signOut();
+                      window.location.href = "/sign-in?redirect_url=https://sentinelx9.benefisto.com";
+                    }
+                  } catch {}
+                }}
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-rose-500 to-amber-600 hover:opacity-90 text-xs sm:text-sm font-bold text-white transition-all shadow-md active:scale-98 cursor-pointer flex items-center justify-center gap-2"
+              >
+                <Lock className="w-4 h-4" />
+                <span>Sign Out & Switch Admin Account</span>
+              </a>
             ) : (
-              <SignInButton mode="redirect" forceRedirectUrl="/admin">
-                <button
-                  type="button"
-                  className="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:opacity-90 text-xs sm:text-sm font-bold text-white transition-all shadow-md active:scale-98 cursor-pointer flex items-center justify-center gap-2"
-                >
-                  <Lock className="w-4 h-4" />
-                  <span>Sign In to Access Admin Controls</span>
-                </button>
-              </SignInButton>
+              <a
+                href="/sign-in?redirect_url=https://sentinelx9.benefisto.com"
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:opacity-90 text-xs sm:text-sm font-bold text-white transition-all shadow-md active:scale-98 cursor-pointer flex items-center justify-center gap-2"
+              >
+                <Lock className="w-4 h-4" />
+                <span>Sign In to Access Admin Controls</span>
+              </a>
             )}
             <button
               type="button"
