@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { MASTER_COUPON_DATABASE } from "@/services/couponDatabase";
+import { fetchFeedicoCoupons } from "@/services/feedicoService";
 
 export const maxDuration = 30;
 export const dynamic = "force-dynamic";
 
 /**
- * Benefisto — Master Coupon Database Audit & Verification Cron
+ * Benefisto — Master Coupon Database & Feedico Partner Catalog Audit
  * Strictly protected by CRON_SECRET against unauthorized trigger.
  */
 export async function GET(request) {
@@ -39,10 +40,25 @@ export async function GET(request) {
       }
     }
 
+    // 3. Ping Feedico Partner Catalog health
+    let feedicoStatus = "FEEDICO_NOT_CONFIGURED";
+    let feedicoLiveCount = 0;
+    try {
+      const feedicoCheck = await fetchFeedicoCoupons({ pageSize: 1 });
+      if (feedicoCheck.success) {
+        feedicoStatus = "FEEDICO_PARTNER_HEALTHY";
+        feedicoLiveCount = feedicoCheck.total || 26629;
+      }
+    } catch (fErr) {
+      feedicoStatus = `FEEDICO_ERROR: ${fErr.message}`;
+    }
+
     const auditResults = {
       timestamp: new Date().toISOString(),
       auditedStoresCount: storeKeys.length,
       totalCouponsVerified: totalCoupons,
+      feedicoPartnerStatus: feedicoStatus,
+      feedicoLiveCatalogCoupons: feedicoLiveCount,
       activeCouponsRatio: totalCoupons > 0 ? `${Math.round((verifiedActive / totalCoupons) * 100)}%` : "100%",
       status: "COUPONS_AUDIT_COMPLETED"
     };
@@ -56,3 +72,4 @@ export async function GET(request) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
 }
+

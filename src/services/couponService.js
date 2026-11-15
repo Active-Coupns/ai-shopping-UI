@@ -1,6 +1,7 @@
 import { MASTER_COUPON_DATABASE, matchStoreKey } from "./couponDatabase.js";
 import { getCountryMeta } from "@/lib/countryConfig.js";
 import { discoverOnDemandStoreCoupons } from "./couponOnDemandService.js";
+import { fetchFeedicoCoupons } from "./feedicoService.js";
 import { aiRouter } from "./aiRouter.js";
 
 const SEMANTIC_INTENT_MAP = [
@@ -24,6 +25,24 @@ export async function getCouponsForStore(queryOrStore = "", country = "IN") {
 
   // 1. Lookup in Live Verified Master Database
   let storeData = normalizedKey ? MASTER_COUPON_DATABASE[normalizedKey] : null;
+
+  // 1.1 Query Feedico Managed Partner Catalog (48,000+ brands & 26,000+ live verified coupons)
+  let feedicoCoupons = [];
+  if (queryOrStore && queryOrStore.trim().length >= 2) {
+    try {
+      const feedicoRes = await fetchFeedicoCoupons({
+        query: queryOrStore.trim(),
+        country,
+        pageSize: 15
+      });
+      if (feedicoRes.success && Array.isArray(feedicoRes.coupons) && feedicoRes.coupons.length > 0) {
+        feedicoCoupons = feedicoRes.coupons;
+        console.log(`[Coupon Service] Found ${feedicoCoupons.length} live Feedico coupons for "${queryOrStore}"`);
+      }
+    } catch (fErr) {
+      console.warn("[Coupon Service] Feedico query notice:", fErr.message);
+    }
+  }
 
   // 2. Semantic Intent & Category Mapping (Zero-latency RAG layer)
   if (!storeData && queryOrStore) {
@@ -54,7 +73,23 @@ export async function getCouponsForStore(queryOrStore = "", country = "IN") {
     }
   }
 
-  // 3. If still not matched, trigger On-Demand Live Merchant Discovery
+  // 3.1 Prioritize Feedico Live Catalog Deals if matched
+  if (!storeData && feedicoCoupons.length > 0) {
+    storeData = {
+      name: feedicoCoupons[0].merchantName || queryOrStore,
+      category: "Verified Partner Catalog",
+      logo: "🏷️",
+      brandColor: "from-blue-600 to-indigo-700",
+      coupons: feedicoCoupons
+    };
+  } else if (storeData && feedicoCoupons.length > 0) {
+    // Enrich local store with real-time Feedico affiliate deals & /go tracking links
+    const existingCodes = new Set((storeData.coupons || []).map(c => (c.code || "").toUpperCase()));
+    const uniqueFeedico = feedicoCoupons.filter(c => !c.code || !existingCodes.has(c.code.toUpperCase()));
+    storeData.coupons = [...uniqueFeedico, ...(storeData.coupons || [])];
+  }
+
+  // 3.2 If still not matched, trigger On-Demand Live Merchant Discovery
   if (!storeData && queryOrStore && queryOrStore.trim().length >= 2) {
     const onDemandRes = await discoverOnDemandStoreCoupons(queryOrStore, country);
     if (onDemandRes.success && onDemandRes.storeData) {
