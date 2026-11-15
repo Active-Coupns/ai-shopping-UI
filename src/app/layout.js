@@ -43,6 +43,11 @@ export const metadata = {
     description: "Compare lowest prices across Amazon, Flipkart, & top stores with Instant AI Review.",
     images: ["/laptop.jpg"],
   },
+  verification: {
+    other: {
+      "feedico-site-verification": "e31414679f99150e3ac33a217ddfcd93e51ea4dd5f2eb2fc",
+    },
+  },
 };
 
 const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || "pk_test_ZWxlY3RyaWMtY3ViLTQ5NDQuY2xlcmsuYWNjb3VudHMuZGV2JA";
@@ -55,6 +60,9 @@ export default function RootLayout({ children }) {
         className={`${outfit.variable} ${inter.variable} h-full antialiased`}
         suppressHydrationWarning
       >
+        <head>
+          <meta name="feedico-site-verification" content="e31414679f99150e3ac33a217ddfcd93e51ea4dd5f2eb2fc" />
+        </head>
         <body 
           className="min-h-full flex flex-col bg-slate-50 text-slate-900 selection:bg-brand-indigo/20 selection:text-brand-indigo-600"
           suppressHydrationWarning
