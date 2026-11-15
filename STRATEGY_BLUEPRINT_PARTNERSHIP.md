@@ -28,6 +28,9 @@ To protect the business legally, avoid early regulatory friction, build verified
 │   - Tier 1 (Startups): Secret Credits     │                                            │
 │   - Tier 2 (Existing Users): NachoNacho   │                                            │
 │     + In-House Verified Billing Codes     │                                            │
+│ • Guaranteed Discount Gift Cards (NEW):   │                                            │
+│   - Global: Raise (via Impact.com)        │                                            │
+│   - India: Woohoo (Pine Labs) / Gyftr     │                                            │
 │ • Travel/OTT: Kept in Discovery Mode      │                                            │
 └───────────────────────────────────────────┴────────────────────────────────────────────┘
 ```
@@ -48,6 +51,8 @@ In Phase 1, our primary objective is to launch the live domain, capture massive 
 | **Prescription Medicines & Sports Nutrition (India)** | **Tata 1mg Official Brand Alliance** (`alliances@1mg.com`) / Backup: **PharmEasy Strategic Partnerships** | Direct Co-Marketing Alliance ($0 Deposit, 0 Traffic Barrier) | **100% Guaranteed Official Partner Privilege Card**: Flat 18%–20% OFF on All Prescription Medicines + 5%–10% OFF on Authentic Sports Nutrition (MuscleBlaze, ON, GNC) via dedicated partner code `SHOPSMART18`. 100% Authentic Tata fulfillment. | **User Savings 1st Priority**; 3%–5% Rev-Share; Zero Legal/Inventory Liability |
 | **Prescription Discounts (US)** | **GoodRx Direct Partner API** | GoodRx Partner Portal / Impact.com | Medicine + ZIP Code lookup $\rightarrow$ Local CVS, Walgreens, Walmart comparison + Digital Rx card (20%–80% off) | Pay-Per-Claim ($2.50–$6.00/claim) |
 | **Prescriptions & OTC (UK & Canada)** | **Pharmacy2U (UK) & Well.ca (CA)** | Impact.com Master Publisher | Online digital pharmacy dispatch with 10%–15% private/OTC savings | 4%–7% Order Commission |
+| **Guaranteed Discount Gift Cards (Global)** | **Raise Partner Network** | Impact.com Marketplace | Instant digital delivery (3-5s), 2.5%–10% guaranteed savings on US/UK/Global brands (Nike, Target, Starbucks, Uber). Zero virtual card, direct 16-digit voucher. | 1.5%–3% Rev-Share (Commission shared with user for max savings) |
+| **Guaranteed Discount Gift Cards (India)** | **Woohoo (Pine Labs) / Gyftr Partner Portal** | Direct Partner Portal / Impact | 1-Click UPI & WhatsApp delivery of 16-digit brand codes for Amazon Pay, Flipkart, Swiggy, Zomato, Croma, Myntra (2.5%–8% instant savings). | 1.5%–4% Rev-Share (Commission shared with user for max savings) |
 
 ### 2.2. Phase 1 Architecture & UX Design
 
@@ -135,6 +140,41 @@ To capture massive organic search intent across e-commerce, food delivery (Zomat
    - Each coupon card features lightweight, 1-click user verification pills: `👍 Worked` / `👎 Expired`.
    - **Automated Quarantine Threshold**: If any code accumulates 3 consecutive negative votes, it is immediately quarantined from search results until refreshed by Feedico sync or human verification.
    - **Zero-Liability Deep-Linking**: 1-click flow copies promo code to clipboard and deep-links directly via Feedico's tracking URL to the merchant's official cart, keeping ShopSmart 100% free of checkout or refund liability.
+
+### 2.5. Phase 1 Guaranteed Discount Gift Card Architecture (Raise & Woohoo/Gyftr)
+
+To solve cart abandonment, defeat expired coupon frustration, and deliver tangible instant cash savings to shoppers on Day 1, Benefisto activates an integrated, zero-liability Guaranteed Discount Gift Card engine across its two primary user touchpoints: the **TrustSheet Savings Terminal** and the **Coupons Vault**.
+
+#### A. Two Finalized Regional Platform Partners
+1. **Global / International (US, UK, Canada, Australia, UAE)**:
+   - **Platform**: **Raise Partner Network** (managed via our single **Impact.com Master Account**).
+   - **Brands**: Target, Walmart, Apple, Nike, Starbucks, Uber, Sephora, Best Buy, Airbnb.
+   - **Delivery**: 100% digital, delivered in 3–5 seconds to email and screen. Apple Pay, GPay, card checkout.
+2. **India (Domestic / INR Currency)**:
+   - **Platform**: **Woohoo (by Pine Labs) / Gyftr Partner Network**.
+   - **Brands**: Amazon Pay Gift Cards, Flipkart, Myntra, Swiggy, Zomato, Croma, Reliance Digital, BookMyShow.
+   - **Delivery**: Instant 16-digit voucher code + PIN delivered via SMS, WhatsApp, and email with 1-click UPI (GPay, PhonePe, Paytm).
+
+#### B. Strict Zero-Fintech & Zero-Liability Principles
+* **Zero Virtual Cards & Zero Wallet Lock-in**: Benefisto strictly rejects prepaid cards or captive wallet systems. Users receive authentic, standard 16-digit alphanumeric gift card codes + PINs with 1-year brand validity that apply directly at merchant checkout.
+* **Zero Merchant Liability**: The partner platform acts as Merchant of Record, collects payments, verifies anti-fraud, issues barcodes, and handles 100% of customer support and replacements.
+
+#### C. Realistic Margins & Commission Pass-Through Model (Max Savings Strategy)
+By sharing our partner affiliate commission directly with the user via co-branded instant discounts, Benefisto delivers market-leading pricing that beats direct gift card stores:
+
+| Category | Key Representative Brands | Total Discount Pool (Base + Partner Margin) | Instant Discount Passed to User | Benefisto Net Retained Rev-Share | Realistic Savings Example |
+| :--- | :--- | :---: | :---: | :---: | :--- |
+| **E-Commerce & Gadgets** | Amazon Pay, Flipkart, Croma, Reliance Digital | **3.0% – 5.0%** | **2.5% – 3.5%** | **0.5% – 1.5%** | ₹20,000 Laptop ➔ Pay ₹19,400 ➔ **Save ₹600 instantly!** |
+| **Food Delivery & Dining** | Swiggy, Zomato, Domino's, McDonald's | **6.0% – 10.0%** | **5.0% – 7.0%** | **1.0% – 2.5%** | ₹4,000 Monthly Meals ➔ Pay ₹3,760 ➔ **Save ₹240/mo!** |
+| **Fashion & Clothing** | Myntra, Ajio, Pantaloons, Tata CLiQ, Nike | **8.0% – 14.0%** | **6.5% – 9.0%** | **1.5% – 3.0%** | ₹5,000 Apparel Cart ➔ Pay ₹4,600 ➔ **Save ₹400 instantly!** |
+| **Entertainment & Cabs** | BookMyShow, PVR/INOX, Uber, MakeMyTrip | **5.0% – 8.0%** | **4.5% – 6.0%** | **1.0% – 2.0%** | ₹1,500 Movie Night ➔ Pay ₹1,425 ➔ **Save ₹75 instantly!** |
+
+#### D. UX Placement & 1-Click Conversion Flow
+* **TrustSheet (Savings Terminal)**: Renders dynamic calculation underneath product specs:  
+  `"Cart Total: ₹4,000 ➔ Buy Official Voucher with 3% Off ➔ Pay ₹3,880 ➔ Net Savings: ₹120"`
+* **Coupons Vault (Guaranteed Fallback Banner)**: Renders a high-conversion fallback under coupon listings:  
+  `"Promo code not applying? Get Guaranteed 5% Instant Savings with an Official Gift Voucher."`
+* **Flow**: 1-Click Deep-Link ➔ Partner Co-Branded Hosted Checkout ➔ User Pays (UPI/Card) ➔ Receives Voucher on WhatsApp/Email ➔ Pastes at merchant checkout.
 
 ---
 
@@ -269,8 +309,11 @@ To ensure 100% legal immunity against Rate Parity lawsuits, hotel/airline cease-
     │   └── Retrieve `fdco_` production Bearer token for live 48,000+ brand coupon catalog
     ├── Step 1.4: Join Secret Community Perks Program (`joinsecret.com`)
     │   └── Free community partner status for Tier 1 startups ($1,000+ AWS/Stripe credits)
-    └── Step 1.5: Join NachoNacho Community Partner Program (`nachonacho.com`)
-        └── B2B perks access for Tier 2 existing active subscriptions (15%–30% off Canva, Zoom, etc.)
+    ├── Step 1.5: Join NachoNacho Community Partner Program (`nachonacho.com`)
+    │   └── B2B perks access for Tier 2 existing active subscriptions (15%–30% off Canva, Zoom, etc.)
+    └── Step 1.6: Connect Guaranteed Discount Gift Card Networks (Day 1)
+        ├── Global: Apply to Raise Partner Network on Impact.com
+        └── India: Apply to Woohoo (Pine Labs) / Gyftr Partner Portal
 
 [ ] PHASE 2: B2B WHOLESALE ONBOARDING (DAY 40 ONWARD - POST REPUTATION BUILD)
     ├── Step 2.1: Register Duffel Developer Account (`duffel.com`)
