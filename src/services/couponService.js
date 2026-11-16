@@ -172,23 +172,21 @@ export async function getCouponsForStore(queryOrStore = "", country = "IN") {
     code: isIndia ? "INSTANT_CASHBACK" : "RAISE_REWARDS",
     hasRealCode: false,
     title: isIndia 
-      ? `Flat 2% to 6% Guaranteed Savings via ${brandName} Gift Card`
-      : `Flat 3% to 10% Guaranteed Savings via Discounted ${brandName} Gift Card`,
+      ? `Flat 2% to 6% Savings via ${brandName} Gift Card (Coming Soon)`
+      : `Flat 3% to 10% Savings via Discounted ${brandName} Gift Card (Coming Soon)`,
     description: isIndia
-      ? `100% verified zero-failure checkout strategy. Purchase an instant digital voucher before checkout to get guaranteed cash savings on your total order value.`
-      : `Stackable zero-risk strategy. Purchase an instant electronic gift card on Raise to lock in guaranteed discounts before placing your order.`,
+      ? `Zero-failure digital savings voucher. Direct brand partner integration currently in verification rollout — launching soon on Benefisto!`
+      : `Stackable zero-risk strategy. Direct brand partner integration currently in verification rollout — launching soon on Benefisto!`,
     discount_type: "PERCENT",
     discount_val: isIndia ? 5 : 7,
     min_order: null,
-    badge: "100% GUARANTEED",
-    verified_rate: "100% Success Rate",
-    valid_till: "Always Active",
-    terms: "Instant digital code delivery. 100% valid across all promotional & sale items.",
+    badge: "COMING SOON",
+    verified_rate: "Unlocking Soon",
+    valid_till: "Partner Rollout",
+    terms: "Direct partner onboarding in progress. Instant digital voucher delivery launching soon.",
     merchantName: brandName,
-    link: isIndia 
-      ? `https://www.woohoo.in/search?q=${encodeURIComponent(brandName)}`
-      : `https://www.raise.com/buy-gift-cards?query=${encodeURIComponent(brandName)}`,
-    websiteUrl: isIndia ? "https://www.woohoo.in" : "https://www.raise.com",
+    link: null,
+    websiteUrl: null,
     isGiftCardFallback: true,
     source: "benefisto_guarantee"
   };

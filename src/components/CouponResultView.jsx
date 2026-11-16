@@ -1178,11 +1178,11 @@ export default function CouponResultView({
                     {coupon.isGiftCardFallback ? (
                       <div className="mb-2.5">
                         <div className="px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200/80 inline-flex items-center gap-1.5 text-[11px] text-amber-900 font-medium">
-                          <ShieldCheck className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                          <span><strong>100% Guaranteed:</strong> Instant voucher &bull; Zero checkout risk</span>
+                          <Clock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                          <span><strong>Coming Soon:</strong> Instant voucher &bull; Direct brand integration</span>
                         </div>
                         <p className="text-[10px] text-amber-800/80 mt-1 leading-tight">
-                          ✓ 100% verified cash savings. Buy instant digital voucher before checkout to save on any order.
+                          ✓ Direct partner verification in rollout. 100% guaranteed zero-risk gift card savings launching soon on Benefisto!
                         </p>
                       </div>
                     ) : !coupon.hasRealCode ? (
