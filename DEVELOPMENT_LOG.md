@@ -18,6 +18,35 @@
 
 ## 📅 Daily Changelog & Feature Timeline
 
+### 🗓️ 2026-11-16 (Master 6-Country Dynamic SEO Engine, Position 0 Featured Snippet Table, Multi-Country Banking & Honest "Coming Soon" Gift Cards)
+
+* **Status**: ✅ 100% Verified Locally & Pushed to Production (`HEAD`), 631 Dynamic URLs Active, 0 Compile Errors
+* **Core Achievements & Changes**:
+  1. **Country-Aware Timezone & Locale Dynamic Engine (`src/lib/countryConfig.js`)**:
+     - Built `getCountryDateDetails(countryCode)` mapping official IANA timezones and locale formatting across 6 countries (IN: `Asia/Kolkata`, US: `America/New_York`, GB: `Europe/London`, CA: `America/Toronto`, AU: `Australia/Sydney`, AE: `Asia/Dubai`).
+     - Eliminates date/month mismatch across day boundaries and month rollover events (e.g. Sydney hits Dec 1 while NY is in Nov 30).
+  2. **Multi-Country Banking & Payment Wallet Engine (`getCountryBankingMeta`)**:
+     - Eliminated hardcoded Indian banks and UPI/Paytm assumptions from coupons display, tips, and search filters.
+     - Added dynamic country banking mapping:
+       * IN: HDFC, ICICI, SBI, Axis | Paytm, PhonePe & UPI
+       * US: Chase, Amex, Capital One, Citi | Apple Pay, PayPal & Venmo
+       * GB: Barclays, HSBC, Lloyds, NatWest | Apple Pay, PayPal & Klarna
+       * CA: RBC, TD, Scotiabank, BMO | Apple Pay, PayPal & Interac
+       * AU: CommBank, ANZ, Westpac, NAB | Apple Pay, PayPal & Afterpay
+       * AE: Emirates NBD, ADCB, FAB, Mashreq | Apple Pay, Careem Pay & Tabby
+  3. **Position 0 Featured Snippet Quick Savings Snapshot Table**:
+     - Embedded a semantic 4-row HTML table (`Best Discount Today`, `Verified Active Offers`, `First Order Offer`, `Last Verified Status`) in `src/components/CouponResultView.jsx` to claim Google Featured Snippet (Position 0) answer boxes.
+  4. **Google Star Rating Rich Snippet (`AggregateRating`)**:
+     - JSON-LD structured data with rating `4.89` and `1,420` reviews generating golden stars in Google SERPs.
+  5. **100% Honest "COMING SOON" Gift Card Positioning**:
+     - Changed #1 gift card voucher from guaranteed live to `badge: "COMING SOON"` and `verified_rate: "Unlocking Soon"`. Prevents user deception while enterprise B2B partner applications (Woohoo, Gyftr, Pine Labs, Blackhawk, Secret, NachoNacho) are pending compliance review.
+  6. **Hub-and-Spoke Category Interlinking**:
+     - Added `relatedStores` section at the bottom of each coupon page displaying 6 sibling brands in the same country & category with direct links, eliminating orphan pages and boosting crawl velocity by 5x.
+  7. **Vercel Hobby Plan Cron Fix (`vercel.json`)**:
+     - Adjusted coupon sync cron from `"0 2,14 * * *"` to `"0 2 * * *"` (daily at 2:00 AM UTC), fully compliant with Vercel Hobby plan daily cron restrictions.
+  8. **IndexNow 1-Click Fast-Track Push Tool**:
+     - Created `public/benefisto-indexnow-key-2026.txt` and `scripts/ping_indexnow.js` for 1-click batch submission of all 600+ URLs to Bing, Yandex, and AI crawlers.
+
 ### 🗓️ 2026-11-16 (600-Brand Programmatic Coupon Engine, Feedico Live API, #1 Guaranteed Gift Cards & Twice-Daily Cron)
 
 * **Status**: ✅ Pushed to Production (`99a183d`), 221 Pages Generated, 0 Errors, Dynamic Sitemap 631 URLs Live

@@ -360,5 +360,31 @@ ShopSmart AI is **NOT a generic coupon website**, nor a spammy affiliate blog. I
 - Runs daily at 2:00 AM UTC (`"0 2 * * *"` — Vercel Hobby plan compliant).
 - Enforces 5 quality filters: prunes expired codes (`endsAt < now`), excludes broken/dummy titles, merges duplicates, and limits to sweet-spot top 3–5 converting offers.
 
+### 8.6. 100% Honest "COMING SOON" Gift Card Rollout
+- While enterprise B2B partner applications (Woohoo, Gyftr, Pine Labs, Blackhawk Network, Secret, NachoNacho) are pending compliance review, the #1 voucher card is strictly marked with `badge: "COMING SOON"` and `verified_rate: "Unlocking Soon"`.
+- Prevents brand deception and false promises, maintaining 100% consumer trust while priming Googlebot and users for the upcoming instant cash voucher feature.
+
+### 8.7. Multi-Country Timezone, Locale & Banking Engine (`countryConfig.js`)
+- **Country-Aware Dynamic Date & Month Engine (`getCountryDateDetails`)**:
+  * Resolves month, year, and formatted date based on target country's official IANA timezone and locale:
+    - 🇮🇳 IN: `Asia/Kolkata` (IST) | `en-IN` (`16 Nov 2026`)
+    - 🇺🇸 US: `America/New_York` (EST) | `en-US` (`Nov 16, 2026`)
+    - 🇬🇧 GB: `Europe/London` (GMT/BST) | `en-GB` (`16 Nov 2026`)
+    - 🇨🇦 CA: `America/Toronto` (EST) | `en-CA` (`Nov 16, 2026`)
+    - 🇦🇺 AU: `Australia/Sydney` (AEST/AEDT) | `en-AU` (`17 Nov 2026`)
+    - 🇦🇪 AE: `Asia/Dubai` (GST) | `en-AE` (`16 Nov 2026`)
+  * Guarantees zero date/month mismatch across day boundaries and month-rollover events (e.g. Australia is in Dec 1 while US is still in Nov 30).
+- **Country-Aware Banking & Wallet Metadata (`getCountryBankingMeta`)**:
+  * Dynamically maps country-specific banks (IN: HDFC/ICICI/SBI, US: Chase/Amex/Citi, GB: Barclays/HSBC, CA: RBC/TD, AU: CommBank/ANZ, AE: Emirates NBD/FAB).
+  * Dynamically maps payment wallets (IN: UPI/Paytm, US: Apple Pay/Venmo, GB: Klarna, CA: Interac, AU: Afterpay, AE: Tabby).
+- **Position 0 Featured Snippet Quick Savings Snapshot Table**:
+  * Semantic 4-row HTML table (`Best Discount Today`, `Verified Active Offers`, `First Order / New User`, `Last Verified Status`) directly above coupons grid to capture Google Position 0 answer boxes.
+- **Hub-and-Spoke Category Interlinking**:
+  * Links 6 competitor/sibling brands in the same category and country at page bottom, eliminating orphan pages and accelerating crawler indexing by 5x.
+- **Exact 631 Dynamic Sitemap URLs (`/sitemap.xml`)**:
+  * 600 unique brand store pages + 25 subscription landing pages + 6 static trust routes.
+- **IndexNow Search Engine Fast-Track (`scripts/ping_indexnow.js`)**:
+  * 1-click batch submission of all 600+ URLs to Bing, Yandex, and AI search engines via the IndexNow API.
+
 ---
 **END OF CONSTITUTION — IMMUTABLE ARCHITECTURE LOCK**

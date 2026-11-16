@@ -2,7 +2,7 @@ import React from "react";
 import { notFound } from "next/navigation";
 import { getCouponsForStore } from "@/services/couponService";
 import { COUNTRY_TOP_BRANDS, findBrandInCatalog } from "@/data/countryBrandsCatalog";
-import { getCountryMeta } from "@/lib/countryConfig";
+import { getCountryMeta, getCountryDateDetails } from "@/lib/countryConfig";
 import CouponStorePageClient from "./CouponStorePageClient";
 
 export const dynamic = "force-dynamic";
@@ -54,9 +54,9 @@ export async function generateMetadata({ params, searchParams }) {
   const { matchedBrand, country, cleanName } = resolveBrandContext(store, sParams?.country);
   
   const meta = getCountryMeta(country);
-  const now = new Date();
-  const monthName = now.toLocaleString("en-US", { month: "long" });
-  const year = now.getFullYear();
+  const dateDetails = getCountryDateDetails(country);
+  const monthName = dateDetails.monthName;
+  const year = dateDetails.year;
 
   const title = `${cleanName} Promo Codes & Coupons (${monthName} ${year}) — 100% Verified Deals | Benefisto`;
   const description = `Get 100% verified ${cleanName} discount codes, special app vouchers, and payment perks for ${monthName} ${year}. Zero expired codes. Tested daily with instant checkout savings guidance on Benefisto.`;
@@ -117,9 +117,9 @@ export default async function CouponStorePage({ params, searchParams }) {
     notFound();
   }
 
-  const now = new Date();
-  const monthName = now.toLocaleString("en-US", { month: "long" });
-  const year = now.getFullYear();
+  const dateDetails = getCountryDateDetails(country);
+  const monthName = dateDetails.monthName;
+  const year = dateDetails.year;
   const currencySymbol = getCountryMeta(country)?.symbol || "$";
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.benefisto.com";
   const canonicalUrl = `${baseUrl}/coupons/${store}`;

@@ -13,6 +13,7 @@ export const SUPPORTED_COUNTRIES = {
     currency: "INR",
     symbol: "₹",
     locale: "en-IN",
+    timeZone: "Asia/Kolkata",
     popularStores: "Amazon.in, Flipkart, Myntra, 1mg, Apollo",
     defaultStore: "Amazon.in",
     placeholder: "Search phones, laptops, clothes, medicines..."
@@ -25,6 +26,7 @@ export const SUPPORTED_COUNTRIES = {
     currency: "USD",
     symbol: "$",
     locale: "en-US",
+    timeZone: "America/New_York",
     popularStores: "Amazon.com, Walmart, Best Buy, Target",
     defaultStore: "Amazon.com",
     placeholder: "Search tech, laptops, shoes, supplements..."
@@ -37,6 +39,7 @@ export const SUPPORTED_COUNTRIES = {
     currency: "GBP",
     symbol: "£",
     locale: "en-GB",
+    timeZone: "Europe/London",
     popularStores: "Amazon.co.uk, Argos, Currys, John Lewis, ASOS",
     defaultStore: "Amazon.co.uk",
     placeholder: "Search laptops, headphones, fashion, deals..."
@@ -49,6 +52,7 @@ export const SUPPORTED_COUNTRIES = {
     currency: "CAD",
     symbol: "C$",
     locale: "en-CA",
+    timeZone: "America/Toronto",
     popularStores: "Amazon.ca, Best Buy CA, Walmart CA, Canadian Tire",
     defaultStore: "Amazon.ca",
     placeholder: "Search electronics, outdoor gear, laptops..."
@@ -61,6 +65,7 @@ export const SUPPORTED_COUNTRIES = {
     currency: "AUD",
     symbol: "A$",
     locale: "en-AU",
+    timeZone: "Australia/Sydney",
     popularStores: "Amazon.com.au, JB Hi-Fi, Harvey Norman, Kmart",
     defaultStore: "Amazon.com.au",
     placeholder: "Search tech, gaming, fashion, appliances..."
@@ -73,6 +78,7 @@ export const SUPPORTED_COUNTRIES = {
     currency: "AED",
     symbol: "AED",
     locale: "en-AE",
+    timeZone: "Asia/Dubai",
     popularStores: "Amazon.ae, Noon, Sharaf DG, Carrefour",
     defaultStore: "Amazon.ae",
     placeholder: "Search perfumes, phones, laptops, luxury deals..."
@@ -122,6 +128,105 @@ export function formatCountryPrice(amount, countryCode = "IN") {
     }).format(num);
   } catch (_) {
     return `${meta.symbol}${Math.round(num)}`;
+  }
+}
+
+export const COUNTRY_BANKING_METAS = {
+  IN: {
+    topBanks: ["HDFC", "ICICI", "SBI", "Axis", "Kotak"],
+    bankDisplayString: "HDFC, ICICI, Axis, and SBI",
+    wallets: "Paytm, PhonePe & UPI",
+    cardPaymentText: "Cannot combine with Paytm/PhonePe UPI; must choose Credit/Debit Card directly."
+  },
+  US: {
+    topBanks: ["Chase", "Amex", "Capital One", "Citi", "Bank of America"],
+    bankDisplayString: "Chase, Amex, Capital One, and Citi",
+    wallets: "Apple Pay, PayPal & Venmo",
+    cardPaymentText: "Cannot combine with 3rd-party digital wallets; must select eligible Credit/Debit Card directly."
+  },
+  GB: {
+    topBanks: ["Barclays", "HSBC", "Lloyds", "NatWest", "Santander"],
+    bankDisplayString: "Barclays, HSBC, Lloyds, and NatWest",
+    wallets: "Apple Pay, PayPal & Klarna",
+    cardPaymentText: "Cannot combine with 3rd-party digital wallets; must select eligible Credit/Debit Card directly."
+  },
+  CA: {
+    topBanks: ["RBC", "TD", "Scotiabank", "BMO", "CIBC"],
+    bankDisplayString: "RBC, TD, Scotiabank, and BMO",
+    wallets: "Apple Pay, PayPal & Interac",
+    cardPaymentText: "Cannot combine with 3rd-party digital wallets; must select eligible Credit/Debit Card directly."
+  },
+  AU: {
+    topBanks: ["CommBank", "ANZ", "Westpac", "NAB", "Macquarie"],
+    bankDisplayString: "CommBank, ANZ, Westpac, and NAB",
+    wallets: "Apple Pay, PayPal & Afterpay",
+    cardPaymentText: "Cannot combine with 3rd-party digital wallets; must select eligible Credit/Debit Card directly."
+  },
+  AE: {
+    topBanks: ["Emirates NBD", "ADCB", "FAB", "Mashreq", "Dubai Islamic Bank"],
+    bankDisplayString: "Emirates NBD, ADCB, FAB, and Mashreq",
+    wallets: "Apple Pay, Careem Pay & Tabby",
+    cardPaymentText: "Cannot combine with 3rd-party digital wallets; must select eligible Credit/Debit Card directly."
+  }
+};
+
+export function getCountryBankingMeta(countryCode = "IN") {
+  const code = validateCountryCode(countryCode);
+  return COUNTRY_BANKING_METAS[code] || COUNTRY_BANKING_METAS.IN;
+}
+
+/**
+ * Country-Aware Dynamic Date & Month Resolver for International SEO
+ * Formats month, year, and dates according to the target country's official IANA timezone and locale.
+ * Ensures that if it is already the 1st of a new month in Australia/India while still end of previous month in US,
+ * Google crawlers and local users see the 100% accurate local month and date.
+ */
+export function getCountryDateDetails(countryCode = "IN", date = new Date()) {
+  const meta = getCountryMeta(countryCode);
+  const locale = meta.locale || "en-US";
+  const timeZone = meta.timeZone || "UTC";
+
+  try {
+    const monthFormatter = new Intl.DateTimeFormat(locale, {
+      timeZone,
+      month: "long"
+    });
+    const yearFormatter = new Intl.DateTimeFormat(locale, {
+      timeZone,
+      year: "numeric"
+    });
+    const monthName = monthFormatter.format(date);
+    const year = yearFormatter.format(date);
+    const monthYear = `${monthName} ${year}`;
+
+    const dateFormatter = new Intl.DateTimeFormat(locale, {
+      timeZone,
+      month: "short",
+      day: "numeric",
+      year: "numeric"
+    });
+    const todayFormatted = dateFormatter.format(date);
+
+    return {
+      monthName,
+      year,
+      monthYear,
+      todayFormatted,
+      locale,
+      timeZone
+    };
+  } catch (_) {
+    const now = new Date(date);
+    const monthName = now.toLocaleString("en-US", { month: "long" });
+    const year = String(now.getFullYear());
+    return {
+      monthName,
+      year,
+      monthYear: `${monthName} ${year}`,
+      todayFormatted: now.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+      locale,
+      timeZone
+    };
   }
 }
 

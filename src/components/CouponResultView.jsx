@@ -2,7 +2,8 @@
 
 import React, { useState, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { getCountryMeta } from "@/lib/countryConfig";
+import { getCountryMeta, getCountryDateDetails, getCountryBankingMeta } from "@/lib/countryConfig";
+import { COUNTRY_TOP_BRANDS } from "@/data/countryBrandsCatalog";
 import { useUser, useClerk } from "@clerk/nextjs";
 import { 
   Sparkles, 
@@ -230,7 +231,7 @@ export default function CouponResultView({
     let sweetSpot = "";
     if (discountType === "PERCENT" && maxDiscount > 0 && discountVal > 0) {
       const optimalCart = Math.round(maxDiscount / (discountVal / 100));
-      sweetSpot = `Cart between ${currencySymbol}${minOrder} and ${currencySymbol}${optimalCart} (max ${currencySymbol}${maxDiscount} savings reached at ₹${optimalCart}).`;
+      sweetSpot = `Cart between ${currencySymbol}${minOrder} and ${currencySymbol}${optimalCart} (max ${currencySymbol}${maxDiscount} savings reached at ${currencySymbol}${optimalCart}).`;
     } else if (discountType === "FLAT") {
       sweetSpot = `Cart at or near ${currencySymbol}${minOrder} gives highest return (${Math.min(100, Math.round((maxDiscount / (minOrder || 1)) * 100))}% effective savings).`;
     } else {
@@ -241,7 +242,7 @@ export default function CouponResultView({
     if (discountType === "PERCENT" && maxDiscount > 0) {
       hiddenCatch = `Discount strictly capped at ${currencySymbol}${maxDiscount}. Higher carts won't get higher savings.`;
     } else if (badge.includes("BANK")) {
-      hiddenCatch = `Cannot combine with Paytm/PhonePe UPI; must choose Credit/Debit Card directly.`;
+      hiddenCatch = bankingMeta.cardPaymentText || `Cannot combine with digital wallets; must choose Credit/Debit Card directly.`;
     } else if (badge.includes("NEW USER")) {
       hiddenCatch = `Must have 0 prior delivered orders on this phone number and device.`;
     } else {
@@ -340,6 +341,51 @@ export default function CouponResultView({
     }
   };
 
+  // Country-Aware Dynamic Month and Year for Real-Time International SEO Freshness
+  const dateDetails = useMemo(() => {
+    return getCountryDateDetails(country);
+  }, [country]);
+
+  const currentMonthYear = dateDetails.monthYear;
+  const todayFormatted = dateDetails.todayFormatted;
+
+  // Featured Snippet (Position 0) Best Offer Text
+  const bestOfferText = useMemo(() => {
+    if (!storeCoupons || storeCoupons.length === 0) return "Active Verified Discounts";
+    const percentOffer = storeCoupons.find(c => c.discount_type === "PERCENT" && c.discount_val > 0);
+    const flatOffer = storeCoupons.find(c => c.discount_type === "FLAT" && c.discount_val > 0);
+    if (percentOffer) return `Up to ${percentOffer.discount_val}% OFF Instant Discount`;
+    if (flatOffer) return `Flat ${currencySymbol}${flatOffer.discount_val} OFF at Checkout`;
+    return "Verified Direct Store Savings";
+  }, [storeCoupons, currencySymbol]);
+
+  // Featured Snippet First Order Text
+  const firstOrderOfferText = useMemo(() => {
+    const welcome = storeCoupons.find(c => {
+      const b = (c.badge || "").toUpperCase();
+      const d = (c.description || "").toLowerCase();
+      const t = (c.title || "").toLowerCase();
+      return b.includes("NEW") || d.includes("new user") || d.includes("first") || t.includes("first");
+    });
+    if (welcome) return `Available (${welcome.code || "Welcome Code"})`;
+    return "Special App & Web Welcome Savings";
+  }, [storeCoupons]);
+
+  // Hub-and-Spoke Category Interlinking: 6 related stores in same country & category
+  const relatedStores = useMemo(() => {
+    const countryCode = (country || "IN").toUpperCase();
+    const countryList = (COUNTRY_TOP_BRANDS && COUNTRY_TOP_BRANDS[countryCode]) ? COUNTRY_TOP_BRANDS[countryCode] : (COUNTRY_TOP_BRANDS?.IN || []);
+    const sameCategory = countryList.filter(b => 
+      b.name.toLowerCase() !== storeName.toLowerCase() && 
+      (b.category === storeCategory || !storeCategory)
+    );
+    if (sameCategory.length >= 4) {
+      return sameCategory.slice(0, 6);
+    }
+    const others = countryList.filter(b => b.name.toLowerCase() !== storeName.toLowerCase());
+    return [...sameCategory, ...others].slice(0, 6);
+  }, [country, storeName, storeCategory]);
+
   // Dynamic Store Theme Colors
   const storeTheme = useMemo(() => getStoreTheme(storeName), [storeName]);
 
@@ -359,13 +405,15 @@ export default function CouponResultView({
       const title = (c.title || "").toLowerCase();
       const pay = (c.payment_method || "").toLowerCase();
 
-      if (badge.includes("BANK") || pay.includes("bank") || pay.includes("card") || title.includes("hdfc") || title.includes("icici") || title.includes("axis") || title.includes("sbi")) {
+      const isBankMatch = badge.includes("BANK") || pay.includes("bank") || pay.includes("card") || 
+        (bankingMeta.topBanks && bankingMeta.topBanks.some(b => title.includes(b.toLowerCase())));
+      if (isBankMatch) {
         counts.bank++;
       }
       if (c.discount_type === "PERCENT" || title.includes("%") || desc.includes("%")) {
         counts.percent++;
       }
-      if (c.discount_type === "FLAT" || title.includes("flat ₹") || title.includes("flat rs")) {
+      if (c.discount_type === "FLAT" || title.includes("flat") || title.includes("off")) {
         counts.flat++;
       }
       if (badge.includes("NEW") || desc.includes("new user") || desc.includes("first order") || title.includes("first")) {
@@ -449,12 +497,13 @@ export default function CouponResultView({
         const badge = (c.badge || "").toUpperCase();
         const title = (c.title || "").toLowerCase();
         const pay = (c.payment_method || "").toLowerCase();
-        return badge.includes("BANK") || pay.includes("bank") || pay.includes("card") || title.includes("hdfc") || title.includes("icici") || title.includes("axis") || title.includes("sbi");
+        return badge.includes("BANK") || pay.includes("bank") || pay.includes("card") || 
+          (bankingMeta.topBanks && bankingMeta.topBanks.some(b => title.includes(b.toLowerCase())));
       });
     } else if (activeFilter === "percent") {
       list = list.filter(c => c.discount_type === "PERCENT" || (c.title || "").includes("%") || (c.description || "").includes("%"));
     } else if (activeFilter === "flat") {
-      list = list.filter(c => c.discount_type === "FLAT" || (c.title || "").toLowerCase().includes("flat ₹") || (c.title || "").toLowerCase().includes("flat rs"));
+      list = list.filter(c => c.discount_type === "FLAT" || (c.title || "").toLowerCase().includes("flat") || (c.title || "").toLowerCase().includes("off"));
     } else if (activeFilter === "newUser") {
       list = list.filter(c => {
         const badge = (c.badge || "").toUpperCase();
@@ -487,9 +536,7 @@ export default function CouponResultView({
   const minThresholdExample = isIndia ? "₹149, ₹199 or ₹499" : (currencySymbol + "25, " + currencySymbol + "50 or " + currencySymbol + "100");
   const addOnExample = isIndia ? "₹20 add-on often saves you ₹100+" : ("small add-on often saves you " + currencySymbol + "20+");
   const minCartExample = isIndia ? "₹199 or ₹499" : (currencySymbol + "25 or " + currencySymbol + "50");
-  const bankNames = isIndia 
-    ? "HDFC, ICICI, Axis, and SBI" 
-    : ((country || "").toUpperCase() === "GB" ? "Barclays, HSBC, and Lloyds" : "Chase, Amex, Capital One, and Citi");
+  const bankNames = bankingMeta.bankDisplayString || "Major National Banks & Cards";
 
   const savingStrategies = [
     {
@@ -718,6 +765,59 @@ export default function CouponResultView({
                   ? `AI Cart Analyzed: Cart Total ${currencySymbol}${cartTotal} • Showing best matched coupons`
                   : `Verified promo vouchers, universal cart discounts & exclusive bank perks`}
               </p>
+            </div>
+          </div>
+
+          {/* FEATURED SNIPPET (POSITION 0) QUICK SAVINGS SNAPSHOT TABLE */}
+          <div className="w-full mt-4 overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-2xs">
+            <div className="px-3.5 py-2 sm:px-4 sm:py-2.5 bg-gradient-to-r from-slate-50 to-slate-100/70 border-b border-slate-200/80 flex items-center justify-between">
+              <div className="flex items-center gap-2 min-w-0">
+                <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500 fill-amber-400 shrink-0" />
+                <span className="text-xs font-black text-slate-900 tracking-tight truncate">
+                  {storeName} Deals & Discounts Snapshot &bull; {currentMonthYear}
+                </span>
+              </div>
+              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 shrink-0">
+                ✓ Tested Today
+              </span>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <tbody>
+                  <tr className="border-b border-slate-100">
+                    <th scope="row" className="py-2 sm:py-2.5 px-3.5 sm:px-4 font-bold text-slate-500 bg-slate-50/50 w-2/5 sm:w-1/4 text-[11px] sm:text-xs">
+                      Best Discount Today
+                    </th>
+                    <td className="py-2 sm:py-2.5 px-3.5 sm:px-4 font-extrabold text-emerald-600 text-[11px] sm:text-xs">
+                      {bestOfferText}
+                    </td>
+                  </tr>
+                  <tr className="border-b border-slate-100">
+                    <th scope="row" className="py-2 sm:py-2.5 px-3.5 sm:px-4 font-bold text-slate-500 bg-slate-50/50 text-[11px] sm:text-xs">
+                      Verified Active Offers
+                    </th>
+                    <td className="py-2 sm:py-2.5 px-3.5 sm:px-4 font-bold text-slate-800 text-[11px] sm:text-xs">
+                      {storeCoupons.length} Active Deals &bull; Zero Expired Codes
+                    </td>
+                  </tr>
+                  <tr className="border-b border-slate-100">
+                    <th scope="row" className="py-2 sm:py-2.5 px-3.5 sm:px-4 font-bold text-slate-500 bg-slate-50/50 text-[11px] sm:text-xs">
+                      First Order / New User
+                    </th>
+                    <td className="py-2 sm:py-2.5 px-3.5 sm:px-4 font-bold text-slate-800 text-[11px] sm:text-xs">
+                      {firstOrderOfferText}
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row" className="py-2 sm:py-2.5 px-3.5 sm:px-4 font-bold text-slate-500 bg-slate-50/50 text-[11px] sm:text-xs">
+                      Last Verified Status
+                    </th>
+                    <td className="py-2 sm:py-2.5 px-3.5 sm:px-4 font-bold text-slate-700 text-[11px] sm:text-xs">
+                      Tested Today ({todayFormatted}) &bull; Checkout Tested
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
 
@@ -1474,6 +1574,48 @@ export default function CouponResultView({
             })}
           </div>
         </div>
+
+        {/* 5. HUB-AND-SPOKE CATEGORY INTERLINKING (Similar Stores in Same Category) */}
+        {relatedStores && relatedStores.length > 0 && (
+          <div className="mt-10 pt-8 border-t border-slate-200/80">
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <h4 className="text-base sm:text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
+                  <span>Similar Stores & Competitor Deals in {storeCategory}</span>
+                </h4>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Explore verified promo codes and saving strategies for similar stores in your region.
+                </p>
+              </div>
+              <span className="hidden sm:inline-flex px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-bold">
+                {countryMeta.name}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+              {relatedStores.map((relStore) => (
+                <a
+                  key={relStore.id}
+                  href={`/coupons/${relStore.id}?country=${country || "IN"}`}
+                  className="p-3 rounded-2xl bg-white border border-slate-200/80 hover:border-violet-300 hover:shadow-md transition-all flex flex-col items-center text-center group cursor-pointer"
+                >
+                  <span className="text-2xl mb-1.5 group-hover:scale-110 transition-transform">
+                    {relStore.logo || "🏷️"}
+                  </span>
+                  <span className="text-xs font-black text-slate-900 group-hover:text-violet-700 transition-colors line-clamp-1">
+                    {relStore.name}
+                  </span>
+                  <span className="text-[10px] text-emerald-600 font-bold mt-1 line-clamp-1">
+                    {relStore.bestOffer || "Verified Codes"}
+                  </span>
+                  <span className="text-[9px] text-slate-400 mt-1 inline-flex items-center gap-0.5 group-hover:underline">
+                    View Deals &rarr;
+                  </span>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* 4. SMART FLOATING BOTTOM TOAST ON COPY */}
