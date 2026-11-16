@@ -12,6 +12,7 @@
 import { MASTER_COUPON_DATABASE, matchStoreKey } from "./couponDatabase.js";
 import { clampString, checkSearchContentSafety } from "./securityShield.js";
 import { aiRouter } from "./aiRouter.js";
+import { findBrandInCatalog, COUNTRY_TOP_BRANDS } from "../data/countryBrandsCatalog.js";
 
 const STORE_CACHE = new Map();
 
@@ -110,6 +111,23 @@ export async function verifyStoreEntity(rawQuery, country = "IN") {
     return STORE_CACHE.get(cacheKey);
   }
 
+  // 1. LAYER 0: 600-Brand Multi-Country Power Catalog
+  const catalogBrand = findBrandInCatalog(query, country);
+  if (catalogBrand) {
+    const result = {
+      success: true,
+      query,
+      isRealEntity: true,
+      canonicalName: catalogBrand.name,
+      storeKey: catalogBrand.id,
+      domain: catalogBrand.domain || `${catalogBrand.id}.com`,
+      action: "CATALOG_EXACT_MATCH",
+      guidanceMessage: `Showing coupons for ${catalogBrand.name}`
+    };
+    STORE_CACHE.set(cacheKey, result);
+    return result;
+  }
+
   // 1. LAYER 1: Catalog Fuzzy & Typo Check against Master Database
   const typoMatch = checkMasterStoreTypo(query);
   if (typoMatch) {
@@ -173,13 +191,21 @@ OUTPUT JSON ONLY:
   // 3. Fallback Heuristics if Groq was unavailable
   if (!groqAnalysis) {
     const qLower = query.toLowerCase();
-    const isRetailHeuristic = /store|shop|mart|wear|cloth|jewel|kart|buy|deal/i.test(qLower);
+    const isRetailHeuristic = /store|shop|mart|wear|cloth|jewel|kart|buy|deal|fit|gym|tech|shoe|food|tea|coffee/i.test(qLower);
     const isTravelHeuristic = /air|flight|hotel|stay|resort/i.test(qLower);
     const isSubHeuristic = /tv|stream|play|plus|music|fm/i.test(qLower);
 
+    // Filter out obvious spam/gibberish, allow authentic single or multi-word brand searches
+    const isObviousGibberish = query.length < 3 || 
+      !/[aeiouy]/i.test(query) || 
+      /(.)\1{3,}/.test(query) ||
+      /^(test|asdf|qwerty|xyz|foo|bar|baz|fake|fakestore)$/i.test(qLower);
+
+    const isReal = !isObviousGibberish;
+
     groqAnalysis = {
-      isRealBrand: isRetailHeuristic,
-      canonicalName: query.charAt(0).toUpperCase() + query.slice(1),
+      isRealBrand: isReal,
+      canonicalName: query.split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" "),
       industry: isTravelHeuristic ? "travel" : (isSubHeuristic ? "subscriptions" : (isRetailHeuristic ? "ecommerce" : "other")),
       domain: `${query.toLowerCase().replace(/[^a-z0-9]/g, "")}.com`,
       briefDescription: "Online shopping store or merchant"

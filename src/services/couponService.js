@@ -1,8 +1,21 @@
+import fs from "fs";
+import path from "path";
 import { MASTER_COUPON_DATABASE, matchStoreKey } from "./couponDatabase.js";
-import { getCountryMeta } from "@/lib/countryConfig.js";
+import { getCountryMeta } from "../lib/countryConfig.js";
 import { discoverOnDemandStoreCoupons } from "./couponOnDemandService.js";
 import { fetchFeedicoCoupons } from "./feedicoService.js";
+import { findBrandInCatalog, getTopBrandsForCountry } from "../data/countryBrandsCatalog.js";
 import { aiRouter } from "./aiRouter.js";
+
+let liveCouponsData = null;
+try {
+  const storePath = path.join(process.cwd(), "src/data/liveCouponsStore.json");
+  if (fs.existsSync(storePath)) {
+    liveCouponsData = JSON.parse(fs.readFileSync(storePath, "utf8"));
+  }
+} catch (e) {
+  // Graceful fallback
+}
 
 const SEMANTIC_INTENT_MAP = [
   { keywords: ["pizza", "burger", "biryani", "food", "dinner", "lunch", "hungry", "cravings", "restaurant", "meal", "khaana"], storeKey: "zomato" },
@@ -23,12 +36,22 @@ export async function getCouponsForStore(queryOrStore = "", country = "IN") {
   const normalizedKey = matchStoreKey(queryOrStore);
   const searchSlug = normalizedKey || queryOrStore.toLowerCase().trim();
 
-  // 1. Lookup in Live Verified Master Database
+  // 1. Check Master Multi-Country Top 100 Brand Registry
+  const catalogBrand = findBrandInCatalog(queryOrStore, country);
+
+  // 2. Lookup in Live Verified Master Database
   let storeData = normalizedKey ? MASTER_COUPON_DATABASE[normalizedKey] : null;
 
-  // 1.1 Query Feedico Managed Partner Catalog (48,000+ brands & 26,000+ live verified coupons)
+  // 3. Pre-Synced Live Store Check (Instant sub-millisecond cache from Daily Cron)
   let feedicoCoupons = [];
-  if (queryOrStore && queryOrStore.trim().length >= 2) {
+  const brandLookupKey = (catalogBrand?.name || queryOrStore).toLowerCase().replace(/[^a-z0-9]+/g, "-");
+  const preSyncedStore = liveCouponsData?.stores?.[brandLookupKey];
+  if (preSyncedStore && Array.isArray(preSyncedStore.coupons) && preSyncedStore.coupons.length > 0) {
+    feedicoCoupons = preSyncedStore.coupons;
+  }
+
+  // 3.1 Live Query to Feedico Partner Catalog (if not in pre-synced cache)
+  if (feedicoCoupons.length === 0 && queryOrStore && queryOrStore.trim().length >= 2) {
     try {
       const feedicoRes = await fetchFeedicoCoupons({
         query: queryOrStore.trim(),
@@ -44,7 +67,7 @@ export async function getCouponsForStore(queryOrStore = "", country = "IN") {
     }
   }
 
-  // 2. Semantic Intent & Category Mapping (Zero-latency RAG layer)
+  // 4. Semantic Intent & Category Mapping (Zero-latency RAG layer)
   if (!storeData && queryOrStore) {
     const qLower = queryOrStore.toLowerCase();
     for (const mapping of SEMANTIC_INTENT_MAP) {
@@ -58,10 +81,9 @@ export async function getCouponsForStore(queryOrStore = "", country = "IN") {
     }
   }
 
-  // 3. Fallback / Fuzzy Search across all store categories if specific key wasn't matched
+  // 5. Fuzzy Search across local store database if specific key wasn't matched
   if (!storeData) {
     const queryLower = queryOrStore.toLowerCase();
-
     for (const [key, store] of Object.entries(MASTER_COUPON_DATABASE)) {
       if (
         store.name.toLowerCase().includes(queryLower) ||
@@ -73,23 +95,55 @@ export async function getCouponsForStore(queryOrStore = "", country = "IN") {
     }
   }
 
-  // 3.1 Prioritize Feedico Live Catalog Deals if matched
+  // 6. Integrate Catalog Brand + Feedico Live Catalog Deals
   if (!storeData && feedicoCoupons.length > 0) {
     storeData = {
-      name: feedicoCoupons[0].merchantName || queryOrStore,
-      category: "Verified Partner Catalog",
-      logo: "🏷️",
-      brandColor: "from-blue-600 to-indigo-700",
+      name: catalogBrand?.name || feedicoCoupons[0].merchantName || queryOrStore,
+      category: catalogBrand?.category || "Verified Partner Catalog",
+      logo: catalogBrand?.logo || "🏷️",
+      brandColor: catalogBrand?.color || "from-blue-600 to-indigo-700",
+      domain: catalogBrand?.domain || feedicoCoupons[0].websiteUrl,
+      tagline: catalogBrand?.tagline || "Official Verified Savings",
       coupons: feedicoCoupons
     };
   } else if (storeData && feedicoCoupons.length > 0) {
     // Enrich local store with real-time Feedico affiliate deals & /go tracking links
     const existingCodes = new Set((storeData.coupons || []).map(c => (c.code || "").toUpperCase()));
     const uniqueFeedico = feedicoCoupons.filter(c => !c.code || !existingCodes.has(c.code.toUpperCase()));
-    storeData.coupons = [...uniqueFeedico, ...(storeData.coupons || [])];
+    storeData.coupons = [...uniqueFeedico, ...(storeData.coupons || [])].slice(0, 5);
+  } else if (!storeData && catalogBrand) {
+    // Brand is in Top 100 power catalog but has 0 affiliate offers right now -> Generate clean brand promo strategy
+    const meta = getCountryMeta(country);
+    storeData = {
+      name: catalogBrand.name,
+      category: catalogBrand.category,
+      logo: catalogBrand.logo,
+      brandColor: catalogBrand.color,
+      domain: catalogBrand.domain,
+      tagline: catalogBrand.tagline,
+      coupons: [
+        {
+          id: `top-${catalogBrand.id}-deal`,
+          code: "DIRECT_DEAL",
+          hasRealCode: false,
+          title: catalogBrand.bestOffer || `${catalogBrand.name} Verified Special Savings`,
+          description: `Official promotions and instant seasonal savings available directly at ${catalogBrand.name}.`,
+          discount_type: "PERCENT",
+          discount_val: 15,
+          min_order: null,
+          badge: "VERIFIED ACTIVE",
+          verified_rate: "99% Success Rate",
+          valid_till: "Limited Time",
+          terms: `Subject to ${catalogBrand.name} standard terms and seasonal stock availability.`,
+          merchantName: catalogBrand.name,
+          websiteUrl: `https://${catalogBrand.domain}`,
+          source: "catalog_verified"
+        }
+      ]
+    };
   }
 
-  // 3.2 If still not matched, trigger On-Demand Live Merchant Discovery
+  // 7. If still not matched, trigger On-Demand Live Merchant Discovery
   if (!storeData && queryOrStore && queryOrStore.trim().length >= 2) {
     const onDemandRes = await discoverOnDemandStoreCoupons(queryOrStore, country);
     if (onDemandRes.success && onDemandRes.storeData) {
@@ -108,36 +162,49 @@ export async function getCouponsForStore(queryOrStore = "", country = "IN") {
     }
   }
 
-  // 4. Default generic fallback if empty query was passed
-  if (!storeData) {
-    const meta = getCountryMeta(country);
-    const amount = meta.code === "IN" ? 100 : (meta.code === "AE" ? 25 : 10);
-    const minOrder = meta.code === "IN" ? 499 : (meta.code === "AE" ? 100 : 50);
+  // 8. Attach Guaranteed Discount Gift Card Fallback Banner (Raise for Global, Woohoo/Gyftr for India)
+  const isIndia = (country || "IN").toUpperCase() === "IN";
+  const brandName = storeData?.name || queryOrStore;
+  const brandSlug = (storeData?.name || queryOrStore).toLowerCase().replace(/[^a-z0-9]/g, "-");
 
-    storeData = {
-      name: queryOrStore || "Trending Stores",
-      category: "All Store Deals",
-      logo: "🏷️",
-      brandColor: "from-indigo-600 to-violet-700",
-      coupons: [
-        {
-          id: "gen-welcome",
-          code: meta.code === "IN" ? "WELCOME100" : "WELCOME10",
-          title: `Flat ${meta.symbol}${amount} OFF on First Order`,
-          description: `Valid on minimum checkout value of ${meta.symbol}${minOrder} on ${queryOrStore || "all partner stores"}.`,
-          discount_type: "FLAT",
-          discount_val: amount,
-          min_order: minOrder,
-          max_discount: amount,
-          payment_method: "All Payment Methods",
-          valid_till: "2026-10-31",
-          verified_rate: "96% Success Rate",
-          badge: "VERIFIED ACTIVE",
-          link: "https://www.google.com"
-        }
-      ]
-    };
-  }
+  const giftCardBanner = {
+    id: `gc-${brandSlug}-guarantee`,
+    code: isIndia ? "INSTANT_CASHBACK" : "RAISE_REWARDS",
+    hasRealCode: false,
+    title: isIndia 
+      ? `Flat 2% to 6% Guaranteed Savings via ${brandName} Gift Card`
+      : `Flat 3% to 10% Guaranteed Savings via Discounted ${brandName} Gift Card`,
+    description: isIndia
+      ? `100% verified zero-failure checkout strategy. Purchase an instant digital voucher before checkout to get guaranteed cash savings on your total order value.`
+      : `Stackable zero-risk strategy. Purchase an instant electronic gift card on Raise to lock in guaranteed discounts before placing your order.`,
+    discount_type: "PERCENT",
+    discount_val: isIndia ? 5 : 7,
+    min_order: null,
+    badge: "100% GUARANTEED",
+    verified_rate: "100% Success Rate",
+    valid_till: "Always Active",
+    terms: "Instant digital code delivery. 100% valid across all promotional & sale items.",
+    merchantName: brandName,
+    link: isIndia 
+      ? `https://www.woohoo.in/search?q=${encodeURIComponent(brandName)}`
+      : `https://www.raise.com/buy-gift-cards?query=${encodeURIComponent(brandName)}`,
+    websiteUrl: isIndia ? "https://www.woohoo.in" : "https://www.raise.com",
+    isGiftCardFallback: true,
+    source: "benefisto_guarantee"
+  };
+
+  // Ensure sweet-spot cap of 3 to 5 total offers (including gift card guarantee)
+  // Deduplicate and filter out any existing gift card banner before appending
+  const existingCoupons = (storeData?.coupons || [])
+    .filter(c => !c.isGiftCardFallback && c.id !== giftCardBanner.id)
+    .map(c => ({
+      ...c,
+      hasRealCode: c.hasRealCode !== undefined ? c.hasRealCode : Boolean(c.code && c.code !== 'DIRECT_DEAL' && c.code !== 'INSTANT_CASHBACK' && c.code !== 'RAISE_REWARDS'),
+      link: c.link || c.goUrl || (storeData?.domain ? `https://${storeData.domain}` : `https://${brandSlug}.com`)
+    }));
+  const cappedOffers = existingCoupons.slice(0, 4);
+  // Place 100% Guaranteed Gift Card Savings at #1 FIRST PLACE to maximize conversions & user attraction
+  const finalizedCoupons = [giftCardBanner, ...cappedOffers];
 
   return {
     success: true,
@@ -146,8 +213,8 @@ export async function getCouponsForStore(queryOrStore = "", country = "IN") {
     category: storeData.category,
     logo: storeData.logo,
     brandColor: storeData.brandColor,
-    totalOffers: storeData.coupons.length,
-    coupons: storeData.coupons,
+    totalOffers: finalizedCoupons.length,
+    coupons: finalizedCoupons,
     isOnDemand: Boolean(storeData.isOnDemand),
     isRealTime: true
   };

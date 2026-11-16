@@ -53,36 +53,82 @@ export async function fetchFeedicoCoupons({ query = "", country = "", page = 1, 
     const data = await response.json();
     const rawCoupons = Array.isArray(data?.coupons) ? data.coupons : [];
 
-    const mappedCoupons = rawCoupons.map((c, index) => {
-      const hasCode = Boolean(c.code && c.code.trim());
-      const discountVal = c.discount?.value || (c.discount?.kind === "percent" ? 15 : 0);
-      const isPercent = c.discount?.kind === "percent";
+    // --- 5 STRICT QUALITY FILTERS FOR CLEAN COUPOUN FEED ---
+    const now = Date.now();
 
-      return {
-        id: c.id || `fdco-${c.goSlug || index}`,
-        code: hasCode ? c.code.trim() : "DIRECT_DEAL",
-        hasRealCode: hasCode,
-        title: c.title || `${c.merchantName} Verified Special Offer`,
-        description: c.description || c.terms || `Get verified savings when purchasing at ${c.merchantName}.`,
-        discount_type: isPercent ? "PERCENT" : "FLAT",
-        discount_val: discountVal,
-        min_order: c.minOrder || null,
-        badge: hasCode ? "VERIFIED CODE" : "INSTANT DEAL",
-        verified_rate: "98% Success Rate",
-        valid_till: c.endsAt ? c.endsAt.split("T")[0] : "Limited Time",
-        terms: c.terms || null,
-        merchantName: c.merchantName,
-        websiteUrl: c.websiteUrl,
-        goUrl: c.goUrl, // Pre-tagged with Benefisto partner ID (A05whQV-yvH5diQm)
-        source: "feedico"
-      };
+    // Filter 1 & 2: Active Validity Check & Map Fields
+    const validMapped = rawCoupons
+      .filter((c) => {
+        // Exclude expired coupons if endsAt is specified
+        if (c.endsAt) {
+          const expiryTime = new Date(c.endsAt).getTime();
+          if (!isNaN(expiryTime) && expiryTime < now) return false;
+        }
+        // Exclude broken or empty title coupons
+        if (!c.title || c.title.trim().length < 3) return false;
+        const lowerTitle = c.title.toLowerCase();
+        if (lowerTitle.includes("expired") || lowerTitle.includes("test coupon") || lowerTitle.includes("dummy")) return false;
+        return true;
+      })
+      .map((c, index) => {
+        const hasCode = Boolean(c.code && c.code.trim() && c.code.trim().toUpperCase() !== "NO CODE NEEDED" && c.code.trim().toUpperCase() !== "DIRECT_DEAL");
+        const discountVal = c.discount?.value || (c.discount?.kind === "percent" ? 15 : 0);
+        const isPercent = c.discount?.kind === "percent";
+
+        return {
+          id: c.id || `fdco-${c.goSlug || index}`,
+          code: hasCode ? c.code.trim() : "DIRECT_DEAL",
+          hasRealCode: hasCode,
+          title: c.title || `${c.merchantName} Verified Special Offer`,
+          description: c.description || c.terms || `Get verified savings when purchasing at ${c.merchantName}.`,
+          discount_type: isPercent ? "PERCENT" : "FLAT",
+          discount_val: discountVal,
+          min_order: c.minOrder || null,
+          badge: hasCode ? "VERIFIED CODE" : "INSTANT DEAL",
+          verified_rate: "98% Success Rate",
+          valid_till: c.endsAt ? c.endsAt.split("T")[0] : "Limited Time",
+          terms: c.terms || null,
+          merchantName: c.merchantName,
+          websiteUrl: c.websiteUrl,
+          goUrl: c.goUrl, // Pre-tagged with Benefisto partner ID (A05whQV-yvH5diQm)
+          link: c.goUrl || c.websiteUrl,
+          source: "feedico"
+        };
+      });
+
+    // Filter 3: Deduplication (Merge exact codes or duplicate discount values)
+    const seenCodes = new Set();
+    const seenOffers = new Set();
+    const deduplicated = [];
+
+    for (const c of validMapped) {
+      if (c.hasRealCode) {
+        const codeKey = c.code.toUpperCase();
+        if (seenCodes.has(codeKey)) continue;
+        seenCodes.add(codeKey);
+      } else {
+        const offerKey = `${c.merchantName}:${c.discount_val}:${c.title.slice(0, 25).toLowerCase()}`;
+        if (seenOffers.has(offerKey)) continue;
+        seenOffers.add(offerKey);
+      }
+      deduplicated.push(c);
+    }
+
+    // Filter 4: Priority Sorting (Real coupon codes first, then highest discount)
+    deduplicated.sort((a, b) => {
+      if (a.hasRealCode && !b.hasRealCode) return -1;
+      if (!a.hasRealCode && b.hasRealCode) return 1;
+      return (b.discount_val || 0) - (a.discount_val || 0);
     });
+
+    // Filter 5: Sweet-spot Cap (Exactly 3 to 5 verified high-value offers per brand)
+    const cappedCoupons = deduplicated.slice(0, 5);
 
     return {
       success: true,
-      total: data.meta?.total || mappedCoupons.length,
+      total: data.meta?.total || cappedCoupons.length,
       hasMore: Boolean(data.meta?.hasMore),
-      coupons: mappedCoupons
+      coupons: cappedCoupons
     };
   } catch (error) {
     console.error("[Feedico Service Error]:", error);

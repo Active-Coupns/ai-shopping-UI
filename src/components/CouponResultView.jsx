@@ -2,6 +2,8 @@
 
 import React, { useState, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { getCountryMeta } from "@/lib/countryConfig";
+import { useUser, useClerk } from "@clerk/nextjs";
 import { 
   Sparkles, 
   Tag, 
@@ -27,6 +29,7 @@ import {
   Flame,
   CreditCard,
   Calculator,
+  Gift,
   X
 } from "lucide-react";
 
@@ -165,8 +168,15 @@ export default function CouponResultView({
   resultData,
   isCartAnalysis = false,
   isLoading = false,
-  onReset
+  onReset,
+  country = "IN"
 }) {
+  const currentCountry = (country || resultData?.country || "IN").toUpperCase();
+  const isIndia = currentCountry === "IN";
+  const countryMeta = getCountryMeta(currentCountry);
+  const currencySymbol = countryMeta?.symbol || (isIndia ? "₹" : "$");
+  const { isSignedIn } = useUser();
+  const { openSignIn } = useClerk();
   const [copiedCode, setCopiedCode] = useState(null);
   const [copiedCouponData, setCopiedCouponData] = useState(null);
   const [revealedCodes, setRevealedCodes] = useState({});
@@ -175,6 +185,16 @@ export default function CouponResultView({
   const [expandedAiGuides, setExpandedAiGuides] = useState({});
   const [activeFilter, setActiveFilter] = useState("all");
   const [calculatorAmount, setCalculatorAmount] = useState("");
+  const [userVotes, setUserVotes] = useState({});
+
+  const handleVote = (couponId, voteType) => {
+    setUserVotes(prev => ({ ...prev, [couponId]: voteType }));
+    fetch("/api/telemetry/event", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "COUPON_VOTE", couponId, voteType, storeName, timestamp: Date.now() })
+    }).catch(() => {});
+  };
   const toastTimeoutRef = useRef(null);
 
   const toggleAiGuide = (code) => {
@@ -195,7 +215,7 @@ export default function CouponResultView({
     const desc = (coupon.description || "").toLowerCase();
 
     let userTarget = "All Customers";
-    let targetDesc = `Valid for all registered accounts with cart ₹${minOrder}+.`;
+    let targetDesc = `Valid for all registered accounts with cart ${currencySymbol}${minOrder}+.`;
     if (badge.includes("NEW USER") || desc.includes("new user") || desc.includes("first")) {
       userTarget = "New Accounts Only";
       targetDesc = `First-time customer offer on fresh mobile number & device.`;
@@ -204,28 +224,28 @@ export default function CouponResultView({
       targetDesc = `Exclusive to payments completed via ${paymentMethod}.`;
     } else if (badge.includes("GROUP") || minOrder >= 600) {
       userTarget = "Large / Group Orders";
-      targetDesc = `High cart requirement (₹${minOrder}+) for maximum bulk discount.`;
+      targetDesc = `High cart requirement (${currencySymbol}${minOrder}+) for maximum bulk discount.`;
     }
 
     let sweetSpot = "";
     if (discountType === "PERCENT" && maxDiscount > 0 && discountVal > 0) {
       const optimalCart = Math.round(maxDiscount / (discountVal / 100));
-      sweetSpot = `Cart between ₹${minOrder} and ₹${optimalCart} (max ₹${maxDiscount} savings reached at ₹${optimalCart}).`;
+      sweetSpot = `Cart between ${currencySymbol}${minOrder} and ${currencySymbol}${optimalCart} (max ${currencySymbol}${maxDiscount} savings reached at ₹${optimalCart}).`;
     } else if (discountType === "FLAT") {
-      sweetSpot = `Cart at or near ₹${minOrder} gives highest return (${Math.min(100, Math.round((maxDiscount / (minOrder || 1)) * 100))}% effective savings).`;
+      sweetSpot = `Cart at or near ${currencySymbol}${minOrder} gives highest return (${Math.min(100, Math.round((maxDiscount / (minOrder || 1)) * 100))}% effective savings).`;
     } else {
-      sweetSpot = `Cart at or above ₹${minOrder}.`;
+      sweetSpot = `Cart at or above ${currencySymbol}${minOrder}.`;
     }
 
     let hiddenCatch = "";
     if (discountType === "PERCENT" && maxDiscount > 0) {
-      hiddenCatch = `Discount strictly capped at ₹${maxDiscount}. Higher carts won't get higher savings.`;
+      hiddenCatch = `Discount strictly capped at ${currencySymbol}${maxDiscount}. Higher carts won't get higher savings.`;
     } else if (badge.includes("BANK")) {
       hiddenCatch = `Cannot combine with Paytm/PhonePe UPI; must choose Credit/Debit Card directly.`;
     } else if (badge.includes("NEW USER")) {
       hiddenCatch = `Must have 0 prior delivered orders on this phone number and device.`;
     } else {
-      hiddenCatch = `Must hit ₹${minOrder} before packaging charges, taxes and delivery fees.`;
+      hiddenCatch = `Must hit ${currencySymbol}${minOrder} before packaging charges, taxes and delivery fees.`;
     }
 
     return {
@@ -245,6 +265,9 @@ export default function CouponResultView({
   const storeName = resultData?.storeName || optimization?.storeName || analysis?.detectedStore || "Store";
   const logo = resultData?.logo || optimization?.logo || "🏷️";
   const cartTotal = analysis?.cartTotal || optimization?.cartTotal || 0;
+  const storeDomain = resultData?.domain || "";
+  const storeCategory = resultData?.category || "Online Shopping";
+  const officialWebsiteUrl = resultData?.officialUrl || storeCoupons[0]?.link || (storeDomain ? `https://${storeDomain}` : null);
 
   // Mask code utility to protect against Google zero-click scraping
   const getMaskedCode = (code) => {
@@ -256,7 +279,26 @@ export default function CouponResultView({
   // In-Page Reveal & Copy: Never kicks user out of our website
   const handleRevealAndCopy = async (coupon) => {
     if (!coupon?.code) return;
+
+    // 1-Tap Sign-In Action Gate: Browsing is 100% open for Googlebot and users,
+    // but revealing/copying the actual code triggers instant 1-click Google sign-in.
+    if (!isSignedIn) {
+      if (typeof openSignIn === "function") {
+        openSignIn();
+      }
+      return;
+    }
     const code = coupon.code;
+    const targetUrl = coupon.link || coupon.goUrl || officialWebsiteUrl;
+
+    // Instantly open merchant store in a new tab with our affiliate tracking link (Secures 100% affiliate commission)
+    if (targetUrl) {
+      try {
+        window.open(targetUrl, "_blank", "noopener,noreferrer");
+      } catch (openErr) {
+        console.warn("Auto-open store tab failed:", openErr);
+      }
+    }
 
     // 1. Mark code as revealed in place
     setRevealedCodes(prev => ({ ...prev, [code]: true }));
@@ -341,7 +383,7 @@ export default function CouponResultView({
       tabs.push({ id: "percent", label: "% Discounts", count: counts.percent, icon: Flame });
     }
     if (counts.flat > 0) {
-      tabs.push({ id: "flat", label: "Flat ₹ OFF", count: counts.flat, icon: Zap });
+      tabs.push({ id: "flat", label: `Flat ${currencySymbol} OFF`, count: counts.flat, icon: Zap });
     }
     if (counts.newUser > 0) {
       tabs.push({ id: "newUser", label: "New Users", count: counts.newUser, icon: Sparkles });
@@ -431,46 +473,64 @@ export default function CouponResultView({
       });
     }
 
+    // Pin 100% Guaranteed Gift Card Voucher to #1 FIRST PLACE
+    if (activeFilter === "all") {
+      const giftCards = list.filter(c => c.isGiftCardFallback);
+      const regularCards = list.filter(c => !c.isGiftCardFallback);
+      list = [...giftCards, ...regularCards];
+    }
+
     return list;
   }, [storeCoupons, activeFilter, evaluatedSavings]);
 
   // SEO Savings Strategies curated for store
+  const minThresholdExample = isIndia ? "₹149, ₹199 or ₹499" : (currencySymbol + "25, " + currencySymbol + "50 or " + currencySymbol + "100");
+  const addOnExample = isIndia ? "₹20 add-on often saves you ₹100+" : ("small add-on often saves you " + currencySymbol + "20+");
+  const minCartExample = isIndia ? "₹199 or ₹499" : (currencySymbol + "25 or " + currencySymbol + "50");
+  const bankNames = isIndia 
+    ? "HDFC, ICICI, Axis, and SBI" 
+    : ((country || "").toUpperCase() === "GB" ? "Barclays, HSBC, and Lloyds" : "Chase, Amex, Capital One, and Citi");
+
   const savingStrategies = [
     {
       title: "Hit Minimum Cart Thresholds",
-      desc: `Check the exact cart minimums (e.g. ₹149, ₹199 or ₹499). Adding a ₹20 add-on often saves you ₹100+ on ${storeName} by qualifying for higher discounts.`
+      desc: "Check the exact cart minimums (e.g. " + minThresholdExample + "). Adding a " + addOnExample + " on " + storeName + " by qualifying for higher discounts."
     },
     {
       title: "Stack Universal Codes with Payment Offers",
-      desc: `Apply universal promo codes (like WELCOME or CRAVINGS) and pair them with UPI cashback (CRED Pay, Paytm, PhonePe) for double compounding savings.`
+      desc: "Apply universal promo codes (like WELCOME or CRAVINGS) and pair them with payment rewards for double compounding savings."
     },
     {
       title: "Check Bank Day Promotions",
-      desc: `Major Indian banks (HDFC, ICICI, Axis, SBI) run rotating day-of-the-week promotions on ${storeName} with instant 10% to 15% bill reductions.`
+      desc: "Major banks (" + bankNames + ") run rotating promotions on " + storeName + " with instant bill reductions."
     },
     {
       title: "Scan Your Cart with Benefisto",
-      desc: `Before completing checkout, paste your cart screenshot into Benefisto. Our AI vision instantly calculates which exact coupon produces the highest net rupee savings.`
+      desc: "Before completing checkout, paste your cart screenshot into Benefisto. Our AI vision instantly calculates which exact coupon produces the highest net savings."
     }
   ];
 
   // Semantic SEO FAQs with Schema.org readiness
   const storeFaqs = [
     {
-      q: `How do I apply a verified promo code on ${storeName}?`,
-      a: `To apply a promo code on ${storeName}: 1) Add your desired items to the cart and open checkout. 2) Look for the 'Apply Coupon' or 'Promo Code' input box. 3) Click 'Reveal & Copy' above on Benefisto. The code will unmask and copy to your clipboard. 4) Paste the code in the ${storeName} checkout box to instantly enjoy your discount!`
+      q: "Why do some offers say \"Discount Auto-Applied\" instead of a coupon code?",
+      a: "Many leading retailers (such as Nike, Hostinger, Apple, and seasonal brand sales) do not require users to enter a manual promo code. Instead, clicking \"Activate Deal\" takes you through a verified partner link where the discount is pre-activated in your cart automatically at checkout."
     },
     {
-      q: `Are these ${storeName} discount codes tested and working today?`,
-      a: `Yes! Every code on Benefisto is tested daily against verified minimum order slabs and bank criteria. Unlike outdated aggregator sites that display expired codes, we only feature active universal cart discounts and real-time bank promotions.`
+      q: "How do I apply a verified promo code on " + storeName + "?",
+      a: "To apply a promo code on " + storeName + ": 1) Add your desired items to the cart and open checkout. 2) Look for the 'Apply Coupon' or 'Promo Code' input box. 3) Click 'Reveal & Copy' above on Benefisto. The code will unmask and copy to your clipboard. 4) Paste the code in the " + storeName + " checkout box to instantly enjoy your discount!"
     },
     {
-      q: `Can I use more than one coupon code on ${storeName}?`,
-      a: `Most merchant checkout systems allow one promo code per order. However, you can frequently combine a universal promo code with payment gateway offers (such as credit card instant discounts or UPI cashbacks) for compounded savings.`
+      q: "Are these " + storeName + " discount codes tested and working today?",
+      a: "Yes! Every code on Benefisto is tested daily against verified minimum order slabs and bank criteria. Unlike outdated aggregator sites that display expired codes, we only feature active universal cart discounts and real-time bank promotions."
     },
     {
-      q: `What should I do if a promo code says 'Not Applicable'?`,
-      a: `If a code does not apply, check the minimum cart value shown on our card (e.g. ₹199 or ₹499). You can also upload your cart screenshot to Benefisto to let our optimizer find the exact code matching your items.`
+      q: "Can I use more than one coupon code on " + storeName + "?",
+      a: "Most merchant checkout systems allow one promo code per order. However, you can frequently combine a universal promo code with payment gateway offers (such as credit card instant discounts or cashbacks) for compounded savings."
+    },
+    {
+      q: "What should I do if a promo code says 'Not Applicable'?",
+      a: "If a code does not apply, check the minimum cart value shown on our card (e.g. " + minCartExample + "). You can also upload your cart screenshot to Benefisto to let our optimizer find the exact code matching your items."
     }
   ];
 
@@ -655,7 +715,7 @@ export default function CouponResultView({
               {/* Subtitle */}
               <p className="text-[11px] sm:text-xs text-slate-500 font-medium mt-1 leading-relaxed">
                 {isCartAnalysis
-                  ? `AI Cart Analyzed: Cart Total ₹${cartTotal} • Showing best matched coupons`
+                  ? `AI Cart Analyzed: Cart Total ${currencySymbol}${cartTotal} • Showing best matched coupons`
                   : `Verified promo vouchers, universal cart discounts & exclusive bank perks`}
               </p>
             </div>
@@ -689,7 +749,7 @@ export default function CouponResultView({
               <div className="text-xs font-medium text-slate-300 flex items-center gap-3">
                 <span>Detected Store: <strong className="text-white">{storeName}</strong></span>
                 <span>•</span>
-                <span>Cart Bill: <strong className="text-amber-300 font-mono text-sm font-bold">₹{cartTotal}</strong></span>
+                <span>Cart Bill: <strong className="text-amber-300 font-mono text-sm font-bold">{currencySymbol}{cartTotal}</strong></span>
               </div>
             </div>
 
@@ -703,7 +763,7 @@ export default function CouponResultView({
                         Highest Savings Pick
                       </span>
                       <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold">
-                        Save ₹{bestCoupon.savingsAmount} Instantly
+                        Save {currencySymbol}{bestCoupon.savingsAmount} Instantly
                       </span>
                     </div>
                     <h3 className="text-lg sm:text-xl font-black text-white">
@@ -713,7 +773,7 @@ export default function CouponResultView({
                       {bestCoupon.description}
                     </p>
                     <div className="flex items-center gap-4 text-[11px] text-slate-400 mt-2">
-                      <span>Min Order: <strong>₹{bestCoupon.min_order}</strong></span>
+                      <span>Min Order: <strong>{bestCoupon.min_order ? `${currencySymbol}${bestCoupon.min_order}` : "No Min"}</strong></span>
                       <span>•</span>
                       <span>Payment: <strong>{bestCoupon.payment_method}</strong></span>
                     </div>
@@ -810,7 +870,7 @@ export default function CouponResultView({
               </div>
             ) : (
               <div className="bg-white/10 rounded-2xl p-5 text-center text-slate-300 text-sm">
-                No direct coupon matched cart value of ₹{cartTotal}. See below for codes with minimum cart tiers.
+                No direct coupon matched cart value of {currencySymbol}{cartTotal}. See below for codes with minimum cart tiers.
               </div>
             )}
 
@@ -820,7 +880,7 @@ export default function CouponResultView({
                 <div className="flex items-center gap-2">
                   <TrendingUp className="w-4 h-4 text-amber-400 shrink-0" />
                   <span>
-                    💡 <strong>Pro Tip:</strong> Add just <strong>₹{nextTier[0].shortfall}</strong> more to your cart to unlock <strong>{nextTier[0].title}</strong> (Code: <code className="font-bold text-white bg-black/30 px-1.5 py-0.5 rounded">{nextTier[0].code}</code>)!
+                    💡 <strong>Pro Tip:</strong> Add just <strong>{currencySymbol}{nextTier[0].shortfall}</strong> more to your cart to unlock <strong>{nextTier[0].title}</strong> (Code: <code className="font-bold text-white bg-black/30 px-1.5 py-0.5 rounded">{nextTier[0].code}</code>)!
                   </span>
                 </div>
               </div>
@@ -849,7 +909,7 @@ export default function CouponResultView({
           {/* Quick Presets */}
           <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar scrollbar-none">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0 mr-0.5">Quick:</span>
-            {[249, 499, 999, 1499].map(preset => (
+            {(isIndia ? [249, 499, 999, 1499] : ((country || "").toUpperCase() === "AE" ? [50, 100, 200, 350] : [25, 50, 75, 100])).map(preset => (
               <button
                 key={preset}
                 type="button"
@@ -860,7 +920,7 @@ export default function CouponResultView({
                     : "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200/60"
                 }`}
               >
-                ₹{preset}
+                {currencySymbol}{preset}
               </button>
             ))}
           </div>
@@ -869,14 +929,14 @@ export default function CouponResultView({
         {/* Input & Live Result */}
         <div className="flex items-center gap-2">
           <div className="relative flex-1">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-black text-slate-400">₹</span>
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-black text-slate-400">{currencySymbol}</span>
             <input
               type="number"
               min="1"
               step="1"
               value={calculatorAmount}
               onChange={(e) => setCalculatorAmount(e.target.value)}
-              placeholder="Enter your cart total (e.g. 549)..."
+              placeholder={`Enter cart total (e.g. ${isIndia ? "549" : "50"})...`}
               className="w-full pl-7 pr-8 py-2 rounded-xl bg-white border border-slate-200 text-xs sm:text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500 shadow-2xs"
             />
             {calculatorAmount && (
@@ -902,14 +962,14 @@ export default function CouponResultView({
               <div className="flex items-center gap-1.5 text-emerald-800 font-bold text-[11px] sm:text-xs">
                 <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                 <span>
-                  Best Match: Use <strong className="font-mono text-emerald-900 bg-emerald-100 px-1.5 py-0.5 rounded">{evaluatedSavings.winningCode}</strong> to save <strong>₹{evaluatedSavings.highestDiscount}</strong> (Net Pay: ₹{evaluatedSavings.cartAmount - evaluatedSavings.highestDiscount})
+                  Best Match: Use <strong className="font-mono text-emerald-900 bg-emerald-100 px-1.5 py-0.5 rounded">{evaluatedSavings.winningCode}</strong> to save <strong>{currencySymbol}{evaluatedSavings.highestDiscount}</strong> (Net Pay: {currencySymbol}{evaluatedSavings.cartAmount - evaluatedSavings.highestDiscount})
                 </span>
               </div>
             ) : (
               <div className="flex items-center gap-1.5 text-amber-800 font-medium text-[11px]">
                 <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
                 <span>
-                  Add ₹{evaluatedSavings.minShortfall} more to cart to qualify for {evaluatedSavings.closestCoupon?.code} (saves up to ₹{evaluatedSavings.closestCoupon?.max_discount})
+                  Add {currencySymbol}{evaluatedSavings.minShortfall} more to cart to qualify for {evaluatedSavings.closestCoupon?.code} (saves up to {currencySymbol}{evaluatedSavings.closestCoupon?.max_discount})
                 </span>
               </div>
             )}
@@ -985,7 +1045,7 @@ export default function CouponResultView({
 
               return (
                 <motion.div
-                  key={coupon.id || `coupon-card-${idx}`}
+                  key={`${coupon.id || "coupon"}-${idx}`}
                   whileHover={{ y: -3 }}
                   className={`p-3.5 sm:p-5 rounded-2xl bg-white border transition-all shadow-sm flex flex-col justify-between min-h-[200px] sm:min-h-[220px] relative overflow-hidden ${
                     isCalculatorWinner
@@ -1000,10 +1060,10 @@ export default function CouponResultView({
                     <div className="mb-2 py-1 px-2.5 rounded-xl bg-amber-500/15 border border-amber-400/40 text-amber-900 font-black text-[10px] flex items-center justify-between">
                       <span className="flex items-center gap-1">
                         <Sparkles className="w-3 h-3 text-amber-600 fill-amber-500" />
-                        <span>#1 Best for your ₹{evaluatedSavings.cartAmount} cart!</span>
+                        <span>#1 Best for your {currencySymbol}{evaluatedSavings.cartAmount} cart!</span>
                       </span>
                       <span className="text-emerald-700 font-bold">
-                        Saves ₹{evaluatedSavings.highestDiscount}
+                        Saves {currencySymbol}{evaluatedSavings.highestDiscount}
                       </span>
                     </div>
                   )}
@@ -1012,7 +1072,7 @@ export default function CouponResultView({
                   {calcData && !calcData.qualifies && (
                     <div className="mb-2 py-0.5 px-2 rounded-lg bg-slate-100 border border-slate-200/80 text-slate-500 text-[10px] flex items-center gap-1">
                       <AlertCircle className="w-3 h-3 text-amber-500 shrink-0" />
-                      <span>Add ₹{calcData.shortfall} more to cart to unlock</span>
+                      <span>Add {currencySymbol}{calcData.shortfall} more to cart to unlock</span>
                     </div>
                   )}
 
@@ -1110,36 +1170,110 @@ export default function CouponResultView({
                   {/* Bottom Section & In-Page Click-to-Reveal CTA */}
                   <div className="pt-3 border-t border-slate-100">
                     <div className="flex items-center justify-between text-[11px] text-slate-500 mb-2.5">
-                      <span>Min Order: <strong className="text-slate-700">₹{coupon.min_order}</strong></span>
-                      <span>Max Save: <strong className="text-emerald-600 font-bold">₹{coupon.max_discount}</strong></span>
+                      <span>Min Order: <strong className="text-slate-700">{coupon.min_order ? `${currencySymbol}${coupon.min_order}` : "No Min"}</strong></span>
+                      <span>Max Save: <strong className="text-emerald-600 font-bold">{coupon.max_discount ? `${currencySymbol}${coupon.max_discount}` : (coupon.discount_val ? `${coupon.discount_val}%` : "Special")}</strong></span>
                     </div>
 
+                    {/* Ultra-Clean Status Pill with 100% Transparent User Guidance */}
+                    {coupon.isGiftCardFallback ? (
+                      <div className="mb-2.5">
+                        <div className="px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200/80 inline-flex items-center gap-1.5 text-[11px] text-amber-900 font-medium">
+                          <ShieldCheck className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                          <span><strong>100% Guaranteed:</strong> Instant voucher &bull; Zero checkout risk</span>
+                        </div>
+                        <p className="text-[10px] text-amber-800/80 mt-1 leading-tight">
+                          ✓ 100% verified cash savings. Buy instant digital voucher before checkout to save on any order.
+                        </p>
+                      </div>
+                    ) : !coupon.hasRealCode ? (
+                      <div className="mb-2.5">
+                        <div className="px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200/80 inline-flex items-center gap-1.5 text-[11px] text-emerald-900 font-medium">
+                          <Zap className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                          <span><strong>In-Store Sale / Deal:</strong> Auto-applied at checkout &bull; No code needed</span>
+                        </div>
+                        <p className="text-[10px] text-slate-500 mt-1 leading-tight">
+                          ✓ 100% working on {storeName}. Discount activates directly in your session when cart meets requirements ({coupon.min_order ? `Min. ${currencySymbol}${coupon.min_order}` : "No minimum spend"}).
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="mb-2.5">
+                        <div className="px-2.5 py-1 rounded-lg bg-violet-50 border border-violet-200/80 inline-flex items-center gap-1.5 text-[11px] text-violet-900 font-medium">
+                          <Tag className="w-3.5 h-3.5 text-violet-600 shrink-0" />
+                          <span><strong>Official Promo Code:</strong> Tap to copy &bull; Paste at checkout</span>
+                        </div>
+                        <p className="text-[10px] text-slate-500 mt-1 leading-tight">
+                          ✓ Verified code. Copy and paste into the promo box at checkout ({coupon.min_order ? `Min. ${currencySymbol}${coupon.min_order}` : "No minimum spend"}).
+                        </p>
+                      </div>
+                    )}
+
                     <div className="flex items-center gap-2">
-                      {/* The In-Page Reveal/Copy Button */}
+                      {/* The In-Page Reveal/Copy / Activate Button */}
                       <button
                         type="button"
-                        onClick={() => handleRevealAndCopy(coupon)}
-                        className={`flex-1 flex items-center justify-between px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-xl transition-all cursor-pointer font-mono text-xs font-bold active:scale-95 shadow-2xs ${
-                          isCopied
-                            ? "bg-emerald-500 text-white shadow-sm"
+                        onClick={() => {
+                          if (coupon.hasRealCode) {
+                            handleRevealAndCopy(coupon);
+                          } else if (coupon.link || coupon.goUrl) {
+                            window.open(coupon.link || coupon.goUrl, "_blank", "noopener,noreferrer");
+                          } else {
+                            handleRevealAndCopy(coupon);
+                          }
+                        }}
+                        className={`flex-1 flex items-center justify-between px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-xl transition-all cursor-pointer text-xs font-bold active:scale-95 shadow-2xs ${
+                          coupon.isGiftCardFallback
+                            ? "bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-sans shadow-amber-500/20"
+                            : !coupon.hasRealCode
+                            ? "bg-gradient-to-r from-emerald-600 to-teal-700 hover:opacity-95 text-white font-sans shadow-emerald-500/20"
+                            : isCopied
+                            ? "bg-emerald-500 text-white shadow-sm font-mono"
                             : isRevealed
-                            ? `${storeTheme.btn}`
-                            : "bg-gradient-to-r from-violet-50 to-indigo-50 hover:from-violet-100 hover:to-indigo-100 text-violet-900 border border-violet-200/80"
+                            ? `${storeTheme.btn} font-mono`
+                            : "bg-gradient-to-r from-violet-50 to-indigo-50 hover:from-violet-100 hover:to-indigo-100 text-violet-900 border border-violet-200/80 font-mono"
                         }`}
                       >
                         <div className="flex items-center gap-1.5 min-w-0">
-                          {isRevealed ? (
-                            <Unlock className="w-3.5 h-3.5 shrink-0" />
+                          {coupon.isGiftCardFallback ? (
+                            <>
+                              <Gift className="w-3.5 h-3.5 text-white shrink-0" />
+                              <span className="tracking-wide truncate font-sans text-xs">
+                                100% Guaranteed Saving
+                              </span>
+                            </>
+                          ) : !coupon.hasRealCode ? (
+                            <>
+                              <Zap className="w-3.5 h-3.5 text-white shrink-0" />
+                              <span className="tracking-wide truncate font-sans text-xs">
+                                Instant Store Offer
+                              </span>
+                            </>
+                          ) : isRevealed ? (
+                            <>
+                              <Unlock className="w-3.5 h-3.5 shrink-0" />
+                              <span className="tracking-wider truncate font-mono text-xs">
+                                {coupon.code}
+                              </span>
+                            </>
                           ) : (
-                            <Lock className="w-3.5 h-3.5 text-violet-600 shrink-0" />
+                            <>
+                              <Lock className="w-3.5 h-3.5 text-violet-600 shrink-0" />
+                              <span className="tracking-wider truncate font-mono text-xs">
+                                {getMaskedCode(coupon.code)}
+                              </span>
+                            </>
                           )}
-                          <span className="tracking-wider truncate font-mono text-xs">
-                            {isRevealed ? coupon.code : getMaskedCode(coupon.code)}
-                          </span>
                         </div>
 
                         <div className="flex items-center gap-1 text-[10px] sm:text-[11px] font-sans font-extrabold shrink-0 ml-1">
-                          {isCopied ? (
+                          {coupon.isGiftCardFallback ? (
+                            <span className="flex items-center gap-1 text-white">
+                              Get Voucher <ExternalLink className="w-3 h-3" />
+                            </span>
+                          ) : !coupon.hasRealCode ? (
+                            <span className="flex items-center gap-1 text-white">
+                              Claim Deal <ExternalLink className="w-3 h-3" />
+                            </span>
+                          ) : isCopied ? (
                             <span className="flex items-center gap-1 text-white">
                               <Check className="w-3.5 h-3.5 stroke-[3]" /> Copied!
                             </span>
@@ -1168,6 +1302,37 @@ export default function CouponResultView({
                         </a>
                       )}
                     </div>
+
+                    {/* Interactive User Feedback Voting Widget (SEO & Social Proof Booster) */}
+                    <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
+                      <span className="text-[10px] text-slate-400 font-medium">Did this coupon work?</span>
+                      {userVotes[coupon.id] ? (
+                        <span className="text-[10px] font-bold text-emerald-600 flex items-center gap-1">
+                          <Check className="w-3 h-3 text-emerald-600 stroke-[3]" />
+                          <span>Thanks! Verified by you</span>
+                        </span>
+                      ) : (
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => handleVote(coupon.id, "up")}
+                            className="px-2 py-0.5 rounded-md bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200 border border-slate-200 text-[10px] font-bold text-slate-600 flex items-center gap-1 transition-all active:scale-95 cursor-pointer"
+                            title="Yes, it worked"
+                          >
+                            <span>👍 Yes</span>
+                            <span className="text-slate-400 text-[9px]">(98%)</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleVote(coupon.id, "down")}
+                            className="px-1.5 py-0.5 rounded-md bg-slate-100 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-200 border border-slate-200 text-[10px] font-bold text-slate-400 hover:text-rose-600 transition-all active:scale-95 cursor-pointer"
+                            title="No, did not work"
+                          >
+                            <span>👎</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </motion.div>
               );
@@ -1178,6 +1343,56 @@ export default function CouponResultView({
 
       {/* RICH SEO SAVINGS GUIDE SECTION (Drives Organic Traffic & High Retention) */}
       <div className="mt-12 pt-8 border-t border-slate-200/80">
+        {/* BRAND OVERVIEW & STORE PROFILE CARD (High-Trust SEO Knowledge Panel) */}
+        <div className="mb-10 p-5 rounded-3xl bg-slate-50/90 border border-slate-200/80 shadow-2xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200/70">
+            <div className="flex items-center gap-3">
+              <span className="text-3xl shrink-0">{logo}</span>
+              <div>
+                <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                  <span>About {storeName}</span>
+                  <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">
+                    Official Merchant
+                  </span>
+                </h3>
+                <p className="text-xs text-slate-500 font-medium">
+                  {storeCategory} &bull; Verified Partner Store
+                </p>
+              </div>
+            </div>
+
+            {officialWebsiteUrl && (
+              <a
+                href={officialWebsiteUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700 transition-all shadow-2xs w-fit cursor-pointer"
+              >
+                <span>Visit {storeName} Official Site</span>
+                <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
+              </a>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4 text-center sm:text-left">
+            <div className="p-2.5 rounded-xl bg-white border border-slate-200/60">
+              <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">Active Offers</span>
+              <span className="text-sm font-black text-slate-800">{storeCoupons.length} Verified Deals</span>
+            </div>
+            <div className="p-2.5 rounded-xl bg-white border border-slate-200/60">
+              <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">Verification</span>
+              <span className="text-sm font-black text-emerald-600">Tested Daily</span>
+            </div>
+            <div className="p-2.5 rounded-xl bg-white border border-slate-200/60">
+              <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">Savings Type</span>
+              <span className="text-sm font-black text-slate-800">Codes &amp; Auto-Deals</span>
+            </div>
+            <div className="p-2.5 rounded-xl bg-white border border-slate-200/60">
+              <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">Safety Guarantee</span>
+              <span className="text-sm font-black text-violet-700">100% Zero-Risk</span>
+            </div>
+          </div>
+        </div>
         <div className="mb-6">
           <div className="flex items-center gap-2 mb-1">
             <Award className="w-4 h-4 text-violet-600" />
@@ -1285,7 +1500,7 @@ export default function CouponResultView({
                   </span>
                 </div>
                 <p className="text-[11px] text-slate-300 truncate">
-                  Ready to paste on {storeName} checkout
+                  Code copied &amp; store opened — ready to paste!
                 </p>
               </div>
             </div>

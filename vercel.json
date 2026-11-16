@@ -19,6 +19,10 @@
       "schedule": "0 11 * * *"
     },
     {
+      "path": "/api/cron/sync-coupons",
+      "schedule": "0 2,14 * * *"
+    },
+    {
       "path": "/api/cron/sync-subscriptions?country=IN",
       "schedule": "0 2 * * 0"
     },

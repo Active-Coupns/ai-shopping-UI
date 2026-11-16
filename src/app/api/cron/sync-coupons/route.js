@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { MASTER_COUPON_DATABASE } from "@/services/couponDatabase";
 import { fetchFeedicoCoupons } from "@/services/feedicoService";
+import liveCouponsData from "@/data/liveCouponsStore.json";
 
 export const maxDuration = 30;
 export const dynamic = "force-dynamic";
@@ -56,7 +57,9 @@ export async function GET(request) {
     const auditResults = {
       timestamp: new Date().toISOString(),
       auditedStoresCount: storeKeys.length,
-      totalCouponsVerified: totalCoupons,
+      preSyncedBrandsCount: Object.keys(liveCouponsData?.stores || {}).length,
+      preSyncedCouponsCount: liveCouponsData?.metadata?.totalCouponsStored || 0,
+      preSyncedLastUpdatedAt: liveCouponsData?.metadata?.lastSyncedAt || null,
       feedicoPartnerStatus: feedicoStatus,
       feedicoLiveCatalogCoupons: feedicoLiveCount,
       activeCouponsRatio: totalCoupons > 0 ? `${Math.round((verifiedActive / totalCoupons) * 100)}%` : "100%",

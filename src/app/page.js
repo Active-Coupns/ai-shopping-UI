@@ -574,6 +574,8 @@ export default function Home() {
 
     if (appState === "results" && searchQuery) {
       handleSearchSubmitForCountry(searchQuery, code);
+    } else if (appState === "coupon_results" && searchQuery) {
+      handleCouponSearch(searchQuery, code);
     }
   };
 
@@ -599,6 +601,8 @@ export default function Home() {
 
     if (appState === "results" && searchQuery) {
       handleSearchSubmitForCountry(searchQuery, code);
+    } else if (appState === "coupon_results" && searchQuery) {
+      handleCouponSearch(searchQuery, code);
     }
   };
 
@@ -727,8 +731,9 @@ export default function Home() {
     setAppState("results");
   };
 
-  const handleCouponSearch = async (storeQuery) => {
+  const handleCouponSearch = async (storeQuery, targetCountry = null) => {
     if (!storeQuery) return;
+    const countryToUse = targetCountry || selectedCountry;
     setSearchQuery(storeQuery);
     setCouponResultData(null);
     setIsApiLoading(true);
@@ -736,7 +741,7 @@ export default function Home() {
     setIsCartAnalysis(false);
     setSearchIntent("COUPONS");
     try {
-      const res = await fetch(`/api/coupons?store=${encodeURIComponent(storeQuery)}&country=${selectedCountry}`);
+      const res = await fetch(`/api/coupons?store=${encodeURIComponent(storeQuery)}&country=${countryToUse}`);
       const data = await res.json();
       setCouponResultData(data);
     } catch (err) {
@@ -1074,6 +1079,7 @@ export default function Home() {
             >
               <CouponResultView
                 resultData={couponResultData}
+                country={selectedCountry}
                 isCartAnalysis={isCartAnalysis}
                 isLoading={isApiLoading}
                 onReset={handleReset}

@@ -1,4 +1,5 @@
-import { getAllSubscriptionSlugs } from "@/data/subscriptionsSeoData";
+import { getAllSubscriptionSlugs } from "../data/subscriptionsSeoData.js";
+import { COUNTRY_TOP_BRANDS } from "../data/countryBrandsCatalog.js";
 
 export default function sitemap() {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://www.benefisto.com");
@@ -49,5 +50,22 @@ export default function sitemap() {
     priority: 0.9,
   }));
 
-  return [...staticRoutes, ...subscriptionRoutes];
+  const couponRoutes = [];
+  const seenBrands = new Set();
+
+  for (const list of Object.values(COUNTRY_TOP_BRANDS)) {
+    for (const brand of list) {
+      if (!seenBrands.has(brand.id)) {
+        seenBrands.add(brand.id);
+        couponRoutes.push({
+          url: `${baseUrl}/coupons/${brand.id}`,
+          lastModified: new Date(),
+          changeFrequency: "daily",
+          priority: 0.9,
+        });
+      }
+    }
+  }
+
+  return [...staticRoutes, ...subscriptionRoutes, ...couponRoutes];
 }

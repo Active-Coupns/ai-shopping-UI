@@ -861,6 +861,7 @@ export default function SearchHero({
         <div className="w-full flex flex-col items-center">
           {/* Interactive Store Cards Carousel */}
           <StoreCardCarousel
+            country={country}
             onSelectStore={(storeName) => {
               if (onCouponSearch) {
                 onCouponSearch(storeName);

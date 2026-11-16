@@ -7,7 +7,7 @@
  */
 
 import { verifyStoreEntity } from "./couponEntityResolver.js";
-import { getCountryMeta } from "@/lib/countryConfig.js";
+import { getCountryMeta } from "../lib/countryConfig.js";
 import { isSafeRedirectUrl } from "./securityShield.js";
 
 /**
@@ -87,11 +87,12 @@ export async function discoverOnDemandStoreCoupons(rawStoreName, country = "IN")
   if (GROQ_API_KEY) {
     try {
       const prompt = `You are the Benefisto E-Commerce Promo Code Architect for ${canonicalName} (${domain}) in country ${normCountry}.
+Use local currency symbol "${currencySymbol}" (${meta.currency || "USD"}).
 Generate 3 authentic, realistic, verified promo codes and cardholder savings for this specific merchant:
 
 1. Code 1: New Customer / Welcome Code (e.g. "WELCOME10", "FIRSTORDER", or specific brand welcome discount).
 2. Code 2: Cart-Tier / Bulk Saving Code (e.g. "SAVE15", "SUMMER20", with minimum cart requirement).
-3. Code 3: Bank / Card Privilege or Instant UPI Perk (e.g. "HDFCFEST", "ICICICART", or instant payment discount).
+3. Code 3: Bank / Card Privilege or Instant Payment Perk (e.g. "CHASEPERK", "AMEX10", "HDFC100" based on ${normCountry}).
 
 OUTPUT JSON STRICTLY MATCHING THIS FORMAT:
 {
@@ -107,7 +108,7 @@ OUTPUT JSON STRICTLY MATCHING THIS FORMAT:
       "discount_val": number,
       "min_order": number,
       "max_discount": number,
-      "payment_method": "All Payment Methods" | "Credit/Debit Cards" | "UPI / Net Banking",
+      "payment_method": "All Payment Methods" | "Credit/Debit Cards" | "Bank Card Privilege",
       "badge": "NEW USER" | "TRENDING ACTIVE" | "BANK EXCLUSIVE" | "VERIFIED ACTIVE",
       "verified_rate": "98% Success Rate"
     }
@@ -144,8 +145,10 @@ OUTPUT JSON STRICTLY MATCHING THIS FORMAT:
   // Deterministic Fallback if Groq was unavailable
   if (!generatedCoupons || !Array.isArray(generatedCoupons.coupons) || generatedCoupons.coupons.length === 0) {
     const isIN = normCountry === "IN";
-    const welcomeVal = isIN ? 150 : 15;
-    const welcomeMin = isIN ? 999 : 50;
+    const isAE = normCountry === "AE";
+    const isGB = normCountry === "GB";
+    const welcomeVal = isIN ? 150 : (isAE ? 25 : (isGB ? 10 : 15));
+    const welcomeMin = isIN ? 999 : (isAE ? 100 : (isGB ? 40 : 50));
 
     generatedCoupons = {
       category: "Online Shopping & Retail",
@@ -207,6 +210,7 @@ OUTPUT JSON STRICTLY MATCHING THIS FORMAT:
       ...c,
       id: `ondemand-${canonicalName.toLowerCase()}-${idx}`,
       code: sanitizeCouponField(c.code).replace(/[^A-Za-z0-9_-]/g, "").toUpperCase(),
+      hasRealCode: Boolean(c.code && sanitizeCouponField(c.code).trim().toUpperCase() !== "DIRECT_DEAL"),
       title: sanitizeCouponField(c.title),
       description: sanitizeCouponField(c.description),
       badge: sanitizeCouponField(c.badge),

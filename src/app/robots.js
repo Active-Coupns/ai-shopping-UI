@@ -7,6 +7,10 @@ export default function robots() {
         userAgent: "*",
         allow: [
           "/",
+          "/coupons",
+          "/coupons/",
+          "/subscriptions",
+          "/subscriptions/",
           "/about",
           "/privacy",
           "/terms",
