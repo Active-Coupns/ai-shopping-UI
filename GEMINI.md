@@ -356,8 +356,8 @@ ShopSmart AI is **NOT a generic coupon website**, nor a spammy affiliate blog. I
 - Instant feedback state ("Thanks! Verified by you ✓") with background telemetry logging.
 - Increases dwell time and fulfills Google Helpful Content quality requirements.
 
-### 8.5. Twice-Daily Automated Sync Cron (`vercel.json`)
-- Runs every 12 hours (`"0 2,14 * * *"` at 2:00 AM & 2:00 PM UTC).
+### 8.5. Daily Automated Sync Cron (`vercel.json`)
+- Runs daily at 2:00 AM UTC (`"0 2 * * *"` — Vercel Hobby plan compliant).
 - Enforces 5 quality filters: prunes expired codes (`endsAt < now`), excludes broken/dummy titles, merges duplicates, and limits to sweet-spot top 3–5 converting offers.
 
 ---

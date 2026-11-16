@@ -8,18 +8,6 @@ import CouponStorePageClient from "./CouponStorePageClient";
 export const dynamic = "force-dynamic";
 
 /**
- * Generate static params for the most popular anchor brands
- */
-export async function generateStaticParams() {
-  const popularSlugs = [
-    "zomato", "swiggy", "blinkit", "zepto", "dominos", "myntra", "nykaa", "ajio", "croma", "flipkart",
-    "amazon-in", "nike", "target", "walmart", "best-buy", "asos", "gymshark", "boots", "currys",
-    "noon", "sharaf-dg", "lululemon", "canadian-tire", "the-iconic", "woolworths"
-  ];
-  return popularSlugs.map((store) => ({ store }));
-}
-
-/**
  * Helper to determine country and canonical brand data from slug
  */
 function resolveBrandContext(storeSlug, queryCountry) {

@@ -40,8 +40,8 @@ SUMMARY OF CHANGES & RESOLVED ISSUES
    - Immediate feedback state ("Thanks! Verified by you ✓") with background telemetry logging.
    - Drastically increases dwell time, boosts engagement, and sends strong algorithmic trust signals to Googlebot.
 
-6. TWICE-DAILY AUTOMATED CRON JOB (vercel.json)
-   - Configured /api/cron/sync-coupons with schedule "0 2,14 * * *" (Every 12 hours: 2:00 AM & 2:00 PM UTC).
+6. DAILY AUTOMATED SYNC CRON JOB (vercel.json)
+   - Configured /api/cron/sync-coupons with schedule "0 2 * * *" (Daily at 2:00 AM UTC, aligned with Vercel Hobby plan daily cron policy).
    - 5 Strict quality filters: prunes expired codes (endsAt < now), removes dummy/broken coupons, deduplicates exact codes, caps sweet-spot top 3-5 converting offers, and verifies Bearer CRON_SECRET security.
 
 --------------------------------------------------------------------------------

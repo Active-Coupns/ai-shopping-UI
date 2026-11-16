@@ -20,7 +20,7 @@
     },
     {
       "path": "/api/cron/sync-coupons",
-      "schedule": "0 2,14 * * *"
+      "schedule": "0 2 * * *"
     },
     {
       "path": "/api/cron/sync-subscriptions?country=IN",

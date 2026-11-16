@@ -17,7 +17,7 @@
   3. **100% Guaranteed Gift Card Savings Voucher**: Firmly pinned to Position #1 across all brands for zero-failure instant checkout discounts.
   4. **2-in-1 Reveal & Copy Security**: Copies code + auto-opens merchant site in a new tab, dropping the affiliate tracking cookie to secure 100% commission attribution.
   5. **SEO Helpful Content Voting**: Interactive `Did this coupon work? 👍 Yes (98%) | 👎` widget on all cards for maximum dwell time and engagement.
-  6. **Twice-Daily Cron Job (`vercel.json`)**: `"0 2,14 * * *"` running every 12 hours (2:00 AM & 2:00 PM UTC) to prune expired codes and ingest active deals.
+  6. **Daily Automated Cron Job (`vercel.json`)**: `"0 2 * * *"` running daily at 2:00 AM UTC (Vercel Hobby plan compliant) to prune expired codes and ingest active deals.
 - **SaaS Partnerships (Secret & NachoNacho)**:
   - **Secret (`joinsecret.com`)**: White-Label & Embed application submitted (Jean-Loup reviewing). Awaiting confirmation email for perks portal integration.
   - **NachoNacho (`nachonacho.com`)**: Company registration initiated (`benefisto`, context created). Phone verification 500 error ticket raised with support for backend verification.
