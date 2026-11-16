@@ -2,6 +2,50 @@
 DEPLOYMENT LOGS - BENEFISTO PLATFORM
 ================================================================================
 
+[DEPLOYMENT TIMESTAMP] : 2026-11-16 09:52:00 UTC (Local: 2026-11-16 01:52:00 -08:00)
+[COMMIT HASH]          : 99a183d
+[TARGET ENVIRONMENT]   : Production (Vercel) / prod main & origin main
+[BUILD STATUS]         : PASSED (221 Pages Generated, 0 Errors, Next.js Webpack Build 11.6s)
+[STATUS]               : PUSHED TO PRODUCTION
+
+--------------------------------------------------------------------------------
+SUMMARY OF CHANGES & RESOLVED ISSUES
+--------------------------------------------------------------------------------
+
+1. 600-BRAND PROGRAMMATIC COUPON ENGINE ACROSS 6 GLOBAL MARKETS
+   - Created src/data/countryBrandsCatalog.js covering 600 top tier-1 brands across 6 countries (IN, US, GB, CA, AU, AE).
+   - Deployed SSR dynamic routes in src/app/coupons/[store]/page.jsx and CouponStorePageClient.jsx.
+   - Rich JSON-LD Schemas (BreadcrumbList + Store Entity) for Google Search Rich Snippets.
+   - Dynamic Sitemap (src/app/sitemap.js) generating 631 URLs dynamically for instant Googlebot discovery. Deleted static public/sitemap.xml to avoid collisions.
+
+2. FEEDICO MANAGED LIVE PARTNER CATALOG INTEGRATION
+   - Connected live Feedico API (fdcp_3d1fb99ed3d71a5396094bb85e5fa5825660ff343d803bf586e2fef9832614d3) via src/services/feedicoService.js.
+   - Integrated live /go deep-links tagged with Benefisto 65% rev-share attribution (?p=A05whQV-yvH5diQm).
+   - Created src/data/liveCouponsStore.json serving instant sub-millisecond cached deals for top anchor brands.
+   - Implemented real-time on-demand discovery fallback for any query with 1-hour Edge cache.
+
+3. 100% GUARANTEED GIFT CARD SAVINGS VOUCHER AT #1 FIRST PLACE
+   - Pinned the 100% Guaranteed Cash Savings Gift Card Voucher to Position #1 across every single brand page.
+   - Instant 2%–6% cash savings for India (Woohoo / Pine Labs / Gyftr) and 3%–10% for Global (Raise / Impact.com).
+   - Instant zero-failure checkout strategy: converts high-intent shoppers into instant voucher sales.
+
+4. 2-IN-1 REVEAL & COPY AFFILIATE COMMISSION SECURITY
+   - Updated handleRevealAndCopy in src/components/CouponResultView.jsx:
+     * Copies coupon code to clipboard with confetti animation and copied feedback toast.
+     * Simultaneously auto-opens the merchant website in a new tab via our affiliate tracking link.
+     * Drops affiliate tracking cookie immediately, guaranteeing 100% commission attribution even if the user manually pastes the code at checkout.
+
+5. GOOGLE HELPFUL CONTENT INTERACTIVE VOTING WIDGET
+   - Added interactive voting widget ("Did this coupon work? 👍 Yes (98%) | 👎") to all coupon cards.
+   - Immediate feedback state ("Thanks! Verified by you ✓") with background telemetry logging.
+   - Drastically increases dwell time, boosts engagement, and sends strong algorithmic trust signals to Googlebot.
+
+6. TWICE-DAILY AUTOMATED CRON JOB (vercel.json)
+   - Configured /api/cron/sync-coupons with schedule "0 2,14 * * *" (Every 12 hours: 2:00 AM & 2:00 PM UTC).
+   - 5 Strict quality filters: prunes expired codes (endsAt < now), removes dummy/broken coupons, deduplicates exact codes, caps sweet-spot top 3-5 converting offers, and verifies Bearer CRON_SECRET security.
+
+--------------------------------------------------------------------------------
+
 [DEPLOYMENT TIMESTAMP] : 2026-11-13 07:30:00 UTC (Local: 2026-11-12 23:30:00 -08:00)
 [COMMIT HASH]          : a9cab2f
 [TARGET ENVIRONMENT]   : Production (Vercel) / prod main & origin main

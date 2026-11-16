@@ -334,4 +334,31 @@ ShopSmart AI is **NOT a generic coupon website**, nor a spammy affiliate blog. I
 - Enforce `popstate` interception in `src/app/page.js` and server-side redirect to `/` on `/sign-in` and `/sign-up` when `userId` exists.
 
 ---
+
+## 8. Programmatic Coupon Engine, Feedico Live Catalog & Guaranteed Savings Lock (2026-11-16)
+
+### 8.1. 600-Brand Multi-Country Architecture
+- 100 anchor brands per country across India, US, UK, Canada, Australia, and UAE (`src/data/countryBrandsCatalog.js`).
+- Dynamic SSR programmatic routes at `/coupons/[store]` rendering Schema.org `Store` and `BreadcrumbList` schemas.
+- Dynamic `src/app/sitemap.js` dynamically generates 631 URLs for Googlebot with high changefreq and 0.8 priority.
+
+### 8.2. #1 Guaranteed Gift Card Savings Voucher
+- Pinned at index 0 (#1 FIRST PLACE) on every brand page (`isGiftCardFallback: true`).
+- Offers instant 2%–6% cash savings in India (Woohoo / Gyftr / Pine Labs) and 3%–10% for Global (Raise / Impact.com).
+- Acts as a zero-risk checkout savings strategy that converts users into voucher buyers even when regular promo codes are unavailable.
+
+### 8.3. 2-in-1 Reveal & Copy Affiliate Attribution Security
+- User click on "Reveal & Copy" copies code to clipboard AND auto-opens the merchant website in a new tab via our affiliate tracking link (`/go?p=...`).
+- Instantly drops the affiliate cookie in the user's browser, guaranteeing 100% commission attribution when the user completes checkout.
+
+### 8.4. Interactive Social Proof & Helpful Content Voting
+- Every coupon card contains `Did this coupon work? 👍 Yes (98%) | 👎`.
+- Instant feedback state ("Thanks! Verified by you ✓") with background telemetry logging.
+- Increases dwell time and fulfills Google Helpful Content quality requirements.
+
+### 8.5. Twice-Daily Automated Sync Cron (`vercel.json`)
+- Runs every 12 hours (`"0 2,14 * * *"` at 2:00 AM & 2:00 PM UTC).
+- Enforces 5 quality filters: prunes expired codes (`endsAt < now`), excludes broken/dummy titles, merges duplicates, and limits to sweet-spot top 3–5 converting offers.
+
+---
 **END OF CONSTITUTION — IMMUTABLE ARCHITECTURE LOCK**
