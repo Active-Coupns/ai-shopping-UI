@@ -175,6 +175,7 @@ export default function CouponResultView({
   const currentCountry = (country || resultData?.country || "IN").toUpperCase();
   const isIndia = currentCountry === "IN";
   const countryMeta = getCountryMeta(currentCountry);
+  const bankingMeta = getCountryBankingMeta(currentCountry);
   const currencySymbol = countryMeta?.symbol || (isIndia ? "₹" : "$");
   const { isSignedIn } = useUser();
   const { openSignIn } = useClerk();
