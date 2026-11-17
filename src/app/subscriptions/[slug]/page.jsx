@@ -7,7 +7,7 @@ import {
   TrendingUp, Award, Gift, Smartphone, Monitor, Info,
   Bot, Cloud, Gamepad2, Dumbbell, Palette, Briefcase,
   Layers, Volume2, Shield, Calendar, CheckCircle2, ChevronDown,
-  GraduationCap, Building, Tag, CheckSquare
+  GraduationCap, Building, Tag, CheckSquare, AlertCircle
 } from "lucide-react";
 import { 
   getUniversalSubscriptionBySlug, 
