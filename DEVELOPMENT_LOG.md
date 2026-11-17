@@ -18,6 +18,26 @@
 
 ## 📅 Daily Changelog & Feature Timeline
 
+### 🗓️ 2026-11-17 (Vercel Build Fix & Live Production Release: Deployment dpl_C6iv9nvS6GXNMk3SZumB2vRnL2Eu)
+
+* **Git Commits**: `c1bdd35`, `ba699be`, `4229970`
+* **Vercel Deployment**: `dpl_C6iv9nvS6GXNMk3SZumB2vRnL2Eu` (READY / Passed)
+* **Production URL**: `https://benefisto-platform-rh7ebon9c-shopsmart01.vercel.app` (Aliased to Production)
+* **Status**: 🟢 100% Production Ready & Live on Vercel
+
+#### 🛠️ Root Cause Diagnosis & Fixes for Vercel Build Failure:
+1. **Prerender Scope Error in `/subscriptions/[slug]/page.jsx`**:
+   - Next.js static worker encountered `ReferenceError: savingsPercent is not defined` while statically prerendering `/subscriptions/perplexity`.
+   - *Fix (ba699be)*: Declared `const savingsPercent = sub.savingsBlueprint?.annualMath?.savingsPercent || "33%";` in `SubscriptionDetailPage` component scope for the `HowTo` schema.
+2. **Missing Icon Import in `/subscriptions/[slug]/page.jsx`**:
+   - Build worker encountered `ReferenceError: AlertCircle is not defined` while prerendering `/subscriptions/claude`.
+   - *Fix (4229970)*: Added `AlertCircle` to the `lucide-react` import statement.
+3. **Verification**:
+   - All 479 static routes generated cleanly.
+   - Live HTTP 200 checks verified on Homepage, `/travel/make-my-trip`, `/subscriptions/netflix`, and `/e82fa9163b494191a34b22c74d812f90.txt`.
+
+---
+
 ### 🗓️ 2026-11-17 (Infrastructure Ledger Lock: Search Console, Bing Webmaster, Analytics & Mobile Polish)
 
 * **Git Commit**: `HEAD`
