@@ -1,4 +1,4 @@
-import { UK_SUBSCRIPTIONS_CATALOG } from "./subscriptionsCatalogUK";
+import { UK_SUBSCRIPTIONS_CATALOG } from "./subscriptionsCatalogUK.js";
 import { Redis } from "@upstash/redis";
 
 const UPSTASH_REDIS_REST_URL = process.env.UPSTASH_REDIS_REST_URL || "";

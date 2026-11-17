@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { 
   Tv, Film, PlayCircle, Sparkles, Check, ExternalLink, 
   ShieldCheck, Copy, ChevronRight, ChevronDown, X, Zap, ArrowRight,
@@ -23,6 +24,7 @@ export default function SubscriptionsView({
   onBack,
   selectedCountry = "IN" 
 }) {
+  const router = useRouter();
   const { isSignedIn } = useUser();
   const { openSignIn } = useClerk();
   const isUS = selectedCountry === "US";
@@ -85,10 +87,19 @@ export default function SubscriptionsView({
 
   // Entity verification trigger when query has no local matches in catalogSubs
   useEffect(() => {
+    let cancelled = false;
+
     if (!debouncedQuery || debouncedQuery.length < 3) {
-      setVerifiedEntity(null);
-      setIsVerifyingEntity(false);
-      return;
+      const timer = setTimeout(() => {
+        if (!cancelled) {
+          setVerifiedEntity(null);
+          setIsVerifyingEntity(false);
+        }
+      }, 0);
+      return () => {
+        cancelled = true;
+        clearTimeout(timer);
+      };
     }
 
     const exactLocalMatch = catalogSubs.some(
@@ -99,12 +110,18 @@ export default function SubscriptionsView({
     );
 
     if (exactLocalMatch) {
-      setVerifiedEntity(null);
-      setIsVerifyingEntity(false);
-      return;
+      const timer = setTimeout(() => {
+        if (!cancelled) {
+          setVerifiedEntity(null);
+          setIsVerifyingEntity(false);
+        }
+      }, 0);
+      return () => {
+        cancelled = true;
+        clearTimeout(timer);
+      };
     }
 
-    let cancelled = false;
     setIsVerifyingEntity(true);
 
     fetch("/api/subscriptions/verify-entity", {
@@ -241,22 +258,51 @@ export default function SubscriptionsView({
   // Global Projection Toggle: "direct" (actual plan price) or "annualized" (1-year projection)
   const [projectionMode, setProjectionMode] = useState("direct");
 
-  const getSubMatchesCategory = (subCat, tabId) => {
-    if (tabId === "all") return true;
-    if (tabId === "video") return subCat === "video";
-    if (tabId === "music") return subCat === "audio" || subCat === "music";
-    if (tabId === "ai_design") return subCat === "ai_creative" || subCat === "ai_design";
-    if (tabId === "cloud_work") return subCat === "cloud_work" || subCat === "cloud" || subCat === "productivity" || subCat === "security";
-    if (tabId === "gaming") return subCat === "gaming";
-    if (tabId === "fitness") return subCat === "fitness";
-    if (tabId === "bundle") return subCat === "combo" || subCat === "bundle" || subCat === "delivery";
-    return subCat === tabId;
+  // Primary Hub Mode: "ott" (Streaming & Entertainment) vs "software" (SaaS, AI & Cloud Tools)
+  const [activeHubMode, setActiveHubMode] = useState("ott");
+
+  const isSoftwareSub = (sub) => {
+    const cat = (sub.category || "").toLowerCase();
+    const id = (sub.id || "").toLowerCase();
+    if (["ai_creative", "ai_tools", "cloud_work", "dev_tools", "security", "productivity", "design", "cloud_hosting", "ecommerce"].includes(cat)) {
+      return true;
+    }
+    if (["chatgpt", "canva", "adobe_creative", "copilot", "google_one", "microsoft_365", "icloud", "notion", "figma", "hostinger", "nordvpn", "github", "slack", "perplexity", "claude", "clickup", "zoom", "replit", "cursor", "shopify", "expressvpn", "surfshark", "jetbrains", "grammarly", "1password"].includes(id)) {
+      return true;
+    }
+    return false;
   };
 
-  const categoryDefinitions = useMemo(() => [
+  const isOttSub = (sub) => !isSoftwareSub(sub);
+
+  const getSubMatchesCategory = (sub, tabId) => {
+    if (tabId === "all") return true;
+    const cat = (sub.category || "").toLowerCase();
+    const id = (sub.id || "").toLowerCase();
+
+    // OTT categories
+    if (tabId === "video") return cat === "video";
+    if (tabId === "music") return cat === "audio" || cat === "music";
+    if (tabId === "gaming") return cat === "gaming";
+    if (tabId === "fitness") return cat === "fitness";
+    if (tabId === "bundle") return cat === "combo" || cat === "bundle" || cat === "delivery";
+
+    // Software categories
+    if (tabId === "ai_tools") return cat === "ai_creative" || cat === "ai_tools" || ["chatgpt", "perplexity", "claude", "copilot", "cursor"].includes(id);
+    if (tabId === "design") return cat === "design" || cat === "ai_creative" || ["figma", "canva", "adobe_creative"].includes(id);
+    if (tabId === "productivity") return cat === "productivity" || cat === "cloud_work" || ["notion", "slack", "clickup", "zoom", "grammarly", "google_one", "microsoft_365"].includes(id);
+    if (tabId === "dev_tools") return cat === "dev_tools" || cat === "developer" || ["github", "cursor", "jetbrains", "replit"].includes(id);
+    if (tabId === "cloud_hosting") return cat === "cloud_hosting" || cat === "hosting" || ["hostinger", "bluehost", "namecheap"].includes(id);
+    if (tabId === "security") return cat === "security" || cat === "privacy" || ["nordvpn", "surfshark", "expressvpn", "1password"].includes(id);
+    if (tabId === "ecommerce") return cat === "ecommerce" || cat === "business" || ["shopify", "quickbooks"].includes(id);
+
+    return cat === tabId;
+  };
+
+  const ottCategoryDefinitions = useMemo(() => [
     { 
       id: "all", 
-      name: "All Passes", 
+      name: "All Streaming", 
       icon: Tv, 
       bgGradient: "from-indigo-900 via-indigo-950 to-slate-950",
       iconBg: "bg-indigo-500/25 border-indigo-400/40 text-indigo-300"
@@ -274,20 +320,6 @@ export default function SubscriptionsView({
       icon: Volume2, 
       bgGradient: "from-emerald-900 via-teal-950 to-slate-950",
       iconBg: "bg-emerald-500/25 border-emerald-400/40 text-emerald-300"
-    },
-    { 
-      id: "ai_design", 
-      name: "AI & Creative", 
-      icon: Palette, 
-      bgGradient: "from-purple-900 via-fuchsia-950 to-slate-950",
-      iconBg: "bg-purple-500/25 border-purple-400/40 text-purple-300"
-    },
-    { 
-      id: "cloud_work", 
-      name: "Work & Cloud", 
-      icon: Cloud, 
-      bgGradient: "from-sky-900 via-blue-950 to-slate-950",
-      iconBg: "bg-sky-500/25 border-sky-400/40 text-sky-300"
     },
     { 
       id: "gaming", 
@@ -312,20 +344,92 @@ export default function SubscriptionsView({
     }
   ], []);
 
+  const softwareCategoryDefinitions = useMemo(() => [
+    { 
+      id: "all", 
+      name: "All Software", 
+      icon: Bot, 
+      bgGradient: "from-indigo-900 via-indigo-950 to-slate-950",
+      iconBg: "bg-indigo-500/25 border-indigo-400/40 text-indigo-300"
+    },
+    { 
+      id: "ai_tools", 
+      name: "AI & Intelligence", 
+      icon: Sparkles, 
+      bgGradient: "from-purple-900 via-fuchsia-950 to-slate-950",
+      iconBg: "bg-purple-500/25 border-purple-400/40 text-purple-300"
+    },
+    { 
+      id: "design", 
+      name: "Design & Creative", 
+      icon: Palette, 
+      bgGradient: "from-pink-900 via-rose-950 to-slate-950",
+      iconBg: "bg-pink-500/25 border-pink-400/40 text-pink-300"
+    },
+    { 
+      id: "productivity", 
+      name: "Productivity & Office", 
+      icon: Briefcase, 
+      bgGradient: "from-blue-900 via-indigo-950 to-slate-950",
+      iconBg: "bg-blue-500/25 border-blue-400/40 text-blue-300"
+    },
+    { 
+      id: "dev_tools", 
+      name: "Developer Tools", 
+      icon: Layers, 
+      bgGradient: "from-emerald-900 via-teal-950 to-slate-950",
+      iconBg: "bg-emerald-500/25 border-emerald-400/40 text-emerald-300"
+    },
+    { 
+      id: "cloud_hosting", 
+      name: "Cloud & Web Hosting", 
+      icon: Cloud, 
+      bgGradient: "from-sky-900 via-blue-950 to-slate-950",
+      iconBg: "bg-sky-500/25 border-sky-400/40 text-sky-300"
+    },
+    { 
+      id: "security", 
+      name: "Security & VPN", 
+      icon: Shield, 
+      bgGradient: "from-amber-900 via-orange-950 to-slate-950",
+      iconBg: "bg-amber-500/25 border-amber-400/40 text-amber-300"
+    },
+    { 
+      id: "ecommerce", 
+      name: "E-Commerce & Biz", 
+      icon: Zap, 
+      bgGradient: "from-violet-900 via-purple-950 to-slate-950",
+      iconBg: "bg-violet-500/25 border-violet-400/40 text-violet-300"
+    }
+  ], []);
+
+  const categoryDefinitions = useMemo(() => {
+    return activeHubMode === "software" ? softwareCategoryDefinitions : ottCategoryDefinitions;
+  }, [activeHubMode, softwareCategoryDefinitions, ottCategoryDefinitions]);
+
+  const modeSubs = useMemo(() => {
+    if (activeHubMode === "ott") return catalogSubs.filter(isOttSub);
+    if (activeHubMode === "software") return catalogSubs.filter(isSoftwareSub);
+    return catalogSubs;
+  }, [catalogSubs, activeHubMode]);
+
+  const ottCount = useMemo(() => catalogSubs.filter(isOttSub).length, [catalogSubs]);
+  const softwareCount = useMemo(() => catalogSubs.filter(isSoftwareSub).length, [catalogSubs]);
+
   const categoryCounts = useMemo(() => {
-    const counts = { all: catalogSubs.length };
+    const counts = { all: modeSubs.length };
     categoryDefinitions.forEach(cat => {
       if (cat.id !== "all") {
-        counts[cat.id] = catalogSubs.filter(s => getSubMatchesCategory(s.category, cat.id)).length;
+        counts[cat.id] = modeSubs.filter(s => getSubMatchesCategory(s, cat.id)).length;
       }
     });
     return counts;
-  }, [catalogSubs, categoryDefinitions]);
+  }, [modeSubs, categoryDefinitions]);
 
   // Filter subscriptions based on search and category
   const filteredSubs = useMemo(() => {
-    return catalogSubs.filter((sub) => {
-      const matchCat = getSubMatchesCategory(sub.category, selectedCategory);
+    return modeSubs.filter((sub) => {
+      const matchCat = getSubMatchesCategory(sub, selectedCategory);
       if (!searchQuery.trim()) return matchCat;
       const q = searchQuery.toLowerCase();
       const matchName = (sub.name || "").toLowerCase().includes(q);
@@ -333,18 +437,17 @@ export default function SubscriptionsView({
       const matchShows = (sub.popularShows || []).some((s) => s.toLowerCase().includes(q));
       return matchCat && (matchName || matchTag || matchShows);
     });
-  }, [catalogSubs, searchQuery, selectedCategory]);
+  }, [modeSubs, searchQuery, selectedCategory]);
 
-  const handleCopyCode = (code) => {
-    if (!isSignedIn) {
-      if (typeof openSignIn === "function") {
-        openSignIn();
-      }
-      return;
-    }
+  const handleCopyCode = (code, directUrl = null) => {
     navigator.clipboard?.writeText(code);
     setCopiedCode(code);
     setTimeout(() => setCopiedCode(null), 2500);
+
+    // 2-in-1 Reveal & Open Merchant with Affiliate Tracking
+    if (directUrl && typeof window !== "undefined") {
+      window.open(directUrl, "_blank", "noopener,noreferrer");
+    }
   };
 
   const handleOpenAiAdvisor = () => {
@@ -471,7 +574,7 @@ export default function SubscriptionsView({
   return (
     <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       {/* 1. Header & Navigation Back Bar */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-5">
         <div>
           <div className="flex items-center gap-2 mb-1 flex-wrap">
             <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider bg-rose-500/10 text-rose-500 border border-rose-500/20 flex items-center gap-1">
@@ -485,10 +588,14 @@ export default function SubscriptionsView({
             </span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-            Digital Subscriptions &amp; OTT Pass Hub
+            {activeHubMode === "software" 
+              ? "Software, SaaS & AI Tools Savings Hub" 
+              : "Digital Subscriptions & OTT Pass Hub"}
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 font-medium">
-            Explore official multi-tier plans, compare screen limits &amp; 4K quality, and unlock 4-Level Savings Blueprints.
+            {activeHubMode === "software"
+              ? "Official multi-tier SaaS pricing, Annual vs Monthly math (16%-35% off), Student licenses & Team split blueprints."
+              : "Explore official multi-tier plans, compare screen limits & 4K quality, and unlock 4-Level Savings Blueprints."}
           </p>
         </div>
 
@@ -532,18 +639,70 @@ export default function SubscriptionsView({
         </div>
       </div>
 
+      {/* Primary Switcher: OTT vs Software */}
+      <div className="mb-6 p-2 bg-gradient-to-r from-slate-100 via-slate-50 to-indigo-50/50 rounded-2xl border border-slate-200 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <button
+            type="button"
+            onClick={() => { setActiveHubMode("ott"); setSelectedCategory("all"); }}
+            className={`flex-1 sm:flex-initial flex items-center justify-center gap-2.5 px-5 sm:px-6 py-2.5 rounded-xl font-black text-xs sm:text-sm transition-all cursor-pointer ${
+              activeHubMode === "ott"
+                ? "bg-white text-rose-600 shadow-sm ring-1 ring-slate-200"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            <Film className="w-4 h-4 text-rose-500" />
+            <span>🎬 OTT &amp; Streaming</span>
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
+              activeHubMode === "ott" ? "bg-rose-100 text-rose-700" : "bg-slate-200 text-slate-600"
+            }`}>
+              {ottCount}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => { setActiveHubMode("software"); setSelectedCategory("all"); }}
+            className={`flex-1 sm:flex-initial flex items-center justify-center gap-2.5 px-5 sm:px-6 py-2.5 rounded-xl font-black text-xs sm:text-sm transition-all cursor-pointer ${
+              activeHubMode === "software"
+                ? "bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-md ring-1 ring-indigo-500/30"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            <Bot className="w-4 h-4" />
+            <span>💻 Software, SaaS &amp; AI Tools</span>
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
+              activeHubMode === "software" ? "bg-white/20 text-white" : "bg-slate-200 text-slate-600"
+            }`}>
+              {softwareCount}
+            </span>
+          </button>
+        </div>
+
+        <div className="text-[11px] font-bold text-slate-500 hidden md:flex items-center gap-2 pr-2">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span>Switch seamlessly between Streaming Passes and Software Tools</span>
+        </div>
+      </div>
+
       {/* 2. Top Banner: AI Decision Guide CTA */}
-      <div className="mb-6 p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-indigo-900 via-indigo-950 to-slate-900 text-white shadow-lg border border-indigo-800/40 flex flex-col md:flex-row items-center justify-between gap-4">
+      <div className={`mb-6 p-4 sm:p-5 rounded-3xl text-white shadow-lg border flex flex-col md:flex-row items-center justify-between gap-4 transition-all ${
+        activeHubMode === "software"
+          ? "bg-gradient-to-r from-slate-900 via-indigo-950 to-blue-950 border-indigo-700/40"
+          : "bg-gradient-to-r from-indigo-900 via-indigo-950 to-slate-900 border-indigo-800/40"
+      }`}>
         <div className="flex items-center gap-3.5">
           <div className="w-10 h-10 rounded-2xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center shrink-0">
             <Sparkles className="w-5 h-5 text-amber-300 animate-pulse" />
           </div>
           <div>
             <h2 className="font-extrabold text-sm sm:text-base text-white">
-              Benefisto Subscription Optimizer
+              {activeHubMode === "software" ? "Benefisto Software & SaaS Optimizer" : "Benefisto Subscription Optimizer"}
             </h2>
             <p className="text-xs text-indigo-200/80 font-medium max-w-xl">
-              Don&apos;t pay full price upfront. Discover if your telecom provider or credit card unlocks complimentary access and bundled savings.
+              {activeHubMode === "software"
+                ? "Never pay full price for SaaS. Discover student edu licenses, annual discount math, and team seat sharing."
+                : "Don't pay full price upfront. Discover if your telecom provider or credit card unlocks complimentary access and bundled savings."}
             </p>
           </div>
         </div>
@@ -554,7 +713,7 @@ export default function SubscriptionsView({
           className="w-full md:w-auto px-5 py-2.5 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs shadow-md flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-95 shrink-0"
         >
           <Bot className="w-4 h-4 fill-slate-950" />
-          <span>Chat with AI OTT Advisor</span>
+          <span>{activeHubMode === "software" ? "Chat with AI Software Advisor" : "Chat with AI OTT Advisor"}</span>
           <ArrowRight className="w-3.5 h-3.5" />
         </button>
       </div>
@@ -566,7 +725,7 @@ export default function SubscriptionsView({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search passes, streaming apps, or series..."
+            placeholder={activeHubMode === "software" ? "Search SaaS tools, AI models, hosting, developer apps, VPNs..." : "Search passes, streaming apps, or series..."}
             className="w-full px-4 py-3 pl-11 rounded-2xl bg-white border border-slate-200 text-slate-800 text-xs sm:text-sm font-semibold placeholder:text-slate-400 shadow-2xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
           />
           <Tv className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
@@ -849,29 +1008,32 @@ export default function SubscriptionsView({
                             </div>
 
                             {/* Level 4: Promo Code with 1-Click Copy */}
-                            <div className="text-xs flex items-center justify-between gap-2 text-slate-700 pt-1.5 border-t border-slate-100">
-                              <div className="flex items-center gap-1.5">
+                            <div data-nosnippet="true" className="text-xs flex items-center justify-between gap-2 text-slate-700 pt-1.5 border-t border-slate-100">
+                              <div data-nosnippet="true" className="flex items-center gap-1.5">
                                 <span className="px-1.5 py-0.5 rounded-md bg-purple-100 text-purple-800 font-black text-[10px] shrink-0">
                                   L4 CODE
                                 </span>
-                                <code className="text-[11px] font-black text-slate-900 bg-slate-50 px-2 py-0.5 rounded border border-purple-200">
-                                  {sub.savingsBlueprint?.coupons?.[0]?.code || "STUDENTVIP"}
+                                <code className="text-[11px] font-black text-slate-900 bg-slate-50 px-2 py-0.5 rounded border border-purple-200 font-mono">
+                                  {copiedCode === (sub.savingsBlueprint?.coupons?.[0]?.code || "STUDENTVIP") 
+                                    ? (sub.savingsBlueprint?.coupons?.[0]?.code || "STUDENTVIP") 
+                                    : "••••••••"}
                                 </code>
                               </div>
                               <button
                                 type="button"
-                                onClick={() => handleCopyCode(sub.savingsBlueprint?.coupons?.[0]?.code || "STUDENTVIP")}
+                                data-nosnippet="true"
+                                onClick={() => handleCopyCode(sub.savingsBlueprint?.coupons?.[0]?.code || "STUDENTVIP", sub.officialUrl || sub.website)}
                                 className="px-2.5 py-1 rounded-lg bg-slate-50 hover:bg-slate-100 text-indigo-600 font-bold text-[10px] border border-indigo-200 flex items-center gap-1 cursor-pointer transition-all active:scale-95"
                               >
                                 {copiedCode === (sub.savingsBlueprint?.coupons?.[0]?.code || "STUDENTVIP") ? (
                                   <>
                                     <Check className="w-3 h-3 text-emerald-600" />
-                                    <span className="text-emerald-600 font-bold">Copied!</span>
+                                    <span className="text-emerald-600 font-bold">Copied &amp; Opened!</span>
                                   </>
                                 ) : (
                                   <>
                                     <Copy className="w-3 h-3" />
-                                    <span>Copy</span>
+                                    <span>Reveal &amp; Open</span>
                                   </>
                                 )}
                               </button>
@@ -1020,7 +1182,7 @@ export default function SubscriptionsView({
                 <button
                   type="button"
                   onClick={() => {
-                    window.location.href = `/?tab=${verifiedEntity.crossCategoryTab || "travel"}`;
+                    router.push(`/?tab=${verifiedEntity.crossCategoryTab || "travel"}`);
                   }}
                   className="w-full sm:w-auto px-5 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-black text-xs shadow-md flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-95 text-center"
                 >
@@ -1327,18 +1489,18 @@ export default function SubscriptionsView({
                 </div>
 
                 {/* Level 4: Verified Promo Codes */}
-                <div className="p-4 rounded-2xl bg-indigo-50/70 border border-indigo-200/80">
+                <div data-nosnippet="true" className="p-4 rounded-2xl bg-indigo-50/70 border border-indigo-200/80">
                   <div className="flex items-center gap-2 mb-2 text-indigo-900 font-extrabold text-xs">
                     <ShieldCheck className="w-4 h-4 text-indigo-600" />
                     <span>LEVEL 4: Verified Working Promo Codes</span>
                   </div>
                   <div className="space-y-2">
                     {activeBlueprintSub.savingsBlueprint.coupons.map((c, idx) => (
-                      <div key={idx} className="p-3 bg-white rounded-xl border border-indigo-100 shadow-2xs flex items-center justify-between">
+                      <div key={idx} data-nosnippet="true" className="p-3 bg-white rounded-xl border border-indigo-100 shadow-2xs flex items-center justify-between">
                         <div>
                           <div className="flex items-center gap-2">
                             <span className="font-black text-xs text-indigo-950 tracking-wider font-mono bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">
-                              {c.code}
+                              {copiedCode === c.code ? c.code : "••••••••"}
                             </span>
                             <span className="text-[10px] text-emerald-600 font-extrabold">✓ Verified</span>
                           </div>
@@ -1346,18 +1508,19 @@ export default function SubscriptionsView({
                         </div>
                         <button
                           type="button"
-                          onClick={() => handleCopyCode(c.code)}
+                          data-nosnippet="true"
+                          onClick={() => handleCopyCode(c.code, activeBlueprintSub.officialUrl || activeBlueprintSub.website)}
                           className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 shrink-0"
                         >
                           {copiedCode === c.code ? (
                             <>
                               <Check className="w-3.5 h-3.5" />
-                              <span>Copied!</span>
+                              <span>Copied &amp; Opened!</span>
                             </>
                           ) : (
                             <>
                               <Copy className="w-3.5 h-3.5" />
-                              <span>Copy</span>
+                              <span>Reveal &amp; Open</span>
                             </>
                           )}
                         </button>

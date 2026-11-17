@@ -1,4 +1,5 @@
-import { getAllSubscriptionSlugs } from "../data/subscriptionsSeoData.js";
+import { getAllUniversalSubscriptionSlugs } from "../data/subscriptionsRegistry.js";
+import { getAllTravelSlugs, getAllEventSlugs } from "../data/travelRegistry.js";
 import { COUNTRY_TOP_BRANDS } from "../data/countryBrandsCatalog.js";
 
 export default function sitemap() {
@@ -10,6 +11,24 @@ export default function sitemap() {
       lastModified: new Date(),
       changeFrequency: "daily",
       priority: 1.0,
+    },
+    {
+      url: `${baseUrl}/travel`,
+      lastModified: new Date(),
+      changeFrequency: "daily",
+      priority: 0.95,
+    },
+    {
+      url: `${baseUrl}/events`,
+      lastModified: new Date(),
+      changeFrequency: "daily",
+      priority: 0.95,
+    },
+    {
+      url: `${baseUrl}/subscriptions`,
+      lastModified: new Date(),
+      changeFrequency: "daily",
+      priority: 0.95,
     },
     {
       url: `${baseUrl}/about`,
@@ -43,13 +62,31 @@ export default function sitemap() {
     },
   ];
 
-  const subscriptionRoutes = getAllSubscriptionSlugs().map(slug => ({
+  // Universal Subscriptions & Software Hub (291 Platforms)
+  const subscriptionRoutes = getAllUniversalSubscriptionSlugs().map(slug => ({
     url: `${baseUrl}/subscriptions/${slug}`,
     lastModified: new Date(),
     changeFrequency: "weekly",
     priority: 0.9,
   }));
 
+  // Master Flights & Hotels Travel Hub (76 Global Platforms)
+  const travelRoutes = getAllTravelSlugs().map(slug => ({
+    url: `${baseUrl}/travel/${slug}`,
+    lastModified: new Date(),
+    changeFrequency: "daily",
+    priority: 0.9,
+  }));
+
+  // Master Concerts, Movies & Entertainment Events Hub (47 Global Platforms)
+  const eventRoutes = getAllEventSlugs().map(slug => ({
+    url: `${baseUrl}/events/${slug}`,
+    lastModified: new Date(),
+    changeFrequency: "daily",
+    priority: 0.9,
+  }));
+
+  // Retail & Shopping Coupon Brands (600 Market Brands)
   const couponRoutes = [];
   const seenBrands = new Set();
 
@@ -61,11 +98,17 @@ export default function sitemap() {
           url: `${baseUrl}/coupons/${brand.id}`,
           lastModified: new Date(),
           changeFrequency: "daily",
-          priority: 0.9,
+          priority: 0.85,
         });
       }
     }
   }
 
-  return [...staticRoutes, ...subscriptionRoutes, ...couponRoutes];
+  return [
+    ...staticRoutes, 
+    ...subscriptionRoutes, 
+    ...travelRoutes, 
+    ...eventRoutes, 
+    ...couponRoutes
+  ];
 }

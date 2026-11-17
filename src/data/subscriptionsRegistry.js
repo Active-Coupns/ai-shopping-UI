@@ -1,37 +1,69 @@
-import { INDIA_SUBSCRIPTIONS_CATALOG } from "./subscriptionsCatalog";
-import { US_SUBSCRIPTIONS_CATALOG } from "./subscriptionsCatalogUS";
-import { UK_SUBSCRIPTIONS_CATALOG } from "./subscriptionsCatalogUK";
-import { CA_SUBSCRIPTIONS_CATALOG } from "./subscriptionsCatalogCA";
-import { AU_SUBSCRIPTIONS_CATALOG } from "./subscriptionsCatalogAU";
-import { AE_SUBSCRIPTIONS_CATALOG } from "./subscriptionsCatalogAE";
-import { SUBSCRIPTIONS_SEO_MAP, getSubscriptionBySlug as getIndiaSubBySlug, getAllSubscriptionSlugs as getAllIndiaSlugs } from "./subscriptionsSeoData";
-import { SUBSCRIPTIONS_SEO_MAP_US, getUSSubscriptionBySlug, getAllUSSubscriptionSlugs } from "./subscriptionsSeoDataUS";
-import { SUBSCRIPTIONS_SEO_MAP_UK, getUKSubscriptionBySlug, getAllUKSubscriptionSlugs } from "./subscriptionsSeoDataUK";
-import { SUBSCRIPTIONS_SEO_MAP_CA, getCASubscriptionBySlug, getAllCASubscriptionSlugs } from "./subscriptionsSeoDataCA";
-import { SUBSCRIPTIONS_SEO_MAP_AU, getAUSubscriptionBySlug, getAllAUSubscriptionSlugs } from "./subscriptionsSeoDataAU";
-import { SUBSCRIPTIONS_SEO_MAP_AE, getAESubscriptionBySlug, getAllAESubscriptionSlugs } from "./subscriptionsSeoDataAE";
+import { INDIA_SUBSCRIPTIONS_CATALOG } from "./subscriptionsCatalog.js";
+import { US_SUBSCRIPTIONS_CATALOG } from "./subscriptionsCatalogUS.js";
+import { UK_SUBSCRIPTIONS_CATALOG } from "./subscriptionsCatalogUK.js";
+import { CA_SUBSCRIPTIONS_CATALOG } from "./subscriptionsCatalogCA.js";
+import { AU_SUBSCRIPTIONS_CATALOG } from "./subscriptionsCatalogAU.js";
+import { AE_SUBSCRIPTIONS_CATALOG } from "./subscriptionsCatalogAE.js";
+import { MASTER_PLATFORMS_CATALOG } from "./masterSoftwareCatalog.js";
+import { SUBSCRIPTIONS_SEO_MAP, getSubscriptionBySlug as getIndiaSubBySlug, getAllSubscriptionSlugs as getAllIndiaSlugs } from "./subscriptionsSeoData.js";
+import { SUBSCRIPTIONS_SEO_MAP_US, getUSSubscriptionBySlug, getAllUSSubscriptionSlugs } from "./subscriptionsSeoDataUS.js";
+import { SUBSCRIPTIONS_SEO_MAP_UK, getUKSubscriptionBySlug, getAllUKSubscriptionSlugs } from "./subscriptionsSeoDataUK.js";
+import { SUBSCRIPTIONS_SEO_MAP_CA, getCASubscriptionBySlug, getAllCASubscriptionSlugs } from "./subscriptionsSeoDataCA.js";
+import { SUBSCRIPTIONS_SEO_MAP_AU, getAUSubscriptionBySlug, getAllAUSubscriptionSlugs } from "./subscriptionsSeoDataAU.js";
+import { SUBSCRIPTIONS_SEO_MAP_AE, getAESubscriptionBySlug, getAllAESubscriptionSlugs } from "./subscriptionsSeoDataAE.js";
+
+// Extract all 140 software & AI platforms (Universal across all countries)
+const GLOBAL_SOFTWARE_PLATFORMS = MASTER_PLATFORMS_CATALOG.filter(sub => {
+  const cat = (sub.category || "").toLowerCase();
+  const id = (sub.id || "").toLowerCase();
+  return (
+    ["ai_creative", "ai_tools", "cloud_work", "dev_tools", "security", "productivity", "design", "cloud_hosting", "ecommerce"].includes(cat) ||
+    ["chatgpt", "canva", "adobe_creative", "copilot", "google_one", "microsoft_365", "icloud", "notion", "figma", "hostinger", "nordvpn", "github", "slack", "perplexity", "claude", "clickup", "zoom", "replit", "cursor", "shopify", "expressvpn", "surfshark", "jetbrains", "grammarly", "1password"].includes(id)
+  );
+});
+
+function adaptSoftwareForCountry(sub, countryCode) {
+  const code = String(countryCode || "IN").toUpperCase();
+  if (code === "IN") return sub;
+
+  const currencySymbol = code === "AE" ? "AED" : (code === "AU" ? "A$" : (code === "CA" ? "C$" : (code === "GB" || code === "UK" ? "£" : "$")));
+  const rate = code === "AE" ? 0.044 : (code === "AU" ? 0.018 : (code === "CA" ? 0.016 : (code === "GB" || code === "UK" ? 0.0095 : 0.012)));
+
+  const convertedPlans = (sub.plans || []).map(p => ({
+    ...p,
+    price: p.price === 0 ? 0 : Number((p.price * rate).toFixed(p.period === "year" ? 0 : 2))
+  }));
+
+  return {
+    ...sub,
+    country: code,
+    currencySymbol,
+    plans: convertedPlans
+  };
+}
 
 /**
- * Multi-Country Catalog Resolver
+ * Multi-Country Catalog Resolver:
+ * Returns Country-Specific OTT/Streaming + Universal Multi-Category Software
  */
 export function getSubscriptionsCatalog(countryCode = "IN") {
   const code = String(countryCode || "IN").toUpperCase();
+  
+  let baseOtt = INDIA_SUBSCRIPTIONS_CATALOG.filter(s => !GLOBAL_SOFTWARE_PLATFORMS.some(sw => sw.id === s.id));
   if (code === "US") {
-    return US_SUBSCRIPTIONS_CATALOG;
+    baseOtt = US_SUBSCRIPTIONS_CATALOG;
+  } else if (code === "GB" || code === "UK") {
+    baseOtt = UK_SUBSCRIPTIONS_CATALOG;
+  } else if (code === "CA") {
+    baseOtt = CA_SUBSCRIPTIONS_CATALOG;
+  } else if (code === "AU") {
+    baseOtt = AU_SUBSCRIPTIONS_CATALOG;
+  } else if (code === "AE") {
+    baseOtt = AE_SUBSCRIPTIONS_CATALOG;
   }
-  if (code === "GB" || code === "UK") {
-    return UK_SUBSCRIPTIONS_CATALOG;
-  }
-  if (code === "CA") {
-    return CA_SUBSCRIPTIONS_CATALOG;
-  }
-  if (code === "AU") {
-    return AU_SUBSCRIPTIONS_CATALOG;
-  }
-  if (code === "AE") {
-    return AE_SUBSCRIPTIONS_CATALOG;
-  }
-  return INDIA_SUBSCRIPTIONS_CATALOG;
+
+  const adaptedSoftware = GLOBAL_SOFTWARE_PLATFORMS.map(s => adaptSoftwareForCountry(s, code));
+  return [...baseOtt, ...adaptedSoftware];
 }
 
 /**

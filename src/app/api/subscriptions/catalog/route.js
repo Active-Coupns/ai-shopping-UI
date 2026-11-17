@@ -71,26 +71,23 @@ export async function GET(request) {
       console.warn("[Subscriptions Catalog API] Fast fallback triggered:", dbErr.message);
     }
 
-    if (fetchedFromSupabase) {
-      const payload = {
-        success: true,
-        source: "supabase",
-        country,
-        total: formatted.length,
-        subscriptions: formatted,
-      };
-      memoryCatalogCache.set(cacheKey, payload);
+    // 2. Seamless instant local catalog + Supabase enrichment
+    const { getSubscriptionsCatalog } = await import("@/data/subscriptionsRegistry.js");
+    const localCatalog = getSubscriptionsCatalog(country) || [];
 
-      return NextResponse.json(payload, {
-        headers: {
-          "Cache-Control": "public, s-maxage=86400, stale-while-revalidate=604800",
-        },
+    const catalogMap = new Map();
+    // Insert local catalog items first
+    localCatalog.forEach(item => catalogMap.set(item.id, item));
+
+    // If Supabase returned items, overlay/enrich
+    if (fetchedFromSupabase && Array.isArray(formatted) && formatted.length > 0) {
+      formatted.forEach(item => {
+        const existing = catalogMap.get(item.id);
+        catalogMap.set(item.id, existing ? { ...existing, ...item } : item);
       });
     }
 
-    // 2. Seamless instant local fallback (0ms)
-    const { getSubscriptionsCatalog } = await import("@/data/subscriptionsRegistry");
-    let catalog = getSubscriptionsCatalog(country) || [];
+    let catalog = Array.from(catalogMap.values());
 
     if (category && category !== "all") {
       catalog = catalog.filter(item => item.category === category);
@@ -106,7 +103,7 @@ export async function GET(request) {
 
     const payload = {
       success: true,
-      source: "local_catalog",
+      source: fetchedFromSupabase ? "hybrid" : "local_catalog",
       country,
       total: catalog.length,
       subscriptions: catalog,

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getTravelDealsByCountry } from "@/services/travelDealsDatabase";
 import { OFFICIAL_PROMO_ENDPOINTS, scrapeLiveBrandDeals } from "@/services/zyteTravelDealsService";
+import { fetchFeedicoCoupons } from "@/services/feedicoService";
 
 export const maxDuration = 60;
 export const dynamic = "force-dynamic";
@@ -33,6 +34,25 @@ export async function GET(request) {
     const baseDeals = getTravelDealsByCountry(targetCountry, "all", "all");
     const endpoints = OFFICIAL_PROMO_ENDPOINTS[targetCountry] || [];
 
+    // 4. Audit & Ping Feedico Partner Catalog for Travel OTAs
+    let feedicoStatus = "FEEDICO_STANDBY";
+    let feedicoCouponsFound = 0;
+    try {
+      const otaQueries = targetCountry === "IN" 
+        ? ["MakeMyTrip", "EaseMyTrip", "Agoda"] 
+        : ["Expedia", "Booking.com", "Agoda"];
+
+      for (const q of otaQueries) {
+        const res = await fetchFeedicoCoupons({ query: q, country: targetCountry, pageSize: 5 });
+        if (res.success && Array.isArray(res.coupons)) {
+          feedicoCouponsFound += res.coupons.length;
+        }
+      }
+      feedicoStatus = "FEEDICO_PARTNER_HEALTHY";
+    } catch (fErr) {
+      feedicoStatus = `FEEDICO_ERROR: ${fErr.message}`;
+    }
+
     const syncResults = {
       country: targetCountry,
       timestamp: new Date().toISOString(),
@@ -40,6 +60,8 @@ export async function GET(request) {
       evergreenAudited: baseDeals.filter(d => d.isEvergreen).length,
       promosVerified: baseDeals.filter(d => !d.isEvergreen).length,
       zyteEndpointsChecked: endpoints.length,
+      feedicoPartnerStatus: feedicoStatus,
+      feedicoOtaCouponsAudited: feedicoCouponsFound,
       status: "SYNC_COMPLETED"
     };
 

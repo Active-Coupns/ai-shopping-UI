@@ -1,11 +1,11 @@
 # ShopSmart AI — Master Architecture Constitution & Memory Lock
 **File:** `GEMINI.md` (Project Root)  
 **Status:** PERMANENT ARCHITECTURE LOCK & SINGLE SOURCE OF TRUTH  
-**Last Updated:** 2026-11-07 (Universal Account Quota Engine & Cross-Device Sync)  
+**Last Updated:** 2026-11-17 (Universal 5-Vertical Savings Engine, Google AI Shield & Mobile Polish)  
 
 > **CRITICAL DIRECTIVE FOR ALL AI AGENTS & DEVELOPERS:**  
-> This file is the **immutable single source of truth** for ShopSmart AI. Before proposing any technical strategy, writing any code, or modifying existing features, you **MUST strictly read and adhere to all decisions, rejected paths, and architectural boundaries locked in this document**.  
-> **NEVER re-suggest a rejected idea. NEVER invent dummy data. NEVER hallucinate coupon codes. NEVER introduce middleman affiliate networks (Cuelinks, EarnKaro).**
+> This file is the **immutable single source of truth** for ShopSmart AI (Benefisto). Before proposing any technical strategy, writing any code, or modifying existing features, you **MUST strictly read and adhere to all decisions, rejected paths, and architectural boundaries locked in this document**.  
+> **NEVER re-suggest a rejected idea. NEVER invent dummy data. NEVER hallucinate coupon codes. NEVER introduce middleman affiliate networks (Cuelinks, EarnKaro). NEVER remove the Google AI Scraping Shield.**
 
 ---
 
@@ -137,6 +137,8 @@ ShopSmart AI is **NOT a generic coupon website**, nor a spammy affiliate blog. I
 | ❌ **Unbranded Third-Party Health Networks (MedPay, LabStack)** | Sourcing medicines and protein supplements from unverified local chemist networks creates severe counterfeit and duplicate product risks, destroying user trust. Replaced by India's #1 trusted household giant (**Tata 1mg**). |
 | ❌ **Manual UPI Post-Purchase Cashback (30-Day Lag)** | Forcing users to wait 15–30 days for merchant return validation and managing manual UPI payout queues creates customer frustration and operational bottlenecks. Replaced with instant checkout discount via official alliance code `SHOPSMART18`. |
 | ❌ **Fragile Synthetic URL Concatenation & Parallel API Probing** | Manually concatenating search strings (`1mg.com/search?name=...`) or firing multiple parallel probe API calls per keystroke causes latency, burns API quota, and breaks when URLs mutate. Replaced with a universal **Special Partner Privilege Card** that renders 100% of the time with 2-step micro-instructions and official search hand-off. |
+| ❌ **Exposing Raw Coupon Strings to Google Search Bots / AI Overviews** | Google AI Overviews scrapes raw coupon strings from static HTML or Schema JSON-LD and presents zero-click snippets, leaking traffic and destroying affiliate commission attribution. Permanently protected by `data-nosnippet="true"`, initial dot masking (`••••••••`), and 2-in-1 auto-copy + merchant redirect. |
+| ❌ **Clerk Authentication Wall on Content / Detail Pages** | Blocking Googlebot and first-time users behind sign-in modals prevents indexing, tanks SEO crawl velocity, and increases bounce rate. All detail pages (`/travel/[slug]`, `/events/[slug]`, `/subscriptions/[slug]`, `/coupons/[store]`) must remain 100% publicly readable. |
 
 ---
 

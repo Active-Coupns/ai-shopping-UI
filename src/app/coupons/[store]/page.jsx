@@ -158,14 +158,7 @@ export default async function CouponStorePage({ params, searchParams }) {
         "name": cleanName,
         "url": couponResult.storeData?.officialUrl || `https://${cleanName.toLowerCase().replace(/[^a-z0-9]/g, "")}.com`,
         "description": `Verified discount coupons and real-time promo codes for ${cleanName}. Tested daily on Benefisto.`,
-        "priceRange": `${currencySymbol} - ${currencySymbol}${currencySymbol}${currencySymbol}`,
-        "aggregateRating": {
-          "@type": "AggregateRating",
-          "ratingValue": "4.89",
-          "reviewCount": "1420",
-          "bestRating": "5",
-          "worstRating": "1"
-        }
+        "priceRange": `${currencySymbol} - ${currencySymbol}${currencySymbol}${currencySymbol}`
       },
       // 3. FAQPage Schema for Google Accordion Snippets
       {

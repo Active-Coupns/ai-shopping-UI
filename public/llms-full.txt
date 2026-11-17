@@ -72,7 +72,18 @@ Benefisto Phase 1 focuses exclusively on physical consumer retail categories:
 5. **Apparel & Lifestyle**:
    - Everyday casual wear, athletic apparel, and footwear with Virtual Try-On capability.
 
-*(Note: Travel booking, flight ticketing, hotel reservations, and live event ticketing belong to future deployment phases and are not part of the active Phase 1 release.)*
+6. **Flights & Airfare Savings Hub (/travel)**:
+   - Verified airline concessions (Student extra baggage, Senior Citizen 50% base off, Armed Forces schemes).
+   - 21-Day Advance Midweek Booking Windows and credit card reward points arbitrage across IndiGo, Air India, Emirates, Delta, British Airways, and OTAs (MakeMyTrip, Expedia, EaseMyTrip).
+
+7. **Hotels & Accommodations (/travel)**:
+   - Dynamic stay arbitrage, secret app pricing, free cancellation price-drop tracking across Agoda, Booking.com, OYO, Taj, and Marriott.
+
+8. **Concerts, Cinema & Live Entertainment (/events)**:
+   - Buy-1-Get-1 (BOGO) credit card cheatsheets (ICICI, HDFC, SBI, Axis, Amex), Phase-1 early bird festival releases, and 24-hr resale market drops across BookMyShow, PVR INOX, Ticketmaster, StubHub, and Platinumlist.
+
+9. **Software & Digital Subscriptions (/subscriptions)**:
+   - SaaS annual vs monthly calculators, student license verification hacks, and daily Feedico coupon synchronization.
 
 ---
 

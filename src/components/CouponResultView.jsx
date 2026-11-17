@@ -1308,10 +1308,11 @@ export default function CouponResultView({
                       </div>
                     )}
 
-                    <div className="flex items-center gap-2">
+                    <div data-nosnippet="true" className="flex items-center gap-2">
                       {/* The In-Page Reveal/Copy / Activate Button */}
                       <button
                         type="button"
+                        data-nosnippet="true"
                         onClick={() => {
                           if (coupon.hasRealCode) {
                             handleRevealAndCopy(coupon);

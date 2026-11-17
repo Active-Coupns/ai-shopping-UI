@@ -2,7 +2,7 @@
 // High-Converting SEO Metadata, PAA FAQs, and Catchy Keywords
 // for all 25 United Arab Emirates (UAE / AE 🇦🇪) Subscription Brands.
 
-import { AE_SUBSCRIPTIONS_CATALOG } from "./subscriptionsCatalogAE";
+import { AE_SUBSCRIPTIONS_CATALOG } from "./subscriptionsCatalogAE.js";
 import { Redis } from "@upstash/redis";
 
 const UPSTASH_REDIS_REST_URL = process.env.UPSTASH_REDIS_REST_URL || "";
