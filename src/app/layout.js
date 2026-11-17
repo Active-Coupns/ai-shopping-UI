@@ -19,11 +19,11 @@ const defaultBaseUrl = process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_UR
 export const metadata = {
   metadataBase: new URL(defaultBaseUrl),
   manifest: "/manifest.json",
-  title: "Benefisto - Intelligent Shopping Assistant & Lowest Price Deals",
-  description: "Experience smart shopping. AI specifications analysis, verified discount coupons, and real-time lowest price comparison across Amazon, Flipkart, 1mg & more.",
+  title: "Benefisto - AI Shopping Co-Pilot, Virtual Trial Room, Price Comparison & Verified Deals",
+  description: "All-in-one AI shopping decision platform: AI Virtual Trial Room fashion draping, AI Hardware Trust Sheet specs auditor, verified flight & hotel savings blueprints, movie BOGO tickets, software subscription discounts, and live lowest price comparison across Amazon, Flipkart, & top stores.",
   openGraph: {
-    title: "Benefisto — Smarter Shopping, Instant Price Comparison & Deals",
-    description: "Compare lowest prices across Amazon, Flipkart, & top stores with Instant AI Review and Virtual Try-On.",
+    title: "Benefisto — AI Shopping Co-Pilot, Virtual Trial Room & Lowest Deals",
+    description: "Compare lowest prices across Amazon, Flipkart, & top stores with AI Hardware Trust Sheet, Virtual Try-On, and verified flight & event savings.",
     url: defaultBaseUrl,
     siteName: "Benefisto",
     images: [
@@ -39,8 +39,8 @@ export const metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Benefisto — Smarter Shopping, Instant Price Comparison & Deals",
-    description: "Compare lowest prices across Amazon, Flipkart, & top stores with Instant AI Review.",
+    title: "Benefisto — AI Shopping Co-Pilot, Virtual Trial Room & Deals",
+    description: "Experience AI shopping: Virtual Trial Room, Hardware Trust Sheet, flight savings blueprints & instant price comparison.",
     images: ["/laptop.jpg"],
   },
   verification: {

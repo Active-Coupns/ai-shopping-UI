@@ -322,6 +322,36 @@ export default function TravelInteractiveClient({ brand, initialCoupons = [] }) 
         </section>
       )}
 
+      {/* Checkout Error Interception Guide (Capturing High-Intent Ready-to-Buy Users) */}
+      <section className="bg-slate-50 rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-200/90 space-y-3">
+        <div className="flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-rose-600 shrink-0" />
+          <h3 className="font-black text-xs sm:text-base text-slate-900 leading-snug">
+            Why is your {brand.name} promo code not working at checkout? (Instant Fix)
+          </h3>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+          <div className="p-3 bg-white rounded-xl border border-slate-200">
+            <span className="font-extrabold text-slate-900 block mb-1">1. Minimum Base Fare</span>
+            <p className="text-slate-500 text-[11px] leading-relaxed">
+              Most carrier codes apply strictly to base airfare, excluding airport taxes and fuel surcharges. Ensure base fare meets the threshold.
+            </p>
+          </div>
+          <div className="p-3 bg-white rounded-xl border border-slate-200">
+            <span className="font-extrabold text-slate-900 block mb-1">2. Payment Gateway Lock</span>
+            <p className="text-slate-500 text-[11px] leading-relaxed">
+              Bank-specific offers require paying with the designated credit or debit card bin numbers. Using UPI or wallets voids the discount.
+            </p>
+          </div>
+          <div className="p-3 bg-white rounded-xl border border-slate-200">
+            <span className="font-extrabold text-slate-900 block mb-1">3. Concession Route Match</span>
+            <p className="text-slate-500 text-[11px] leading-relaxed">
+              Student and defense fares cannot be stacked with retail promo codes. Use the verified official blueprints above for guaranteed savings.
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* Official Direct Booking CTA Banner */}
       <div className="p-4 sm:p-7 rounded-2xl sm:rounded-3xl bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-900 text-white shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-5">
         <div className="text-left">

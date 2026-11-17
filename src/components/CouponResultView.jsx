@@ -1498,6 +1498,39 @@ export default function CouponResultView({
             </div>
           </div>
         </div>
+        {/* CHECKOUT ERROR INTERCEPTION GUIDE (Capturing High-Intent Ready-to-Buy Users) */}
+        <div className="mb-8 p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-slate-50 border border-slate-200/90 space-y-3">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+            <h3 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
+              Why is your {storeName} promo code not working at checkout? (Instant Fix)
+            </h3>
+          </div>
+          <p className="text-xs text-slate-500 font-medium">
+            If your discount failed with &apos;Invalid Coupon&apos; or &apos;Not applicable on your cart&apos;, check these 3 verified fixes:
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs pt-1">
+            <div className="p-3 bg-white rounded-2xl border border-slate-200">
+              <span className="font-extrabold text-slate-900 block mb-1">1. Cart Minimum Spend</span>
+              <p className="text-slate-500 text-[11px] leading-relaxed">
+                Most {storeName} discount codes require an order minimum (e.g. ₹999 or $40). Check the calculator above to see if you have a slight shortfall.
+              </p>
+            </div>
+            <div className="p-3 bg-white rounded-2xl border border-slate-200">
+              <span className="font-extrabold text-slate-900 block mb-1">2. Category Exclusions</span>
+              <p className="text-slate-500 text-[11px] leading-relaxed">
+                Items already discounted in clearance or flash sales frequently lock out general coupons. Use our instant store deals or gift card passes instead.
+              </p>
+            </div>
+            <div className="p-3 bg-white rounded-2xl border border-slate-200">
+              <span className="font-extrabold text-slate-900 block mb-1">3. First Order / App Lock</span>
+              <p className="text-slate-500 text-[11px] leading-relaxed">
+                Welcome promo codes work exclusively on fresh registered accounts or inside the official smartphone app. If already registered, use bank card offers above.
+              </p>
+            </div>
+          </div>
+        </div>
+
         <div className="mb-6">
           <div className="flex items-center gap-2 mb-1">
             <Award className="w-4 h-4 text-violet-600" />

@@ -291,6 +291,36 @@ export default function EventInteractiveClient({ brand, initialCoupons = [] }) {
         )}
       </section>
 
+      {/* Checkout Error Interception Guide (Capturing High-Intent Ready-to-Buy Users) */}
+      <section className="bg-slate-50 rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-200/90 space-y-3">
+        <div className="flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600 shrink-0" />
+          <h3 className="font-black text-xs sm:text-base text-slate-900 leading-snug">
+            Why is your {brand.name} promo code or BOGO offer not applying at checkout?
+          </h3>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+          <div className="p-3 bg-white rounded-xl border border-slate-200">
+            <span className="font-extrabold text-slate-900 block mb-1">1. Quota Reset Window</span>
+            <p className="text-slate-500 text-[11px] leading-relaxed">
+              Bank BOGO quotas on {brand.name} exhaust rapidly. Premium bank quotas reset daily at 11:00 AM &amp; 5:00 PM IST rather than midnight.
+            </p>
+          </div>
+          <div className="p-3 bg-white rounded-xl border border-slate-200">
+            <span className="font-extrabold text-slate-900 block mb-1">2. Minimum 2 Tickets Rule</span>
+            <p className="text-slate-500 text-[11px] leading-relaxed">
+              Buy-1-Get-1 offers require selecting at least 2 movie seats in the seat map before the discount can deduct the second ticket price.
+            </p>
+          </div>
+          <div className="p-3 bg-white rounded-xl border border-slate-200">
+            <span className="font-extrabold text-slate-900 block mb-1">3. Gateway Bin Validation</span>
+            <p className="text-slate-500 text-[11px] leading-relaxed">
+              Select &apos;Bank Offers&apos; during checkout and enter the first 6 digits of your eligible card to authenticate before entering OTP.
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* Official Direct Booking CTA */}
       <div className="p-4 sm:p-7 rounded-2xl sm:rounded-3xl bg-gradient-to-r from-slate-950 via-purple-950 to-slate-900 text-white shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-5">
         <div className="text-left">

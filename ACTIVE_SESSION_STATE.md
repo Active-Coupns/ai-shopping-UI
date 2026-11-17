@@ -9,6 +9,9 @@
 
 | System / Channel | Setup Status | Verification & Action Item |
 | :--- | :--- | :--- |
+| **Root Structured Data & Descriptions** | 🟢 **100% UPGRADED (LOCAL)** | `StructuredData.jsx` & `layout.js` upgraded with all 7 superpowers (Trial Room, Trust Sheet, Flights, Events, SaaS, Price Comparison, Chat) so Google AI Overview presents full feature spectrum. |
+| **HowTo Step-by-Step Rich Schema** | 🟢 **100% ADDED (LOCAL)** | Injected into `/travel/[slug]`, `/events/[slug]`, and `/subscriptions/[slug]` for Google Mobile numbered rich cards. |
+| **Checkout Error Interception Engines** | 🟢 **100% ADDED (LOCAL)** | Integrated high-intent "Why Code Failed at Checkout & The Instant Fix" guides across detail pages for 70%+ conversion intent. |
 | **Google Search Console (GSC)** | 🟢 **100% SETUP & LIVE** | Account verified, property active, sitemap (`https://www.benefisto.com/sitemap.xml`) submitted for 1,000+ programmatic pages. |
 | **Bing Webmaster Tools** | 🟢 **100% SETUP & LIVE** | Account verified, sitemap submitted, crawling enabled for Bing & Copilot. |
 | **Google Analytics (GA4)** | 🔴 **PENDING SETUP** | Needs GA4 Measurement ID (`G-XXXXXXXXXX`) to be added into `src/app/layout.js`. |

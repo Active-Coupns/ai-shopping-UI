@@ -27,9 +27,11 @@
 1. **Google Search Console (GSC)**: 🟢 **ALREADY SET UP & VERIFIED** (Sitemap `https://www.benefisto.com/sitemap.xml` active).
 2. **Bing Webmaster Tools**: 🟢 **ALREADY SET UP & VERIFIED** (Sitemap active, crawling enabled).
 3. **Google Analytics (GA4)**: 🔴 **PENDING SETUP** (Needs Measurement ID `G-XXXXXXXXXX` to connect to `src/app/layout.js`).
-4. **Secret (`joinsecret.com`)**: 🟡 **SUBMITTED / PENDING REVIEW** (Jean-Loup reviewing White-Label integration).
-5. **NachoNacho (`nachonacho.com`)**: 🟡 **ACCOUNT CREATED / TICKET OPEN** (Support resolving phone verification).
-6. **Gift Card B2B Networks**: ⏳ **TRAFFIC-GATED** (Awaiting 5k-10k traffic proof via GA4 before B2B partner contracts).
+4. **Root Structured Data & Descriptions**: 🟢 **UPGRADED (LOCAL)** (`StructuredData.jsx` & `layout.js` expanded with all 7 superpowers).
+5. **HowTo Schema & Checkout Interception**: 🟢 **ADDED (LOCAL)** (Rich snippet step-by-step schemas + instant checkout error fix guides).
+6. **Secret (`joinsecret.com`)**: 🟡 **SUBMITTED / PENDING REVIEW** (Jean-Loup reviewing White-Label integration).
+7. **NachoNacho (`nachonacho.com`)**: 🟡 **ACCOUNT CREATED / TICKET OPEN** (Support resolving phone verification).
+8. **Gift Card B2B Networks**: ⏳ **TRAFFIC-GATED** (Awaiting 5k-10k traffic proof via GA4 before B2B partner contracts).
 
 #### 🌟 Systematic Mobile Responsiveness Polish:
 1. **Subscriptions Hub & Plan Cards**:

@@ -89,7 +89,10 @@ export async function generateMetadata({ params }) {
     `${sub.name} free trial code`,
     `active ${sub.name} promo codes`,
     `${sub.name} family plan split`,
-    `best deal on ${sub.name}`
+    `best deal on ${sub.name}`,
+    `${sub.name} promo code not working`,
+    `why is ${sub.name} coupon code invalid`,
+    `${sub.name} checkout error fix`
   ];
 
   return {
@@ -245,6 +248,32 @@ export default async function SubscriptionDetailPage({ params }) {
             "text": faq.answer
           }
         }))
+      },
+      // 4. HowTo Schema for Step-by-Step Google Snippets
+      {
+        "@type": "HowTo",
+        "name": `How to Save up to ${savingsPercent} on ${sub.name}`,
+        "description": `Step-by-step guide to minimize your ${sub.name} subscription cost with verified annual arbitrage and student hacks.`,
+        "step": [
+          {
+            "@type": "HowToStep",
+            "position": 1,
+            "name": "Select Annual Billing or Student Portal",
+            "text": `Choose yearly commitment on ${sub.name} to immediately slash 16% to 35% off standard monthly rates.`
+          },
+          {
+            "@type": "HowToStep",
+            "position": 2,
+            "name": "Verify Institutional ID or Team Seats",
+            "text": `Apply university (.edu) email for education pricing or pool seats with colleagues to cut per-user costs.`
+          },
+          {
+            "@type": "HowToStep",
+            "position": 3,
+            "name": "Apply Verified Checkout Code",
+            "text": `Copy the verified active promo code from Benefisto and paste in the checkout summary promo box.`
+          }
+        ]
       }
     ]
   };
@@ -531,6 +560,39 @@ export default async function SubscriptionDetailPage({ params }) {
               </div>
             </section>
           )}
+
+          {/* Checkout Error Interception Guide */}
+          <section className="my-8 sm:my-10 bg-slate-50 rounded-3xl p-4 sm:p-6 border border-slate-200/90 space-y-3">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 text-indigo-600 shrink-0" />
+              <h3 className="font-black text-sm sm:text-base text-slate-900 leading-snug">
+                Why is your {sub.name} promo code or discount not applying at checkout?
+              </h3>
+            </div>
+            <p className="text-xs text-slate-500 font-medium">
+              Common reasons subscription coupons fail on {sub.name} and the verified workaround:
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs pt-1">
+              <div className="p-3 bg-white rounded-2xl border border-slate-200">
+                <span className="font-extrabold text-slate-900 block mb-1">1. New Workspace Account</span>
+                <p className="text-slate-500 text-[11px] leading-relaxed">
+                  Most SaaS promo codes are restricted to first-time workspace signups. Existing paid accounts must create a new team or switch to annual billing for instant 20%-35% savings.
+                </p>
+              </div>
+              <div className="p-3 bg-white rounded-2xl border border-slate-200">
+                <span className="font-extrabold text-slate-900 block mb-1">2. Billing Cycle Requirement</span>
+                <p className="text-slate-500 text-[11px] leading-relaxed">
+                  Certain discounts activate only when selecting &apos;Annual (Pay Yearly)&apos; rather than monthly billing. Ensure the yearly billing toggle is turned ON before pasting the code.
+                </p>
+              </div>
+              <div className="p-3 bg-white rounded-2xl border border-slate-200">
+                <span className="font-extrabold text-slate-900 block mb-1">3. Student (.edu) Verification</span>
+                <p className="text-slate-500 text-[11px] leading-relaxed">
+                  Education and student licenses require signing up with an institutional (.edu / .ac.in) email address. Personal Gmail accounts will be rejected by automated SheerID or UNiDAYS gates.
+                </p>
+              </div>
+            </div>
+          </section>
 
           {/* Direct Activation CTA */}
           <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-slate-950 to-indigo-950 text-white shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4">

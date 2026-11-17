@@ -62,7 +62,10 @@ export async function generateMetadata({ params }) {
     `cheap ${brand.name} tickets`,
     `best deal on ${brand.name}`,
     `${brand.name} movie ticket hack`,
-    `active ${brand.name} coupons`
+    `active ${brand.name} coupons`,
+    `${brand.name} bogo code not working`,
+    `why is ${brand.name} promo code invalid`,
+    `${brand.name} checkout error fix`
   ];
 
   return {
@@ -192,6 +195,24 @@ export default async function EventDetailPage({ params }) {
     }))
   };
 
+  // HowTo Schema for Google Mobile Rich Cards
+  const primaryBlueprintKey = Object.keys(brand.blueprints || {})[0];
+  const primaryBlueprint = primaryBlueprintKey ? brand.blueprints[primaryBlueprintKey] : null;
+
+  const howToSchema = (primaryBlueprint && Array.isArray(primaryBlueprint.steps) && primaryBlueprint.steps.length > 0) ? {
+    "@context": "https://schema.org",
+    "@type": "HowTo",
+    "name": `How to Unlock BOGO Savings on ${brand.name}: ${primaryBlueprint.title}`,
+    "description": primaryBlueprint.explanation,
+    "step": primaryBlueprint.steps.map((stepText, sIdx) => ({
+      "@type": "HowToStep",
+      "position": sIdx + 1,
+      "name": `Step ${sIdx + 1}`,
+      "text": stepText,
+      "url": `${canonicalUrl}#step-${sIdx + 1}`
+    }))
+  } : null;
+
   return (
     <>
       <script
@@ -206,6 +227,12 @@ export default async function EventDetailPage({ params }) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
       />
+      {howToSchema && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(howToSchema) }}
+        />
+      )}
 
       <main className="min-h-screen bg-slate-50 text-slate-900 pb-28 sm:pb-20">
         {/* Breadcrumb */}

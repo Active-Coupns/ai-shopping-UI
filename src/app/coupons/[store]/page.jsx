@@ -77,7 +77,10 @@ export async function generateMetadata({ params, searchParams }) {
     `${cleanName} free delivery code`,
     `${cleanName} bank offers today`,
     `${cleanName} credit card discount`,
-    `active ${cleanName} discount codes`
+    `active ${cleanName} discount codes`,
+    `${cleanName} promo code not working`,
+    `why is ${cleanName} coupon code invalid`,
+    `${cleanName} checkout promo error fix`
   ];
 
   return {
@@ -203,6 +206,32 @@ export default async function CouponStorePage({ params, searchParams }) {
               "@type": "Answer",
               "text": `Yes! If you prefer 100% zero-failure savings, you can purchase an instant digital gift card before checkout to secure cash savings on your total bill.`
             }
+          }
+        ]
+      },
+      // 4. HowTo Schema for Step-by-Step Rich Snippets
+      {
+        "@type": "HowTo",
+        "name": `How to Apply Verified Promo Codes on ${cleanName}`,
+        "description": `Step-by-step verified guide to apply checkout promo codes and unlock highest cash savings on ${cleanName}.`,
+        "step": [
+          {
+            "@type": "HowToStep",
+            "position": 1,
+            "name": "Check Minimum Cart Value",
+            "text": `Verify your ${cleanName} shopping bag meets the minimum order threshold required for the discount.`
+          },
+          {
+            "@type": "HowToStep",
+            "position": 2,
+            "name": "Copy Active Code on Benefisto",
+            "text": `Click 'Reveal Code' on Benefisto to auto-copy the tested promo code and open the official ${cleanName} store.`
+          },
+          {
+            "@type": "HowToStep",
+            "position": 3,
+            "name": "Paste in Checkout Promo Box",
+            "text": `Paste the copied code into the 'Apply Coupon' box on the checkout summary screen before payment.`
           }
         ]
       }
