@@ -363,7 +363,7 @@ export default function HeadToHeadModal({
 
           {/* 3. HARDWARE SPEC MATRIX */}
           <div className="mb-6 overflow-x-auto rounded-2xl border border-slate-200 scrollbar-none touch-pan-x">
-            <table className="w-full min-w-[390px] sm:min-w-full text-xs text-left">
+            <table className="w-full min-w-[320px] sm:min-w-full text-xs text-left">
               <thead className="bg-slate-100/80 text-[10px] uppercase tracking-wider text-slate-600 font-extrabold">
                 <tr>
                   <th className="p-3 w-1/3 whitespace-nowrap">Hardware Specification</th>

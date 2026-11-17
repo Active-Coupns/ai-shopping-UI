@@ -966,7 +966,7 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
   const filteredCatalog = catalogItems;
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-4 space-y-8 animate-fade-in text-slate-900">
+    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-4 pb-28 sm:pb-8 space-y-8 animate-fade-in text-slate-900">
       
       {/* 1. STUDIO HEADER */}
       <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-indigo-50/90 via-purple-50/70 to-pink-50/80 border border-indigo-100 p-4 sm:p-6 md:p-8 backdrop-blur-xl shadow-xs">

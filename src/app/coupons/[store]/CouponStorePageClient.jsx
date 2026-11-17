@@ -97,7 +97,7 @@ export default function CouponStorePageClient({ initialData, storeSlug, countryC
       </header>
 
       {/* Main Coupon Container */}
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8 pb-28 sm:pb-12">
         <CouponResultView 
           resultData={initialData}
           country={selectedCountry}

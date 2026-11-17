@@ -132,11 +132,11 @@ export default function TravelHubClient({ initialCountry = "IN" }) {
         {/* Controls Bar: Category Tabs + Search */}
         <div className="bg-white rounded-3xl p-4 sm:p-5 border border-slate-200/90 shadow-xl shadow-slate-200/60 flex flex-col md:flex-row items-center justify-between gap-4">
           {/* Category Tabs */}
-          <div className="flex items-center gap-2 p-1 bg-slate-100 rounded-2xl w-full md:w-auto">
+          <div className="flex items-center gap-1.5 sm:gap-2 p-1 bg-slate-100 rounded-2xl w-full md:w-auto overflow-x-auto no-scrollbar scroll-smooth">
             <button
               type="button"
               onClick={() => setActiveCategory("all")}
-              className={`flex-1 md:flex-initial px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer ${
+              className={`shrink-0 flex-1 md:flex-initial px-3 sm:px-4 py-2 min-h-[40px] rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer whitespace-nowrap ${
                 activeCategory === "all"
                   ? "bg-white text-indigo-700 shadow-sm"
                   : "text-slate-600 hover:text-slate-900"
@@ -147,7 +147,7 @@ export default function TravelHubClient({ initialCountry = "IN" }) {
             <button
               type="button"
               onClick={() => setActiveCategory("flights")}
-              className={`flex-1 md:flex-initial flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer ${
+              className={`shrink-0 flex-1 md:flex-initial flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2 min-h-[40px] rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer whitespace-nowrap ${
                 activeCategory === "flights"
                   ? "bg-white text-blue-700 shadow-sm"
                   : "text-slate-600 hover:text-slate-900"
@@ -159,7 +159,7 @@ export default function TravelHubClient({ initialCountry = "IN" }) {
             <button
               type="button"
               onClick={() => setActiveCategory("hotels")}
-              className={`flex-1 md:flex-initial flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer ${
+              className={`shrink-0 flex-1 md:flex-initial flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2 min-h-[40px] rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer whitespace-nowrap ${
                 activeCategory === "hotels"
                   ? "bg-white text-teal-700 shadow-sm"
                   : "text-slate-600 hover:text-slate-900"

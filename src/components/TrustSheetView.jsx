@@ -1646,7 +1646,7 @@ Verified on Benefisto: https://benefisto.ai`;
 };
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 animate-in fade-in duration-300">
+    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 pb-28 sm:pb-8 animate-in fade-in duration-300">
       
       {/* 1. Top Navigation Bar */}
       <div className="flex items-center justify-between gap-2 pb-3.5 sm:pb-5 border-b border-slate-200/80 mb-4 sm:mb-6">
