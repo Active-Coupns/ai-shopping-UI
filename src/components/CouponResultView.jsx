@@ -695,7 +695,7 @@ export default function CouponResultView({
   }
 
   return (
-    <div className="w-full max-w-5xl mx-auto px-3.5 sm:px-4 pt-4 sm:pt-6 pb-24 sm:pb-12 text-left">
+    <div className="w-full max-w-5xl mx-auto px-3.5 sm:px-4 pt-4 sm:pt-6 pb-28 sm:pb-12 text-left">
       {/* Confetti Particles Container */}
       <AnimatePresence>
         {particles.map((p) => (
@@ -725,52 +725,62 @@ export default function CouponResultView({
           borderColor: "rgba(226, 232, 240, 0.9)"
         }}
       >
-        <div className="flex items-start justify-between gap-3 relative z-10">
-          <div className="flex items-start gap-2.5 sm:gap-3.5 min-w-0 flex-1">
+        <div className="flex flex-col gap-3.5 relative z-10">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-start gap-2.5 sm:gap-3.5 min-w-0 flex-1">
+              <button
+                type="button"
+                onClick={() => onReset?.("COUPONS")}
+                className="p-2 sm:p-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 hover:text-slate-900 transition-all shadow-xs cursor-pointer active:scale-95 shrink-0 mt-0.5"
+                title="Go back to stores"
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </button>
+              
+              <div className="min-w-0 flex-1">
+                {/* Verified Badge & Status Row */}
+                <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap mb-1.5">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200/90 text-[10px] sm:text-[11px] font-black text-emerald-700 uppercase tracking-wider shadow-2xs">
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <span>100% Verified Today</span>
+                  </span>
+                  <span className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-semibold text-slate-400">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <span>Active &amp; Working</span>
+                  </span>
+                  <span className={`hidden sm:inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold ${storeTheme.badge}`}>
+                    {storeName} Verified Deals
+                  </span>
+                </div>
+
+                {/* Store Logo & Title */}
+                <div className="flex items-center gap-2">
+                  <span className="text-xl sm:text-2xl shrink-0 leading-none">{logo}</span>
+                  <h1 className="text-base sm:text-2xl font-black text-slate-900 tracking-tight leading-tight">
+                    {storeName} Promo Codes &amp; Offers
+                  </h1>
+                </div>
+
+                {/* Subtitle */}
+                <p className="text-[11px] sm:text-xs text-slate-500 font-medium mt-1 leading-relaxed">
+                  {isCartAnalysis
+                    ? `AI Cart Analyzed: Cart Total ${currencySymbol}${cartTotal} • Showing best matched coupons`
+                    : `Verified promo vouchers, universal cart discounts & exclusive bank perks`}
+                </p>
+              </div>
+            </div>
+
             <button
               type="button"
               onClick={() => onReset?.("COUPONS")}
-              className="p-2 sm:p-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 hover:text-slate-900 transition-all shadow-xs cursor-pointer active:scale-95 shrink-0 mt-0.5"
-              title="Go back to stores"
+              className="hidden sm:inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-200/80 text-xs font-bold transition-all cursor-pointer shrink-0 shadow-2xs"
             >
-              <ArrowLeft className="w-4 h-4" />
+              <span>← All Stores</span>
             </button>
-            
-            <div className="min-w-0 flex-1">
-              {/* Verified Badge & Status Row */}
-              <div className="flex items-center gap-2 flex-wrap mb-1.5">
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200/90 text-[10px] sm:text-[11px] font-black text-emerald-700 uppercase tracking-wider shadow-2xs">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                  <span>100% Verified Today</span>
-                </span>
-                <span className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-semibold text-slate-400">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <span>Active &amp; Working</span>
-                </span>
-                <span className={`hidden sm:inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold ${storeTheme.badge}`}>
-                  {storeName} Verified Deals
-                </span>
-              </div>
-
-              {/* Store Logo & Title */}
-              <div className="flex items-center gap-2">
-                <span className="text-xl sm:text-2xl shrink-0 leading-none">{logo}</span>
-                <h1 className="text-base sm:text-2xl font-black text-slate-900 tracking-tight leading-tight">
-                  {storeName} Promo Codes &amp; Offers
-                </h1>
-              </div>
-
-              {/* Subtitle */}
-              <p className="text-[11px] sm:text-xs text-slate-500 font-medium mt-1 leading-relaxed">
-                {isCartAnalysis
-                  ? `AI Cart Analyzed: Cart Total ${currencySymbol}${cartTotal} • Showing best matched coupons`
-                  : `Verified promo vouchers, universal cart discounts & exclusive bank perks`}
-              </p>
-            </div>
           </div>
 
           {/* FEATURED SNIPPET (POSITION 0) QUICK SAVINGS SNAPSHOT TABLE */}
-          <div className="w-full mt-4 overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-2xs">
+          <div className="w-full overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-2xs">
             <div className="px-3.5 py-2 sm:px-4 sm:py-2.5 bg-gradient-to-r from-slate-50 to-slate-100/70 border-b border-slate-200/80 flex items-center justify-between">
               <div className="flex items-center gap-2 min-w-0">
                 <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500 fill-amber-400 shrink-0" />
@@ -821,14 +831,6 @@ export default function CouponResultView({
               </table>
             </div>
           </div>
-
-          <button
-            type="button"
-            onClick={() => onReset?.("COUPONS")}
-            className="hidden sm:inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-200/80 text-xs font-bold transition-all cursor-pointer shrink-0 shadow-2xs"
-          >
-            <span>← All Stores</span>
-          </button>
         </div>
       </div>
 
@@ -1339,7 +1341,8 @@ export default function CouponResultView({
                             <>
                               <Gift className="w-3.5 h-3.5 text-white shrink-0" />
                               <span className="tracking-wide truncate font-sans text-xs">
-                                100% Guaranteed Saving
+                                <span className="sm:hidden">Gift Card Pass</span>
+                                <span className="hidden sm:inline">100% Guaranteed Saving</span>
                               </span>
                             </>
                           ) : !coupon.hasRealCode ? (

@@ -38,6 +38,11 @@
    - 2-in-1 auto-copy + merchant affiliate redirect on "REVEAL & OPEN", guaranteeing full affiliate cookie tracking and organic traffic retention.
 4. **100% Complete Mobile Responsiveness Polish**:
    - Mobile-first responsive refactoring across all 5 verticals (`/travel`, `/events`, `/subscriptions`, `/coupons`).
+   - Fixed Subscriptions Hub primary switcher grid overflow on 360px screens (converted to responsive 2-column grid with concise mobile labels "OTT Passes" and "Software & AI").
+   - Transformed 6-column subscription tiers comparison table into responsive Mobile Plan Cards (resolving crushed 10px columns on mobile).
+   - Fixed Position 0 Quick Savings Table layout in `CouponResultView` (un-nested table from horizontal flex header into clean full-width vertical block to eliminate overlap).
+   - Shortened gift card button label on mobile ("Gift Card Pass") preventing truncation ("Savi...").
+   - Added `pb-28` bottom navigation clearance padding across views to ensure fixed mobile bar never covers content.
    - Enhanced touch targets (`min-h-[44px]` on all action buttons), clean grid wrapping (`grid-cols-2 md:grid-cols-4`), horizontal scrollbars hidden (`no-scrollbar`), zero viewport overflow on 360px+ devices.
 5. **Feedico & Zyte Daily Automated Cron Sync**:
    - Added `/api/cron/sync-travel-deals` to `vercel.json` running daily at 03:00 UTC with country rotation.

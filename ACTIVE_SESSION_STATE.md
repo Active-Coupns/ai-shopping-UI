@@ -22,6 +22,11 @@
      * 2-in-1 auto-copy + merchant redirect on "REVEAL & OPEN", preserving 100% affiliate commission attribution.
   2. **100% Mobile Responsiveness Polish**:
      * Verified across all views on 360px–414px viewports without horizontal scroll or layout clipping.
+     * Fixed Subscriptions switcher button overflow on 360px screens via responsive 2-col grid & mobile-shortened labels ("OTT Passes", "Software & AI").
+     * Replaced 6-column subscription tiers table on mobile with dedicated, high-contrast Mobile Plan Cards.
+     * Corrected Position 0 table placement in `CouponResultView` to prevent header overlap.
+     * Shortened gift card button label to "Gift Card Pass" preventing button text truncation.
+     * Added `pb-28` safe clearance across all hub containers so fixed bottom navigation never hides content.
      * All action buttons enforce minimum touch target height `min-h-[44px]`.
      * Clean grid wrapping (`grid-cols-2 md:grid-cols-4` on tables, full width on mobile CTA buttons).
      * Filter ribbons and country selectors wrapped in smooth `max-w-full overflow-x-auto no-scrollbar`.

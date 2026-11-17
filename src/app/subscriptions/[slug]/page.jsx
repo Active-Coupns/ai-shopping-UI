@@ -396,9 +396,43 @@ export default async function SubscriptionDetailPage({ params }) {
               Side-by-side breakdown of all {sub.plans.length} active subscription tiers in {regionFullName}.
             </p>
 
-            {/* Desktop View Table */}
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs text-slate-700 border-collapse">
+            {/* Mobile Plan Cards (Clean, readable, zero squished columns) */}
+            <div className="sm:hidden space-y-3">
+              {sub.plans.map((p, idx) => (
+                <div key={idx} className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
+                  <div className="flex items-center justify-between gap-2 border-b border-slate-200/60 pb-2">
+                    <div>
+                      <span className="font-extrabold text-sm text-slate-900 block leading-tight">{p.name}</span>
+                      <span className="text-[11px] font-semibold text-slate-500">{p.screens} Seat(s) • {p.devices || "All Devices"}</span>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <span className="text-sm font-black text-indigo-700 block">{currency}{p.price}</span>
+                      <span className="text-[10px] font-bold text-slate-400">/{p.period}</span>
+                    </div>
+                  </div>
+                  <div className="space-y-1 text-xs">
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="text-slate-500 font-medium text-[11px]">Feature Quality:</span>
+                      <span className="font-semibold text-slate-800 text-right text-[11px]">{p.resolution}</span>
+                    </div>
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="text-slate-500 font-medium text-[11px]">Support / Audio:</span>
+                      <span className="font-semibold text-slate-800 text-right text-[11px]">{p.audio || "Priority"}</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-2 pt-1">
+                      <span className="text-slate-500 font-medium text-[11px]">Policy:</span>
+                      <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-black text-[10px] border border-emerald-200">
+                        {p.ads || "100% Ad-Free"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop / Tablet View Table (With horizontal scroll container and min-width) */}
+            <div className="hidden sm:block overflow-x-auto">
+              <table className="w-full min-w-[640px] text-left text-xs text-slate-700 border-collapse">
                 <thead>
                   <tr className="border-b border-slate-200 bg-slate-50 text-slate-900 font-black text-[11px] uppercase tracking-wider">
                     <th className="p-3">Plan Tier</th>

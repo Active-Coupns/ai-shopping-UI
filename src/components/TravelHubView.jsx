@@ -789,7 +789,7 @@ export default function TravelHubView({
   };
 
   return (
-    <div className="w-full max-w-6xl mx-auto px-3 sm:px-6 py-4 sm:py-8 space-y-6 sm:space-y-8 animate-fade-in">
+    <div className="w-full max-w-6xl mx-auto px-3 sm:px-6 py-4 sm:py-8 space-y-6 sm:space-y-8 animate-fade-in pb-28 sm:pb-10">
       
       {/* 1. HERO HEADER: Transparency & Strategy Value Proposition */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 text-white p-4 sm:p-8 md:p-10 border border-slate-800 shadow-xl">

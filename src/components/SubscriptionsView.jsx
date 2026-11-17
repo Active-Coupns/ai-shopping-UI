@@ -572,19 +572,20 @@ export default function SubscriptionsView({
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <div className="w-full max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 py-4 sm:py-6 pb-28 sm:pb-10">
       {/* 1. Header & Navigation Back Bar */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-5">
         <div>
-          <div className="flex items-center gap-2 mb-1 flex-wrap">
-            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider bg-rose-500/10 text-rose-500 border border-rose-500/20 flex items-center gap-1">
-              <Zap className="w-3 h-3 fill-current" /> 100% Verified Direct Platform Pricing
+          <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 flex-wrap">
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-black uppercase tracking-wider bg-rose-500/10 text-rose-600 border border-rose-500/20 max-w-full">
+              <Zap className="w-3 h-3 fill-current shrink-0" />
+              <span>100% Verified Direct Platform Pricing</span>
             </span>
-            <span className="text-xs font-semibold text-slate-400">
+            <span className="text-[11px] sm:text-xs font-semibold text-slate-400">
               {isLoadingSubs ? "Syncing Live Catalog..." : "Multi-Tier Official Plans & Verified Savings"}
             </span>
             <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
-              <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Live Data Verified
+              <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" /> Live Data Verified
             </span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
@@ -641,19 +642,20 @@ export default function SubscriptionsView({
 
       {/* Primary Switcher: OTT vs Software */}
       <div className="mb-6 p-2 bg-gradient-to-r from-slate-100 via-slate-50 to-indigo-50/50 rounded-2xl border border-slate-200 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+        <div className="grid grid-cols-2 gap-2 w-full sm:w-auto sm:flex sm:items-center">
           <button
             type="button"
             onClick={() => { setActiveHubMode("ott"); setSelectedCategory("all"); }}
-            className={`flex-1 sm:flex-initial flex items-center justify-center gap-2.5 px-5 sm:px-6 py-2.5 rounded-xl font-black text-xs sm:text-sm transition-all cursor-pointer ${
+            className={`flex items-center justify-center gap-1.5 sm:gap-2.5 px-2.5 sm:px-6 py-2.5 rounded-xl font-black text-xs sm:text-sm transition-all cursor-pointer min-w-0 ${
               activeHubMode === "ott"
                 ? "bg-white text-rose-600 shadow-sm ring-1 ring-slate-200"
                 : "text-slate-600 hover:text-slate-900"
             }`}
           >
-            <Film className="w-4 h-4 text-rose-500" />
-            <span>🎬 OTT &amp; Streaming</span>
-            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
+            <Film className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-rose-500 shrink-0" />
+            <span className="truncate sm:hidden">OTT Passes</span>
+            <span className="hidden sm:inline">🎬 OTT &amp; Streaming</span>
+            <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-black shrink-0 ${
               activeHubMode === "ott" ? "bg-rose-100 text-rose-700" : "bg-slate-200 text-slate-600"
             }`}>
               {ottCount}
@@ -663,15 +665,16 @@ export default function SubscriptionsView({
           <button
             type="button"
             onClick={() => { setActiveHubMode("software"); setSelectedCategory("all"); }}
-            className={`flex-1 sm:flex-initial flex items-center justify-center gap-2.5 px-5 sm:px-6 py-2.5 rounded-xl font-black text-xs sm:text-sm transition-all cursor-pointer ${
+            className={`flex items-center justify-center gap-1.5 sm:gap-2.5 px-2.5 sm:px-6 py-2.5 rounded-xl font-black text-xs sm:text-sm transition-all cursor-pointer min-w-0 ${
               activeHubMode === "software"
                 ? "bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-md ring-1 ring-indigo-500/30"
                 : "text-slate-600 hover:text-slate-900"
             }`}
           >
-            <Bot className="w-4 h-4" />
-            <span>💻 Software, SaaS &amp; AI Tools</span>
-            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
+            <Bot className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+            <span className="truncate sm:hidden">Software &amp; AI</span>
+            <span className="hidden sm:inline">💻 Software, SaaS &amp; AI Tools</span>
+            <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-black shrink-0 ${
               activeHubMode === "software" ? "bg-white/20 text-white" : "bg-slate-200 text-slate-600"
             }`}>
               {softwareCount}
