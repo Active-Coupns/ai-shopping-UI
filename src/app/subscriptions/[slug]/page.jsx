@@ -160,6 +160,7 @@ export default async function SubscriptionDetailPage({ params }) {
   const cat = (sub.category || "").toLowerCase();
   const hasCoupons = liveCoupons.length > 0 || (Array.isArray(sub.savingsBlueprint?.coupons) && sub.savingsBlueprint.coupons.length > 0);
   const isNoCouponSaas = ["ai_tools", "productivity", "design"].includes(cat) && !hasCoupons;
+  const savingsPercent = sub.savingsBlueprint?.annualMath?.savingsPercent || "33%";
 
   // Related alternatives in the same category & region
   const alternatives = activeCatalog
