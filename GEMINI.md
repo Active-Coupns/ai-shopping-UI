@@ -111,6 +111,16 @@ ShopSmart AI is **NOT a generic coupon website**, nor a spammy affiliate blog. I
    - Legally shielded by the **"ShopSmart Club" 90-Day Free Pass (CUG Membership)** to bypass hotel/airline Rate Parity restrictions.
    - Reference: see [`STRATEGY_BLUEPRINT_PARTNERSHIP.md`](file:///C:/Users/ASUS/.gemini/antigravity/scratch/ai-shopping-assistant/STRATEGY_BLUEPRINT_PARTNERSHIP.md) for full operational blueprints and approval ledgers.
 
+### 1.2. Phase 1 Webmaster, SEO & Analytics Infrastructure Ledger (LOCKED)
+> **PERMANENT SYSTEM STATUS RECORD (NEVER FORGET OR MISSTATE IN CHAT):**
+> 1. **Google Search Console (GSC)**: 🟢 **ALREADY SET UP & VERIFIED**. Property verified, `sitemap.xml` (1,000+ programmatic pages across Coupons, Subscriptions, Travel, Events) submitted.
+> 2. **Bing Webmaster Tools**: 🟢 **ALREADY SET UP & VERIFIED**. Property verified, sitemap submitted, Copilot crawling enabled.
+> 3. **Google Analytics (GA4)**: 🔴 **PENDING SETUP**. Waiting for the user to provide their GA4 Measurement ID (`G-XXXXXXXXXX`) to embed in `src/app/layout.js`.
+> 4. **Secret (`joinsecret.com`)**: 🟡 **SUBMITTED / PENDING REVIEW**. Application for White-Label & Embed submitted to Jean-Loup. Awaiting confirmation email.
+> 5. **NachoNacho (`nachonacho.com`)**: 🟡 **ACCOUNT CREATED / TICKET OPEN**. Registered as `benefisto`, phone verification error ticket open with support.
+> 6. **B2B Gift Card Networks (Woohoo / Pine Labs / Gyftr / Raise)**: ⏳ **TRAFFIC-GATED**. Requires 5k-10k monthly active user proof in GA4 before B2B API contracts can be signed. Temporary "Coming Soon" badge safely handling user intent.
+
+
 ---
 
 ## 2. Permanently Rejected / Blacklisted Decisions (DO NOT REPEAT)
