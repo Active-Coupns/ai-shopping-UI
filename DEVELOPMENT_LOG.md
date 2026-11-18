@@ -18,6 +18,25 @@
 
 ## 📅 Daily Changelog & Feature Timeline
 
+### 🗓️ 2026-11-18 (Global SEO Hreflang Tags, IndexNow HTTP 200 Push & Google Analytics GA4 Integration)
+
+* **Git Commits**: `35cd045`, `2bcd433`, `f3cc6c4`
+* **Status**: 🟢 100% Production Ready & Synced on Remotes (`prod/main` & `origin/main`)
+
+#### 🛠️ Features Implemented & Verified:
+1. **6-Country Hreflang Tags (`alternates.languages`)**:
+   - Injected programmatic Hreflang tags across `/coupons/[store]`, `/travel/[slug]`, `/events/[slug]`, `/subscriptions/[slug]`, and root `layout.js`.
+   - Maps `en-IN`, `en-US`, `en-GB`, `en-CA`, `en-AU`, `en-AE`, and `x-default` to instruct Google on precise regional routing.
+2. **IndexNow Real-Time Discovery Protocol (HTTP 200 OK)**:
+   - Validated live verification key file `https://www.benefisto.com/e82fa9163b494191a34b22c74d812f90.txt`.
+   - Executed live API batch ping of 603 URLs to `https://api.indexnow.org/indexnow` returning `HTTP 200 OK` for immediate Bing/Copilot/AI indexation.
+3. **Google Analytics (GA4) + Google Tag Integration**:
+   - Built asynchronous non-blocking component `src/components/GoogleAnalytics.jsx`.
+   - Configured official Measurement ID `G-9PGXEVPZB7` (Stream ID: `1636577983`) alongside Tag container `GTM-M7LDN8TZ`.
+   - Connected directly into `src/app/layout.js` inside `<body>`.
+
+---
+
 ### 🗓️ 2026-11-17 (Vercel Build Fix & Live Production Release: Deployment dpl_C6iv9nvS6GXNMk3SZumB2vRnL2Eu)
 
 * **Git Commits**: `c1bdd35`, `ba699be`, `4229970`
