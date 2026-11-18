@@ -89,6 +89,15 @@ export async function generateMetadata({ params, searchParams }) {
     keywords,
     alternates: {
       canonical: canonicalUrl,
+      languages: {
+        "en-IN": `${canonicalUrl}?country=IN`,
+        "en-US": `${canonicalUrl}?country=US`,
+        "en-GB": `${canonicalUrl}?country=GB`,
+        "en-CA": `${canonicalUrl}?country=CA`,
+        "en-AU": `${canonicalUrl}?country=AU`,
+        "en-AE": `${canonicalUrl}?country=AE`,
+        "x-default": canonicalUrl,
+      },
     },
     openGraph: {
       title,

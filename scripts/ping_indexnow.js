@@ -5,7 +5,7 @@
 import { COUNTRY_TOP_BRANDS } from "../src/data/countryBrandsCatalog.js";
 
 const HOST = "www.benefisto.com";
-const KEY = "benefisto-indexnow-key-2026";
+const KEY = "e82fa9163b494191a34b22c74d812f90";
 const KEY_LOCATION = `https://${HOST}/${KEY}.txt`;
 
 async function submitIndexNow() {
@@ -31,7 +31,7 @@ async function submitIndexNow() {
   };
 
   try {
-    const res = await fetch("https://api.indexnow.org/IndexNow", {
+    const res = await fetch("https://api.indexnow.org/indexnow", {
       method: "POST",
       headers: { "Content-Type": "application/json; charset=utf-8" },
       body: JSON.stringify(payload)
