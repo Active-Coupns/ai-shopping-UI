@@ -10,7 +10,7 @@
 | System / Channel | Setup Status | Verification & Action Item |
 | :--- | :--- | :--- |
 | **Multi-Country Hreflang Tags** | 🟢 **100% IMPLEMENTED** | `alternates.languages` injected across `/coupons/[store]`, `/travel/[slug]`, `/events/[slug]`, `/subscriptions/[slug]`, and root layout for IN, US, GB, CA, AU, AE. |
-| **Google Analytics / Google Tag** | 🟢 **100% CONFIGURED & LIVE** | Tag ID `GTM-M7LDN8TZ` integrated into `src/components/GoogleAnalytics.jsx` & `src/app/layout.js`. Active for real-time traffic tracking. |
+| **Google Analytics (GA4)** | 🟢 **100% CONFIGURED & LIVE** | Measurement ID `G-9PGXEVPZB7` (Stream ID: 1636577983) and Tag `GTM-M7LDN8TZ` integrated into `src/components/GoogleAnalytics.jsx` & `src/app/layout.js`. Active for real-time traffic tracking. |
 | **IndexNow Discovery Protocol** | 🟢 **100% LIVE & TESTED (HTTP 200)** | Key `e82fa9163b494191a34b22c74d812f90` verified; batch of 603 URLs successfully submitted to IndexNow API (Bing/AI engines). |
 | **Root Structured Data & Descriptions** | 🟢 **100% LIVE ON PRODUCTION** | `StructuredData.jsx` & `layout.js` live with all 7 superpowers (Trial Room, Trust Sheet, Flights, Events, SaaS, Price Comparison, Chat). Ready for Google AI Overview, Perplexity & SearchGPT. |
 | **HowTo Step-by-Step Rich Schema** | 🟢 **100% LIVE ON PRODUCTION** | Prerendered across `/travel/[slug]`, `/events/[slug]`, and `/subscriptions/[slug]` for Google Mobile numbered rich cards. |

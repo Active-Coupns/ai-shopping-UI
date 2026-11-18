@@ -1,37 +1,33 @@
 import Script from "next/script";
 
 /**
- * High-Performance Google Tag & Analytics (GA4 / GTM) Component
- * Configured with Tag ID: GTM-M7LDN8TZ
+ * High-Performance Google Analytics (GA4) Component
+ * Measurement ID: G-9PGXEVPZB7 (Stream ID: 1636577983)
+ * Google Tag Container: GTM-M7LDN8TZ
  * Loads asynchronously via next/script so it never blocks page load or Core Web Vitals.
  */
 export default function GoogleAnalytics({ gaId }) {
-  const tagId = gaId || process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || "GTM-M7LDN8TZ";
-
-  if (!tagId) {
-    return null;
-  }
-
-  const isGtm = tagId.startsWith("GTM-");
-  const scriptUrl = isGtm
-    ? `https://www.googletagmanager.com/gtm.js?id=${tagId}`
-    : `https://www.googletagmanager.com/gtag/js?id=${tagId}`;
+  const measurementId = gaId || process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || "G-9PGXEVPZB7";
+  const gtmId = "GTM-M7LDN8TZ";
 
   return (
     <>
       <Script
         strategy="afterInteractive"
-        src={scriptUrl}
+        src={`https://www.googletagmanager.com/gtag/js?id=${measurementId}`}
       />
       <Script
-        id="google-tag-init"
+        id="google-analytics-init"
         strategy="afterInteractive"
         dangerouslySetInnerHTML={{
           __html: `
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
             gtag('js', new Date());
-            ${!isGtm ? `gtag('config', '${tagId}', { page_path: window.location.pathname });` : ""}
+            gtag('config', '${measurementId}', {
+              page_path: window.location.pathname,
+            });
+            gtag('config', '${gtmId}');
           `,
         }}
       />
