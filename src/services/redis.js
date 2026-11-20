@@ -81,22 +81,56 @@ class MultiTierRedisClient {
   }
 
   async incr(key) {
-    const current = (await this.get(key)) || 0;
-    const nextVal = (parseInt(current, 10) || 0) + 1;
-    await this.set(key, nextVal);
-    if (this.upstash) {
-      this.upstash.incr(key).catch(() => {});
+    return this.incrby(key, 1);
+  }
+
+  async incrby(key, amount = 1) {
+    const parsedAmount = parseInt(amount, 10) || 1;
+    if (this.upstash && typeof this.upstash.incrby === "function") {
+      try {
+        const nextVal = await this.upstash.incrby(key, parsedAmount);
+        l1Cache.set(key, {
+          value: nextVal,
+          expiresAt: Date.now() + L1_DEFAULT_TTL_MS
+        });
+        return nextVal;
+      } catch (err) {
+        console.warn(`[Redis L2] incrby failed for key "${key}":`, err.message);
+      }
     }
+    const current = (await this.get(key)) || 0;
+    const nextVal = (parseInt(current, 10) || 0) + parsedAmount;
+    l1Cache.set(key, {
+      value: nextVal,
+      expiresAt: Date.now() + L1_DEFAULT_TTL_MS
+    });
     return nextVal;
   }
 
   async decr(key) {
-    const current = (await this.get(key)) || 0;
-    const nextVal = (parseInt(current, 10) || 0) - 1;
-    await this.set(key, nextVal);
-    if (this.upstash) {
-      this.upstash.decr(key).catch(() => {});
+    return this.decrby(key, 1);
+  }
+
+  async decrby(key, amount = 1) {
+    const parsedAmount = parseInt(amount, 10) || 1;
+    if (this.upstash && typeof this.upstash.decrby === "function") {
+      try {
+        const nextVal = await this.upstash.decrby(key, parsedAmount);
+        l1Cache.set(key, {
+          value: nextVal,
+          expiresAt: Date.now() + L1_DEFAULT_TTL_MS
+        });
+        return nextVal;
+      } catch (err) {
+        console.warn(`[Redis L2] decrby failed for key "${key}":`, err.message);
+      }
     }
+    const current = (await this.get(key)) || 0;
+    const nextVal = Math.max(0, (parseInt(current, 10) || 0) - parsedAmount);
+    l1Cache.set(key, {
+      value: nextVal,
+      expiresAt: Date.now() + L1_DEFAULT_TTL_MS
+    });
     return nextVal;
   }
 

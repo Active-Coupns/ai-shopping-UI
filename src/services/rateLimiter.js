@@ -1068,10 +1068,30 @@ export async function checkUnifiedApiQuota({
         const memKey = `${effectiveId}:${today}`;
         current = inMemoryUnifiedQuota.get(memKey) || 0;
       }
-      const isAllowed = current < limit;
+
+      // Check paid Search credits
+      let paidCredits = 0;
+      if (userId && redis) {
+        try {
+          const rawCredits = await redis.get(`user_search_credits:${userId}`);
+          const rawExpiry = await redis.get(`user_search_expiry:${userId}`);
+          const credits = parseInt(rawCredits || "0", 10);
+          const expiry = parseInt(rawExpiry || "0", 10);
+          if (credits > 0 && Date.now() <= expiry) {
+            paidCredits = credits;
+          }
+        } catch (_) {}
+      }
+
+      const freeRemaining = Math.max(0, limit - current);
+      const totalRemaining = freeRemaining + paidCredits;
+      const isAllowed = totalRemaining > 0;
+
       return {
         allowed: isAllowed,
-        remaining: Math.max(0, limit - current),
+        remaining: totalRemaining,
+        freeRemaining,
+        paidCredits,
         current,
         isCacheHit: true,
         error: isAllowed ? undefined : "DAILY_QUOTA_EXHAUSTED",
@@ -1082,11 +1102,25 @@ export async function checkUnifiedApiQuota({
     }
   }
 
-  // 1. IP Sybil/Bot Abuse Protection (Max 30 calls across accounts per IP/day)
+  // Pre-check paid search credits for paying users
+  let hasActivePaidSearchCredits = false;
+  if (userId && redis) {
+    try {
+      const rawCredits = await redis.get(`user_search_credits:${userId}`);
+      const rawExpiry = await redis.get(`user_search_expiry:${userId}`);
+      const credits = parseInt(rawCredits || "0", 10);
+      const expiry = parseInt(rawExpiry || "0", 10);
+      if (credits > 0 && Date.now() <= expiry) {
+        hasActivePaidSearchCredits = true;
+      }
+    } catch (_) {}
+  }
+
+  // 1. IP Sybil/Bot Abuse Protection (Max 30 calls across accounts per IP/day, bypassed for paying users)
   try {
     const rawIp = await redis.get(ipKey);
     const ipCount = parseInt(rawIp || "0", 10);
-    if (ipCount >= ipDailyLimit) {
+    if (ipCount >= ipDailyLimit && !hasActivePaidSearchCredits) {
       return {
         allowed: false,
         error: "IP_QUOTA_EXHAUSTED",
@@ -1099,8 +1133,8 @@ export async function checkUnifiedApiQuota({
     console.warn("[Unified Quota] IP check warning:", err.message);
   }
 
-  // 1b. Device Hardware Footprint Abuse Protection (Max limit across accounts on this device)
-  if (deviceKey) {
+  // 1b. Device Hardware Footprint Abuse Protection (Max limit across accounts on this device, bypassed for paying users)
+  if (deviceKey && !hasActivePaidSearchCredits) {
     try {
       const rawDevice = await redis.get(deviceKey);
       const deviceCount = parseInt(rawDevice || "0", 10);

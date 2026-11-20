@@ -298,11 +298,26 @@ export async function POST(request) {
       ? candidateAttemptId
       : crypto.randomUUID();
 
-    // 5. Hardware / Device Footprint Sybil Abuse Check (Strict 3 free try-ons per physical device across all accounts)
+    // Pre-check paid Try-On credits for paying users
+    let hasActivePaidTryonCredits = false;
+    if (userId && redis) {
+      try {
+        const rawCredits = await redis.get(`user_tryon_credits:${userId}`);
+        const rawExpiry = await redis.get(`user_tryon_expiry:${userId}`);
+        const credits = parseInt(rawCredits || "0", 10);
+        const expiry = parseInt(rawExpiry || "0", 10);
+        if (credits > 0 && Date.now() <= expiry) {
+          hasActivePaidTryonCredits = true;
+        }
+      } catch (err) {
+        safeLog('VTON Limiter', 'Paid credit pre-check warning', { err: err.message });
+      }
+    }
+
+    // 5. Hardware / Device Footprint Sybil Abuse Check (Strict 3 free try-ons per physical device across all accounts, bypassed for paying users)
     const rawFingerprint = request.headers.get("x-device-fingerprint") || body?.deviceFingerprint || null;
 
-    // 5a. Hardware / Device Footprint Sybil Abuse Check (Strict 3 free try-ons per physical device across all accounts)
-    if (rawFingerprint && typeof rawFingerprint === "string" && rawFingerprint.startsWith("hw_")) {
+    if (rawFingerprint && typeof rawFingerprint === "string" && rawFingerprint.startsWith("hw_") && !hasActivePaidTryonCredits) {
       const deviceCheck = await checkVtonDeviceAbuse(rawFingerprint, 3);
       if (!deviceCheck.allowed) {
         safeLog('VTON Limiter', 'Blocked multi-account abuse from physical device', { rawFingerprint, userId });
@@ -310,7 +325,7 @@ export async function POST(request) {
           {
             success: false,
             error: "DEVICE_FREE_TRIAL_EXHAUSTED",
-            message: "This device has reached the limit of 3 free AI Try-Ons across accounts. To continue trying outfits with high GPU speed, please get a Sachet pack for just ₹10 (5 Try-Ons).",
+            message: "This device has reached the limit of 3 free AI Try-Ons across accounts. To continue trying outfits with high GPU speed, top up 14 Try-Ons for ₹49.",
             upgradeRequired: true,
             freeTier: { limit: 3, used: 3, remaining: 0 }
           },
@@ -319,21 +334,23 @@ export async function POST(request) {
       }
     }
 
-    // 5b. Anti-Sybil Multi-Account IP Check (Max 3 free try-ons from same network/IP across accounts)
+    // 5b. Anti-Sybil Multi-Account IP Check (Max 3 free try-ons from same network/IP across accounts, bypassed for paying users)
     const clientIp = extractTrustedClientIp(request);
-    const ipCheck = await checkVtonIpAbuse(clientIp, 3);
-    if (!ipCheck.allowed) {
-      safeLog('VTON Limiter', 'Blocked multi-account abuse from IP', { clientIp, userId });
-      return NextResponse.json(
-        {
-          success: false,
-          error: "IP_FREE_TRIAL_EXHAUSTED",
-          message: "This network has reached the limit of 3 free AI Try-Ons. Heavy GPU computing demand is currently high. Please upgrade to a Sachet pack (₹10 for 5 try-ons) to continue.",
-          upgradeRequired: true,
-          freeTier: { limit: 3, used: 3, remaining: 0 }
-        },
-        { status: 403 }
-      );
+    if (!hasActivePaidTryonCredits) {
+      const ipCheck = await checkVtonIpAbuse(clientIp, 3);
+      if (!ipCheck.allowed) {
+        safeLog('VTON Limiter', 'Blocked multi-account abuse from IP', { clientIp, userId });
+        return NextResponse.json(
+          {
+            success: false,
+            error: "IP_FREE_TRIAL_EXHAUSTED",
+            message: "This network has reached the limit of 3 free AI Try-Ons. Heavy GPU computing demand is currently high. Top up 14 Try-Ons for ₹49 to continue.",
+            upgradeRequired: true,
+            freeTier: { limit: 3, used: 3, remaining: 0 }
+          },
+          { status: 403 }
+        );
+      }
     }
 
     // 5c. Account Lifetime Free Try-On Quota Reservation (3 free try-ons per account)
@@ -746,23 +763,38 @@ export async function GET(request) {
     }
 
     let userUsed = 0;
-    if (userId) {
+    let paidCredits = 0;
+    let paidExpiry = null;
+    if (userId && redis) {
       const userQuotaRaw = await redis.get(`vton:free_quota:account_lifetime:${userId}`).catch(() => "0");
       userUsed = parseInt(userQuotaRaw || "0", 10);
+
+      const rawCredits = await redis.get(`user_tryon_credits:${userId}`).catch(() => "0");
+      const rawExp = await redis.get(`user_tryon_expiry:${userId}`).catch(() => "0");
+      const credits = parseInt(rawCredits || "0", 10);
+      const exp = parseInt(rawExp || "0", 10);
+      if (credits > 0 && Date.now() <= exp) {
+        paidCredits = credits;
+        paidExpiry = new Date(exp).toISOString();
+      }
     }
 
     const effectiveUsed = Math.min(3, Math.max(ipUsed, deviceUsed, userUsed));
-    const remaining = Math.max(0, 3 - effectiveUsed);
+    const freeRemaining = Math.max(0, 3 - effectiveUsed);
+    const totalRemaining = freeRemaining + paidCredits;
 
     return NextResponse.json({
       success: true,
       freeTier: {
         limit: 3,
         used: effectiveUsed,
-        remaining,
-        isIpExhausted: !ipCheck.allowed,
-        isDeviceExhausted,
-        isUserExhausted: userUsed >= 3
+        remaining: totalRemaining,
+        freeRemaining,
+        paidCredits,
+        paidExpiry,
+        isIpExhausted: !ipCheck.allowed && paidCredits === 0,
+        isDeviceExhausted: isDeviceExhausted && paidCredits === 0,
+        isUserExhausted: userUsed >= 3 && paidCredits === 0
       }
     }, { status: 200 });
   } catch (err) {

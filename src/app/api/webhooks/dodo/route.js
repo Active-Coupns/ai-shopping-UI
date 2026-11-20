@@ -61,10 +61,10 @@ export async function POST(request) {
 
           await redis.incrby(creditKey, creditsToAdd);
 
-          // Extend or set 60-day expiry window
+          // Extend or set 60-day expiry window from date of latest top-up
           const rawCurrentExpiry = await redis.get(expiryKey);
           const currentExpiry = parseInt(rawCurrentExpiry || "0", 10);
-          const newExpiry = Math.max(now, currentExpiry) + validityMs;
+          const newExpiry = Math.max(now + validityMs, currentExpiry);
           await redis.set(expiryKey, String(newExpiry));
 
           console.log(`[Dodo Webhook] Added ${creditsToAdd} Try-On credits to ${userId}. New expiry: ${new Date(newExpiry).toISOString()}`);
@@ -75,10 +75,10 @@ export async function POST(request) {
 
           await redis.incrby(creditKey, creditsToAdd);
 
-          // Extend or set 60-day expiry window
+          // Extend or set 60-day expiry window from date of latest top-up
           const rawCurrentExpiry = await redis.get(expiryKey);
           const currentExpiry = parseInt(rawCurrentExpiry || "0", 10);
-          const newExpiry = Math.max(now, currentExpiry) + validityMs;
+          const newExpiry = Math.max(now + validityMs, currentExpiry);
           await redis.set(expiryKey, String(newExpiry));
 
           console.log(`[Dodo Webhook] Added ${creditsToAdd} Search credits to ${userId}. New expiry: ${new Date(newExpiry).toISOString()}`);
