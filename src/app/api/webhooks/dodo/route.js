@@ -5,8 +5,8 @@ export const dynamic = "force-dynamic";
 
 /**
  * POST /api/webhooks/dodo
- * Webhook handler for Dodo Payments events (payment.succeeded, subscription.active).
- * Grants purchased sparks/credits atomically in Upstash Redis.
+ * Webhook handler for Dodo Payments events (payment.succeeded, checkout.session.completed).
+ * Grants purchased Try-On or Search credits additively in Upstash Redis with 60-day validity.
  */
 export async function POST(request) {
   try {
@@ -29,45 +29,76 @@ export async function POST(request) {
     if (eventType === "payment.succeeded" || eventType === "checkout.session.completed") {
       const metadata = payload?.metadata || {};
       const userId = metadata.userId || payload?.customer?.customer_id;
-      const sparksToAdd = parseInt(metadata.sparks || "30", 10);
-      const planKey = metadata.planKey || "starter";
+      const planKey = metadata.planKey || "";
+      const validityDays = parseInt(metadata.validityDays || "60", 10);
+      const validityMs = validityDays * 24 * 60 * 60 * 1000;
+
+      // Determine Category: 'tryon' or 'search'
+      let category = metadata.category;
+      if (!category) {
+        if (planKey.startsWith("tryon")) category = "tryon";
+        else if (planKey.startsWith("search")) category = "search";
+        else category = "tryon"; // default
+      }
+
+      // Determine Credits to Add
+      let creditsToAdd = parseInt(metadata.credits || "0", 10);
+      if (!creditsToAdd || isNaN(creditsToAdd)) {
+        if (planKey === "tryon_medium") creditsToAdd = 14;
+        else if (planKey === "tryon_large") creditsToAdd = 30;
+        else if (planKey === "search_medium") creditsToAdd = 120;
+        else if (planKey === "search_large") creditsToAdd = 260;
+        else creditsToAdd = 14;
+      }
 
       if (userId && redis) {
-        // Atomic increment of user purchased sparks in Upstash Redis
-        const sparksKey = `user_sparks:${userId}`;
-        await redis.incrby(sparksKey, sparksToAdd);
+        const now = Date.now();
 
-        // Record transaction receipt
+        if (category === "tryon") {
+          // 1. Additive Top-up for Virtual Try-On Credits
+          const creditKey = `user_tryon_credits:${userId}`;
+          const expiryKey = `user_tryon_expiry:${userId}`;
+
+          await redis.incrby(creditKey, creditsToAdd);
+
+          // Extend or set 60-day expiry window
+          const rawCurrentExpiry = await redis.get(expiryKey);
+          const currentExpiry = parseInt(rawCurrentExpiry || "0", 10);
+          const newExpiry = Math.max(now, currentExpiry) + validityMs;
+          await redis.set(expiryKey, String(newExpiry));
+
+          console.log(`[Dodo Webhook] Added ${creditsToAdd} Try-On credits to ${userId}. New expiry: ${new Date(newExpiry).toISOString()}`);
+        } else {
+          // 2. Additive Top-up for AI Search API Credits
+          const creditKey = `user_search_credits:${userId}`;
+          const expiryKey = `user_search_expiry:${userId}`;
+
+          await redis.incrby(creditKey, creditsToAdd);
+
+          // Extend or set 60-day expiry window
+          const rawCurrentExpiry = await redis.get(expiryKey);
+          const currentExpiry = parseInt(rawCurrentExpiry || "0", 10);
+          const newExpiry = Math.max(now, currentExpiry) + validityMs;
+          await redis.set(expiryKey, String(newExpiry));
+
+          console.log(`[Dodo Webhook] Added ${creditsToAdd} Search credits to ${userId}. New expiry: ${new Date(newExpiry).toISOString()}`);
+        }
+
+        // 3. Record transaction receipt in Redis
         const historyKey = `user_payments:${userId}`;
         await redis.lpush(
           historyKey,
           JSON.stringify({
             paymentId: payload?.payment_id || payload?.id,
-            sparks: sparksToAdd,
+            category,
+            creditsAdded: creditsToAdd,
             planKey,
             amount: payload?.amount,
             currency: payload?.currency,
             timestamp: new Date().toISOString()
           })
         );
-        // Keep last 20 transaction records
         await redis.ltrim(historyKey, 0, 19);
-
-        console.log(`[Dodo Webhook] Successfully granted ${sparksToAdd} sparks to user ${userId}`);
-      }
-    }
-
-    // Handle Subscription Active
-    if (eventType === "subscription.active" || eventType === "subscription.created") {
-      const metadata = payload?.metadata || {};
-      const userId = metadata.userId || payload?.customer?.customer_id;
-
-      if (userId && redis) {
-        // Mark user as VIP member in Redis with 35-day TTL
-        await redis.set(`user_vip:${userId}`, "true", { ex: 35 * 24 * 60 * 60 });
-        // Also grant initial VIP monthly quota (250 sparks)
-        await redis.incrby(`user_sparks:${userId}`, 250);
-        console.log(`[Dodo Webhook] User ${userId} upgraded to Benefisto VIP!`);
       }
     }
 
@@ -81,7 +112,7 @@ export async function POST(request) {
 export async function GET() {
   return NextResponse.json({
     status: "ok",
-    service: "Benefisto Dodo Payments Webhook Endpoint",
+    service: "Benefisto Dodo Payments Webhook Endpoint (Additive Top-up 60-Day)",
     timestamp: new Date().toISOString()
   });
 }

@@ -9,7 +9,7 @@
 
 | System / Channel | Setup Status | Verification & Action Item |
 | :--- | :--- | :--- |
-| **Dodo Payments Integration** | 🟢 **100% CONFIGURED & LIVE** | API Key authenticated; 3 Products created on Dodo (`pdt_0NsLgfLE5oqwEqeTWejLi`, `pdt_0NsLgitB68bSsuv45VzFV`, `pdt_0NsLgivPL6SCz7qeataFl`). Checkout modal, API routes, and webhook handler active. |
+| **Dodo Payments Integration** | 🟢 **100% LOCALLY CONFIGURED & LOCKED** | 4 Official 60-Day Products created on Dodo (`pdt_0NsMRB0afKy5FubtlNt7G`, `pdt_0NsMRB2VG2QaXxa2csfnp`, `pdt_0NsMRB5gQlAg1apTrj9tz`, `pdt_0NsMRBD7GcWtPXhZh08cW`). Dedicated `/pricing` page, clean header, localized multi-currency rendering, additive credit stacking, and limit popups active. |
 | **Multi-Country Hreflang Tags** | 🟢 **100% IMPLEMENTED** | `alternates.languages` injected across `/coupons/[store]`, `/travel/[slug]`, `/events/[slug]`, `/subscriptions/[slug]`, and root layout for IN, US, GB, CA, AU, AE. |
 | **Google Analytics (GA4)** | 🟢 **100% CONFIGURED & LIVE** | Measurement ID `G-9PGXEVPZB7` (Stream ID: 1636577983) and Tag `GTM-M7LDN8TZ` integrated into `src/components/GoogleAnalytics.jsx` & `src/app/layout.js`. Active for real-time traffic tracking. |
 | **IndexNow Discovery Protocol** | 🟢 **100% LIVE & TESTED (HTTP 200)** | Key `e82fa9163b494191a34b22c74d812f90` verified; batch of 603 URLs successfully submitted to IndexNow API (Bing/AI engines). |

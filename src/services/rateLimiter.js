@@ -1130,10 +1130,33 @@ export async function checkUnifiedApiQuota({
       if (Array.isArray(result) && result.length >= 2) {
         const currentCount = parseInt(result[0], 10);
         if (currentCount > limit) {
+          // Check if user has unexpired paid Search Credits
+          if (userId && redis) {
+            try {
+              const rawCredits = await redis.get(`user_search_credits:${userId}`);
+              const rawExpiry = await redis.get(`user_search_expiry:${userId}`);
+              const credits = parseInt(rawCredits || "0", 10);
+              const expiry = parseInt(rawExpiry || "0", 10);
+
+              if (credits > 0 && Date.now() <= expiry) {
+                const remainingPaid = await redis.decrby(`user_search_credits:${userId}`, 1);
+                return {
+                  allowed: true,
+                  remaining: Math.max(0, remainingPaid),
+                  current: currentCount,
+                  isPaidCredit: true,
+                  paidCreditsRemaining: Math.max(0, remainingPaid)
+                };
+              }
+            } catch (paidErr) {
+              console.warn("[Unified Quota] Failed to check paid credits:", paidErr.message);
+            }
+          }
+
           return {
             allowed: false,
             error: "DAILY_QUOTA_EXHAUSTED",
-            message: `Daily limit reached (${limit}/${limit} AI operations). Your quota resets tomorrow at 12:00 AM IST!`,
+            message: `Daily limit reached (${limit}/${limit} AI operations). Top up extra searches (₹39 for 120 calls) to continue searching today!`,
             remaining: 0,
             current: currentCount
           };

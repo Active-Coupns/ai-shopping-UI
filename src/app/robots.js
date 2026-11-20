@@ -16,6 +16,7 @@ export default function robots() {
           "/events",
           "/events/",
           "/about",
+          "/pricing",
           "/privacy",
           "/terms",
           "/disclaimer",

@@ -9,6 +9,7 @@ const isPublicRoute = createRouteMatcher([
   "/llms-full.txt",
   "/manifest.json",
   "/about(.*)",
+  "/pricing(.*)",
   "/privacy(.*)",
   "/terms(.*)",
   "/disclaimer(.*)",

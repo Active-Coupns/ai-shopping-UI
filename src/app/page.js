@@ -148,6 +148,7 @@ export default function Home() {
   const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
   const [isCountryModalOpen, setIsCountryModalOpen] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [checkoutCategory, setCheckoutCategory] = useState("tryon");
   const [paymentToast, setPaymentToast] = useState(null);
   const [activeFilterChipId, setActiveFilterChipId] = useState("all");
 
@@ -942,18 +943,6 @@ export default function Home() {
 
           {/* 3. Right: Clean Header with Support & Unified Account Hub */}
           <div className="flex items-center gap-2 sm:gap-3 text-xs md:text-sm shrink-0">
-            {/* Dodo Payments Sparks & Passes Trigger */}
-            <button
-              type="button"
-              suppressHydrationWarning
-              onClick={() => setIsCheckoutOpen(true)}
-              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl sm:rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-xs transition-all cursor-pointer active:scale-95 text-xs font-bold shrink-0"
-              title="Get Sparks & VIP Passes"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-white animate-pulse" />
-              <span>Top Up</span>
-            </button>
-
             {/* Support Desk Trigger */}
             <button
               type="button"
@@ -1030,7 +1019,10 @@ export default function Home() {
                   setAppState(products && products.length > 0 ? "results" : "idle");
                 }}
                 onOpenSupportTicket={() => setIsSupportModalOpen(true)}
-                onOpenCheckout={() => setIsCheckoutOpen(true)}
+                onOpenCheckout={() => {
+                  setCheckoutCategory("tryon");
+                  setIsCheckoutOpen(true);
+                }}
               />
             </motion.div>
           )}
@@ -1241,9 +1233,12 @@ export default function Home() {
                   {isSignedIn && (
                     <button
                       type="button"
-                      onClick={() => setIsCheckoutOpen(true)}
+                      onClick={() => {
+                        setCheckoutCategory("search");
+                        setIsCheckoutOpen(true);
+                      }}
                       className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100/80 border border-indigo-200 text-xs font-bold text-brand-indigo shadow-sm cursor-pointer transition-colors"
-                      title="Top up sparks & try-ons"
+                      title="Top up extra searches"
                     >
                       <Coins className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-brand-indigo animate-pulse shrink-0" />
                       <span>{searchesLeft} / 10 <span className="hidden sm:inline">AI Credits</span><span className="sm:hidden">Credits</span></span>
@@ -1465,6 +1460,11 @@ export default function Home() {
             <nav aria-label="Legal and Trust" className="w-full md:w-auto">
               <ul className="grid grid-cols-3 sm:flex sm:flex-wrap items-center justify-center gap-2 sm:gap-4 text-xs font-medium text-slate-600">
                 <li>
+                  <Link href="/pricing" className="block text-center px-2.5 py-1.5 rounded-lg hover:bg-slate-100 hover:text-indigo-600 font-bold text-indigo-600 transition-colors">
+                    Pricing
+                  </Link>
+                </li>
+                <li>
                   <Link href="/about" className="block text-center px-2.5 py-1.5 rounded-lg hover:bg-slate-100 hover:text-indigo-600 transition-colors">
                     About
                   </Link>
@@ -1622,13 +1622,19 @@ export default function Home() {
         }}
         onNavigate={(newState) => setAppState(newState)}
         onOpenSupportTicket={() => setIsSupportModalOpen(true)}
-        onOpenCheckout={() => setIsCheckoutOpen(true)}
+        onOpenCheckout={() => {
+          setCheckoutCategory("search");
+          setIsCheckoutOpen(true);
+        }}
       />
 
       <QuotaModal
         isOpen={isQuotaOpen}
         onClose={() => setIsQuotaOpen(false)}
-        onOpenCheckout={() => setIsCheckoutOpen(true)}
+        onOpenCheckout={() => {
+          setCheckoutCategory("search");
+          setIsCheckoutOpen(true);
+        }}
       />
 
       {/* Dodo Payments Multi-Currency Checkout Modal */}
@@ -1636,6 +1642,7 @@ export default function Home() {
         isOpen={isCheckoutOpen}
         onClose={() => setIsCheckoutOpen(false)}
         selectedCountry={selectedCountry}
+        initialCategory={checkoutCategory}
       />
 
       {/* Head-to-Head Comparison Modal (VS Mode) */}

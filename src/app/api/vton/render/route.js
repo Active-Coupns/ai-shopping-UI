@@ -346,20 +346,43 @@ export async function POST(request) {
 
     if (!quotaRes.allowed && !quotaRes.isBackendError) {
       safeLog('VTON Limiter', 'User exceeded lifetime free quota', { userId, quotaRes });
-      return NextResponse.json(
-        {
-          success: false,
-          error: "FREE_TIER_LIMIT_EXCEEDED",
-          message: "You have used all 3 of your free AI Try-Ons for this account.",
-          upgradeRequired: true,
-          freeTier: {
-            limit: 3,
-            used: quotaRes.confirmedCount || 3,
-            remaining: 0
+
+      // Check if user has active, unexpired paid Try-On credits
+      let hasPaidCredits = false;
+      if (userId && redis) {
+        try {
+          const rawCredits = await redis.get(`user_tryon_credits:${userId}`);
+          const rawExpiry = await redis.get(`user_tryon_expiry:${userId}`);
+          const credits = parseInt(rawCredits || "0", 10);
+          const expiry = parseInt(rawExpiry || "0", 10);
+
+          if (credits > 0 && Date.now() <= expiry) {
+            await redis.decrby(`user_tryon_credits:${userId}`, 1);
+            hasPaidCredits = true;
+            safeLog('VTON Limiter', 'Deducted 1 paid try-on credit', { userId, remaining: credits - 1 });
           }
-        },
-        { status: 403 }
-      );
+        } catch (err) {
+          safeLog('VTON Limiter', 'Paid credit check error', { err: err.message });
+        }
+      }
+
+      if (!hasPaidCredits) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "FREE_TIER_LIMIT_EXCEEDED",
+            message: "You have used all 3 of your free AI Try-Ons. Top up 14 Try-Ons for ₹49 to continue!",
+            upgradeRequired: true,
+            category: "tryon",
+            freeTier: {
+              limit: 3,
+              used: quotaRes.confirmedCount || 3,
+              remaining: 0
+            }
+          },
+          { status: 403 }
+        );
+      }
     }
 
     quotaReserved = true;

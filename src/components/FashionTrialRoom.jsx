@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { Sparkles, Shirt, Camera, RefreshCw, ExternalLink, Check, ChevronRight, Send, ArrowLeft, Lock, X, LifeBuoy, ShieldCheck } from "lucide-react";
 import { useClerk, useUser } from "@clerk/nextjs";
 import { getDeviceFingerprint } from "@/lib/deviceFingerprint";
@@ -1444,8 +1445,14 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
                     className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold text-xs shadow-md active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-1.5"
                   >
                     <Sparkles className="w-3.5 h-3.5" />
-                    <span>Get More Try-Ons (from ₹19 / $0.99)</span>
+                    <span>Get More Try-Ons (14 for ₹49 • 60 Days)</span>
                   </button>
+                  <Link
+                    href="/pricing"
+                    className="block text-center text-[10px] text-amber-800 hover:text-amber-950 font-semibold underline pt-0.5"
+                  >
+                    View All Pricing Plans →
+                  </Link>
                 </div>
               ) : tryonErrorState?.type === "PHOTO_QUALITY" ? (
                 <div className="p-3.5 rounded-2xl text-[11px] font-medium bg-purple-50 text-purple-950 border border-purple-200 shadow-sm space-y-2.5 animate-fade-in">

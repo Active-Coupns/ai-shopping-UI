@@ -1,4 +1,5 @@
 import React from "react";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Sparkles } from "lucide-react";
 
@@ -56,7 +57,7 @@ export default function QuotaModal({ isOpen, onClose, onOpenCheckout }) {
               }}
               className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-700 hover:from-indigo-600 hover:to-indigo-800 text-xs font-bold text-white shadow-lg shadow-indigo-500/25 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
             >
-              <span>⚡ Top Up Sparks (from ₹19 / $0.99)</span>
+              <span>⚡ Top Up Extra Searches (120 Calls for ₹39)</span>
             </button>
           )}
 
@@ -66,6 +67,14 @@ export default function QuotaModal({ isOpen, onClose, onOpenCheckout }) {
           >
             Continue with Free Coupons (₹0)
           </button>
+
+          <Link
+            href="/pricing"
+            onClick={onClose}
+            className="block text-center text-[11px] font-semibold text-indigo-400 hover:text-indigo-300 transition-colors pt-1"
+          >
+            Compare All Pricing &amp; Top-Up Plans →
+          </Link>
         </div>
 
         <div className="p-2.5 rounded-xl bg-slate-800/40 border border-slate-700/40 text-left">
