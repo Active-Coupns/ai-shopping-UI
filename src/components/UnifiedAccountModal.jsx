@@ -20,7 +20,8 @@ export default function UnifiedAccountModal({
   onNavigate,
   onOpenSupportTicket,
   savedDealsCount = 0,
-  onOpenSavedDeals
+  onOpenSavedDeals,
+  onOpenCheckout
 }) {
   const { isSignedIn, user, isLoaded } = useUser();
   const { signOut, openSignIn } = useClerk();
@@ -168,10 +169,22 @@ export default function UnifiedAccountModal({
                   <p className="text-[11px] text-slate-500">Resets automatically every 24 hours</p>
                 </div>
               </div>
-              <div className="text-right">
+              <div className="flex items-center gap-2">
                 <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-xs font-black text-emerald-700">
                   {searchesLeft} / 10 Left
                 </span>
+                {onOpenCheckout && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      onOpenCheckout();
+                    }}
+                    className="px-2.5 py-1 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-bold shadow-xs transition-colors cursor-pointer"
+                  >
+                    + Top Up
+                  </button>
+                )}
               </div>
             </div>
 

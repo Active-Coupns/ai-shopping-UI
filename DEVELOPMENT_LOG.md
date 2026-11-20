@@ -18,6 +18,38 @@
 
 ## 📅 Daily Changelog & Feature Timeline
 
+### 🗓️ 2026-11-20 (Universal Multi-Currency Dodo Payments Gateway & Sparks Top-Up Engine)
+
+* **Status**: 🟢 100% Configured & Integrated
+* **Payment Gateway**: Dodo Payments (Merchant of Record)
+* **Products Created**:
+  - `pdt_0NsLgfLE5oqwEqeTWejLi`: Benefisto Starter (30 Sparks @ ₹19 / $0.99)
+  - `pdt_0NsLgitB68bSsuv45VzFV`: Benefisto Power Shopper (100 Sparks @ ₹49 / $1.99 — 50% Off)
+  - `pdt_0NsLgivPL6SCz7qeataFl`: Benefisto VIP Monthly Pass (AutoPay @ ₹99/mo / $3.99/mo)
+
+#### 🛠️ Features Implemented & Verified:
+1. **Dodo Payments Core Service (`src/services/dodoService.js`)**:
+   - Manages API communication with `https://test.dodopayments.com` (and live mode).
+   - Generates dynamic checkout sessions with customer metadata, plan mapping, and currency localization (INR for India, USD for global).
+2. **Checkout API Endpoint (`/api/payments/checkout`)**:
+   - Resolves Clerk authenticated user details or client IP.
+   - Creates Dodo checkout sessions and returns redirect URLs.
+3. **Webhook Processing Engine (`/api/webhooks/dodo`)**:
+   - Handles `payment.succeeded`, `checkout.session.completed`, and `subscription.active`.
+   - Atomically increments purchased sparks (`user_sparks:${userId}`) and logs payment records in Upstash Redis.
+   - Activates 35-day VIP pass flags for recurring subscribers.
+4. **Interactive UI Integration**:
+   - `DodoCheckoutModal.jsx`: Modern 3-tier selection modal with UPI (GPay/PhonePe), RuPay, Cards, and Apple Pay badges.
+   - Header top bar: "⚡ Top Up" button.
+   - `FashionTrialRoom.jsx`: "Get More Try-Ons" CTA on quota exhaustion + "+ Top Up" button.
+   - `QuotaModal.jsx`: "⚡ Top Up Sparks (from ₹19 / $0.99)" button.
+   - `UnifiedAccountModal.jsx`: "+ Top Up" button next to daily search quota.
+   - `src/app/page.js`: Payment success banner on `?payment=success` return.
+5. **Middleware**:
+   - Whitelisted `/api/payments(.*)` and `/api/webhooks(.*)` as public routes.
+
+---
+
 ### 🗓️ 2026-11-18 (Global SEO Hreflang Tags, IndexNow HTTP 200 Push & Google Analytics GA4 Integration)
 
 * **Git Commits**: `35cd045`, `2bcd433`, `f3cc6c4`

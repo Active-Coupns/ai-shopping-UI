@@ -267,7 +267,7 @@ function getOptimizedThumbUrl(url) {
   return url;
 }
 
-export default function FashionTrialRoom({ initialGarment = null, onBackToSearch, onOpenSupportTicket, selectedCountry = "IN" }) {
+export default function FashionTrialRoom({ initialGarment = null, onBackToSearch, onOpenSupportTicket, selectedCountry = "IN", onOpenCheckout }) {
   const clerk = useClerk();
   const { isSignedIn } = useUser();
   const [gender, setGender] = useState("men");
@@ -1382,6 +1382,15 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
                     ? `${quotaInfo.remaining} / 2 Left` 
                     : "2 / 2 Used"}
                 </span>
+                {onOpenCheckout && (
+                  <button
+                    type="button"
+                    onClick={onOpenCheckout}
+                    className="px-2 py-0.5 rounded-full bg-purple-600 hover:bg-purple-700 text-white text-[10px] font-bold transition-colors cursor-pointer"
+                  >
+                    + Top Up
+                  </button>
+                )}
               </div>
             </div>
 
@@ -1425,11 +1434,17 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
                   </p>
                   <button
                     type="button"
-                    onClick={() => setShowUpgradeModal(true)}
-                    className="w-full py-2 px-3 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-xs active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                    onClick={() => {
+                      if (typeof onOpenCheckout === "function") {
+                        onOpenCheckout();
+                      } else {
+                        setShowUpgradeModal(true);
+                      }
+                    }}
+                    className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold text-xs shadow-md active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-1.5"
                   >
                     <Sparkles className="w-3.5 h-3.5" />
-                    <span>View Upgrade Info</span>
+                    <span>Get More Try-Ons (from ₹19 / $0.99)</span>
                   </button>
                 </div>
               ) : tryonErrorState?.type === "PHOTO_QUALITY" ? (

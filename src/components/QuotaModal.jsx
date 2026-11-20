@@ -2,7 +2,7 @@ import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Sparkles } from "lucide-react";
 
-export default function QuotaModal({ isOpen, onClose }) {
+export default function QuotaModal({ isOpen, onClose, onOpenCheckout }) {
   if (!isOpen) return null;
 
   return (
@@ -41,24 +41,38 @@ export default function QuotaModal({ isOpen, onClose }) {
         </div>
 
         {/* Content */}
-        <h3 className="text-lg font-bold text-white mb-2">Daily AI Limit Reached (10/10)</h3>
+        <h3 className="text-lg font-bold text-white mb-2">Daily Free AI Limit Reached (10/10)</h3>
         <p className="text-xs text-slate-300 leading-relaxed mb-4">
-          You&apos;ve used all 10 free AI operations for today. Your daily allowance resets automatically every midnight (every 24 hours).
+          You&apos;ve used all 10 free AI operations for today. Need instant access for Virtual Try-On or live product teardowns?
         </p>
-        <div className="p-3 mb-6 rounded-xl bg-slate-800/60 border border-slate-700/50 text-left">
-          <p className="text-[11px] font-semibold text-brand-violet mb-1">🏷️ 100% Free &amp; Unlimited Access</p>
-          <p className="text-[11px] text-slate-400 leading-snug">
-            You can continue exploring verified store coupons, trending price drops, and your saved wishlist with zero credits required.
-          </p>
+
+        {/* Action CTAs */}
+        <div className="space-y-2 mb-4">
+          {onOpenCheckout && (
+            <button
+              onClick={() => {
+                onClose();
+                onOpenCheckout();
+              }}
+              className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-700 hover:from-indigo-600 hover:to-indigo-800 text-xs font-bold text-white shadow-lg shadow-indigo-500/25 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+            >
+              <span>⚡ Top Up Sparks (from ₹19 / $0.99)</span>
+            </button>
+          )}
+
+          <button
+            onClick={onClose}
+            className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700/80 text-xs font-semibold text-slate-300 transition-all border border-slate-700 cursor-pointer"
+          >
+            Continue with Free Coupons (₹0)
+          </button>
         </div>
 
-        {/* CTA */}
-        <button
-          onClick={onClose}
-          className="w-full py-2.5 rounded-xl bg-gradient-to-r from-brand-indigo to-brand-violet text-xs font-semibold text-white transition-all shadow-md active:scale-95 cursor-pointer hover:from-brand-indigo/90 hover:to-brand-violet/90"
-        >
-          Got It, Explore Free Deals
-        </button>
+        <div className="p-2.5 rounded-xl bg-slate-800/40 border border-slate-700/40 text-left">
+          <p className="text-[10px] text-slate-400 leading-tight">
+            💡 <strong className="text-slate-300">Instant Access:</strong> Supports UPI (GPay/PhonePe), RuPay, Cards &amp; Apple Pay via Dodo Payments.
+          </p>
+        </div>
       </motion.div>
     </div>
   );

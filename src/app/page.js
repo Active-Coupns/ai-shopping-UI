@@ -26,6 +26,7 @@ const SubscriptionsView = dynamic(() => import("@/components/SubscriptionsView")
 const TravelHubView = dynamic(() => import("@/components/TravelHubView"), { ssr: false });
 const TravelAiAdvisorModal = dynamic(() => import("@/components/TravelAiAdvisorModal"), { ssr: false });
 const QuotaModal = dynamic(() => import("@/components/QuotaModal"), { ssr: false });
+const DodoCheckoutModal = dynamic(() => import("@/components/DodoCheckoutModal"), { ssr: false });
 
 const FashionTrialRoom = dynamic(() => import("@/components/FashionTrialRoom"), {
   ssr: false,
@@ -146,6 +147,8 @@ export default function Home() {
   const [travelAdvisorInitialQuery, setTravelAdvisorInitialQuery] = useState("");
   const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
   const [isCountryModalOpen, setIsCountryModalOpen] = useState(false);
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [paymentToast, setPaymentToast] = useState(null);
   const [activeFilterChipId, setActiveFilterChipId] = useState("all");
 
   // 1. Saved Deals / Bookmarks (LocalStorage persistence)
@@ -257,6 +260,20 @@ export default function Home() {
       if (saved) setSavedDeals(JSON.parse(saved));
       const alerts = localStorage.getItem("benefisto_price_alerts");
       if (alerts) setSavedAlerts(JSON.parse(alerts));
+
+      // Dodo Payments Success Return Handler
+      if (typeof window !== "undefined") {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get("payment") === "success") {
+          const plan = (urlParams.get("plan") || "credits").toUpperCase();
+          setPaymentToast(`🎉 Payment Confirmed! Your ${plan} sparks have been credited successfully.`);
+          urlParams.delete("payment");
+          urlParams.delete("plan");
+          const newSearch = urlParams.toString();
+          const cleanPath = window.location.pathname + (newSearch ? `?${newSearch}` : "");
+          window.history.replaceState({}, "", cleanPath);
+        }
+      }
     } catch (e) {}
   }, []);
 
@@ -813,6 +830,22 @@ export default function Home() {
         </div>
       )}
 
+      {/* Dodo Payment Success Toast */}
+      {paymentToast && (
+        <div className="relative z-50 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white font-bold px-4 py-2.5 text-xs flex items-center justify-between shadow-md">
+          <div className="flex items-center gap-2 mx-auto">
+            <span className="text-sm">🎉</span>
+            <span>{paymentToast}</span>
+          </div>
+          <button
+            onClick={() => setPaymentToast(null)}
+            className="p-1 rounded-md hover:bg-white/20 text-white transition-colors cursor-pointer"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {/* Header / Navbar */}
       <header className="sticky top-0 z-50 w-full glass-panel border-x-0 border-t-0 bg-white/85 backdrop-blur-xl shadow-xs">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-15 sm:h-16 md:h-20 flex items-center justify-between gap-2">
@@ -909,6 +942,18 @@ export default function Home() {
 
           {/* 3. Right: Clean Header with Support & Unified Account Hub */}
           <div className="flex items-center gap-2 sm:gap-3 text-xs md:text-sm shrink-0">
+            {/* Dodo Payments Sparks & Passes Trigger */}
+            <button
+              type="button"
+              suppressHydrationWarning
+              onClick={() => setIsCheckoutOpen(true)}
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl sm:rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-xs transition-all cursor-pointer active:scale-95 text-xs font-bold shrink-0"
+              title="Get Sparks & VIP Passes"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-white animate-pulse" />
+              <span>Top Up</span>
+            </button>
+
             {/* Support Desk Trigger */}
             <button
               type="button"
@@ -985,6 +1030,7 @@ export default function Home() {
                   setAppState(products && products.length > 0 ? "results" : "idle");
                 }}
                 onOpenSupportTicket={() => setIsSupportModalOpen(true)}
+                onOpenCheckout={() => setIsCheckoutOpen(true)}
               />
             </motion.div>
           )}
@@ -1193,10 +1239,16 @@ export default function Home() {
 
                 <div className="flex flex-wrap items-center justify-between sm:justify-end gap-2 sm:gap-3">
                   {isSignedIn && (
-                    <div className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-indigo-50 border border-indigo-200 text-xs font-bold text-brand-indigo shadow-sm">
+                    <button
+                      type="button"
+                      onClick={() => setIsCheckoutOpen(true)}
+                      className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100/80 border border-indigo-200 text-xs font-bold text-brand-indigo shadow-sm cursor-pointer transition-colors"
+                      title="Top up sparks & try-ons"
+                    >
                       <Coins className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-brand-indigo animate-pulse shrink-0" />
-                      <span>{searchesLeft} / 10 <span className="hidden sm:inline">AI Credits Today</span><span className="sm:hidden">Credits</span></span>
-                    </div>
+                      <span>{searchesLeft} / 10 <span className="hidden sm:inline">AI Credits</span><span className="sm:hidden">Credits</span></span>
+                      <span className="text-[10px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-indigo-600 text-white ml-0.5">+ Top Up</span>
+                    </button>
                   )}
                   <button
                     type="button"
@@ -1570,11 +1622,20 @@ export default function Home() {
         }}
         onNavigate={(newState) => setAppState(newState)}
         onOpenSupportTicket={() => setIsSupportModalOpen(true)}
+        onOpenCheckout={() => setIsCheckoutOpen(true)}
       />
 
       <QuotaModal
         isOpen={isQuotaOpen}
         onClose={() => setIsQuotaOpen(false)}
+        onOpenCheckout={() => setIsCheckoutOpen(true)}
+      />
+
+      {/* Dodo Payments Multi-Currency Checkout Modal */}
+      <DodoCheckoutModal
+        isOpen={isCheckoutOpen}
+        onClose={() => setIsCheckoutOpen(false)}
+        selectedCountry={selectedCountry}
       />
 
       {/* Head-to-Head Comparison Modal (VS Mode) */}
