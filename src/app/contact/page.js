@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ShoppingBag, ArrowLeft, Mail, MessageSquare, LifeBuoy, Building2, ShieldAlert, Clock, CheckCircle } from "lucide-react";
+import { ShoppingBag, ArrowLeft, Mail, MessageSquare, LifeBuoy, Building2, ShieldAlert, Clock, CheckCircle, CreditCard } from "lucide-react";
 
 export const metadata = {
   title: "Contact Us & Support — Benefisto AI",
@@ -48,7 +48,7 @@ export default function ContactPage() {
         </p>
 
         {/* Contact Cards Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-10">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-10">
           {/* Card 1: Customer Support */}
           <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800 flex flex-col justify-between">
             <div>
@@ -71,7 +71,29 @@ export default function ContactPage() {
             </div>
           </div>
 
-          {/* Card 2: Merchant & Brand Partnerships */}
+          {/* Card 2: Billing & Top-Up Support */}
+          <div className="p-6 rounded-2xl bg-gradient-to-br from-indigo-950/40 via-slate-900/80 to-slate-900/90 border border-indigo-500/30 flex flex-col justify-between shadow-lg">
+            <div>
+              <div className="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 mb-4">
+                <CreditCard className="w-5 h-5" />
+              </div>
+              <h2 className="text-white font-bold text-base mb-1">Billing & Top-Up Support</h2>
+              <p className="text-xs text-slate-300 leading-relaxed mb-4">
+                Assistance with Try-On / Search credit packs, Dodo checkout receipts, or unreflected credit reconciliations.
+              </p>
+            </div>
+            <div>
+              <a 
+                href="mailto:support@benefisto.com?subject=Billing%20Support" 
+                className="inline-flex items-center gap-2 text-xs font-mono font-semibold text-indigo-400 hover:text-indigo-300 transition-colors"
+              >
+                <span>support@benefisto.com</span>
+              </a>
+              <span className="block text-[11px] text-emerald-400 font-medium mt-1">Reconciliation within 24–48 hours</span>
+            </div>
+          </div>
+
+          {/* Card 3: Merchant & Brand Partnerships */}
           <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800 flex flex-col justify-between">
             <div>
               <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mb-4">

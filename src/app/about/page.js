@@ -111,6 +111,47 @@ export default function AboutPage() {
           </div>
         </div>
 
+        {/* Multi-Vertical Expansion Banner */}
+        <div className="p-6 sm:p-8 rounded-3xl bg-slate-900/60 border border-slate-800 mb-12">
+          <div className="flex items-center gap-2.5 mb-3 text-indigo-400 text-xs font-bold uppercase tracking-wider">
+            <Sparkles className="w-4 h-4" />
+            <span>The Unified Consumer Decision Engine</span>
+          </div>
+          <h3 className="text-xl font-black text-white mb-3">
+            Beyond Retail: Intelligence Across 5 Vital Consumer Verticals
+          </h3>
+          <p className="text-xs sm:text-sm text-slate-400 leading-relaxed mb-4">
+            Benefisto is engineered to be your singular decision co-pilot across every major household discretionary spend:
+          </p>
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-center">
+            <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/80">
+              <span className="text-base block mb-1">🛍️</span>
+              <span className="text-xs font-bold text-white block">Shopping</span>
+              <span className="text-[10px] text-slate-400">Electronics & Retail</span>
+            </div>
+            <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/80">
+              <span className="text-base block mb-1">👗</span>
+              <span className="text-xs font-bold text-white block">AI Trial Room</span>
+              <span className="text-[10px] text-slate-400">Virtual Fit Modeling</span>
+            </div>
+            <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/80">
+              <span className="text-base block mb-1">✈️</span>
+              <span className="text-xs font-bold text-white block">Flights & Stays</span>
+              <span className="text-[10px] text-slate-400">Travel Deal Tracking</span>
+            </div>
+            <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/80">
+              <span className="text-base block mb-1">📺</span>
+              <span className="text-xs font-bold text-white block">OTT & Subs</span>
+              <span className="text-[10px] text-slate-400">Streaming Bundles</span>
+            </div>
+            <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 col-span-2 sm:col-span-1">
+              <span className="text-base block mb-1">🎟️</span>
+              <span className="text-xs font-bold text-white block">Events & Passes</span>
+              <span className="text-[10px] text-slate-400">Shows & Entertainment</span>
+            </div>
+          </div>
+        </div>
+
         {/* Algorithmic Neutrality Guarantee */}
         <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800 mb-12">
           <h2 className="text-white font-bold text-base mb-3 flex items-center gap-2">

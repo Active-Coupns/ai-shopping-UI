@@ -11,6 +11,7 @@ import {
   Lock, 
   Cpu, 
   ExternalLink, 
+  CreditCard,
   HelpCircle, 
   Clock, 
   FileCode, 
@@ -118,24 +119,58 @@ export default function TermsPage() {
           <section className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80">
             <div className="flex items-center gap-2.5 mb-3 text-white font-bold text-base">
               <ExternalLink className="w-5 h-5 text-blue-400" />
-              <h2>3. Third-Party Merchants & Independent Commercial Transactions</h2>
+              <h2>3. Third-Party Merchants, Travel & Independent Commercial Transactions</h2>
             </div>
             <p className="mb-3">
-              When you select a product offer, deal button, or store link on Benefisto, you are redirected via outgoing hyperlink or affiliate tracking conduit to an independent third-party merchant website (such as Amazon, Walmart, Best Buy, Target, Currys, Argos, Flipkart, Croma, or official brand storefronts).
+              When you select a product offer, deal button, flight deal, subscription pass, or event link on Benefisto, you are redirected via outgoing hyperlink or affiliate tracking conduit to an independent third-party merchant website (such as Amazon, Walmart, Best Buy, Target, Currys, Argos, Flipkart, Croma, IndiGo, MakeMyTrip, BookMyShow, or official brand storefronts).
             </p>
             <p className="mb-3">
-              <strong>Independent Contracts:</strong> Any commercial purchase, order placement, monetary payment, credit card transaction, shipping arrangement, product delivery, customer service request, warranty claim, replacement, return, or refund occurs <strong>exclusively and directly between you and the respective third-party merchant</strong>.
+              <strong>Independent Contracts:</strong> Any commercial purchase, order placement, monetary payment, credit card transaction, shipping arrangement, product delivery, flight or event ticket booking, streaming subscription, customer service request, warranty claim, replacement, return, or refund occurs <strong>exclusively and directly between you and the respective third-party merchant</strong>.
+            </p>
+            <p className="mb-3">
+              <strong>Aggregator Status:</strong> Benefisto is strictly a search aggregator and price discovery platform. We are NOT an airline, IATA travel agent, hotelier, OTT streaming provider, or event ticket organizer. We do not issue tickets, fulfill physical goods, or manage third-party subscription billing.
             </p>
             <p>
-              Benefisto is not a party to, nor an agent, partner, joint venturer, or guarantor of, any transaction between you and any third-party merchant. We expressly disclaim any liability, warranty, or responsibility for merchant order non-fulfillment, billing errors, delayed shipments, defective merchandise, counterfeit inventory, or merchant contractual breaches.
+              Benefisto is not a party to, nor an agent, partner, joint venturer, or guarantor of, any transaction between you and any third-party merchant. We expressly disclaim any liability, warranty, or responsibility for merchant order non-fulfillment, billing errors, flight delays, event cancellations, defective merchandise, counterfeit inventory, or merchant contractual breaches.
             </p>
           </section>
 
-          {/* Section 4: Retail Pricing Volatility & Inventory Latency */}
+          {/* Section 4: Benefisto Digital Credit Packs, 60-Day Validity & Final Sale Policy */}
+          <section className="p-6 rounded-2xl bg-gradient-to-br from-indigo-950/40 via-slate-900/80 to-slate-900/90 border border-indigo-500/30 shadow-xl">
+            <div className="flex items-center gap-2.5 mb-3 text-white font-bold text-base">
+              <CreditCard className="w-5 h-5 text-indigo-400" />
+              <h2>4. Benefisto Digital Credit Top-Ups, 60-Day Validity & Final Sale Policy</h2>
+            </div>
+            <p className="mb-3">
+              Benefisto offers optional proprietary digital software services in the form of consumable credit packs for our <strong>Virtual Try-On (VTON)</strong> and <strong>AI Deep Search & Price Discovery</strong> features. By purchasing a digital credit pack on the Platform, you expressly acknowledge and agree to the following terms:
+            </p>
+            <ul className="list-disc list-inside space-y-2 text-slate-300 mb-4 ml-2 text-xs sm:text-sm">
+              <li>
+                <strong>Nature of Consumable Credits:</strong> Credits are non-transferable, intangible digital software allowances provisioned immediately to your authenticated user account balance. They do not constitute legal tender, store cash value, or represent any stored monetary balance.
+              </li>
+              <li>
+                <strong>60-Day Fixed Validity Window:</strong> All purchased credit packs carry a strict <strong>60-day validity window</strong> from the exact timestamp of successful payment confirmation. Credits must be redeemed within this 60-day period. Unredeemed credits expire automatically upon the conclusion of the 60-day window to prevent perpetual server liabilities.
+              </li>
+              <li>
+                <strong>Additive Top-Up & Stacking:</strong> If you purchase an additional credit top-up pack while you still hold active, unexpired credits from a previous purchase, your remaining balance will stack additively (i.e., new credits are added to your existing balance), and the validity window for your entire accumulated balance will extend by 60 days from the date of the latest top-up.
+              </li>
+              <li>
+                <strong>Final Sale & Non-Refundable Nature:</strong> Because our digital software credits are instantly provisioned and GPU resources are reserved upon checkout, <strong>all purchases of digital credit packs are final, non-refundable, and non-cancellable</strong> once transaction processing is initiated.
+              </li>
+              <li>
+                <strong>Technical Delivery & Support Resolution:</strong> In the rare event of a network disruption, delayed payment webhook, or technical glitch where payment was successfully debited but credits fail to appear in your account balance within 24 hours, you agree to contact our dedicated billing and customer support team at <code>support@benefisto.com</code> providing your payment reference ID, registered email, and transaction receipt. Our engineering and support team will promptly verify the gateway records and manually reconcile and credit your account balance within 24–48 hours.
+              </li>
+              <li>
+                <strong>Merchant of Record Disclosure:</strong> All financial checkout transactions, invoicing, payment rail routing (UPI, RuPay, Cards, Apple Pay), and regional tax compliance are securely managed by our authorized global Merchant of Record, <strong>Dodo Payments Inc.</strong> Benefisto does not directly store, capture, or handle raw payment card numbers or banking credentials.
+              </li>
+            </ul>
+          </section>
+
+          {/* Section 5: Retail Pricing Volatility & Inventory Latency */}
           <section className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80">
             <div className="flex items-center gap-2.5 mb-3 text-white font-bold text-base">
               <Clock className="w-5 h-5 text-amber-400" />
-              <h2>4. Real-Time Price Volatility, Deal Expirations & Latency</h2>
+              <h2>5. Real-Time Price Volatility, Deal Expirations & Latency</h2>
             </div>
             <p className="mb-3">
               E-commerce merchant pricing, promotional coupon codes, shipping surcharges, import tariffs, and inventory levels are highly volatile and change dynamically based on retailer algorithms, flash sales, merchant supply constraints, and regional tax variations.
@@ -148,11 +183,11 @@ export default function TermsPage() {
             </p>
           </section>
 
-          {/* Section 5: User Accounts, Authentication & Passwordless Security */}
+          {/* Section 6: User Accounts, Authentication & Passwordless Security */}
           <section className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80">
             <div className="flex items-center gap-2.5 mb-3 text-white font-bold text-base">
               <Lock className="w-5 h-5 text-emerald-400" />
-              <h2>5. User Accounts, Passwordless Verification & Access Credentials</h2>
+              <h2>6. User Accounts, Passwordless Verification & Access Credentials</h2>
             </div>
             <p className="mb-3">
               Benefisto utilizes modern, secure, passwordless authentication architectures (including one-time passcodes delivered to your verified email address and cryptographic identity federation). We do not store or process static account passwords on our servers.
@@ -167,11 +202,11 @@ export default function TermsPage() {
             </p>
           </section>
 
-          {/* Section 6: Acceptable Use Policy & Anti-Scraping / Anti-Bot Prohibitions */}
+          {/* Section 7: Acceptable Use Policy & Anti-Scraping / Anti-Bot Prohibitions */}
           <section className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80">
             <div className="flex items-center gap-2.5 mb-3 text-white font-bold text-base">
               <Ban className="w-5 h-5 text-red-400" />
-              <h2>6. Acceptable Use Policy & Platform Protection Covenants</h2>
+              <h2>7. Acceptable Use Policy & Platform Protection Covenants</h2>
             </div>
             <p className="mb-3">
               Benefisto is engineered and maintained for the personal, non-commercial use of individual human shoppers seeking genuine retail savings. You expressly agree that you shall NOT, directly or indirectly:
@@ -186,11 +221,11 @@ export default function TermsPage() {
             </ul>
           </section>
 
-          {/* Section 7: Virtual Try-On (VTON) & Ephemeral Visual Rendering License */}
+          {/* Section 8: Virtual Try-On (VTON) & Ephemeral Visual Rendering License */}
           <section className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80">
             <div className="flex items-center gap-2.5 mb-3 text-white font-bold text-base">
               <Cpu className="w-5 h-5 text-purple-400" />
-              <h2>7. Virtual Trial Room (VTON) & Ephemeral Visual Processing</h2>
+              <h2>8. Virtual Trial Room (VTON) & Ephemeral Visual Processing</h2>
             </div>
             <p className="mb-3">
               Our Virtual Trial Room allows consumers to generate simulated visual previews of apparel and garments, either by utilizing our pre-rendered model personas or by uploading a personal photograph.
@@ -202,11 +237,11 @@ export default function TermsPage() {
             </ul>
           </section>
 
-          {/* Section 8: AI Shopping Assistant & Algorithmic Disclaimers */}
+          {/* Section 9: AI Shopping Assistant & Algorithmic Disclaimers */}
           <section className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80">
             <div className="flex items-center gap-2.5 mb-3 text-white font-bold text-base">
               <HelpCircle className="w-5 h-5 text-indigo-400" />
-              <h2>8. AI Shopping Assistant, Trust Sheets & Reality Checks</h2>
+              <h2>9. AI Shopping Assistant, Trust Sheets & Reality Checks</h2>
             </div>
             <p className="mb-3">
               Benefisto utilizes artificial intelligence models and algorithmic heuristics to compile Product Trust Sheets, summarize customer review sentiments, generate purchase strategy recommendations, and deliver shopping guidance.
@@ -218,11 +253,11 @@ export default function TermsPage() {
             </ul>
           </section>
 
-          {/* Section 9: Intellectual Property Rights */}
+          {/* Section 10: Intellectual Property Rights */}
           <section className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80">
             <div className="flex items-center gap-2.5 mb-3 text-white font-bold text-base">
               <Scale className="w-5 h-5 text-cyan-400" />
-              <h2>9. Proprietary Intellectual Property Rights</h2>
+              <h2>10. Proprietary Intellectual Property Rights</h2>
             </div>
             <p className="mb-3">
               The Platform and its entire contents, features, and functionality—including but not limited to the &quot;Benefisto&quot; and &quot;Benefisto AI&quot; brand names, logos, software source code, user interface designs, visual layouts, editorial compilations, search indexing architectures, and proprietary heuristics—are the exclusive intellectual property of Benefisto AI and are protected by domestic and international copyright, trademark, patent, trade secret, and other intellectual property laws.
@@ -232,11 +267,11 @@ export default function TermsPage() {
             </p>
           </section>
 
-          {/* Section 10: DMCA & Copyright Takedown Procedure */}
+          {/* Section 11: DMCA & Copyright Takedown Procedure */}
           <section className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80">
             <div className="flex items-center gap-2.5 mb-3 text-white font-bold text-base">
               <FileCode className="w-5 h-5 text-pink-400" />
-              <h2>10. Digital Millennium Copyright Act (DMCA) Notice & Takedown Procedure</h2>
+              <h2>11. Digital Millennium Copyright Act (DMCA) Notice & Takedown Procedure</h2>
             </div>
             <p className="mb-3">
               Benefisto respects the intellectual property rights of copyright holders and complies with the notice-and-takedown provisions of Title 17, United States Code, Section 512(c) (the Digital Millennium Copyright Act, &quot;DMCA&quot;) and corresponding international copyright enforcement rules.
@@ -257,11 +292,11 @@ export default function TermsPage() {
             </p>
           </section>
 
-          {/* Section 11: Third-Party Hyperlinks & External Services */}
+          {/* Section 12: Third-Party Hyperlinks & External Services */}
           <section className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80">
             <div className="flex items-center gap-2.5 mb-3 text-white font-bold text-base">
               <Globe className="w-5 h-5 text-indigo-400" />
-              <h2>11. External Hyperlinks & Third-Party Service Providers</h2>
+              <h2>12. External Hyperlinks & Third-Party Service Providers</h2>
             </div>
             <p className="mb-3">
               The Platform contains links to external websites, software applications, and services owned and operated by independent third parties. These links are provided solely for your convenience and retail price discovery.
@@ -271,11 +306,11 @@ export default function TermsPage() {
             </p>
           </section>
 
-          {/* Section 12: Disclaimer of Warranties */}
+          {/* Section 13: Disclaimer of Warranties */}
           <section className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80">
             <div className="flex items-center gap-2.5 mb-3 text-white font-bold text-base">
               <AlertTriangle className="w-5 h-5 text-amber-400" />
-              <h2>12. Comprehensive Disclaimer of Warranties</h2>
+              <h2>13. Comprehensive Disclaimer of Warranties</h2>
             </div>
             <p className="mb-3">
               TO THE MAXIMUM EXTENT PERMITTED UNDER APPLICABLE LAW, <strong>BENEFISTO AND ALL CONTENT, SOFTWARE, FUNCTIONS, AND INFORMATION MADE AVAILABLE THROUGH THE PLATFORM ARE PROVIDED STRICTLY ON AN &quot;AS-IS&quot; AND &quot;AS-AVAILABLE&quot; BASIS</strong>, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, WHETHER EXPRESS, IMPLIED, STATUTORY, OR OTHERWISE.
@@ -288,11 +323,11 @@ export default function TermsPage() {
             </p>
           </section>
 
-          {/* Section 13: Limitation of Liability */}
+          {/* Section 14: Limitation of Liability */}
           <section className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80">
             <div className="flex items-center gap-2.5 mb-3 text-white font-bold text-base">
               <AlertTriangle className="w-5 h-5 text-red-400" />
-              <h2>13. Comprehensive Limitation of Liability (Zero Monetary Cap)</h2>
+              <h2>14. Comprehensive Limitation of Liability</h2>
             </div>
             <p className="mb-3">
               TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL BENEFISTO AI, ITS FOUNDERS, OFFICERS, DIRECTORS, EMPLOYEES, AFFILIATES, AGENTS, CONTRACTORS, OR LICENSORS BE LIABLE TO YOU OR ANY THIRD PARTY FOR:
@@ -305,18 +340,18 @@ export default function TermsPage() {
               <li>ANY SERVICE INTERRUPTIONS, SERVER DOWNTIME, OR HARDWARE MALFUNCTIONS.</li>
             </ul>
             <p className="mb-3">
-              BECAUSE BENEFISTO IS PROVIDED TO CONSUMERS AS A COMPLIMENTARY, ZERO-COST INFORMATIONAL SERVICE, <strong>OUR TOTAL AGGREGATE LIABILITY ARISING OUT OF OR IN CONNECTION WITH THESE TERMS, THE PLATFORM, OR OUR SERVICES SHALL STRICTLY NOT EXCEED ZERO RUPEES (₹0 INR / $0.00 USD)</strong>.
+              BECAUSE BENEFISTO IS PROVIDED TO CONSUMERS AS A COMPLIMENTARY INFORMATIONAL SERVICE (EXCEPT FOR VOLUNTARY PURCHASES OF CONSUMABLE DIGITAL SOFTWARE CREDIT PACKS), <strong>OUR TOTAL AGGREGATE LIABILITY ARISING OUT OF OR IN CONNECTION WITH THESE TERMS, THE PLATFORM, OR OUR SERVICES SHALL STRICTLY NOT EXCEED THE TOTAL AMOUNT ACTUALLY PAID BY YOU TO BENEFISTO FOR UNUSED DIGITAL CREDITS IN THE PRECEDING THIRTY (30) DAYS, OR ZERO RUPEES (₹0 INR / $0.00 USD) IF NO CREDITS WERE PURCHASED</strong>.
             </p>
             <p className="text-xs text-slate-400">
               * Some jurisdictions do not allow the exclusion or limitation of certain warranties or liability for incidental or consequential damages; in such jurisdictions, our liability shall be limited to the maximum extent permitted by applicable law.
             </p>
           </section>
 
-          {/* Section 14: Indemnification */}
+          {/* Section 15: Indemnification */}
           <section className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80">
             <div className="flex items-center gap-2.5 mb-3 text-white font-bold text-base">
               <Shield className="w-5 h-5 text-indigo-400" />
-              <h2>14. User Indemnification Obligations</h2>
+              <h2>15. User Indemnification Obligations</h2>
             </div>
             <p className="mb-3">
               You agree to defend, indemnify, and hold harmless Benefisto AI, its founders, officers, directors, employees, agents, and successors from and against any and all claims, demands, liabilities, damages, losses, costs, and expenses (including reasonable legal and attorneys&apos; fees) arising out of or directly related to:
@@ -330,11 +365,11 @@ export default function TermsPage() {
             </ul>
           </section>
 
-          {/* Section 15: Mandatory Individual Arbitration & Class Action Waiver */}
+          {/* Section 16: Mandatory Individual Arbitration & Class Action Waiver */}
           <section className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80">
             <div className="flex items-center gap-2.5 mb-3 text-white font-bold text-base">
               <Scale className="w-5 h-5 text-indigo-400" />
-              <h2>15. Dispute Resolution, Mandatory Individual Arbitration & Class Action Waiver</h2>
+              <h2>16. Dispute Resolution, Mandatory Individual Arbitration & Class Action Waiver</h2>
             </div>
             <p className="mb-3">
               <strong>Informal Negotiation:</strong> In the event of any dispute, claim, or controversy arising out of or relating to these Terms or the Platform, you and Benefisto agree to first attempt in good faith to resolve the matter informally for at least thirty (30) days by submitting written notice to <code>support@benefisto.com</code>.
@@ -347,11 +382,11 @@ export default function TermsPage() {
             </p>
           </section>
 
-          {/* Section 16: Governing Law, Severability & Entire Agreement */}
+          {/* Section 17: Governing Law, Severability & Entire Agreement */}
           <section className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80">
             <div className="flex items-center gap-2.5 mb-3 text-white font-bold text-base">
               <Globe className="w-5 h-5 text-emerald-400" />
-              <h2>16. Governing Law, Severability & Entire Agreement</h2>
+              <h2>17. Governing Law, Severability & Entire Agreement</h2>
             </div>
             <p className="mb-3">
               <strong>Governing Law:</strong> For users accessing the Platform from India, these Terms shall be governed by and construed in accordance with the substantive laws of India, with exclusive jurisdiction in the competent courts located in Maharashtra. For international users accessing from the United States, United Kingdom, European Union, Canada, United Arab Emirates, and Australia, claims shall be resolved pursuant to applicable international arbitration standards or mandatory local consumer protection statutes.
@@ -367,20 +402,20 @@ export default function TermsPage() {
             </p>
           </section>
 
-          {/* Section 17: Official Service Contact */}
+          {/* Section 18: Official Service Contact */}
           <section className="p-6 rounded-2xl bg-indigo-950/40 border border-indigo-500/20">
             <div className="flex items-center gap-2.5 mb-2 text-white font-bold text-base">
               <Mail className="w-4 h-4 text-indigo-400" />
-              <h2>Legal Notices & Inquiries</h2>
+              <h2>18. Legal Notices, Billing Support & Inquiries</h2>
             </div>
             <p className="mb-3 text-slate-300">
-              For formal legal notices, statutory inquiries, or copyright takedown requests, please contact our designated legal compliance desk:
+              For formal legal notices, statutory inquiries, digital top-up billing reconciliations, or copyright requests, please contact our designated support and compliance desk:
             </p>
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 font-mono text-xs text-indigo-300">
               <span>support@benefisto.com</span>
             </div>
             <p className="text-xs text-slate-400 mt-3">
-              Benefisto AI • Universal Shopping Decision Engine & Price Discovery Platform
+              Benefisto AI • Universal Shopping Decision Engine, AI Trial Room & Consumable Software Service
             </p>
           </section>
         </div>

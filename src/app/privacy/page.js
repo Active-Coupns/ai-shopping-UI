@@ -16,6 +16,7 @@ import {
   Trash2, 
   ShieldAlert, 
   Scale, 
+  CreditCard,
   Mail 
 } from "lucide-react";
 
@@ -161,11 +162,36 @@ export default function PrivacyPage() {
             </ul>
           </section>
 
-          {/* Section 5: Cloud Infrastructure & Subprocessors */}
+          {/* Section 5: Payment Data Security & Merchant of Record Processing */}
+          <section className="p-6 rounded-2xl bg-gradient-to-br from-indigo-950/40 via-slate-900/80 to-slate-900/90 border border-indigo-500/30 shadow-xl">
+            <div className="flex items-center gap-2.5 mb-3 text-white font-bold text-base">
+              <CreditCard className="w-5 h-5 text-indigo-400" />
+              <h2>5. Payment Data Security & Merchant of Record Processing (Dodo Payments Inc.)</h2>
+            </div>
+            <p className="mb-3">
+              When you voluntarily purchase consumable digital software credit packs (for AI Virtual Try-On or AI Deep Search), financial checkout transactions and billing data are processed exclusively through our authorized global Merchant of Record, <strong>Dodo Payments Inc.</strong>
+            </p>
+            <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 mb-3 text-xs leading-relaxed space-y-2">
+              <p>
+                <strong>PCI-DSS Level 1 Security:</strong> All credit/debit card numbers, UPI handles, Apple Pay credentials, Net Banking authentications, and billing addresses are captured and tokenized directly by Dodo Payments pursuant to the highest PCI-DSS Level 1 compliance standards and end-to-end TLS encryption.
+              </p>
+              <p>
+                <strong>Zero Benefisto Raw Card Storage:</strong> <strong>Benefisto AI does NOT capture, collect, handle, log, or store your raw card numbers, CVV codes, bank PINs, or netbanking passwords on any of our servers</strong>. We never have access to your sensitive financial instruments.
+              </p>
+              <p>
+                <strong>Webhook Reconciliation Data:</strong> Benefisto receives solely an encrypted server-to-server webhook confirmation from Dodo Payments containing an opaque transaction reference ID, your authenticated email/user ID, payment status, currency, and purchased credit bundle size for the sole purpose of provisioning your credits.
+              </p>
+            </div>
+            <p className="text-xs text-slate-400">
+              For billing questions, invoice copies, or payment reconciliation inquiries, contact our billing desk at <strong>support@benefisto.com</strong>.
+            </p>
+          </section>
+
+          {/* Section 6: Cloud Infrastructure & Subprocessors */}
           <section className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80">
             <div className="flex items-center gap-2.5 mb-3 text-white font-bold text-base">
               <Server className="w-5 h-5 text-emerald-400" />
-              <h2>5. Cloud Infrastructure, Hosting & Subprocessors</h2>
+              <h2>6. Cloud Infrastructure, Hosting & Subprocessors</h2>
             </div>
             <p className="mb-3">
               Benefisto partners with premier, SOC2 Type II, ISO 27001, and PCI-DSS certified cloud infrastructure providers to host and secure our platform. We categorize our third-party subprocessors by operational function:
@@ -174,6 +200,10 @@ export default function PrivacyPage() {
               <div className="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800">
                 <span className="text-white font-semibold text-xs block mb-1">Global Edge Network & DDoS Mitigation</span>
                 <p className="text-xs text-slate-400">Enterprise edge caching, DNS routing, TLS encryption termination, Web Application Firewall (WAF), and automated bot challenge resolution.</p>
+              </div>
+              <div className="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800">
+                <span className="text-white font-semibold text-xs block mb-1">Merchant of Record & Payment Rail Processing</span>
+                <p className="text-xs text-slate-400">PCI-DSS Level 1 compliant digital software billing, merchant of record processing, regional tax compliance, and automated fraud prevention (Dodo Payments Inc.).</p>
               </div>
               <div className="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800">
                 <span className="text-white font-semibold text-xs block mb-1">Secure Authentication & Identity Federation</span>
@@ -193,11 +223,11 @@ export default function PrivacyPage() {
             </p>
           </section>
 
-          {/* Section 6: Cross-Border Transfers & Regional Data Localization */}
+          {/* Section 7: Cross-Border Transfers & Regional Data Localization */}
           <section className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80">
             <div className="flex items-center gap-2.5 mb-3 text-white font-bold text-base">
               <Globe className="w-5 h-5 text-cyan-400" />
-              <h2>6. Cross-Border Data Transfers & Regional Data Partitioning</h2>
+              <h2>7. Cross-Border Data Transfers & Regional Data Partitioning</h2>
             </div>
             <p className="mb-3">
               Benefisto operates across multiple international consumer retail markets (including India, the United States, the United Kingdom, Canada, the European Union, the United Arab Emirates, and Australia).
@@ -210,11 +240,11 @@ export default function PrivacyPage() {
             </p>
           </section>
 
-          {/* Section 7: Cookies, LocalStorage & Session State */}
+          {/* Section 8: Cookies, LocalStorage & Session State */}
           <section className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80">
             <div className="flex items-center gap-2.5 mb-3 text-white font-bold text-base">
               <Key className="w-5 h-5 text-amber-400" />
-              <h2>7. Cookies & Local Browser Storage</h2>
+              <h2>8. Cookies & Local Browser Storage</h2>
             </div>
             <p className="mb-3">
               Benefisto deploys minimal, strictly necessary cookies and HTML5 LocalStorage entries designed exclusively to support essential platform operations:
@@ -229,11 +259,11 @@ export default function PrivacyPage() {
             </p>
           </section>
 
-          {/* Section 8: Telemetry, Error Logs & Zero Session Replay */}
+          {/* Section 9: Telemetry, Error Logs & Zero Session Replay */}
           <section className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80">
             <div className="flex items-center gap-2.5 mb-3 text-white font-bold text-base">
               <ShieldAlert className="w-5 h-5 text-red-400" />
-              <h2>8. Error Logging & Strict Zero Session Replay Guarantee</h2>
+              <h2>9. Error Logging & Strict Zero Session Replay Guarantee</h2>
             </div>
             <p className="mb-3">
               To guarantee the operational stability and security of our search systems, we maintain an automated error telemetry pipeline:
@@ -244,11 +274,11 @@ export default function PrivacyPage() {
             </ul>
           </section>
 
-          {/* Section 9: Data Retention & Automated Erasure */}
+          {/* Section 10: Data Retention & Automated Erasure */}
           <section className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80">
             <div className="flex items-center gap-2.5 mb-3 text-white font-bold text-base">
               <Trash2 className="w-5 h-5 text-pink-400" />
-              <h2>9. Data Retention & Automated Erasure Schedules</h2>
+              <h2>10. Data Retention & Automated Erasure Schedules</h2>
             </div>
             <p className="mb-3">
               We adhere strictly to the principle of storage limitation:
@@ -261,11 +291,11 @@ export default function PrivacyPage() {
             </ul>
           </section>
 
-          {/* Section 10: Technical & Organizational Security Measures */}
+          {/* Section 11: Technical & Organizational Security Measures */}
           <section className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80">
             <div className="flex items-center gap-2.5 mb-3 text-white font-bold text-base">
               <Lock className="w-5 h-5 text-emerald-400" />
-              <h2>10. Technical & Organizational Security Measures (TOMs)</h2>
+              <h2>11. Technical & Organizational Security Measures (TOMs)</h2>
             </div>
             <p className="mb-3">
               Benefisto implements robust, multi-layered cybersecurity safeguards to protect against unauthorized access, alteration, disclosure, or destruction of data:
@@ -278,11 +308,11 @@ export default function PrivacyPage() {
             </ul>
           </section>
 
-          {/* Section 11: Global Data Subject Rights */}
+          {/* Section 12: Global Data Subject Rights */}
           <section className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80">
             <div className="flex items-center gap-2.5 mb-3 text-white font-bold text-base">
               <UserCheck className="w-5 h-5 text-indigo-400" />
-              <h2>11. Your Global Legal Rights (GDPR, DPDP Act 2023, CCPA)</h2>
+              <h2>12. Your Global Legal Rights (GDPR, DPDP Act 2023, CCPA)</h2>
             </div>
             <p className="mb-3">
               Regardless of your geographic location, Benefisto respects and enforces your statutory data privacy rights:
@@ -300,11 +330,11 @@ export default function PrivacyPage() {
             </p>
           </section>
 
-          {/* Section 12: California Consumer Privacy Act Disclosures */}
+          {/* Section 13: California Consumer Privacy Act Disclosures */}
           <section className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80">
             <div className="flex items-center gap-2.5 mb-3 text-white font-bold text-base">
               <ShieldCheck className="w-5 h-5 text-purple-400" />
-              <h2>12. California Consumer Privacy Act (CCPA / CPRA) Disclosures</h2>
+              <h2>13. California Consumer Privacy Act (CCPA / CPRA) Disclosures</h2>
             </div>
             <p className="mb-3">
               This section supplements our policy for residents of California pursuant to the California Consumer Privacy Act of 2018 as amended by the California Privacy Rights Act of 2020 (collectively, &quot;CCPA&quot;):
@@ -320,11 +350,11 @@ export default function PrivacyPage() {
             </p>
           </section>
 
-          {/* Section 13: Protection of Minors & COPPA */}
+          {/* Section 14: Protection of Minors & COPPA */}
           <section className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80">
             <div className="flex items-center gap-2.5 mb-3 text-white font-bold text-base">
               <AlertCircle className="w-5 h-5 text-amber-400" />
-              <h2>13. Protection of Minors (COPPA & Global Safeguards)</h2>
+              <h2>14. Protection of Minors (COPPA & Global Safeguards)</h2>
             </div>
             <p className="mb-3">
               Benefisto is a universal shopping guide intended solely for general adult audiences and individuals with legal shopping capacity. The Platform is not structured or directed toward children under the age of 18 (or under 13 for purposes of the US Children&apos;s Online Privacy Protection Act, &quot;COPPA&quot;; or under 16 for purposes of the EU GDPR).
@@ -334,11 +364,11 @@ export default function PrivacyPage() {
             </p>
           </section>
 
-          {/* Section 14: Data Protection Officer, Grievance Desk & Updates */}
+          {/* Section 15: Data Protection Officer, Grievance Desk & Updates */}
           <section className="p-6 rounded-2xl bg-indigo-950/40 border border-indigo-500/20">
             <div className="flex items-center gap-2.5 mb-2 text-white font-bold text-base">
               <Mail className="w-4 h-4 text-indigo-400" />
-              <h2>Data Protection Officer & Grievance Redressal Desk</h2>
+              <h2>15. Data Protection Officer & Grievance Redressal Desk</h2>
             </div>
             <p className="mb-3 text-slate-300">
               For any questions, privacy inquiries, data subject access requests, or grievance complaints under the Indian DPDP Act 2023 or GDPR, please contact our dedicated Data Protection and Grievance Officer:

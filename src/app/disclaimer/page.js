@@ -68,21 +68,43 @@ export default function DisclaimerPage() {
         </div>
 
         <div className="space-y-8 text-slate-300 text-sm leading-relaxed">
-          {/* Section 1: Independent Shopping Guide */}
+          {/* Section 1: Two-Tier Model: Software Tools vs. Third-Party Multi-Vertical Aggregation */}
           <section className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80">
             <div className="flex items-center gap-2.5 mb-3 text-white font-bold text-base">
               <Scale className="w-5 h-5 text-indigo-400" />
-              <h2>1. Independent Shopping Guide (We Are Not a Merchant or Seller)</h2>
+              <h2>1. Two-Tier Operating Model: Proprietary AI Software vs. Third-Party Multi-Vertical Aggregation</h2>
             </div>
             <p className="mb-3">
-              Benefisto (<strong>https://www.benefisto.com</strong>) operates strictly as an independent technological intermediary, consumer shopping decision engine, and retail price discovery guide.
+              Benefisto (<strong>https://www.benefisto.com</strong>) operates under a defined two-tier platform architecture:
             </p>
+            <div className="space-y-3 mb-4">
+              <div className="p-3.5 rounded-xl bg-slate-900/90 border border-indigo-500/30">
+                <span className="text-indigo-400 font-bold text-xs block mb-1">Tier 1: Proprietary AI Software & Consumable Credit Services</span>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Benefisto provides its own proprietary software tools—specifically our neural Virtual Try-On (VTON) visual fitting room and AI Deep Search discovery engine. Optional consumable credit packs for these digital software tools are purchased directly on our platform via our authorized Merchant of Record, <strong>Dodo Payments Inc.</strong> All purchases of digital software credits are consumable, final, and non-refundable.
+                </p>
+              </div>
+              <div className="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800">
+                <span className="text-emerald-400 font-bold text-xs block mb-1">Tier 2: Independent Third-Party Physical Goods, Flights, OTT & Event Aggregation</span>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  For all physical merchandise, flight bookings, hotel reservations, OTT streaming passes, and event ticketing, <strong>Benefisto acts strictly as a neutral technological search aggregator and price comparison engine</strong>. We do NOT sell, warehouse, ship, fulfill, or invoice any third-party physical goods, nor do we issue airline tickets, hotel vouchers, streaming credentials, or event passes.
+                </p>
+              </div>
+            </div>
             <p className="mb-3">
-              <strong>We do not sell, warehouse, inventory, ship, deliver, or invoice any goods or services.</strong> We do not operate an e-commerce marketplace, nor do we act as an authorized reseller, manufacturer, or logistics distributor for any brand or merchant displayed on our platform.
+              Any commercial transaction for third-party goods or services—including monetary payment, delivery logistics, seat allocations, flight delays, event cancellations, streaming subscription renewals, and warranty/refund claims—takes place <strong>exclusively and directly between you and the independent third-party merchant or service provider</strong> (such as Amazon, Walmart, Best Buy, Target, Flipkart, Croma, IndiGo, MakeMyTrip, BookMyShow, or Netflix).
             </p>
-            <p className="mb-3">
-              Any commercial transaction—including payment execution, credit/debit card processing, order confirmation, shipping logistics, physical packaging, product warranties, return requests, and customer service issues—takes place <strong>exclusively and directly on the external merchant&apos;s official website</strong> (such as Amazon, Walmart, Best Buy, Target, Currys, Argos, Flipkart, Croma, or official brand storefronts).
-            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mb-3 text-[11px] text-slate-400">
+              <div className="p-2.5 rounded-lg bg-slate-950/60 border border-slate-800">
+                <strong className="text-white block mb-0.5">Flights & Stays:</strong> Airlines & booking engines independently manage fares, baggage rules, flight schedules, and cancellations.
+              </div>
+              <div className="p-2.5 rounded-lg bg-slate-950/60 border border-slate-800">
+                <strong className="text-white block mb-0.5">OTT & Subscriptions:</strong> Streaming networks control catalogue availability, streaming resolution, and recurring plan renewals.
+              </div>
+              <div className="p-2.5 rounded-lg bg-slate-950/60 border border-slate-800">
+                <strong className="text-white block mb-0.5">Event Passes:</strong> Event organizers control venue entry, security gates, seating charts, and date postponements.
+              </div>
+            </div>
             <p className="text-xs text-slate-400">
               * Pursuant to Section 79 of the Indian Information Technology Act, 2000, Section 230 of the United States Communications Decency Act, and the EU e-Commerce Directive, Benefisto disclaims direct liability for merchant transactions, product defects, or third-party retailer conduct.
             </p>
