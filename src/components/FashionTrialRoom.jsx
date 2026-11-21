@@ -549,9 +549,9 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
         if (data.upgradeRequired || data.error === "FREE_TIER_LIMIT_EXCEEDED" || data.error === "IP_FREE_TRIAL_EXHAUSTED" || data.error === "DEVICE_FREE_TRIAL_EXHAUSTED") {
           setQuotaInfo(data.freeTier || null);
           setShowUpgradeModal(true);
-          const msg = data.message || "Free limit reached (3/3 try-ons used). To continue, upgrade to Zippy Sachet pack (₹10 for 5 try-ons).";
+          const msg = data.message || "Free limit reached (3/3 try-ons used). To continue, top up 14 Try-Ons for ₹49.";
           setTryonErrorMsg(msg);
-          setTryonErrorState({ type: "QUOTA", message: msg, guidance: "Upgrade to continue trying on outfits." });
+          setTryonErrorState({ type: "QUOTA", message: msg, guidance: "Top up 14 Try-Ons (60-day validity) to continue." });
         } else {
           const errMsg = data.error || "Virtual Dressing Room is at peak capacity right now! Our AI stylists are serving thousands of shoppers. Your try-on quota has NOT been deducted. Please try again in 1-2 minutes.";
           setTryonErrorMsg(errMsg);
@@ -1358,40 +1358,51 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
             )}
 
             {/* Sleek Minimal Try-On Quota Status */}
-            <div className="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200/80 text-xs">
+            <div className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl border text-xs ${
+              quotaInfo?.paidCredits > 0
+                ? "bg-gradient-to-r from-purple-50 via-indigo-50/50 to-white border-purple-200"
+                : "bg-slate-50 border-slate-200/80"
+            }`}>
               <div className="flex items-center gap-2">
                 <Sparkles className="w-3.5 h-3.5 text-purple-600" />
-                <span className="font-semibold text-slate-700">Free AI Try-Ons</span>
+                <span className="font-semibold text-slate-700">
+                  {quotaInfo?.paidCredits > 0 ? "Active Try-On Pack" : "Free AI Try-Ons"}
+                </span>
               </div>
               <div className="flex items-center gap-2.5">
-                <div className="flex items-center gap-1.5">
-                  <div 
-                    title={(quotaInfo?.remaining ?? 2) >= 1 ? "1st Try-On Available" : "1st Try-On Used"}
-                    className={`w-2 h-2 rounded-full transition-all ${
-                      (quotaInfo?.remaining ?? 2) >= 1 ? "bg-emerald-500 ring-2 ring-emerald-200" : "bg-slate-300"
-                    }`} 
-                  />
-                  <div 
-                    title={(quotaInfo?.remaining ?? 2) >= 2 ? "2nd Try-On Available" : "2nd Try-On Used"}
-                    className={`w-2 h-2 rounded-full transition-all ${
-                      (quotaInfo?.remaining ?? 2) >= 2 ? "bg-emerald-500 ring-2 ring-emerald-200" : "bg-slate-300"
-                    }`} 
-                  />
-                </div>
-                <span className="font-bold text-slate-900 text-[11px]">
-                  {(quotaInfo?.remaining ?? 2) > 0 
-                    ? `${quotaInfo.remaining} / 2 Left` 
-                    : "2 / 2 Used"}
-                </span>
-                {onOpenCheckout && (
-                  <button
-                    type="button"
-                    onClick={onOpenCheckout}
-                    className="px-2 py-0.5 rounded-full bg-purple-600 hover:bg-purple-700 text-white text-[10px] font-bold transition-colors cursor-pointer"
-                  >
-                    + Top Up
-                  </button>
+                {quotaInfo?.paidCredits > 0 ? (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800 text-[11px] font-black border border-purple-200">
+                    ⚡ {quotaInfo.paidCredits} Paid Try-Ons Active
+                  </span>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-1.5">
+                      {[1, 2, 3].map((num) => {
+                        const isAvailable = (quotaInfo?.remaining ?? 3) >= num;
+                        return (
+                          <div 
+                            key={num}
+                            title={isAvailable ? `${num} Try-On Available` : `${num} Try-On Used`}
+                            className={`w-2 h-2 rounded-full transition-all ${
+                              isAvailable ? "bg-emerald-500 ring-2 ring-emerald-200" : "bg-slate-300"
+                            }`} 
+                          />
+                        );
+                      })}
+                    </div>
+                    <span className="font-bold text-slate-900 text-[11px]">
+                      {(quotaInfo?.remaining ?? 3) > 0 
+                        ? `${quotaInfo.remaining} / 3 Left` 
+                        : "3 / 3 Used"}
+                    </span>
+                  </>
                 )}
+                <a
+                  href="/pricing"
+                  className="px-2 py-0.5 rounded-full bg-purple-600 hover:bg-purple-700 text-white text-[10px] font-bold transition-colors cursor-pointer"
+                >
+                  + Top Up
+                </a>
               </div>
             </div>
 

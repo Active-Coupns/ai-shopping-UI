@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { useUser } from "@clerk/nextjs";
+import { useUser, useClerk } from "@clerk/nextjs";
 import { detectUserCountry } from "@/lib/countryDetector";
 import { 
   ShoppingBag, 
@@ -25,12 +25,27 @@ import { DODO_PRODUCTS, COUNTRY_CONFIG } from "@/services/dodoService";
 import DodoCheckoutModal from "@/components/DodoCheckoutModal";
 
 export default function PricingPage() {
-  const { user: clerkUser, isLoaded } = useUser();
+  const { user: clerkUser, isLoaded, isSignedIn } = useUser();
+  const clerk = useClerk();
   const [activeTab, setActiveTab] = useState("tryon"); // "tryon" or "search"
   const [selectedCountry, setSelectedCountry] = useState("IN");
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [checkoutPlan, setCheckoutPlan] = useState("tryon_medium");
   const [loadingPlan, setLoadingPlan] = useState("");
+
+  // Handle auto-checkout if user was redirected back after sign-in
+  useEffect(() => {
+    if (isLoaded && isSignedIn && typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const plan = params.get("plan");
+      const auto = params.get("autocheckout");
+      if (auto === "1" && plan && DODO_PRODUCTS[plan]) {
+        // Clean URL params so it doesn't loop
+        window.history.replaceState({}, "", "/pricing");
+        handleDirectCheckout(plan);
+      }
+    }
+  }, [isLoaded, isSignedIn]);
 
   // Sync country from Clerk profile, localStorage, or real-time IP detection
   useEffect(() => {
@@ -95,6 +110,17 @@ export default function PricingPage() {
   const currentPlans = activeTab === "tryon" ? tryonPlans : searchPlans;
 
   const handleDirectCheckout = async (planKey) => {
+    // 1. Mandatory Sign-In check so credits are reliably linked to user's verified account
+    if (!isSignedIn) {
+      if (clerk && typeof clerk.openSignIn === "function") {
+        clerk.openSignIn({
+          afterSignInUrl: `/pricing?plan=${planKey}&autocheckout=1`,
+          afterSignUpUrl: `/pricing?plan=${planKey}&autocheckout=1`
+        });
+      }
+      return;
+    }
+
     setLoadingPlan(planKey);
     try {
       const res = await fetch("/api/payments/checkout", {
@@ -187,6 +213,27 @@ export default function PricingPage() {
           <p className="text-sm sm:text-base text-slate-400 leading-relaxed font-light">
             Pay only when you need extra credits. Every top-up gives you a full <strong>60 days validity</strong> and stacks additively to your existing balance.
           </p>
+
+          {/* Account Link Indicator */}
+          {isLoaded && (
+            <div className="mt-3.5">
+              {isSignedIn ? (
+                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold shadow-xs">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>Purchases will link to <strong>{clerkUser?.primaryEmailAddress?.emailAddress || clerkUser?.fullName}</strong></span>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => clerk?.openSignIn?.()}
+                  className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 text-xs font-semibold cursor-pointer transition-colors"
+                >
+                  <span className="w-2 h-2 rounded-full bg-indigo-400" />
+                  <span>Not signed in — Click to sign in or choose a plan below</span>
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Service Tabs */}
           <div className="mt-8 inline-flex p-1 bg-slate-900/90 rounded-2xl border border-slate-800 shadow-xl">

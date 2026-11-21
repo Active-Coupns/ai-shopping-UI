@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useUser, useClerk } from "@clerk/nextjs";
 import { Sparkles, Zap, Check, ShieldCheck, ArrowRight, Loader2, X, Shirt, Search, Globe, Clock, Layers } from "lucide-react";
 import { DODO_PRODUCTS, COUNTRY_CONFIG } from "@/services/dodoService";
 
@@ -10,6 +11,8 @@ export default function DodoCheckoutModal({
   selectedCountry = "IN", 
   initialCategory = "tryon"
 }) {
+  const { isSignedIn } = useUser();
+  const clerk = useClerk();
   const [activeTab, setActiveTab] = useState(initialCategory || "tryon"); // "tryon" or "search"
   const [activeCountry, setActiveCountry] = useState(selectedCountry || "IN");
   const [selectedPlan, setSelectedPlan] = useState(initialCategory === "search" ? "search_medium" : "tryon_medium");
@@ -42,6 +45,14 @@ export default function DodoCheckoutModal({
   };
 
   const handleCheckout = async (planKey) => {
+    if (!isSignedIn) {
+      if (clerk && typeof clerk.openSignIn === "function") {
+        onClose();
+        clerk.openSignIn();
+      }
+      return;
+    }
+
     setIsLoading(true);
     setErrorMessage("");
 

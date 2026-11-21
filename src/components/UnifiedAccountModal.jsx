@@ -29,6 +29,18 @@ export default function UnifiedAccountModal({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState(null);
+  const [liveQuota, setLiveQuota] = useState(null);
+
+  // Fetch real-time live balances (Free + Paid Try-On and Search)
+  useEffect(() => {
+    if (!isOpen) return;
+    fetch("/api/user/quota", { cache: "no-store" })
+      .then(res => res.json())
+      .then(data => {
+        if (data?.success) setLiveQuota(data);
+      })
+      .catch(() => {});
+  }, [isOpen, isSignedIn]);
       const handleDeleteAccount = async () => {
     setIsDeleting(true);
     setDeleteError(null);
@@ -158,32 +170,90 @@ export default function UnifiedAccountModal({
               </div>
             )}
 
-            {/* 2. Daily Search Quota Pill */}
-            <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-indigo-100/80 text-brand-indigo">
-                  <Zap className="w-4 h-4" />
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-slate-900">Daily AI Search Allowance</p>
-                  <p className="text-[11px] text-slate-500">Resets automatically every 24 hours</p>
-                </div>
+            {/* 2. Unified Credit Wallets (AI Search + Virtual Try-On) */}
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between px-1">
+                <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                  Your Credit & Allowance Wallets
+                </h4>
+                <a
+                  href="/pricing"
+                  onClick={onClose}
+                  className="text-[11px] font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-0.5"
+                >
+                  View Pricing Packs →
+                </a>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-xs font-black text-emerald-700">
-                  {searchesLeft} / 10 Left
-                </span>
-                {onOpenCheckout && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onClose();
-                      onOpenCheckout();
-                    }}
-                    className="px-2.5 py-1 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-bold shadow-xs transition-colors cursor-pointer"
-                  >
-                    + Top Up
-                  </button>
+
+              {/* Wallet A: AI Search Engine */}
+              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 rounded-xl bg-indigo-100 text-indigo-700">
+                      <Zap className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-slate-900">AI Search Engine</p>
+                      <p className="text-[11px] text-slate-500">
+                        {liveQuota?.paidSearchCredits > 0 
+                          ? `${liveQuota.freeSearchesLeft ?? 10} daily free + ${liveQuota.paidSearchCredits} top-up credits`
+                          : "10 free queries reset daily at midnight"}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-xs font-black text-emerald-700">
+                      {(liveQuota?.searchesLeft ?? searchesLeft)} Available
+                    </span>
+                    <a
+                      href="/pricing"
+                      onClick={onClose}
+                      className="px-2.5 py-1 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-bold shadow-xs transition-colors cursor-pointer"
+                    >
+                      + Top Up
+                    </a>
+                  </div>
+                </div>
+                {liveQuota?.paidSearchCredits > 0 && liveQuota?.searchExpiry && (
+                  <div className="text-[10px] text-indigo-700 bg-indigo-50/80 px-2.5 py-1 rounded-lg border border-indigo-100 font-medium">
+                    ⚡ {liveQuota.paidSearchCredits} paid top-up searches active (Valid till {new Date(liveQuota.searchExpiry).toLocaleDateString()})
+                  </div>
+                )}
+              </div>
+
+              {/* Wallet B: Virtual Try-On Studio */}
+              <div className="p-3.5 rounded-2xl bg-gradient-to-r from-purple-50/50 via-pink-50/30 to-white border border-purple-100/80 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 rounded-xl bg-purple-100 text-purple-700">
+                      <Shirt className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-slate-900">Virtual Try-On (VTON)</p>
+                      <p className="text-[11px] text-slate-500">
+                        {liveQuota?.paidTryonCredits > 0
+                          ? `${liveQuota.paidTryonCredits} high-speed GPU try-ons active`
+                          : "3 free lifetime try-ons per account"}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-purple-50 border border-purple-200 text-xs font-black text-purple-700">
+                      {liveQuota?.paidTryonCredits > 0 ? `${liveQuota.paidTryonCredits} Paid Active` : "Free Tier"}
+                    </span>
+                    <a
+                      href="/pricing"
+                      onClick={onClose}
+                      className="px-2.5 py-1 rounded-full bg-purple-600 hover:bg-purple-700 text-white text-[11px] font-bold shadow-xs transition-colors cursor-pointer"
+                    >
+                      + Top Up
+                    </a>
+                  </div>
+                </div>
+                {liveQuota?.paidTryonCredits > 0 && liveQuota?.tryonExpiry && (
+                  <div className="text-[10px] text-purple-700 bg-purple-50/80 px-2.5 py-1 rounded-lg border border-purple-100 font-medium">
+                    ✨ {liveQuota.paidTryonCredits} Try-On credits active (60-day validity till {new Date(liveQuota.tryonExpiry).toLocaleDateString()})
+                  </div>
                 )}
               </div>
             </div>

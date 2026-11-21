@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getAuth, currentUser } from "@clerk/nextjs/server";
 import { createDodoCheckoutSession, DODO_PRODUCTS } from "@/services/dodoService";
 import { extractTrustedClientIp } from "@/services/rateLimiter";
+import { redis } from "@/services/redis";
 
 export const dynamic = "force-dynamic";
 
@@ -20,11 +21,23 @@ export async function POST(request) {
         userName = user?.fullName || user?.firstName || "Shopper";
       }
     } catch (_) {
-      // Guest or non-logged in
+      userId = null;
+    }
+
+    // Enforce mandatory authentication so top-up credits are always permanently linked to user account
+    if (!userId) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "UNAUTHORIZED",
+          message: "Please sign in with your email to link your top-up credits to your account."
+        },
+        { status: 401 }
+      );
     }
 
     const body = await request.json().catch(() => ({}));
-    const { planKey = "power", country = "IN", returnUrl } = body;
+    const { planKey = "tryon_medium", country = "IN", returnUrl } = body;
 
     if (!DODO_PRODUCTS[planKey]) {
       return NextResponse.json(
@@ -33,15 +46,16 @@ export async function POST(request) {
       );
     }
 
-    const clientIp = extractTrustedClientIp(request);
-    const resolvedUserId = userId || `anon_${clientIp.replace(/[^a-zA-Z0-9]/g, "_").slice(0, 20)}`;
+    if (userEmail && redis) {
+      redis.set(`email_to_user_id:${userEmail.toLowerCase().trim()}`, userId, { ex: 90 * 24 * 3600 }).catch(() => {});
+    }
 
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://www.benefisto.com");
     const finalReturnUrl = returnUrl || `${baseUrl}/?payment=success&plan=${planKey}`;
 
     const session = await createDodoCheckoutSession({
       planKey,
-      userId: resolvedUserId,
+      userId,
       userEmail: userEmail || `shopper_${Date.now()}@benefisto.com`,
       userName,
       country,

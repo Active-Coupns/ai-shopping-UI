@@ -7,6 +7,27 @@ const DODO_API_KEY = process.env.DODO_PAYMENTS_API_KEY || "dodo_test_JpP4KvwP6Ck
 const IS_LIVE = DODO_API_KEY.startsWith("dodo_live_") || process.env.DODO_PAYMENTS_MODE === "live";
 const DODO_BASE_URL = IS_LIVE ? "https://live.dodopayments.com" : "https://test.dodopayments.com";
 
+const LIVE_PRODUCT_IDS = {
+  tryon_medium: "pdt_0NsPQyJ5kRsnh2Ez2iz5z",
+  tryon_large: "pdt_0NsPR1cPQuX4dgkldfe1c",
+  search_medium: "pdt_0NsPR1fUYu9UvLugIhLBo",
+  search_large: "pdt_0NsPR1hEd0GbVRSCUSSnA"
+};
+
+const TEST_PRODUCT_IDS = {
+  tryon_medium: "pdt_0NsMRB0afKy5FubtlNt7G",
+  tryon_large: "pdt_0NsMRB2VG2QaXxa2csfnp",
+  search_medium: "pdt_0NsMRB5gQlAg1apTrj9tz",
+  search_large: "pdt_0NsMRBD7GcWtPXhZh08cW"
+};
+
+export function getDodoProductId(planKey) {
+  if (IS_LIVE) {
+    return LIVE_PRODUCT_IDS[planKey] || LIVE_PRODUCT_IDS.tryon_medium;
+  }
+  return TEST_PRODUCT_IDS[planKey] || TEST_PRODUCT_IDS.tryon_medium;
+}
+
 export const COUNTRY_CONFIG = {
   IN: { code: "INR", symbol: "₹", name: "India" },
   US: { code: "USD", symbol: "$", name: "United States" },
@@ -109,12 +130,13 @@ export async function createDodoCheckoutSession({
   returnUrl = "https://www.benefisto.com/?payment=success"
 }) {
   const product = DODO_PRODUCTS[planKey] || DODO_PRODUCTS.tryon_medium;
+  const productId = getDodoProductId(planKey);
   const currency = country === "IN" ? "INR" : "USD";
 
   const payload = {
     product_cart: [
       {
-        product_id: product.id,
+        product_id: productId,
         quantity: 1
       }
     ],
