@@ -115,9 +115,16 @@ ShopSmart AI is **NOT a generic coupon website**, nor a spammy affiliate blog. I
 > **PERMANENT SYSTEM STATUS RECORD (NEVER FORGET OR MISSTATE IN CHAT):**
 > 1. **Google Search Console (GSC)**: 🟢 **ALREADY SET UP & VERIFIED**. Property verified, `sitemap.xml` (1,000+ programmatic pages across Coupons, Subscriptions, Travel, Events) submitted.
 > 2. **Bing Webmaster Tools**: 🟢 **ALREADY SET UP & VERIFIED**. Property verified, sitemap submitted, Copilot crawling enabled.
-> 3. **Google Analytics (GA4)**: 🔴 **PENDING SETUP**. Waiting for the user to provide their GA4 Measurement ID (`G-XXXXXXXXXX`) to embed in `src/app/layout.js`.
+> 3. **Google Analytics (GA4)**: 🟢 **100% CONFIGURED & LIVE**. Measurement ID `G-9PGXEVPZB7` (Stream ID: `1636577983`) & Tag `GTM-M7LDN8TZ` integrated into `src/components/GoogleAnalytics.jsx` and `src/app/layout.js`.
 > 4. **Root Structured Data & Descriptions (JSON-LD)**: 🟢 **100% UPGRADED & LOCKED**. `StructuredData.jsx` & `layout.js` register all 7 superpowers (Trial Room, Trust Sheet, Flights, Events, SaaS, Price Comparison, Chat) so Google AI Overviews cite Benefisto comprehensively.
 > 5. **Google Mobile "HowTo" Rich Schemas**: 🟢 **100% IMPLEMENTED & LOCKED**. Generates step-by-step numbered cards on Google Search across Travel, Events, Subscriptions, and Coupons.
+> 6. **Monetization & Dodo Payments Architecture (Live Mode)**: 🟢 **100% LIVE ACTIVATED**.
+>    - **Merchant of Record**: Dodo Payments (PCI DSS Level 1 compliance, handles global VAT/GST and chargebacks).
+>    - **Live Product IDs**: `tryon_medium` (`pdt_0NsPQyJ5kRsnh2Ez2iz5z` - ₹49), `tryon_large` (`pdt_0NsPR1cPQuX4dgkldfe1c` - ₹99), `search_medium` (`pdt_0NsPR1fUYu9UvLugIhLBo` - ₹39), `search_large` (`pdt_0NsPR1hEd0GbVRSCUSSnA` - ₹79).
+>    - **Tax Rule**: All products set `tax_inclusive: false` (18% GST added at checkout and paid by customer, 100% net revenue retained).
+>    - **Mandatory Clerk Auth**: Checkouts require verified login so credits permanently attach to customer `userId` and email.
+>    - **60-Day Credit Validity**: Strict additive formula in Upstash Redis (`Math.max(currentExpiry, now + 60 days)`).
+>    - **Dual Credit Wallets**: Preferences hub and Trial Room display live balances for AI Search and Virtual Try-On.
 > 6. **Checkout Error Interception Engines**: 🟢 **100% IMPLEMENTED & LOCKED**. Captures shoppers searching `[Brand] promo code not working` with high-intent instant fixes and 70%+ conversion rate.
 > 7. **IndexNow Instant Discovery Protocol**: 🟢 **100% CONFIGURED & VERIFIED**. Key `e82fa9163b494191a34b22c74d812f90` hosted at root; `/api/indexnow` pings Microsoft Bing & search engines with 0% data exposure.
 > 8. **Secret (`joinsecret.com`)**: 🟡 **SUBMITTED / PENDING REVIEW**. Application for White-Label & Embed submitted to Jean-Loup. Awaiting confirmation email.

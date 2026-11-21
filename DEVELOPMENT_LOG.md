@@ -18,7 +18,30 @@
 
 ## 📅 Daily Changelog & Feature Timeline
 
-### 🗓️ 2026-11-20 (Universal 2-Tier Credit Packs, 60-Day Validity, Dedicated /pricing Page & Clean Architecture)
+### 🗓️ 2026-11-21 (Dodo Payments Live Mode Activation, Mandatory Clerk Sign-In & Dual-Wallet Preferences UI)
+
+* **Status**: 🟢 100% Production Ready & Configured
+* **Payment Gateway**: Dodo Payments (Live Production Environment)
+* **Live Product IDs Registered**:
+  - `pdt_0NsPQyJ5kRsnh2Ez2iz5z`: TryOn Medium (14 Try-Ons @ ₹49 • 60 Days Validity • tax_inclusive: false)
+  - `pdt_0NsPR1cPQuX4dgkldfe1c`: TryOn Large (30 Try-Ons @ ₹99 • 60 Days Validity • tax_inclusive: false)
+  - `pdt_0NsPR1fUYu9UvLugIhLBo`: AI Search Medium (120 Searches @ ₹39 • 60 Days Validity • tax_inclusive: false)
+  - `pdt_0NsPR1hEd0GbVRSCUSSnA`: AI Search Large (260 Searches @ ₹79 • 60 Days Validity • tax_inclusive: false)
+* **Live Webhook Endpoint**: `https://www.benefisto.com/api/webhooks/dodo` (ID: `ep_3MP9VjqLZlJkDUoPmrlUWOPrsgo`, Secret: `whsec_ONyvWHyRPIY7ykO53V4k5mCsO7WbB/z9`)
+
+#### 🛠️ Features Implemented & Verified:
+1. **Mandatory Clerk Auth Check (`src/app/pricing/page.js` & `/api/payments/checkout`)**:
+   - Guests cannot trigger checkout sessions. Clicking "Top Up" opens Clerk sign-in modal immediately.
+   - On successful sign-in, user's permanent Clerk `userId` and email are passed into Dodo metadata.
+   - Eliminates orphan anonymous purchases; guarantees every purchased credit attaches to the customer.
+2. **Dual-Wallet UI in Unified Account Modal (`src/components/UnifiedAccountModal.jsx`)**:
+   - Preferences hub shows distinct live balances for AI Search Engine (daily free + active 60-day top-ups) and Virtual Try-On (active paid try-ons + 60-day expiry date).
+3. **Fashion Trial Room Live Quota Display (`src/components/FashionTrialRoom.jsx`)**:
+   - Replaced static text with live paid credit badge or 3 free dots with a direct `+ Top Up` link.
+4. **Vercel Production Environment Variables**:
+   - Updated `DODO_PAYMENTS_API_KEY` (live), `DODO_PAYMENTS_MODE` (live), `DODO_WEBHOOK_SECRET` (live), and `NEXT_PUBLIC_APP_URL` on project `prj_Wik7uVe6mNHJgryMw44VUsZ4N40Z`.
+
+---
 
 * **Status**: 🟢 100% Configured & Locked Locally (Awaiting User Review after Break)
 * **Payment Gateway**: Dodo Payments (Merchant of Record)

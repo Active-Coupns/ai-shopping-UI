@@ -2,6 +2,35 @@
 DEPLOYMENT LOGS - BENEFISTO PLATFORM
 ================================================================================
 
+[DEPLOYMENT TIMESTAMP] : 2026-11-21 06:30:00 UTC (Local: 2026-11-20 22:30:00 -08:00)
+[COMMIT HASH]          : 4d2044b (feat(payments): Dodo Payments Live Mode & Mandatory Clerk Auth)
+[TARGET ENVIRONMENT]   : Production (Vercel) / www.benefisto.com
+[BUILD STATUS]         : PASSED / LIVE KEYS CONFIGURED
+[STATUS]               : 100% PRODUCTION READY & DODO PAYMENTS LIVE ACTIVATED
+
+--------------------------------------------------------------------------------
+SUMMARY OF DODO LIVE MODE & CLERK AUTH INTEGRATION
+--------------------------------------------------------------------------------
+
+1. LIVE PRODUCTS REGISTERED IN DODO PAYMENTS (LIVE MODE):
+   - TryOn Medium (14 Try-Ons @ ₹49): `pdt_0NsPQyJ5kRsnh2Ez2iz5z` (tax_inclusive: false)
+   - TryOn Large (30 Try-Ons @ ₹99): `pdt_0NsPR1cPQuX4dgkldfe1c` (tax_inclusive: false)
+   - AI Search Medium (120 Searches @ ₹39): `pdt_0NsPR1fUYu9UvLugIhLBo` (tax_inclusive: false)
+   - AI Search Large (260 Searches @ ₹79): `pdt_0NsPR1hEd0GbVRSCUSSnA` (tax_inclusive: false)
+
+2. VERCEL PRODUCTION ENVIRONMENT (ALL 200 OK UPDATED):
+   - `DODO_PAYMENTS_API_KEY` = `dodo_live_pQWKvpsGTOXYkzcM.nEHz22_vfTtc8dd0koCFS7X6qhUFhQ4Cs8bWZEjsM3MThsei`
+   - `DODO_PAYMENTS_MODE` = `live`
+   - `DODO_WEBHOOK_SECRET` = `whsec_ONyvWHyRPIY7ykO53V4k5mCsO7WbB/z9`
+   - `NEXT_PUBLIC_APP_URL` = `https://www.benefisto.com`
+
+3. MANDATORY AUTHENTICATION & WALLET UI:
+   - Mandatory Clerk Sign-In required before checkout. Guest checkouts 100% blocked.
+   - Dual-wallet balances visible in UnifiedAccountModal (AI Search + Virtual Try-On with 60-day expiry).
+   - Dynamic Try-On quota badge in Fashion Trial Room.
+
+================================================================================
+
 [DEPLOYMENT TIMESTAMP] : 2026-11-20 09:55:00 UTC (Local: 2026-11-20 01:55:00 -08:00)
 [COMMIT HASH]          : HEAD (Universal Multi-Currency Dodo Payments Integration)
 [TARGET ENVIRONMENT]   : Production (Vercel) / www.benefisto.com

@@ -1,7 +1,7 @@
 # 🧭 Benefisto — Active Session State & Daily Handover Ledger
 **File:** `ACTIVE_SESSION_STATE.md` (Project Root)  
-**Last Updated:** 2026-11-20 23:35 IST / 2026-11-20 10:05 PST  
-**Session Status:** 100% PRODUCTION READY & LIVE ON VERCEL (Deployment `dpl_Ku3LPG9L9qpZfzQwoHFFe8xfM9jH` LIVE at https://www.benefisto.com)
+**Last Updated:** 2026-11-21 12:00 IST / 2026-11-20 22:30 PST  
+**Session Status:** 100% PRODUCTION READY & DODO PAYMENTS LIVE ACTIVATED ON VERCEL
 
 ---
 
@@ -9,10 +9,10 @@
 
 | System / Channel | Setup Status | Verification & Action Item |
 | :--- | :--- | :--- |
-| **Dodo Payments Integration** | 🟢 **100% LIVE ON VERCEL PRODUCTION (TEST MODE ACTIVE)** | 4 Official 60-Day Products created on Dodo (`pdt_0NsMRB0afKy5FubtlNt7G`, `pdt_0NsMRB2VG2QaXxa2csfnp`, `pdt_0NsMRB5gQlAg1apTrj9tz`, `pdt_0NsMRBD7GcWtPXhZh08cW`). Dedicated `/pricing` page, clean header, localized multi-currency rendering, additive credit stacking, and limit popups live. Webhook active at `https://www.benefisto.com/api/webhooks/dodo`. |
-| **Webhook & Payment Backend** | 🟢 **100% TESTED (20/20 PASSED)** | Atomic Upstash Redis `incrby`/`decrby` verified, 60-day expiry formula (`Math.max(now + validityMs, currentExpiry)`) locked, paid customer quota bypass verified. Dodo Webhook signing secret (`whsec_WLMsa46JoSbHf0TQupdF8ACGFMRr8Och`) saved encrypted in Vercel. |
-| **All Legal Pages Updated** | 🟢 **100% LIVE ON PRODUCTION** | `/terms` (Sec 4: 60-day digital credit packs, additive stacking, final sale non-refundable, 24-48h support reconciliation), `/privacy` (Sec 5: Dodo MoR PCI-DSS Level 1, zero raw card storage), `/disclaimer` (Sec 1: Two-tier model), `/about` (5-vertical superpower showcase), `/contact` (Billing support card). All returning HTTP 200 OK. |
-| **Next Action After Break** | ⏳ **SWITCH TO DODO LIVE MODE** | 1. User will toggle "Live Mode" on Dodo Payments Dashboard. 2. User will provide Live API Key (`dodo_live_...`) and Live Product IDs/Signing Secret. 3. Update Vercel environment variables to `DODO_PAYMENTS_MODE=live` and `DODO_PAYMENTS_API_KEY=dodo_live_...`. |
+| **Dodo Payments Integration (LIVE)** | 🟢 **100% LIVE ACTIVATED ON VERCEL** | 4 Live 60-Day Products active on Dodo Live Mode (`tryon_medium`: `pdt_0NsPQyJ5kRsnh2Ez2iz5z`, `tryon_large`: `pdt_0NsPR1cPQuX4dgkldfe1c`, `search_medium`: `pdt_0NsPR1fUYu9UvLugIhLBo`, `search_large`: `pdt_0NsPR1hEd0GbVRSCUSSnA`). All configured `tax_inclusive: false` (18% GST extra). Live Webhook active (`ep_3MP9VjqLZlJkDUoPmrlUWOPrsgo`) with live secret (`whsec_ONyvWHyRPIY7ykO53V4k5mCsO7WbB/z9`). |
+| **Mandatory Sign-In on Top-Up** | 🟢 **100% IMPLEMENTED & COMMITTED** | Users MUST be authenticated before checkout to bind credits to verified email & Clerk `userId`. Guest checkouts blocked with 401. Direct clerk modal popup on click. |
+| **Dual Credit Wallets in UI** | 🟢 **100% IMPLEMENTED & COMMITTED** | `UnifiedAccountModal.jsx` displays dual live balances (AI Search daily free + 60-day top-ups, and Virtual Try-On active paid credits with exact expiry). `FashionTrialRoom.jsx` displays dynamic paid quota badge. |
+| **Vercel Live Environment** | 🟢 **100% UPDATED (200 OK)** | `DODO_PAYMENTS_API_KEY` (Live), `DODO_PAYMENTS_MODE=live`, `DODO_WEBHOOK_SECRET` (Live), `NEXT_PUBLIC_APP_URL` (https://www.benefisto.com) verified and active on production. |
 | **Multi-Country Hreflang Tags** | 🟢 **100% IMPLEMENTED** | `alternates.languages` injected across `/coupons/[store]`, `/travel/[slug]`, `/events/[slug]`, `/subscriptions/[slug]`, and root layout for IN, US, GB, CA, AU, AE. |
 | **Google Analytics (GA4)** | 🟢 **100% CONFIGURED & LIVE** | Measurement ID `G-9PGXEVPZB7` (Stream ID: 1636577983) and Tag `GTM-M7LDN8TZ` integrated into `src/components/GoogleAnalytics.jsx` & `src/app/layout.js`. Active for real-time traffic tracking. |
 | **IndexNow Discovery Protocol** | 🟢 **100% LIVE & TESTED (HTTP 200)** | Key `e82fa9163b494191a34b22c74d812f90` verified; batch of 603 URLs successfully submitted to IndexNow API (Bing/AI engines). |
