@@ -1036,9 +1036,9 @@ export async function checkUnifiedApiQuota({
   if (process.env.NODE_ENV === "development" && !userId && (clientIp === "127.0.0.1" || clientIp === "::1" || clientIp === "localhost")) {
     return {
       allowed: true,
-      remaining: 999,
+      remaining: limit,
       current: 0,
-      totalLimit: 1000
+      totalLimit: limit
     };
   }
 

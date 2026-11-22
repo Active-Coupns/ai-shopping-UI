@@ -6,22 +6,23 @@ import Link from "next/link";
 import { Sparkles, Shirt, Camera, RefreshCw, ExternalLink, Check, ChevronRight, Send, ArrowLeft, Lock, X, LifeBuoy, ShieldCheck } from "lucide-react";
 import { useClerk, useUser } from "@clerk/nextjs";
 import { getDeviceFingerprint } from "@/lib/deviceFingerprint";
+import FuturisticVtonLoader from "@/components/FuturisticVtonLoader";
 
 const SAMPLE_MODELS = {
   men: {
-    name: "Aakash (Men Studio Portrait)",
+    name: "Aakash (AI Studio Model)",
     skinTone: "wheatish",
-    image: "https://images.unsplash.com/photo-1617137984095-74e4e5e3613f?w=800&auto=format&fit=crop&q=85"
+    image: "/models/ai_model_men.jpg"
   },
   women: {
-    name: "Riya (Women Studio Portrait)",
+    name: "Riya (AI Studio Model)",
     skinTone: "wheatish",
-    image: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800&auto=format&fit=crop&q=85"
+    image: "/models/ai_model_women.jpg"
   },
   kids: {
-    name: "Aarav (Kids Studio Portrait)",
+    name: "Aarav (AI Studio Model)",
     skinTone: "wheatish",
-    image: "https://images.unsplash.com/photo-1622290291468-a28f7a7dc6a8?w=800&auto=format&fit=crop&q=85"
+    image: "/models/ai_model_kids.jpg"
   }
 };
 
@@ -280,6 +281,7 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
   const [viewMode, setViewMode] = useState("tryon"); // "tryon" or "original"
   const [renderedCache, setRenderedCache] = useState({});
   const [feedbackGiven, setFeedbackGiven] = useState(false);
+  const [showTipsModal, setShowTipsModal] = useState(false);
 
   // Ephemeral memory cleanup: revoke any temporary blob URLs when component unmounts
   useEffect(() => {
@@ -973,7 +975,7 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
       <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-indigo-50/90 via-purple-50/70 to-pink-50/80 border border-indigo-100 p-4 sm:p-6 md:p-8 backdrop-blur-xl shadow-xs">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6 relative z-10">
           <div className="space-y-1.5 sm:space-y-2">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               {onBackToSearch && (
                 <button
                   type="button"
@@ -988,11 +990,18 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
                 <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                 AI Virtual Trial Room & Stylist
               </div>
+              <button
+                type="button"
+                onClick={() => setShowTipsModal(true)}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white hover:bg-slate-50 border border-indigo-200 text-brand-indigo text-[10px] sm:text-xs font-bold shadow-2xs transition-all active:scale-95 cursor-pointer"
+              >
+                <span>ℹ️ Tips & Privacy</span>
+              </button>
             </div>
             <h1 className="text-xl sm:text-3xl md:text-4xl font-black text-slate-900 tracking-tight">
               Virtual Studio <span className="bg-gradient-to-r from-brand-indigo via-purple-600 to-pink-600 bg-clip-text text-transparent">Try-On</span>
             </h1>
-            <p className="text-slate-600 text-xs sm:text-sm md:text-base max-w-2xl font-medium leading-relaxed">
+            <p className="hidden sm:block text-slate-600 text-xs sm:text-sm md:text-base max-w-2xl font-medium leading-relaxed">
               Zero-distortion fit engine with 100% identity locking. Try hundreds of curated outfits from Myntra, Snitch, Ajio & Amazon directly on your authentic frame.
             </p>
           </div>
@@ -1056,7 +1065,7 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
                 <span className="w-2 h-2 rounded-full bg-brand-indigo"></span>
                 Your Persona Studio
               </span>
-              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full whitespace-nowrap">
                 🔒 Identity Locked
               </span>
             </div>
@@ -1135,36 +1144,15 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
                 </div>
               )}
 
-              {/* Render Loading Overlay (Uninterrupted with live timer & stages) */}
+              {/* Render Loading Overlay (Haute Couture Luxury Atelier Fitting Engine) */}
               {isRendering && (
-                <div className="absolute inset-0 bg-slate-950/75 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center gap-3 z-30 animate-fade-in">
-                  <div className="relative w-14 h-14">
-                    <div className="w-14 h-14 rounded-full border-3 border-white/20 border-t-brand-indigo animate-spin"></div>
-                    <div className="absolute inset-0 flex items-center justify-center text-sm">✨</div>
-                  </div>
-                  
-                  <div className="space-y-1 max-w-[260px]">
-                    <span className="text-xs font-bold text-white tracking-wide block">
-                      {renderElapsed < 6
-                        ? "🔍 Analyzing body posture & shoulders..."
-                        : renderElapsed < 16
-                        ? "🧵 Draping fabric & aligning natural folds..."
-                        : renderElapsed < 26
-                        ? "✨ Refining fabric texture, lighting & shadows..."
-                        : "⚡ Finalizing high-resolution neural render..."}
-                    </span>
-                    <span className="text-[10px] font-medium text-slate-300 block">
-                      Neural AI Draping • {renderElapsed}s elapsed
-                    </span>
-                  </div>
-
-                  {/* Progress Bar Animation */}
-                  <div className="w-44 h-1.5 bg-white/15 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-brand-indigo via-purple-400 to-pink-400 rounded-full transition-all duration-300"
-                      style={{ width: `${Math.min(96, renderElapsed < 25 ? (renderElapsed / 25) * 88 : 88 + Math.min(8, (renderElapsed - 25) * 0.2))}%` }}
-                    ></div>
-                  </div>
+                <div className="absolute inset-0 z-30">
+                  <FuturisticVtonLoader
+                    elapsed={renderElapsed}
+                    modelImage={SAMPLE_MODELS[gender]?.image || "/models/ai_model_men.jpg"}
+                    gender={gender}
+                    garmentTitle={currentTryonGarment?.title || "Tailored Look"}
+                  />
                 </div>
               )}
 
@@ -1206,47 +1194,44 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
               )}
             </div>
 
-            {/* Photo & Garment Upload Actions */}
-            <div className="space-y-2.5">
-              {/* Visual Photo Upload Guideline Box */}
-              <div className="bg-gradient-to-br from-indigo-50/95 via-purple-50/90 to-pink-50/90 border border-indigo-200/80 rounded-2xl p-3 text-[11px] space-y-1.5 shadow-xs">
-                <div className="flex items-center gap-1.5 font-bold text-brand-indigo text-xs">
-                  <Camera className="w-4 h-4 text-brand-indigo" />
-                  <span>📸 How to Upload for Best Fit:</span>
-                </div>
-                <ul className="space-y-1 text-slate-700 leading-snug pl-1">
-                  <li className="flex items-start gap-1.5">
-                    <span className="text-emerald-600 font-bold">✓</span>
-                    <span><strong>Front-Facing View:</strong> Upload a clear half-body or full-body front photo.</span>
-                  </li>
-                  <li className="flex items-start gap-1.5">
-                    <span className="text-emerald-600 font-bold">✓</span>
-                    <span><strong>Good Lighting:</strong> Keep shoulders and outfit clearly visible.</span>
-                  </li>
-                  <li className="flex items-start gap-1.5">
-                    <span className="text-rose-500 font-bold">✕</span>
-                    <span className="text-slate-500">Avoid side angles, rear views, group photos, or blur.</span>
-                  </li>
-                </ul>
-              </div>
-
-              <div className="flex gap-2">
+            {/* Clean Action Controls: Dual Upload Buttons */}
+            <div className="space-y-2.5 pt-1">
+              <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
                   onClick={handleRequestPhotoUpload}
-                  className="flex-1 py-2.5 px-3 rounded-xl bg-gradient-to-r from-brand-indigo to-brand-violet hover:from-indigo-600 hover:to-purple-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md shadow-brand-indigo/20 transition-all cursor-pointer active:scale-95"
+                  className="py-2.5 px-2 rounded-xl bg-gradient-to-r from-brand-indigo to-brand-violet hover:from-indigo-600 hover:to-purple-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-brand-indigo/20 transition-all cursor-pointer active:scale-95"
                 >
-                  <Camera className="w-3.5 h-3.5" />
-                  <span>{isCustomPhoto ? "Change Your Photo" : "Upload Your Photo"}</span>
+                  <Camera className="w-3.5 h-3.5 shrink-0" />
+                  <span className="truncate">{isCustomPhoto ? "Change Photo" : "Upload Photo"}</span>
                 </button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*,.heic,.heif,.jpg,.jpeg,.png,.webp"
-                  onChange={handlePhotoUpload}
-                  className="hidden"
-                />
-                {isCustomPhoto && (
+                <button
+                  type="button"
+                  onClick={handleRequestGarmentUpload}
+                  className="py-2.5 px-2 rounded-xl bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-900 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95"
+                >
+                  <Shirt className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+                  <span className="truncate">Upload Outfit</span>
+                </button>
+              </div>
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*,.heic,.heif,.jpg,.jpeg,.png,.webp"
+                onChange={handlePhotoUpload}
+                className="hidden"
+              />
+              <input
+                ref={garmentFileInputRef}
+                type="file"
+                accept="image/*,.heic,.heif,.jpg,.jpeg,.png,.webp"
+                onChange={handleGarmentUpload}
+                className="hidden"
+              />
+
+              {isCustomPhoto && (
+                <div className="flex items-center justify-between px-1">
                   <button
                     type="button"
                     onClick={() => {
@@ -1269,147 +1254,128 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
                         }
                       ]);
                     }}
-                    className="py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all cursor-pointer"
-                    title="Reset to Sample Model"
+                    className="text-[11px] font-semibold text-slate-500 hover:text-brand-indigo transition-colors cursor-pointer"
                   >
-                    Reset
+                    ↺ Reset to Default Model
                   </button>
-                )}
-              </div>
 
-              {/* Bank-Grade Privacy & Ephemeral AI Trust Badge */}
-              <div className="flex items-center justify-center gap-1.5 py-1.5 px-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[10px] font-semibold tracking-wide">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                <span>256-bit Encrypted · Zero-Storage Ephemeral AI · Strict Privacy Guard</span>
-              </div>
-
-              {/* Upload Custom Garment Screenshot Button */}
-              <button
-                type="button"
-                onClick={handleRequestGarmentUpload}
-                className="w-full py-2 px-3 rounded-xl bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-900 font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-95"
-              >
-                <Shirt className="w-3.5 h-3.5 text-purple-600" />
-                <span>📷 Upload Outfit Screenshot / Photo</span>
-              </button>
-              <input
-                ref={garmentFileInputRef}
-                type="file"
-                accept="image/*,.heic,.heif,.jpg,.jpeg,.png,.webp"
-                onChange={handleGarmentUpload}
-                className="hidden"
-              />
-              <p className="text-[10px] text-slate-500 text-center px-1">
-                💡 <em>Tip: Single front-facing garment photo works best (avoid folded packs).</em>
-              </p>
-
-              {/* Dedicated "Ask AI Stylist" Button when photo is uploaded */}
-              {isCustomPhoto && (
-                <button
-                  type="button"
-                  onClick={() => handleStylistQuery(`Recommend best matching outfits for my ${skinTone} skin tone and posture`)}
-                  className="w-full py-2 px-3 rounded-xl bg-gradient-to-r from-amber-500/10 via-purple-500/10 to-indigo-500/10 hover:from-amber-500/20 hover:to-indigo-500/20 border border-indigo-200/80 text-indigo-950 font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-95 shadow-xs"
-                >
-                  <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-pulse" />
-                  <span>✨ Ask AI for My Personal Styling</span>
-                </button>
-              )}
-            </div>
-
-            {photoQualityMsg && (
-              <div className={`p-2 rounded-xl text-[11px] font-semibold text-center border ${
-                photoQualityMsg.startsWith("✅")
-                  ? "bg-emerald-50 text-emerald-800 border-emerald-200"
-                  : "bg-amber-50 text-amber-800 border-amber-200"
-              }`}>
-                {photoQualityMsg}
-              </div>
-            )}
-
-            {/* Blind Quality Feedback Loop */}
-            {tryonResultImage && !feedbackGiven && (
-              <div className="flex items-center justify-between p-2 rounded-xl bg-indigo-50/70 border border-indigo-100 text-[11px] text-indigo-900 font-medium">
-                <span>How does the fit look?</span>
-                <div className="flex items-center gap-1.5">
                   <button
                     type="button"
-                    onClick={() => {
-                      setFeedbackGiven(true);
-                      setPhotoQualityMsg("✨ Thanks for your feedback! Glad you liked the drape.");
-                    }}
-                    className="px-2 py-0.5 rounded-lg bg-white border border-indigo-200 hover:bg-emerald-50 hover:text-emerald-700 text-xs transition-all cursor-pointer shadow-xs"
-                    title="Good fit"
+                    onClick={() => handleStylistQuery(`Recommend best matching outfits for my ${skinTone} skin tone and posture`)}
+                    className="text-[11px] font-bold text-brand-indigo hover:text-purple-700 flex items-center gap-1 cursor-pointer"
                   >
-                    👍
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setFeedbackGiven(true);
-                      setPhotoQualityMsg("🙏 Thanks for letting us know! Try with a clearer front-facing photo for tighter draping.");
-                    }}
-                    className="px-2 py-0.5 rounded-lg bg-white border border-indigo-200 hover:bg-rose-50 hover:text-rose-700 text-xs transition-all cursor-pointer shadow-xs"
-                    title="Needs improvement"
-                  >
-                    👎
+                    <Sparkles className="w-3 h-3 text-amber-500" />
+                    <span>Stylist Picks</span>
                   </button>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Sleek Minimal Try-On Quota Status */}
-            <div className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl border text-xs ${
-              quotaInfo?.paidCredits > 0
-                ? "bg-gradient-to-r from-purple-50 via-indigo-50/50 to-white border-purple-200"
-                : "bg-slate-50 border-slate-200/80"
-            }`}>
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-3.5 h-3.5 text-purple-600" />
-                <span className="font-semibold text-slate-700">
-                  {quotaInfo?.paidCredits > 0 ? "Active Try-On Pack" : "Free AI Try-Ons"}
-                </span>
-              </div>
-              <div className="flex items-center gap-2.5">
-                {quotaInfo?.paidCredits > 0 ? (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800 text-[11px] font-black border border-purple-200">
-                    ⚡ {quotaInfo.paidCredits} Paid Try-Ons Active
-                  </span>
-                ) : (
-                  <>
-                    <div className="flex items-center gap-1.5">
-                      {[1, 2, 3].map((num) => {
-                        const isAvailable = (quotaInfo?.remaining ?? 3) >= num;
-                        return (
-                          <div 
-                            key={num}
-                            title={isAvailable ? `${num} Try-On Available` : `${num} Try-On Used`}
-                            className={`w-2 h-2 rounded-full transition-all ${
-                              isAvailable ? "bg-emerald-500 ring-2 ring-emerald-200" : "bg-slate-300"
-                            }`} 
-                          />
-                        );
-                      })}
-                    </div>
-                    <span className="font-bold text-slate-900 text-[11px]">
-                      {(quotaInfo?.remaining ?? 3) > 0 
-                        ? `${quotaInfo.remaining} / 3 Left` 
-                        : "3 / 3 Used"}
+              {/* Compact 1-Line Status Strip (Credits + Ephemeral Privacy) */}
+              <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-50 border border-slate-200/90 text-xs shadow-2xs">
+                <div className="flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-brand-indigo shrink-0" />
+                  {quotaInfo?.paidCredits > 0 ? (
+                    <span className="font-bold text-purple-900 text-[11px]">
+                      ⚡ {quotaInfo.paidCredits} Paid Try-Ons Active
                     </span>
-                  </>
-                )}
-                <a
-                  href="/pricing"
-                  className="px-2 py-0.5 rounded-full bg-purple-600 hover:bg-purple-700 text-white text-[10px] font-bold transition-colors cursor-pointer"
-                >
-                  + Top Up
-                </a>
-              </div>
-            </div>
+                  ) : (
+                    <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-1">
+                        {[1, 2, 3].map((num) => {
+                          const isAvailable = (quotaInfo?.remaining ?? 3) >= num;
+                          return (
+                            <div 
+                              key={num}
+                              className={`w-1.5 h-1.5 rounded-full ${
+                                isAvailable ? "bg-emerald-500" : "bg-slate-300"
+                              }`} 
+                            />
+                          );
+                        })}
+                      </div>
+                      <span className="font-bold text-slate-800 text-[11px]">
+                        {(quotaInfo?.remaining ?? 3) > 0 ? `${quotaInfo.remaining}/3 Free` : "0/3 Free"}
+                      </span>
+                    </div>
+                  )}
+                </div>
 
-            {/* 100% Private Ephemeral Memory Badge */}
-            <div className="flex items-center justify-center gap-1.5 p-2 rounded-xl bg-slate-50 border border-slate-200/80 text-[10px] text-slate-500 font-medium text-center">
-              <span>🔒</span>
-              <span>100% Private: Photos stay in ephemeral memory and are never saved to any database.</span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowTipsModal(true)}
+                    className="text-[10px] text-slate-500 hover:text-slate-800 font-semibold cursor-pointer"
+                    title="View Privacy Guarantee"
+                  >
+                    🔒 Private
+                  </button>
+                  <a
+                    href="/pricing"
+                    className="px-2 py-0.5 rounded-full bg-brand-indigo hover:bg-indigo-700 text-white text-[10px] font-bold transition-colors cursor-pointer"
+                  >
+                    + Top Up
+                  </a>
+                </div>
+              </div>
+
+              {/* Mobile-First Audience & Category Carousel */}
+              <div className="space-y-2 pt-1 border-t border-slate-100">
+                <div className="flex rounded-xl bg-slate-100 p-1 border border-slate-200/80 justify-between">
+                  <button
+                    type="button"
+                    onClick={() => handleGenderChange("men")}
+                    className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer text-center ${
+                      gender === "men" ? "bg-white text-brand-indigo shadow-xs" : "text-slate-500 hover:text-slate-900"
+                    }`}
+                  >
+                    👔 Men
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleGenderChange("women")}
+                    className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer text-center ${
+                      gender === "women" ? "bg-white text-pink-600 shadow-xs" : "text-slate-500 hover:text-slate-900"
+                    }`}
+                  >
+                    👗 Women
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleGenderChange("kids")}
+                    className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer text-center ${
+                      gender === "kids" ? "bg-white text-emerald-600 shadow-xs" : "text-slate-500 hover:text-slate-900"
+                    }`}
+                  >
+                    🧒 Kids
+                  </button>
+                </div>
+
+                {/* Horizontal Scrollable Categories Strip */}
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-[11px] px-0.5">
+                    <span className="font-bold uppercase tracking-wider text-[10px] text-slate-400">Categories</span>
+                    <a href="#wardrobe-catalog" className="text-brand-indigo font-bold hover:underline text-[10px]">
+                      Explore Catalog ↓
+                    </a>
+                  </div>
+                  <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none -mx-1 px-1">
+                    {currentCategoryTabs.filter(tab => !tab.gender || tab.gender === gender).map(tab => (
+                      <button
+                        key={tab.key}
+                        type="button"
+                        onClick={() => setSelectedCategory(tab.key)}
+                        className={`flex-shrink-0 px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                          selectedCategory === tab.key
+                            ? "bg-brand-indigo text-white shadow-xs"
+                            : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
+                        }`}
+                      >
+                        {tab.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </div>
 
             {tryonErrorMsg && (
@@ -1766,7 +1732,7 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
       </div>
 
       {/* 3. BROWSE FULL 1,500+ MASTER WARDROBE RACK */}
-      <div className="space-y-4 pt-4 border-t border-slate-200">
+      <div id="wardrobe-catalog" className="space-y-4 pt-4 border-t border-slate-200">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h2 className="text-lg md:text-xl font-black text-slate-900 flex items-center gap-2">
@@ -1963,6 +1929,82 @@ export default function FashionTrialRoom({ initialGarment = null, onBackToSearch
                 Got It
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* TIPS & PRIVACY MODAL (Clean, Non-Intrusive Drawer) */}
+      {showTipsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-200 space-y-4 animate-scale-up">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <span className="p-2 rounded-xl bg-indigo-50 text-brand-indigo">
+                  <Camera className="w-5 h-5" />
+                </span>
+                <div>
+                  <h3 className="text-base font-black text-slate-900">Virtual Studio Guide</h3>
+                  <p className="text-[11px] text-slate-500 font-medium">Tips for 100% photorealistic fit accuracy</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowTipsModal(false)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center text-xs transition-colors cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Photo Guidelines */}
+            <div className="bg-gradient-to-br from-indigo-50/90 to-purple-50/80 border border-indigo-100 rounded-2xl p-3.5 space-y-2 text-xs">
+              <span className="font-bold text-brand-indigo flex items-center gap-1.5">
+                📸 How to Upload for Best Fit:
+              </span>
+              <ul className="space-y-1.5 text-slate-700 leading-snug">
+                <li className="flex items-start gap-2">
+                  <span className="text-emerald-600 font-bold">✓</span>
+                  <span><strong>Front-Facing View:</strong> Clear half-body or full-body front photo standing straight.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-emerald-600 font-bold">✓</span>
+                  <span><strong>Good Lighting:</strong> Shoulders and current outfit should be clearly visible.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-rose-500 font-bold">✕</span>
+                  <span className="text-slate-500">Avoid extreme side angles, rear views, group photos, or heavy blur.</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Garment Upload Tip */}
+            <div className="p-3 bg-purple-50/70 border border-purple-100 rounded-2xl space-y-1 text-xs">
+              <span className="font-bold text-purple-900 flex items-center gap-1.5">
+                👚 Outfit Screenshot Tips:
+              </span>
+              <p className="text-[11px] text-purple-800 leading-relaxed">
+                A single flat-lay or front-facing garment photo from Myntra, Ajio, or Amazon works best. Avoid folded clothes or packaging.
+              </p>
+            </div>
+
+            {/* Zero-Storage Privacy Guarantee */}
+            <div className="p-3.5 bg-emerald-50/80 border border-emerald-100 rounded-2xl space-y-1 text-xs text-emerald-950">
+              <div className="flex items-center gap-1.5 font-bold text-emerald-800">
+                <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>256-bit Encrypted · Zero-Storage Ephemeral AI</span>
+              </div>
+              <p className="text-[11px] text-emerald-800 leading-relaxed">
+                Photos are processed in temporary GPU memory solely to generate your try-on render. They are never saved to any database, never shared, and never used to train public AI models.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowTipsModal(false)}
+              className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-all active:scale-95 cursor-pointer shadow-md"
+            >
+              Got It, Let&apos;s Try On!
+            </button>
           </div>
         </div>
       )}

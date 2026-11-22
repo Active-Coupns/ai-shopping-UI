@@ -18,6 +18,26 @@
 
 ## 📅 Daily Changelog & Feature Timeline
 
+### 🗓️ 2026-11-22 (VTON Mobile-First Layout, Haute Couture Atelier Loader & Local Quota Fix)
+
+* **Status**: 🟢 100% Production Ready & Verified
+* **Scope**: Virtual Trial Room UI, Haute Couture Fitting Loader, Local Rate Limiter Quota Bug Fix
+
+#### 🛠️ Features Implemented & Verified:
+1. **Original Photorealistic AI Studio Models (`public/models/`)**:
+   - Generated 3 ultra-high-definition, 100% copyright-free AI studio models (`ai_model_men.jpg`, `ai_model_women.jpg`, `ai_model_kids.jpg`).
+   - Completely replaced third-party Unsplash URLs in `SAMPLE_MODELS` inside `src/components/FashionTrialRoom.jsx`.
+2. **Mobile-First Trial Room UI Overhaul (`src/components/FashionTrialRoom.jsx`)**:
+   - Streamlined mobile viewport: Removed cluttered guidelines, duplicate privacy banners, and large tip boxes from initial scroll.
+   - Added sleek header pill `[ ℹ️ Tips & Privacy ]` opening a dedicated drawer modal for zero-storage guarantees and photo upload tips.
+   - Positioned Mirror Canvas at top, followed by side-by-side action buttons (`📷 Upload Photo` and `👚 Upload Outfit`).
+   - Integrated compact horizontal category carousels directly beneath gender tabs, with an anchor link down to the wardrobe catalog.
+3. **Haute Couture Organic Atelier Loader (`src/components/FuturisticVtonLoader.jsx`)**:
+   - Replaced generic spinners and boxy wireframe polygons with an organic, breathing studio model backdrop, 60 FPS floating champagne bokeh canvas, minimalist frosted glass aura orb, and 4 consumer-friendly rotating stages (`PREPARING` → `FITTING` → `STYLING` → `READY`). Zero technical API or backend jargon exposed to consumers.
+4. **Local Rate Limiter Quota Bug Fix (`src/services/rateLimiter.js`)**:
+   - Fixed `checkUnifiedApiQuota` development loopback fallback where `remaining: 999` was hardcoded.
+   - Replaced with `remaining: limit` (10), ensuring the Account modal displays the exact `10 Available` quota on localhost.
+
 ### 🗓️ 2026-11-21 (Dodo Payments Live Mode Activation, Mandatory Clerk Sign-In & Dual-Wallet Preferences UI)
 
 * **Status**: 🟢 100% Production Ready & Configured

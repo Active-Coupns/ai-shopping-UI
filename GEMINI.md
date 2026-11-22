@@ -410,5 +410,17 @@ ShopSmart AI is **NOT a generic coupon website**, nor a spammy affiliate blog. I
 - **IndexNow Search Engine Fast-Track (`scripts/ping_indexnow.js`)**:
   * 1-click batch submission of all 600+ URLs to Bing, Yandex, and AI search engines via the IndexNow API.
 
+### 8.8. Virtual Try-On Mobile-First Architecture & Haute Couture Atelier Loader
+- **100% Original Photorealistic AI Studio Models**:
+  * Generated 3 copyright-free, ultra-high-definition studio portraits: `/models/ai_model_men.jpg` (Aakash), `/models/ai_model_women.jpg` (Riya), and `/models/ai_model_kids.jpg` (Aarav). Completely removed external Unsplash dependencies from `FashionTrialRoom.jsx`.
+- **Mobile-First Trial Room UI**:
+  * Eliminated cluttered guideline paragraphs and duplicate privacy badges from the initial viewport. Moved detailed fitting guidelines to an interactive `[ ℹ️ Tips & Privacy ]` drawer modal.
+  * Positioned Mirror Canvas at top with side-by-side action buttons (`📷 Upload Photo` and `👚 Upload Outfit`).
+  * Placed horizontal scrollable category carousels directly beneath gender tabs, with an anchor link down to the wardrobe catalog.
+- **Organic Haute Couture Atelier Loader (`FuturisticVtonLoader.jsx`)**:
+  * Replaced generic spinners and boxy wireframe polygons with an organic, breathing studio model backdrop, 60 FPS floating champagne bokeh canvas, minimalist frosted glass aura orb, and 4 consumer-friendly rotating stages (`PREPARING` → `FITTING` → `STYLING` → `READY`). Zero technical API or backend jargon exposed to consumers.
+- **Development Loopback Quota Invariant (`rateLimiter.js`)**:
+  * Localhost fallback in `checkUnifiedApiQuota` strictly aligned to `remaining: limit` (10) instead of hardcoded `999`, guaranteeing visual consistency between the UI disclaimer and remaining quota badges across all environments.
+
 ---
 **END OF CONSTITUTION — IMMUTABLE ARCHITECTURE LOCK**
