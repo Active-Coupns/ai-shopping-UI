@@ -129,6 +129,14 @@ Benefisto is structured around 5 high-intent vertical savings engines:
 - **Org / User ID:** `UBQDWQ4gcKJXwrX8I8wToLMR` (`shopsmart01`)
 - **Active Production Aliases:** `https://www.benefisto.com`, `https://benefisto.com`
 
+### Railway High-Performance Compute Engine
+- **Project ID:** `1edcc2cd-4446-41c3-bd05-4eec29419749` (`perfect-inspiration`)
+- **Service ID:** `08d0bc47-1202-4df3-91f4-84f13212d02a` (`benefisto-platform`)
+- **Environment:** `production` (`790ebfd8-7cff-4b1a-a36f-8a81799d3792`)
+- **Active Edge Region:** `sin1` (Singapore High-Speed Edge, optimized for India/APAC/Global)
+- **Staging / Testing URL:** `https://benefisto-platform-production.up.railway.app`
+- **Synced Secrets:** 32 Production environment variables synced directly from Vercel & `.env.local`.
+
 ---
 
 ## 3. REDIS STORAGE KEYS & WALLET ARCHITECTURE
