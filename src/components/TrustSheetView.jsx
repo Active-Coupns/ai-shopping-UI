@@ -2625,17 +2625,17 @@ Verified on Benefisto: https://benefisto.ai`;
               {renderBuyerSatisfaction()}
 
               {/* Verified Hardware Specs Table */}
-              <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-sm">
-                <h4 className="text-xs font-black uppercase tracking-wider text-slate-800 mb-3 flex items-center gap-2">
+              <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-3">
+                <h4 className="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-2">
                   <Cpu className="w-4 h-4 text-indigo-600" />
-                  <span>Verified Published Specs</span>
+                  <span>{currentProfile.type === "hardware" ? "Hardware Capabilities & Specs" : "Verified Published Specs"}</span>
                 </h4>
 
                 <div className="space-y-2 text-xs">
                   {(dossier.keySpecs || []).map((spec, idx) => (
-                    <div key={idx} className="flex items-start justify-between gap-2 py-1.5 border-b border-slate-100 last:border-none">
-                      <span className="font-bold text-slate-500 shrink-0">{spec.label}</span>
-                      <span className="font-semibold text-slate-800 text-right">{spec.value}</span>
+                    <div key={idx} className="py-2 border-b border-slate-100 last:border-none space-y-0.5">
+                      <span className="font-bold text-slate-800 text-xs block">{spec.label}</span>
+                      <p className="text-[11px] text-slate-600 font-medium leading-relaxed">{spec.value}</p>
                     </div>
                   ))}
                 </div>
@@ -2722,8 +2722,8 @@ Verified on Benefisto: https://benefisto.ai`;
               {/* 2-Column: Who Should BUY vs Who Should SKIP */}
               {renderDecisionMatrix()}
 
-              {/* Smart Saving Strategy: Decoded Bank Offers, Page Coupons & Brand Direct Perks */}
-              {renderSmartSavingStrategy()}
+              {/* In The Box & Packaging Reality (Only shown for tech/hardware) */}
+              {renderInTheBoxAndWarranty()}
 
               {/* ============================================================== */}
               {/* THE 3 KILLER HOOKS SECTION                                    */}

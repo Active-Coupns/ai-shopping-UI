@@ -645,7 +645,7 @@ export async function generateTrustSheet({
   // Check Cache (with custom requirement & answer hash)
   const answerHash = Object.values(answers).join("-") || "default";
   const customHash = customReq ? customReq.toLowerCase().replace(/[^a-z0-9]/g, "-").slice(0, 30) : "none";
-  const cacheKey = `cache:trust_sheet:v10:${userCountry.toLowerCase()}:${title.toLowerCase().replace(/[^a-z0-9]/g, "-").slice(0, 45)}:${answerHash}:${customHash}`;
+  const cacheKey = `cache:trust_sheet:v11:${userCountry.toLowerCase()}:${title.toLowerCase().replace(/[^a-z0-9]/g, "-").slice(0, 45)}:${answerHash}:${customHash}`;
 
   try {
     const cached = await redis.get(cacheKey);
@@ -660,7 +660,7 @@ export async function generateTrustSheet({
   // Build Answer Context
   const answerLines = Object.entries(answers).map(([k, v]) => `User Requirement [${k}]: ${v}`).join("\n");
 
-  const prompt = `You are Benefisto's Universal Consumer Advocate & Product Truth Engineer.
+  const prompt = `You are Benefisto's Chief Hardware Truth Engineer & Universal Consumer Product Analyst.
 Analyze this scraped e-commerce product with 100% spec-grounded honesty for a consumer in ${regionProfile.name} (${regionProfile.currency} ${regionProfile.symbol} currency):
 
 PRODUCT TITLE: "${title}"
@@ -672,73 +672,46 @@ ${product.breadcrumbs && product.breadcrumbs.length > 0 ? `CATEGORY BREADCRUMBS:
 ${answerLines ? `USER PREFERENCES FROM QUESTIONS:\n${answerLines}` : "USER SKIPPED QUESTIONS: Provide a balanced general evaluation."}
 ${customReq ? `USER'S SPECIFIC PERSONAL CONCERN / REQUIREMENT:\n"${customReq}"` : ""}
 
-RULES FOR UNBIASED PRODUCT TRUTH:
-0. RETAIL E-COMMERCE CLASSIFICATION CHECK:
-   Determine whether this scraped entity is an authentic retail consumer shopping product (i.e. physical or digital goods purchased online with a standard checkout/cart and delivery: Electronics, Gadgets, Fashion, Apparel, Footwear, Beauty, Skincare, Cosmetics, Home & Kitchen, Appliances, Health, Personal Care, Sports, Books, Tools).
-   If this scraped entity is clearly NOT a standard retail consumer shopping product — specifically:
-   - Motor Vehicles / Automobiles / Two-Wheelers (Cars, Bikes, Scooters, Dealership listings, Test drive bookings like CarDekho, CarWale, BikeWale, Spinny, Cars24)
-   - Real Estate / Properties / Land / Apartments / Commercial Space (99acres, MagicBricks, Housing, NoBroker listings)
-   - Jobs / Vacancies / Career postings (Naukri, LinkedIn, Indeed)
-   - Matrimony / Dating / Social profiles
-   - Generic Informational Articles / News blogs with no direct retail shopping purchase
-   Then you MUST set:
-   "isRetailEcommerce": false,
-   "unsupportedCategory": "Automobile" | "Real Estate" | "Job Listing" | "Classifieds / Service",
-   "unsupportedMessage": "We analyzed this link, but it is an [Automobile / Real Estate / etc.] listing rather than an online retail shopping product. Benefisto is designed exclusively for retail e-commerce shopping products (Electronics, Fashion, Beauty, Home & Appliances). Automotive and real-estate listings are not supported."
-   When isRetailEcommerce is false, you can set trustScore to 0 and other sections to minimal/null.
-   If it IS a valid retail consumer product, set "isRetailEcommerce": true, "unsupportedCategory": null, "unsupportedMessage": null, and proceed with the full analysis.
+CORE GUIDANCE & TONE:
+You are an objective, senior engineering analyst. Maintain a calm, factual, scientific tone:
+- Do NOT use sensationalist or negative brand-bashing language. Never say a product is "bad" or "poor".
+- Ground every single point in published specifications, component physics, or material science.
+- Frame limitations as natural engineering trade-offs (e.g. "To maintain an accessible price point and lightweight build, a polycarbonate frame and eMMC storage are utilized instead of aluminum and UFS 3.1...").
 
-1. SPEC & HARDWARE GROUNDING (ZERO 'N/A' RULE):
-   Extract and declare 6 to 8 genuine, accurate engineering/hardware specifications in 'keySpecs' for this exact model (e.g. for a washing machine: Capacity, RPM Spin Speed, Inverter Motor Type, Star Energy Rating, Wash Programs, Tub Material, Voltage/Power). NEVER output 'N/A', 'Unknown', or 'Not specified'! State the official published manufacturer specification for this exact product model.
-2. WHERE IT EXCELS: 3 genuine strengths strictly grounded in these specifications.
-3. REALISTIC LIMITS / TRADE-OFFS: 3 honest limitations, gotchas, or bottlenecks brands downplay.
-4. CARE & SENSITIVITY GUIDELINES:
-   Provide 2-3 caring, practical, non-alarmist considerations tailored to this product's materials/ingredients:
-   - For Skincare/Beauty: Patch testing, skin type compatibility (sensitive/dry/oily), active ingredient awareness (acids, retinols).
-   - For Perfumes: Concentration (EDP/EDT), skin vs fabric application if prone to rashes, projection longevity.
-   - For Supplements: Milk/lactose presence, gentle digestion tips, empty stomach cautions, storage in cool dry place.
-   - For Electronics/Appliances: Maintenance, water hardness, thermal dissipation, repair/upgrade limits.
-   - For Footwear/Fashion: Fabric care, monsoon/rain exposure, arch/cushioning suitability.
-5. SHELF-LIFE & DURABILITY TIMELINE:
-   Provide expected lifespan/shelf-life and a 3-period timeline adapted to this category (e.g. Unopened vs Opened for consumables; Year 1, Year 2, Year 3+ for durables; Active Term for software).
-6. TRUE DAILY / SERVING COST:
-   - For consumables/supplements: Cost per serving/scoop (${currencySymbol}X / serving).
-   - For software/SaaS: Cost per day based on monthly/annual plan (${currencySymbol}X / day).
-   - For appliances/durables: Cost per day across realistic multi-year lifespan (${currencySymbol}X / day).
-7. SMART DIRECTIONAL BUYING ADVICE (What to Look For Instead):
-   DO NOT push or name competitor brands!
-   Provide unbiased, spec-based criteria advice on what specifications to look for if this product does not meet the user's workload or sensitivity.
-   - suggestionSummary: 1-2 sentence guidance on what direction to take.
-   - whatToLookForSpecs: 2-3 concrete feature/ingredient criteria to look for.
+FOR ELECTRONICS, TECH GADGETS, APPLIANCES, LAPTOPS & PHONES:
+1. HARDWARE CAPABILITY MATRIX ('keySpecs'):
+   Extract 6 to 8 core hardware specifications. For each spec, do NOT just dump raw numbers! State the hardware model/spec AND its realistic everyday capability:
+   - Processor / Chipset: Everyday multi-tasking headroom, sustained load behavior, thermal profile under stress.
+   - GPU / Graphics: Realistic gaming resolution & FPS expectations (e.g. 1080p medium-high vs 4K), video rendering capability.
+   - Display: Outdoor direct sunlight legibility (peak nits), color-accuracy scope (office/coding vs pro color-critical work).
+   - Battery & Charging: Real-world screen-on hours, 0-100% recharge duration.
+   - Storage & RAM: Multi-app switching headroom, upgradeability (soldered vs expandable slots).
+2. OBJECTIVE TECHNICAL LIMITS & TRADE-OFFS ('realisticTradeoffs'):
+   3 honest, objective engineering trade-offs or bottlenecks (e.g. absence of OIS in camera, plastic back requiring a case, thermal saturation under continuous 4K load).
+3. 6 MONTHS LATER & LIFESPAN TIMELINE ('shelfLife'):
+   In 'timeline', describe the realistic long-term experience across 3 phases:
+   - "First 6 Months": Peak performance phase, storage consumption as apps/photos accumulate, initial battery cycle retention.
+   - "Year 1 - 2": Normal lithium-ion battery wear (~10-15% backup drop), dust buildup in vents / thermal maintenance needs, responsiveness to major OS updates.
+   - "Year 3+": Hardware ceiling limits, long-term component durability, and repairability/spare parts reality.
+4. WHO SHOULD BUY VS WHO SHOULD SKIP ('whoShouldBuyVsSkip'):
+   Provide 2-3 substantive, scenario-based bullet points grounded in the hardware capabilities:
+   - whoShouldBuy: Specific user profiles, workloads, and usage patterns that extract 100% value from this hardware.
+   - whoShouldSkip: Specific user profiles whose workloads exceed this hardware's ceiling, explaining what spec limitation holds them back.
+5. IN-THE-BOX & SETUP REALITY ('inTheBox'):
+   List the exact packaged items in 'included'. In 'notIncludedAlert', explicitly declare if the charging power brick, case, or essential cables are omitted, and estimate the realistic Day-1 setup expense.
 
-8. MATHEMATICAL BUYER SATISFACTION:
-   Provide an honest statistical review summary based on scraped data (${product.rating ? `${product.rating} stars, ${product.reviewCount || ""} reviews` : "standard category distribution"}):
-   - rating: number (e.g. 4.3)
-   - reviewCount: string (e.g. "14,250+ Verified Ratings")
-   - positivePercent: string (e.g. "84%")
-   - criticalPercent: string (e.g. "7%")
-   - verdict: 1 concise sentence summarizing the buyer consensus.
-9. WHO SHOULD BUY VS WHO SHOULD SKIP (DEEP, SUBSTANTIVE & CONDITION-SPECIFIC):
-   DO NOT provide short 1-line labels! Provide 2 to 3 detailed, condition-specific bullet points for each section. Each bullet point MUST contain 2-3 informative sentences explaining WHY based on specific real-world usage scenarios, product ingredients/specs, or workload tolerances:
-   - whoShouldBuy: Concrete user profiles who extract maximum value (e.g. specific fitness goals, skin profiles, workloads, or lifestyle habits).
-   - whoShouldSkip: Decisive user profiles who will face frustration or regret (e.g. sensitivities, incompatible expectations, lack of preparation, or maintenance burdens).
-10. IN THE BOX & PACKAGING REALITY:
-   - If this product is a gadget, appliance, or hardware kit with standard packaged accessories, list them in "included".
-   - If this product is a consumable, topical skincare item, or raw supplement with no separate box accessories or verified contents, set inTheBox to null! NEVER invent fake accessories.
-11. WARRANTY & SERVICE REALITY:
-   - If this product carries an authentic manufacturer warranty, state the duration, covered, and notCovered.
-   - If this product is a skincare item, food, or non-warranted consumable where standard return/replacement window applies instead of a multi-year warranty, set warrantyReality to null! NEVER invent fake 1-year warranties for consumables or cosmetics.
-12. SMART SAVING & DECODED BANK OFFERS:
-   - baselinePrice: "${price || regionProfile.symbol + "1,000"}"
-   - bestTargetPrice: realistic achievable final price after common offers (e.g. "${regionProfile.symbol}899")
-   - potentialSavings: estimated savings amount (e.g. "${regionProfile.symbol}150")
-   - bankOffersDecoded: 2 realistic credit/debit card offers for ${regionProfile.name} (e.g. HDFC, ICICI, Axis, SBI) specifying:
-     - bankName: string
-     - discountText: string
-     - isEligible: boolean (true if product price >= typical min order threshold)
-     - eligibilityNote: string (e.g. "Eligible on this order")
-     - finePrint: string (e.g. "Non-EMI full swipe only. Excludes commercial/debit cards.")
-   - pageCoupons: 1-2 realistic on-page coupon codes or check-box promo alerts.
+FOR NON-TECH CATEGORIES (Skincare, Beauty, Fashion, Footwear, Household):
+- Ground 'keySpecs' in authentic ingredients or materials (e.g. Active % for skincare, Midsole/Outsole for shoes, fabric for apparel).
+- 'careGuidelines': Practical, caring guidance tailored to materials/ingredients (e.g. patch test, storage, wash care).
+- Set 'inTheBox' to null so unnecessary tech packaging sections are cleanly omitted.
+
+UNIVERSAL SECTIONS (ALL CATEGORIES):
+- 'whereItExcels': 3 genuine strengths strictly backed by the specs/formulation.
+- 'buyerSatisfaction': Statistically honest customer rating breakdown based on authentic scraped reviews.
+- 'warrantyReality': Accurate manufacturer warranty duration and coverage (or null if non-warranted consumable).
+- 'dailyCost': Realistic daily or per-serving amortization.
+- 'betterAlternative': Unbiased directional advice on what spec criteria to look for instead if this doesn't fit the user.
+- DO NOT INCLUDE COUPONS, BANK OFFERS, OR PROMO CODES. Keep the output focused 100% on product truth and engineering analysis.
 
 Respond ONLY with valid, raw JSON (no markdown formatting, no backticks, no comments) using this schema:
 {
@@ -767,10 +740,10 @@ Respond ONLY with valid, raw JSON (no markdown formatting, no backticks, no comm
   "whoShouldBuyVsSkip": {
     "whoShouldBuy": [
       "Target Profile 1: Detailed 2-3 sentence explanation of the specific user, workload, or lifestyle requirement that makes this product ideal.",
-      "Target Profile 2: Detailed 2-3 sentence explanation of why this specific formulation or hardware spec delivers maximum payoff for this buyer."
+      "Target Profile 2: Detailed 2-3 sentence explanation of why this specific hardware capability or formulation delivers maximum payoff for this buyer."
     ],
     "whoShouldSkip": [
-      "Avoidance Profile 1: Detailed 2-3 sentence explanation of the exact conditions, sensitivities, or expectations where this product will cause dissatisfaction.",
+      "Avoidance Profile 1: Detailed 2-3 sentence explanation of the exact conditions, workloads, or expectations where this hardware/product will cause dissatisfaction.",
       "Avoidance Profile 2: Detailed 2-3 sentence explanation of who should look elsewhere and what specific limitation will hold them back."
     ]
   },
@@ -779,66 +752,37 @@ Respond ONLY with valid, raw JSON (no markdown formatting, no backticks, no comm
       "Main Product Unit",
       "Standard Packaging or Accessories"
     ],
-    "notIncludedAlert": "Note on common missing accessories if applicable (or null)"
+    "notIncludedAlert": "Note on missing charging brick, case, or cables with estimated Day-1 extra expense (or null if all included or non-tech)"
   },
   "warrantyReality": {
     "duration": "1 Year Manufacturer Warranty (or null if consumable/cosmetics)",
     "covered": "Manufacturing and hardware defects under standard use",
     "notCovered": "Physical wear, accidental drops, and technician visit fees"
   },
-  "smartSavingStrategy": {
-    "baselinePrice": "${price || (regionProfile.symbol + "1,000")}",
-    "bestTargetPrice": "${price ? "Lower Target Price" : regionProfile.symbol + "850"}",
-    "potentialSavings": "${regionProfile.symbol}150",
-    "bankOffersDecoded": [
-      {
-        "bankName": "HDFC / ICICI Credit Card",
-        "discountText": "Instant 10% Discount",
-        "isEligible": true,
-        "eligibilityNote": "Threshold met for this item",
-        "finePrint": "Non-EMI full swipe only. Debit cards excluded."
-      },
-      {
-        "bankName": "Axis Bank / Amazon Pay ICICI",
-        "discountText": "5% Unlimited Cashback",
-        "isEligible": true,
-        "eligibilityNote": "Applied automatically at checkout",
-        "finePrint": "Credited directly to billing cycle."
-      }
-    ],
-    "pageCoupons": [
-      {
-        "code": "PAGE_COUPON",
-        "discountText": "Check product page for available discount coupon box",
-        "terms": "Apply before adding to cart",
-        "isCheckable": true
-      }
-    ]
-  },
   "whereItExcels": [
-    { "title": "Strength 1", "detail": "1 concise sentence." },
-    { "title": "Strength 2", "detail": "1 concise sentence." },
-    { "title": "Strength 3", "detail": "1 concise sentence." }
+    { "title": "Strength 1", "detail": "1 concise sentence grounded in capability." },
+    { "title": "Strength 2", "detail": "1 concise sentence grounded in capability." },
+    { "title": "Strength 3", "detail": "1 concise sentence grounded in capability." }
   ],
   "realisticTradeoffs": [
-    { "title": "Limit 1", "detail": "1 honest sentence." },
-    { "title": "Limit 2", "detail": "1 honest sentence." },
-    { "title": "Limit 3", "detail": "1 honest sentence." }
+    { "title": "Trade-Off 1", "detail": "1 objective engineering limitation sentence." },
+    { "title": "Trade-Off 2", "detail": "1 objective engineering limitation sentence." },
+    { "title": "Trade-Off 3", "detail": "1 objective engineering limitation sentence." }
   ],
   "careGuidelines": [
-    { "title": "Consideration 1", "detail": "Caring practical guidance based on ingredients/materials." },
-    { "title": "Consideration 2", "detail": "Caring practical guidance." }
+    { "title": "Care Consideration 1", "detail": "Practical guidance based on ingredients/materials/thermals." },
+    { "title": "Care Consideration 2", "detail": "Practical guidance." }
   ],
   "shelfLife": {
-    "expectedYears": "string (e.g. 18-24 Months, 4-6 Years, or Active Subscription)",
+    "expectedYears": "string (e.g. 4-6 Years, 18-24 Months, etc.)",
     "timeline": [
-      { "period": "Period 1", "status": "Status", "detail": "Detail" },
-      { "period": "Period 2", "status": "Status", "detail": "Detail" },
-      { "period": "Period 3", "status": "Status", "detail": "Detail" }
+      { "period": "First 6 Months", "status": "Peak Performance & Setup", "detail": "Experience as apps/storage fill and daily thermals settle." },
+      { "period": "Year 1 - 2", "status": "Normal Battery & Thermal Wear", "detail": "Battery cycle wear (~10-15% drop) and dust maintenance." },
+      { "period": "Year 3+", "status": "Long-Term Hardware Ceiling", "detail": "Hardware saturation limit and repairability/spare parts reality." }
     ]
   },
   "dailyCost": {
-    "costPerDay": "string (e.g. ${currencySymbol}45 / serving or ${currencySymbol}18 / day)",
+    "costPerDay": "string (e.g. ${currencySymbol}45 / day)",
     "calculationBasis": "string"
   },
   "regionalRealityCheck": {
@@ -849,10 +793,10 @@ Respond ONLY with valid, raw JSON (no markdown formatting, no backticks, no comm
     "serviceNetworkTier2Tier3": "Brand Authenticity & Customer Support / Standards"
   },
   "keySpecs": [
-    { "label": "Spec 1", "value": "Value 1" },
-    { "label": "Spec 2", "value": "Value 2" },
-    { "label": "Spec 3", "value": "Value 3" },
-    { "label": "Spec 4", "value": "Value 4" }
+    { "label": "Processor / Performance", "value": "Model name — Real-world capability description" },
+    { "label": "Graphics / Visuals", "value": "Model name — Real-world capability description" },
+    { "label": "Display Quality", "value": "Specs — Real-world indoor/outdoor capability" },
+    { "label": "Battery & Power", "value": "Capacity & Charging — Real-world backup & charge speed" }
   ],
   "betterAlternative": {
     "hasSuggestion": true,
@@ -994,43 +938,8 @@ Respond ONLY with valid, raw JSON (no markdown formatting, no backticks, no comm
     jsonResult.regionalRealityCheck.region = userCountry;
   }
 
-  // Live Store Coupon Enrichment
-  try {
-    const storeLookup = product.store || store || "";
-    const couponData = await getCouponsForStore(storeLookup, userCountry);
-    if (couponData && Array.isArray(couponData.storeData?.coupons) && couponData.storeData.coupons.length > 0) {
-      const topCoupons = couponData.storeData.coupons.slice(0, 3).map(c => ({
-        code: c.code,
-        discountText: c.title || `${c.discount_val}% OFF`,
-        terms: c.description || (c.min_order ? `Min spend ${regionProfile.symbol}${c.min_order}` : "Applicable at checkout"),
-        isCheckable: false
-      }));
-      if (!jsonResult.smartSavingStrategy) jsonResult.smartSavingStrategy = {};
-      jsonResult.smartSavingStrategy.verifiedStoreCoupons = topCoupons;
-    }
-  } catch (cpErr) {
-    console.warn("[TrustSheet] Coupon fetch note:", cpErr.message);
-  }
-
-  // Official Brand Direct Perk Enrichment
-  const brandNameLower = (product.brand || jsonResult.product?.brand || "").toLowerCase();
-  for (const [key, portal] of Object.entries(BRAND_PORTAL_MAP)) {
-    if (brandNameLower.includes(key) || title.toLowerCase().includes(key)) {
-      if (!jsonResult.smartSavingStrategy) jsonResult.smartSavingStrategy = {};
-      jsonResult.smartSavingStrategy.brandDirectPerk = {
-        hasPerk: true,
-        brand: portal.brand,
-        portalName: portal.studentPortalName,
-        portalUrl: portal.studentUrl,
-        discountPercent: portal.studentDiscountPercent,
-        corporatePortalName: portal.corporatePortalName,
-        corporateUrl: portal.corporateUrl,
-        welcomeCode: portal.welcomeCode,
-        warrantyBonus: portal.warrantyBonus
-      };
-      break;
-    }
-  }
+  // Purge any coupon / promotional strategies from pure Product Trust Sheet
+  delete jsonResult.smartSavingStrategy;
 
   // Authentic Customer Ratings & Breakdown Handling (Zero Fake Data Guarantee)
   const rawRating = product.rating || jsonResult.buyerSatisfaction?.rating;
@@ -1169,7 +1078,7 @@ export async function askProductAssistant({ product = {}, dossier = {}, question
 
   const cleanTitleKey = title.toLowerCase().replace(/[^a-z0-9]/g, "-").slice(0, 40);
   const qKey = q.toLowerCase().replace(/[^a-z0-9]/g, "-").slice(0, 50);
-  const cacheKey = `cache:trust_assistant:v4:${userCountry.toLowerCase()}:${cleanTitleKey}:${qKey}`;
+  const cacheKey = `cache:trust_assistant:v5:${userCountry.toLowerCase()}:${cleanTitleKey}:${qKey}`;
 
   try {
     const cachedData = await redis.get(cacheKey);
@@ -1179,12 +1088,23 @@ export async function askProductAssistant({ product = {}, dossier = {}, question
     }
   } catch (e) {}
 
-  const prompt = `You are Benefisto's Universal Product Truth Advocate.
+  const keySpecsStr = (dossier?.keySpecs || []).map(x => `${x.label}: ${x.value}`).join("; ");
+  const whoBuyStr = (dossier?.whoShouldBuyVsSkip?.whoShouldBuy || []).join(" | ");
+  const whoSkipStr = (dossier?.whoShouldBuyVsSkip?.whoShouldSkip || []).join(" | ");
+  const inTheBoxStr = dossier?.inTheBox ? `Included: ${(dossier.inTheBox.included || []).join(", ")}; Day-1 Extras: ${dossier.inTheBox.notIncludedAlert || "None"}` : "";
+  const lifespanStr = dossier?.shelfLife ? `Expected: ${dossier.shelfLife.expectedYears || ""}; Timeline: ${(dossier.shelfLife.timeline || []).map(t => `${t.period}: ${t.status}`).join(", ")}` : "";
+
+  const prompt = `You are Benefisto's Chief Product Truth Advocate & Hardware Specialist.
 Answer the consumer's question about this shortlisted product with 100% honesty, empathy, and spec-grounding:
 
 PRODUCT: "${title}" (${category})
+HARDWARE CAPABILITIES & SPECS: ${keySpecsStr || "Standard specifications"}
 STRENGTHS: ${excels || "Standard specifications"}
-REALISTIC LIMITS / GOTCHAS: ${tradeoffs || "Standard limitations"}
+REALISTIC LIMITS / TRADE-OFFS: ${tradeoffs || "Standard limitations"}
+WHO SHOULD BUY PROFILES: ${whoBuyStr || "Standard buyers"}
+WHO SHOULD SKIP PROFILES: ${whoSkipStr || "Standard avoidances"}
+IN THE BOX & EXTRA EXPENSES: ${inTheBoxStr || "Standard retail packaging"}
+LIFESPAN & AGING TIMELINE: ${lifespanStr || "Standard lifespan"}
 CARE & SENSITIVITY GUIDELINES: ${care || "Standard care"}
 OPERATING REGION: ${regionProfile.name} (${regionProfile.currency} ${regionProfile.symbol})
 RAW SCRAPED SPECS/INGREDIENTS: ${specs.map(s => `${s.name || s.key}: ${s.value}`).join(", ") || "Standard specifications"}
@@ -1195,9 +1115,14 @@ ${q}
 </consumer_question>
 
 DIRECTIVES:
-1. Provide a direct, honest, caring 2-3 sentence answer based on the product's actual specs and care considerations.
-2. If the user asks about medical ailments, allergies, or chronic health conditions, provide factual ingredient info and kindly remind them to consult a certified physician or nutritionist if in doubt.
-3. If the shortlisted product lacks what the user is asking for, state it clearly without marketing bias.
+1. Provide a direct, honest, caring 2-4 sentence answer grounded strictly in these specs and hardware capabilities.
+2. If the user asks about included accessories, packaging, or what comes in the box (e.g. 'Is a charger included?', 'Do I get an HDMI cable?', 'Is there a case?'): check 'IN THE BOX & EXTRA EXPENSES' and clearly state whether that accessory is inside the box or must be bought separately.
+3. If the user states a specific workload, gaming requirement, or personal use-case (e.g. 'Can I play PS5 games on this?', 'Is this good for 4K video editing?', 'Will it work in hard water?'):
+   - Give an immediate, clear verdict (e.g. Yes, Partially with trade-offs, or No / Definitely Not).
+   - Explain the exact hardware reason (e.g. refresh rate, resolution, VRAM, cooling, heating, ingredient) why it does or does not fit.
+4. Language Matching: Answer in the same language the user asked (if asked in Hindi / Hinglish, reply in natural, clear Hindi/Hinglish; if English, reply in English).
+5. If the product lacks what the user is asking for, state it honestly without marketing sugar-coating.
+6. If the user asks about health/medical allergies, provide ingredient facts and kindly remind them to consult a certified doctor.
 
 Return ONLY raw JSON:
 {
