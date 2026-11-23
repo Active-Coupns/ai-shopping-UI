@@ -18,6 +18,25 @@
 
 ## 📅 Daily Changelog & Feature Timeline
 
+### 🗓️ 2026-11-23 (Zero-Downtime Full Production Cutover from Vercel to Railway.app & Cloudflare Edge)
+
+* **Status**: 🟢 100% Live in Production & Fully Operational
+* **Origin Infrastructure**: Railway.app project `perfect-inspiration` in `sin1` (Singapore edge, ~35ms latency to India)
+* **Edge Proxy & Security**: Cloudflare (Zero-downtime CNAME cutover, full SSL encryption, DDoS/WAF protection)
+* **Custom Domain**: `benefisto.com` verified with SSL certificate `CERTIFICATE_STATUS_TYPE_VALID`
+* **Canonical Redirect**: `www.benefisto.com` 301 Permanent Redirect to `https://benefisto.com` with wildcard path & query string preservation
+
+#### 🛠️ Migration Highlights:
+1. **Zero-Downtime Cutover via Cloudflare API**:
+   - Cleaned up legacy Vercel A records and old verification TXT records.
+   - Pointed root CNAME directly to Railway target `gekx0i2m.up.railway.app` with Cloudflare proxy active.
+   - Preserved Clerk authentication CNAMEs, Cloudflare MX/SPF business email records, and Google Search Console verification records.
+2. **Railway Architecture & Production Secrets**:
+   - Injected all 32 environment variables (Supabase, Upstash Redis, Clerk, Dodo Payments, Groq, Feedico, PixelAPI, CRON_SECRET).
+   - Validated domain ownership via `_railway-verify` DNS TXT record.
+3. **End-to-End Verification (11/11 Passed)**:
+   - Root page, Geo-detection (`IN`), User Quota, Myntra/Feedico Coupons, OpenWeb Search (`laptop`), Healthcare Search (`paracetamol`), Virtual Try-On catalog (520+ items), Subscriptions hub, Travel deals, and Auto-Healing Sentinel tested live on `https://benefisto.com/` (all HTTP 200 OK).
+
 ### 🗓️ 2026-11-22 (VTON Mobile-First Layout, Haute Couture Atelier Loader & Local Quota Fix)
 
 * **Status**: 🟢 100% Production Ready & Verified

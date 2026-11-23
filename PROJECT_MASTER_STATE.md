@@ -57,6 +57,18 @@ Benefisto is structured around 5 high-intent vertical savings engines:
 - **Organic Haute Couture Atelier Loader**: Built `src/components/FuturisticVtonLoader.jsx` featuring a breathing studio model backdrop, 60 FPS floating champagne bokeh canvas, minimalist frosted glass aura orb, and rotating consumer-friendly status stages (`PREPARING` → `FITTING` → `STYLING` → `READY`). Zero clunky boxes or fake geometric polygons.
 - **Local Rate Limiter Quota Audit & Fix**: In `src/services/rateLimiter.js`, fixed the development loopback fallback where `remaining: 999` was hardcoded, replacing it with `remaining: limit` (10) so the Account modal consistently displays accurate quota.
 
+### Episode 7: Complete Production Migration from Vercel to Railway.app (`sin1` Singapore)
+- **Problem**: Vercel free tier constraints (serverless cold starts, execution timeouts, memory limits) restricted heavy background processing and AI orchestration for scaling.
+- **The Solution**: Full backend-to-backend migration to **Railway.app** project `perfect-inspiration` running in Singapore edge region `sin1` (~35ms latency to India).
+- **Environment & Database**: Programmatically injected all 32 production secrets (Supabase URL/keys, Upstash Redis, Clerk, Dodo Payments, Groq, Feedico, PixelAPI, CRON_SECRET).
+- **Zero-Downtime Cloudflare DNS Cutover**:
+  - Bound custom domain `benefisto.com` to Railway CNAME target `gekx0i2m.up.railway.app`.
+  - Injected DNS ownership validation TXT record (`_railway-verify.benefisto.com`).
+  - Active SSL certificate issued (`CERTIFICATE_STATUS_TYPE_VALID`).
+  - Updated Cloudflare DNS records: deleted legacy Vercel A/TXT records, updated CNAME for `benefisto.com`, `www.benefisto.com`, and `sentinelx9.benefisto.com` with Cloudflare proxy active.
+  - Preserved all Clerk auth, Cloudflare Email (MX/SPF), and Google Search Console verification records intact.
+- **Verification**: Verified `https://benefisto.com/` returns HTTP 200 OK from `sin1` Railway edge with zero seconds of downtime.
+
 ### Episode 5: Google AI Scraping Shield & Programmatic SEO
 - **Protection**: Injected `data-nosnippet="true"` on all promo code containers, masked codes with `••••••••`, and strictly omitted raw promo codes from Schema.org JSON-LD to prevent Google AI Overviews and scrapers from stealing proprietary codes without sending click traffic.
 - **SEO & Discovery**:
