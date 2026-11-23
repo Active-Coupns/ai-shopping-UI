@@ -1,0 +1,93 @@
+name: Benefisto Production Automated Crons
+
+on:
+  schedule:
+    # 1. Daily Coupon Master Sync at 02:00 UTC (07:30 AM IST)
+    - cron: '0 2 * * *'
+    # 2. Daily Travel Hub Deals Sync at 03:00 UTC (08:30 AM IST)
+    - cron: '0 3 * * *'
+    # 3. Heal-Sentinel Health Probes (Every 6 hours: 00:30, 06:00, 11:00, 20:00 UTC)
+    - cron: '30 0 * * *'
+    - cron: '0 6 * * *'
+    - cron: '0 11 * * *'
+    - cron: '0 20 * * *'
+    # 4. Weekly Subscriptions Sync every Sunday between 02:00 - 12:00 UTC
+    - cron: '0 4 * * 0'
+    - cron: '0 8 * * 0'
+    - cron: '0 12 * * 0'
+  workflow_dispatch: # Allows manual trigger from GitHub Actions anytime
+
+jobs:
+  run-scheduled-crons:
+    name: Execute Production Scheduled Tasks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Determine & Trigger Due Cron
+        run: |
+          BASE_URL="https://benefisto.com"
+          SECRET="cron_b0280b0f7c4d36ecc2cd057df1dfc3335e316277"
+          HOUR=$(date -u +%H)
+          MINUTE=$(date -u +%M)
+          DOW=$(date -u +%u)
+
+          echo "UTC Time: $HOUR:$MINUTE, Day of week: $DOW"
+
+          # Function to trigger cron endpoint
+          ping_cron() {
+            ENDPOINT=$1
+            echo "--> Triggering: $BASE_URL$ENDPOINT"
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X GET "$BASE_URL$ENDPOINT")
+            echo "    Result: HTTP $HTTP_CODE"
+          }
+
+          # 02:00 UTC: Sync Coupons
+          if [ "$HOUR" -eq "02" ]; then
+            ping_cron "/api/cron/sync-coupons?secret=$SECRET"
+            if [ "$DOW" -eq "7" ]; then
+              ping_cron "/api/cron/sync-subscriptions?country=IN&secret=$SECRET"
+            fi
+          fi
+
+          # 03:00 UTC: Sync Travel Deals
+          if [ "$HOUR" -eq "03" ]; then
+            ping_cron "/api/cron/sync-travel-deals?secret=$SECRET"
+          fi
+
+          # 00:30 UTC: Heal Sentinel (APAC Cluster)
+          if [ "$HOUR" -eq "00" ]; then
+            ping_cron "/api/cron/heal-sentinel?cluster=apac&secret=$SECRET"
+          fi
+
+          # 06:00 UTC: Heal Sentinel (GB) & Sunday Subscriptions (GB)
+          if [ "$HOUR" -eq "06" ]; then
+            ping_cron "/api/cron/heal-sentinel?country=GB&secret=$SECRET"
+            if [ "$DOW" -eq "7" ]; then
+              ping_cron "/api/cron/sync-subscriptions?country=GB&secret=$SECRET"
+            fi
+          fi
+
+          # 11:00 UTC: Heal Sentinel (Americas Cluster)
+          if [ "$HOUR" -eq "11" ]; then
+            ping_cron "/api/cron/heal-sentinel?cluster=americas&secret=$SECRET"
+          fi
+
+          # 20:00 UTC: Heal Sentinel (Australia)
+          if [ "$HOUR" -eq "20" ]; then
+            ping_cron "/api/cron/heal-sentinel?country=AU&secret=$SECRET"
+          fi
+
+          # Sunday Multi-Country Subscriptions Sync
+          if [ "$DOW" -eq "7" ]; then
+            if [ "$HOUR" -eq "04" ]; then
+              ping_cron "/api/cron/sync-subscriptions?country=US&secret=$SECRET"
+            fi
+            if [ "$HOUR" -eq "08" ]; then
+              ping_cron "/api/cron/sync-subscriptions?country=CA&secret=$SECRET"
+            fi
+            if [ "$HOUR" -eq "12" ]; then
+              ping_cron "/api/cron/sync-subscriptions?country=AE&secret=$SECRET"
+              ping_cron "/api/cron/sync-subscriptions?country=AU&secret=$SECRET"
+            fi
+          fi
+
+          echo "All scheduled cron tasks evaluated successfully."
