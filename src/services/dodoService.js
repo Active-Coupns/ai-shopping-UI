@@ -84,37 +84,41 @@ export const DODO_PRODUCTS = {
     id: "pdt_0NsMRB5gQlAg1apTrj9tz",
     category: "search",
     tier: "medium",
-    name: "Search Pack — Medium",
-    credits: 120,
+    name: "Search & Coupon Pack — Medium",
+    credits: 150,
+    searchCredits: 120,
+    couponCredits: 30,
     validityDays: 60,
     badge: "Popular Top-Up",
     prices: {
-      IN: 39,
-      US: 1.99,
-      GB: 1.69,
-      CA: 2.69,
-      AU: 2.99,
-      AE: 7.99
+      IN: 49,
+      US: 2.49,
+      GB: 1.99,
+      CA: 3.49,
+      AU: 3.99,
+      AE: 9.99
     },
-    description: "120 Deep AI Search, Trust Sheet & Price Calls (60 Days Validity)"
+    description: "150 Credits: 120 AI Searches + 30 On-Demand Brand Coupon Unlocks (60 Days Validity)"
   },
   search_large: {
     id: "pdt_0NsMRBD7GcWtPXhZh08cW",
     category: "search",
     tier: "large",
-    name: "Search Pack — Large",
-    credits: 260,
+    name: "Search & Coupon Pack — Large",
+    credits: 330,
+    searchCredits: 260,
+    couponCredits: 70,
     validityDays: 60,
     badge: "Heavy Shopper (Save 25%)",
     prices: {
-      IN: 79,
-      US: 3.99,
-      GB: 3.29,
-      CA: 5.49,
-      AU: 5.99,
-      AE: 14.99
+      IN: 99,
+      US: 4.99,
+      GB: 3.99,
+      CA: 6.99,
+      AU: 7.49,
+      AE: 18.99
     },
-    description: "260 Deep AI Search, Trust Sheet & Price Calls (60 Days Validity)"
+    description: "330 Credits: 260 AI Searches + 70 On-Demand Brand Coupon Unlocks (60 Days Validity)"
   }
 };
 

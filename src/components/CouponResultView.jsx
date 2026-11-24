@@ -601,6 +601,29 @@ export default function CouponResultView({
   if (isLoading || !resultData) {
     return (
       <div className="w-full max-w-5xl mx-auto px-3 sm:px-6 py-4 sm:py-6 text-left">
+        {/* Dynamic AI Sentinel Scanning Card */}
+        <div className="mb-6 p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-violet-900 via-indigo-900 to-slate-900 text-white shadow-xl shadow-indigo-950/20 border border-violet-500/30 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-fuchsia-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="space-y-1.5">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-violet-500/20 border border-violet-400/30 text-[11px] font-bold text-violet-200">
+                <Sparkles className="w-3.5 h-3.5 text-violet-300 animate-spin" />
+                <span>AI Shopping Assistant Active</span>
+              </div>
+              <h3 className="text-base sm:text-lg font-black tracking-tight text-white flex items-center gap-2">
+                Scanning Live Coupons &amp; Secret Checkout Perks...
+              </h3>
+              <p className="text-xs text-slate-300 font-medium">
+                Our automated sentinel is contacting merchant gateways and verifying today&apos;s working promo codes.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-white/10 backdrop-blur-md border border-white/10 shrink-0">
+              <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
+              <span className="text-xs font-mono font-bold text-emerald-200">Checking Live Slabs</span>
+            </div>
+          </div>
+        </div>
+
         {/* Top Header Shimmer */}
         <div className="flex items-center justify-between gap-3 mb-6 pb-4 border-b border-slate-200 animate-pulse">
           <div className="flex items-center gap-3">
@@ -660,6 +683,69 @@ export default function CouponResultView({
               </div>
             </div>
           ))}
+        </div>
+      </div>
+    );
+  }
+
+  // High-Converting Extended Merchant Network Paywall Card
+  if (resultData?.requiresPaidTier) {
+    return (
+      <div className="w-full max-w-2xl mx-auto px-4 py-8 text-center">
+        <div className="p-8 sm:p-10 rounded-3xl bg-gradient-to-b from-white to-slate-50 border border-slate-200/90 shadow-xl shadow-indigo-950/5 space-y-6 text-left relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-amber-200/20 to-violet-200/20 rounded-full blur-2xl pointer-events-none" />
+          
+          <div className="flex items-start gap-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-500 to-orange-500 text-white flex items-center justify-center font-black shadow-md shadow-amber-500/20 text-xl shrink-0">
+              ⚡
+            </div>
+            <div>
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-[10px] font-bold text-amber-800 uppercase tracking-wider mb-1">
+                🔒 Extended Merchant Network
+              </span>
+              <h3 className="text-lg font-black text-slate-900 tracking-tight">
+                Unlock Live Promo Codes for {resultData.storeName || "this Merchant"}
+              </h3>
+              <p className="text-xs text-slate-500 font-medium mt-0.5">
+                On-Demand Verification &bull; Zero Expired Codes Guarantee
+              </p>
+            </div>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200/80 text-xs text-amber-950 space-y-2">
+            <p className="font-semibold leading-relaxed">
+              <strong>{resultData.storeName || "This merchant"}</strong> is part of our on-demand global merchant network outside our standard 600 public catalog.
+            </p>
+            <p className="text-amber-900 text-[11px] leading-relaxed">
+              Our automated assistant can actively discover, test, and verify today&apos;s working checkout codes, app discounts, and payment perks for this store.
+            </p>
+          </div>
+
+          <div className="space-y-3 pt-1">
+            <div className="flex items-center justify-between p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs">
+              <div className="space-y-0.5">
+                <span className="text-xs font-black text-slate-900 block">Search &amp; Coupon Pack — Medium</span>
+                <span className="text-[11px] text-slate-500 font-medium">150 Credits (120 AI Searches + 30 Brand Coupon Unlocks &bull; 60 Days)</span>
+              </div>
+              <span className="text-xl font-black text-indigo-600">₹49</span>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
+              <a
+                href="/pricing?tab=search"
+                className="w-full sm:flex-1 py-3.5 px-6 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white font-extrabold text-xs sm:text-sm text-center shadow-lg shadow-violet-500/25 transition-all cursor-pointer"
+              >
+                ⚡ Unlock {resultData.storeName || "Store"} Deals — Upgrade (₹49)
+              </a>
+              <button
+                type="button"
+                onClick={() => onReset?.("COUPONS")}
+                className="w-full sm:w-auto py-3.5 px-5 rounded-2xl bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs border border-slate-200 transition-colors cursor-pointer"
+              >
+                Browse 600 Free Stores
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     );

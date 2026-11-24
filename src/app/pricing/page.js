@@ -309,8 +309,14 @@ export default function PricingPage() {
                   <ul className="space-y-3 mb-8 text-xs sm:text-sm text-slate-300">
                     <li className="flex items-center gap-2.5 font-semibold text-white">
                       <Check className="w-4 h-4 text-emerald-400 shrink-0" />
-                      <span><strong>{plan.credits}</strong> {activeTab === "tryon" ? "Virtual Try-On Credits" : "Deep Search & Price Calls"}</span>
+                      <span><strong>{plan.credits}</strong> {activeTab === "tryon" ? "Virtual Try-On Credits" : `Credits (${plan.searchCredits || 120} Searches + ${plan.couponCredits || 30} Coupon Unlocks)`}</span>
                     </li>
+                    {activeTab === "search" && (
+                      <li className="flex items-center gap-2.5 text-amber-300 font-semibold">
+                        <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+                        <span><strong>{plan.couponCredits || 30} On-Demand Brand Unlocks:</strong> Verified codes for stores outside public catalog</span>
+                      </li>
+                    )}
                     <li className="flex items-center gap-2.5">
                       <Clock className="w-4 h-4 text-indigo-400 shrink-0" />
                       <span><strong>60 Days</strong> Full Validity Window</span>

@@ -6,6 +6,8 @@ import { discoverOnDemandStoreCoupons } from "./couponOnDemandService.js";
 import { fetchFeedicoCoupons } from "./feedicoService.js";
 import { findBrandInCatalog, getTopBrandsForCountry } from "../data/countryBrandsCatalog.js";
 import { aiRouter } from "./aiRouter.js";
+import { redis } from "./redis.js";
+import { loadPersistentStore, savePersistentStore } from "./couponRollingSyncEngine.js";
 
 function getLiveCouponsStore() {
   try {
@@ -34,7 +36,7 @@ const SEMANTIC_INTENT_MAP = [
  * Real-Time On-Demand Coupon Evaluation Engine
  * Evaluates live, active, validated promo codes & bank offers per request.
  */
-export async function getCouponsForStore(queryOrStore = "", country = "IN") {
+export async function getCouponsForStore(queryOrStore = "", country = "IN", { isPaidUser = false, userId = null } = {}) {
   const normalizedKey = matchStoreKey(queryOrStore);
   const searchSlug = normalizedKey || queryOrStore.toLowerCase().trim();
 
@@ -165,9 +167,46 @@ export async function getCouponsForStore(queryOrStore = "", country = "IN") {
 
   // 7. If still not matched, trigger On-Demand Live Merchant Discovery
   if (!storeData && queryOrStore && queryOrStore.trim().length >= 2) {
+    if (!isPaidUser) {
+      return {
+        success: false,
+        requiresPaidTier: true,
+        storeName: queryOrStore,
+        title: "Extended Merchant Network",
+        message: `${queryOrStore} is part of our Extended Global Merchant Network. Active checkout deals and promo codes for this store require an active Benefisto Search & Coupon Pack.`,
+        upgradeUrl: "/pricing?tab=search",
+        coupons: []
+      };
+    }
+
     const onDemandRes = await discoverOnDemandStoreCoupons(queryOrStore, country);
     if (onDemandRes.success && onDemandRes.storeData) {
       storeData = onDemandRes.storeData;
+
+      // Deduct 1 credit for paid user
+      if (userId && redis) {
+        try {
+          await redis.decrby(`user_search_credits:${userId}`, 1);
+        } catch (_) {}
+      }
+
+      // Persistently cache in liveCouponsStore.json so all future lookups are instant & free!
+      try {
+        const persistent = loadPersistentStore();
+        if (persistent && persistent.stores) {
+          const storeSlug = queryOrStore.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+          persistent.stores[storeSlug] = {
+            brandName: storeData.name || queryOrStore,
+            domain: storeData.domain,
+            lastUpdated: new Date().toISOString(),
+            isLiveScraped: true,
+            coupons: storeData.coupons || []
+          };
+          savePersistentStore(persistent);
+        }
+      } catch (saveErr) {
+        console.warn("[Coupon Service] Error persisting on-demand store:", saveErr.message);
+      }
     } else {
       return {
         success: false,
