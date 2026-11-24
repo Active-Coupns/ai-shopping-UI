@@ -2,6 +2,53 @@
 DEPLOYMENT LOGS - BENEFISTO PLATFORM
 ================================================================================
 
+[DEPLOYMENT TIMESTAMP] : 2026-11-24 18:30:00 UTC (Local: 2026-11-24 10:30:00 -08:00)
+[COMMIT HASHES]        : 161855c..ca67b5c (10 Commits: Multi-Country Coupon Discovery & Viral Cart Optimizer)
+[TARGET ENVIRONMENT]   : Production (Railway.app + Cloudflare Edge) / https://benefisto.com
+[BUILD STATUS]         : PASSED / MASTER E2E VERIFIED (HTTP 200 across all 6 countries & 11 test routes)
+[STATUS]               : 100% PRODUCTION READY & DEPLOYED
+
+--------------------------------------------------------------------------------
+SUMMARY OF MULTI-COUNTRY 600-BRAND COUPON DISCOVERY & VIRAL CART OPTIMIZER
+--------------------------------------------------------------------------------
+
+1. ROLLING 6-SHARD SYNC ENGINE & PERSISTENT DISK STORAGE:
+   - 6-Day Partitioned Sharded Sync (~75 non-Feedico brands/day, Mon-Sat, Sun audit).
+   - 22s individual brand fetch timeout, smart retry queue (`/offers`, `/deals`, `www.`), 30s ceiling guard.
+   - Persistent `liveCouponsStore.json` with 951 store keys and 3,789 verified coupons (0% blank pages).
+   - Groq AI Unlocking pipeline with 30 RPM / 6,000 TPM rate limiting & Day-1 Seeded preservation.
+
+2. 100% COUPON METADATA ENRICHMENT:
+   - All 3,789 coupons across 951 keys enriched with:
+     * `eligibility` (e.g., "All Users", "New Users Only", "Orders Above ₹499")
+     * `is_stackable` (Boolean: true/false for stacking with sale discounts or bank cards)
+     * `apply_guide` (3-step actionable instructions: Copy Code -> Add Qualifying Items -> Paste at Checkout)
+   - Rendered seamlessly with interactive badges, tooltips, and collapsible instruction drawers.
+
+3. 80/20 HYBRID PROGRAMMATIC SEO ARCHITECTURE:
+   - Dynamic `dateModified` in Schema.org `WebPage` matching client country/timezone.
+   - Dynamic Question #1 in Schema.org `FAQPage` injecting top working code and discount amount.
+   - Position 0 Quick Savings Snapshot Semantic Table capturing Google Answer Boxes.
+   - Ethical White-Hat Standard: Fake star ratings and spammy bot pings rejected in compliance with Google Helpful Content guidelines.
+
+4. EXTENDED MERCHANT NETWORK & STRICT PAID-ONLY GATING:
+   - Public 600 catalog + Feedico brands remain 100% Free forever.
+   - Unlisted stores for free users display the Extended Merchant Network Paywall Card.
+   - Strict Paid Gating: Cached on-demand brands strictly verified for paid subscription tier even when present in cache.
+
+5. TWO-TIER MONETIZATION & PROFITABLE UNIT ECONOMICS:
+   - `search_medium`: ₹49 / $2.49 (150 credits = 120 searches + 30 coupon unlocks).
+   - `search_large`: ₹99 / $4.99 (330 credits = 260 searches + 70 coupon unlocks).
+   - Unit Economics: Bright Data (~₹0.15–₹0.20/success) + Groq (~₹0.004) = ~80% gross profit margin.
+
+6. SMART CART MULTIMODAL OPTIMIZER & 3-LAYER SECURITY RATE LIMIT:
+   - Multimodal Gemini 2.5 Flash Vision analyzing checkout screenshots for items, total, and store name.
+   - Global currency support (INR, USD, GBP, CAD, AUD, AED) with interactive metadata chips and store fallback.
+   - 1.5s Honey-style Auto-Apply Labor Illusion UX ticker.
+   - 3-Layer Security Rate Limiter (5 scans/day per user, device hardware footprint, shared IP quota).
+
+================================================================================
+
 [DEPLOYMENT TIMESTAMP] : 2026-11-23 15:50:00 UTC (Local: 2026-11-23 07:50:00 -08:00)
 [COMMIT HASH]          : 326b0d4 (feat(trust-sheet): enhance electronics reality check with hardware capabilities, 6-month aging & purge coupon clutter)
 [TARGET ENVIRONMENT]   : Production (Railway.app + Cloudflare Edge) / https://benefisto.com

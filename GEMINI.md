@@ -450,4 +450,57 @@ ShopSmart AI is **NOT a generic coupon website**, nor a spammy affiliate blog. I
   * Connected assistant directly to full Trust Sheet context (capabilities, aging, trade-offs, box contents). Automatically detects and replies in user's query language (Hindi/Hinglish/English) with decisive verdicts for personalized workloads.
 
 ---
+
+## 9. MULTI-COUNTRY 600-BRAND COUPON DISCOVERY, 80/20 SEO & VIRAL CART OPTIMIZER ARCHITECTURE
+
+### 9.1. 6-Shard Rolling Daily Sync & Production Ceiling Guard (`couponRollingSyncEngine.js`)
+- **6-Day Rolling Shards**: 600 top brands across 6 countries (IN, US, GB, CA, AU, AE). 152 brands supported natively by Feedico; 448 non-Feedico brands partitioned into 6 daily shards (~75 brands/day, Monday to Saturday, Sunday weekly audit).
+- **22-Second Per-Brand Timeout**: Every scrape and AI extraction call is strictly bounded by a 22-second AbortController guard, preventing slow merchant CDNs from exhausting worker execution.
+- **Smart Retry Queue**: If a primary merchant homepage fails or lacks coupons, the engine automatically attempts high-yield subpaths (`/offers`, `/deals`, and `www.` variants).
+- **Strict 30-Second Ceiling Guard**: Total sync execution is capped to prevent serverless function crashes or compute overruns. Unfinished brands are automatically rolled over to the subsequent cycle.
+
+### 9.2. Persistent Disk Storage Architecture & 0% Blank Pages Invariant (`liveCouponsStore.json`)
+- **Persistent Disk Store**: Stored atomically to `src/data/liveCouponsStore.json` (3.0 MB). Eliminates volatile Redis LRU cache eviction and cold-start failures.
+- **951 Store Keys & Search Aliases**: Every brand has multiple normalized slugs, domain variants, and country aliases mapped to its verified catalog.
+- **Zero-Blank-Page Invariant**: Every single store route among the 951 keys serves active, verified coupons. 0% empty state guarantee.
+
+### 9.3. 100% Coupon Metadata Enrichment Standards (`enrich_metadata.js`)
+- Every coupon in the Benefisto ecosystem must possess 3 non-negotiable metadata fields:
+  1. `eligibility`: Explicit qualification constraints (e.g., "All Users", "New Users Only", "Orders Above ₹499", "App Orders Only").
+  2. `is_stackable`: Strict boolean (`true`/`false`) defining whether the promo code stacks with active sales or banking card discounts.
+  3. `apply_guide`: Clear 3-step actionable instructions ("1. Copy Code", "2. Add Qualifying Items to Cart", "3. Paste at Checkout & Verify Discount").
+- **UI Rendering**: CouponResultView renders these fields as interactive eligibility pills, stackability badges, and collapsible how-to-apply drawers.
+
+### 9.4. 80/20 Hybrid Programmatic SEO & Ethical White-Hat Standard (`coupons/[store]/page.jsx`)
+- **Schema.org `WebPage` with Dynamic `dateModified`**: Injects localized ISO timestamps matching the store's client country/timezone to signal fresh daily indexation to Googlebot.
+- **Dynamic Schema.org `FAQPage`**: Question #1 dynamically resolves the current top working code and discount amount: *"What is the best working coupon code for [Store] today? The best verified coupon code is [CODE] offering [DISCOUNT]..."*.
+- **Position 0 Quick Savings Snapshot**: Semantic 4-row HTML table (`Best Discount Today`, `Verified Active Offers`, `First Order / New User`, `Last Verified Status`) designed to capture Google Position 0 featured snippet answer boxes.
+- **Ethical White-Hat SEO Invariant**: Strict rejection of deceptive star rating microdata or artificial reviews. Compliance with Google's Helpful Content Update and Spam Policies is non-negotiable.
+
+### 9.5. Monetization & Unit Economics Model (`dodoService.js`, `pricing/page.js`)
+- **Search & Coupon Packs**:
+  * `search_medium`: ₹49 / $2.49 (150 credits = 120 deep searches + 30 custom coupon unlocks, 60 days validity).
+  * `search_large`: ₹99 / $4.99 (330 credits = 260 deep searches + 70 custom coupon unlocks, 60 days validity).
+- **Unit Economics**:
+  * Bright Data Web Unlocker costs ~₹0.15–₹0.20 per successful request (₹0 on errors/timeouts).
+  * Groq AI extraction (`openai/gpt-oss-120b`) costs ~₹0.004 per unlock.
+  * Total delivery cost per coupon unlock: ~₹0.20. At ₹49 for 30 unlocks, revenue per unlock is ₹1.63, yielding an **~80% gross profit margin**.
+
+### 9.6. Extended Merchant Network Paywall & Strict Paid-Only Gating Invariant
+- **Two-Tier Public vs Extended Structure**:
+  * 600 Core Catalog & Feedico Brands: 100% Free forever for all public visitors.
+  * Unlisted Long-Tail Stores: Free users receive an Extended Merchant Paywall Card prompting an upgrade to unlock custom AI crawling.
+- **Strict Paid Gating Invariant**: When an unlisted merchant is unlocked on-demand by a paid subscriber, the result is cached in Redis (`coupon_store_paid:<storeKey>`). If a free user subsequently accesses that store URL, the server strictly validates their subscription tier and withholds the code—preventing free-tier leakage of premium unlocked assets.
+
+### 9.7. Smart Cart Multimodal Vision Optimizer & 3-Layer Security Rate Limiter (`analyze-cart/route.js`)
+- **Multimodal Cart Analysis**: Google Gemini 2.5 Flash Vision extracts cart items, subtotal, detected currency (INR, USD, GBP, CAD, AUD, AED), and merchant brand from uploaded checkout screenshots without arbitrary 10-store restrictions.
+- **Store Selection Fallback**: Low-confidence detections offer an interactive 600-brand dropdown for instant user confirmation.
+- **Interactive Metadata Chips**: Quick-toggle chips (`First Order?`, `Bank Card: HDFC/ICICI/Axis/SBI/Amex`) dynamically refine coupon matches.
+- **1.5s Honey-Style Labor Illusion UX**: Simulation ticker cycles through codes (`Checking SAVE20...`, `Testing FIRST50...`, `Best deal found!`) satisfying user psychology without browser extensions.
+- **3-Layer Security Rate Limiter**:
+  1. *Layer 1 (Authenticated User Quota)*: 5 scans/day per user ID in Redis.
+  2. *Layer 2 (Device Hardware Footprint)*: 5 scans/day per hardware/canvas footprint.
+  3. *Layer 3 (Shared IP Quota)*: 25 scans/day per IP to mitigate distributed scraping or proxy abuse.
+
+---
 **END OF CONSTITUTION — IMMUTABLE ARCHITECTURE LOCK**

@@ -18,34 +18,82 @@
 
 ## 📅 Daily Changelog & Feature Timeline
 
-### 🗓️ 2026-11-24 (Multi-Country Rolling 6-Shard Coupon Sync, Persistent Storage & Groq AI Unlocking Engine)
+### 🗓️ 2026-11-24 (Multi-Country 600-Brand Coupon Discovery, 80/20 SEO & Viral Cart Optimizer Architecture)
 
 * **Status**: 🟢 100% Operational & Verified across 6 Countries (IN, US, GB, CA, AU, AE)
-* **Scope**: 600-Brand Multi-Country Audit, 6-Day Partitioned Sharded Sync, Persistent Storage (`liveCouponsStore.json`), Concurrency Batch Pipeline, 30s Ceiling Guard, Full Localhost Route Verification
+* **Scope**: 600-Brand Multi-Country Audit, 6-Day Partitioned Sharded Sync, Persistent Storage (`liveCouponsStore.json`), 100% Metadata Enrichment, 80/20 Hybrid Programmatic SEO, Strict Paid Gating, Two-Tier Monetization, Multimodal Cart Analysis, 3-Layer Security Rate Limiting, Full E2E Verification
 
 #### 🛠️ Architecture & Engineering Highlights:
-1. **Full 600-Brand Multi-Country Audit (`src/data/couponAuditMatrix.json`)**:
-   - Audited 100 top brands across 6 countries (India, US, UK, Canada, Australia, UAE).
-   - Determined that Feedico supports 152 brands (25%), while 448 brands (75%) require rolling daily scraping & AI unlocking.
-   - Partitioned the 448 non-Feedico brands into 6 daily shards (~75 brands/day, Monday to Saturday, Sunday weekly audit).
-2. **Persistent Storage & Multi-Key Index (`src/data/liveCouponsStore.json`)**:
-   - Eliminated volatile Redis cache eviction dependency; coupon catalog permanently saved to disk (3.0 MB).
-   - 951 store keys and search aliases mapped to 600 unique brand catalogs (0% blank pages).
-3. **Decoupled Parallel Fan-Out & Groq AI Unlocking Pipeline (`scripts/run_shard_pipeline.js`)**:
-   - Stage 1: 8-Worker Parallel Concurrency Pool using Bright Data Web Unlocker (raw fetch without heavy JS overhead).
-   - Stage 2: Smart Retry Queue targeting alternative `/offers`, `/deals`, and `www.` endpoints.
-   - Stage 3: Groq AI Unlocking (`openai/gpt-oss-120b`) extracting genuine promo codes, cart constraints, eligibility, and 4-step `apply_guide`.
-   - Rate-Limit Pacing & 30-Second Ceiling Guard: Successfully handles Groq's 30 RPM / 6,000 TPM limit with dynamic 429 backoff and automatic Day-1 Seeded preservation when windows cap.
-4. **All 6 Shards Successfully Executed**:
-   - Shard 1 (75 brands): Domino's, SUGAR, Mamaearth unlocked with live codes (`JUBL99`, `APP15`, `BOGO`).
-   - Shard 2 (75 brands): Pepperfry (`SIGNUP5000`), Forest Essentials (`FEWELCOME`), Boult Audio (`BLACKFRIDAY`), HealthKart (`PRE15`), McDonald's (`FREEFRIES`), Bath & Body Works CA (`BUY3GET3`), Amazon UAE (`WFSAVINGS10`).
-   - Shard 3 (75 brands): The Derma Co (`FLAT30`), Nykaa (`BUY1OFF10`), ASDA (`BUY6SAVE25`), River Island (`BF20`).
-   - Shard 4 (75 brands): Amazon India, Swiggy, KFC, Myntra, Woolworths, Staples Canada, Browns Shoes.
-   - Shard 5 (74 brands): Meesho, Bewakoof, Zomato, FreshToHome, Starbucks, Purplle, Coles.
-   - Shard 6 (74 brands): Blinkit, AJIO, Chaayos, Snapdeal, Canadian Tire, JB Hi-Fi, THE ICONIC, Bonds.
-5. **Localhost Full-Coverage Verification**:
-   - All 16 representative brand pages across India, US, UK, Canada, Australia, and UAE verified returning HTTP 200 OK.
 
+1. **Rolling 6-Shard Sync Engine & Persistent Disk Storage (`src/services/couponRollingSyncEngine.js`, `src/data/liveCouponsStore.json`)**:
+   - **600-Brand Audit Matrix (`src/data/couponAuditMatrix.json`)**: 100 top brands audited across IN, US, GB, CA, AU, AE. 152 brands supported by Feedico (25%), 448 brands (75%) partitioned into 6 daily rolling shards (~75 brands/day, Mon–Sat, Sunday audit).
+   - **Persistent Storage (3.0 MB Disk Store)**: Eliminated volatile Redis cache eviction dependency. All coupons stored atomically to disk across 951 store keys & search aliases (0% blank pages).
+   - **Production-Hardened Sync Engine**:
+     * 22-second per-brand fetch timeout guard preventing hanging connections.
+     * Smart Retry Queue targeting alternative `/offers`, `/deals`, and `www.` endpoints.
+     * Strict 30-second ceiling guard for serverless/cron runtimes.
+     * Concurrency pool with Groq AI unlocking (`openai/gpt-oss-120b`), 30 RPM / 6,000 TPM rate-limiting, dynamic 429 backoff, and automatic Day-1 Seeded preservation when windows cap.
+
+2. **100% Coupon Metadata Enrichment across 3,789 Coupons (`scripts/enrich_metadata.js`)**:
+   - Audited and enriched every single coupon across all 951 keys with standardized metadata:
+     * `eligibility`: Concrete eligibility constraints (e.g., "All Users", "New Users Only", "Orders Above ₹499", "App Orders Only").
+     * `is_stackable`: Boolean flag (`true`/`false`) defining whether the code can stack with active site-wide sales or bank card promotions.
+     * `apply_guide`: Clear 3-step actionable guide ("1. Copy Code", "2. Add Qualifying Items to Cart", "3. Paste at Checkout & Verify Discount").
+   - UI seamlessly displays eligibility pills, stackability badges, and collapsible how-to-apply guide drawers with zero layout shift.
+
+3. **80/20 Hybrid Programmatic SEO Architecture (`src/app/coupons/[store]/page.jsx`, `src/services/couponService.js`)**:
+   - **Schema.org `WebPage` Integration**: Injected dynamic `dateModified` matching target country's timezone and formatted date (e.g. `2026-11-24T...`), signaling fresh daily updates to Googlebot.
+   - **Dynamic Schema.org `FAQPage`**: Question #1 dynamically constructs: *"What is the best working coupon code for [Store] today?"* and inserts the top live promo code and discount directly into the structured data.
+   - **Position 0 Featured Snippet Optimization**: Added a semantic savings table and dynamic `Top Code: [CODE]` badge capturing Google Position 0 Answer Boxes.
+   - **Ethical White-Hat SEO Invariant**: Explicitly rejected deceptive Google star rating microdata. Google's Helpful Content Update penalizes manufactured reviews; pure Schema.org (`WebPage`, `FAQPage`, `HowTo`) is enforced for permanent algorithmic trust.
+
+4. **Extended Merchant Network & Strict Paid-Only Gating (`src/services/couponService.js`, `src/components/CouponResultView.jsx`)**:
+   - **Public 600 Catalog + Feedico**: 100% Free forever for all users without login or credit deduction.
+   - **Extended Merchant Network Paywall**: For any unlisted long-tail store searched by a free user, the system displays an Extended Merchant Paywall Card explaining that custom AI unlocking is available via the Pro plan.
+   - **Strict Paid Gating Invariant**: When an unlisted merchant is unlocked on-demand by a paid user, the result is cached in Redis (`coupon_store_paid:<storeKey>`). If a free user subsequently visits that store, the server strictly checks their subscription tier and blocks access—preventing free-tier leakage of premium unlocked assets.
+
+5. **Two-Tier Monetization & Profitable Unit Economics (`src/services/dodoService.js`, `src/app/pricing/page.js`)**:
+   - Updated search/coupon plans to profitable pricing tiers:
+     * `search_medium`: ₹49 / $2.49 (150 credits = 120 deep searches + 30 custom coupon unlocks, 60 days validity).
+     * `search_large`: ₹99 / $4.99 (330 credits = 260 deep searches + 70 custom coupon unlocks, 60 days validity).
+   - **Unit Economics**:
+     * Bright Data Web Unlocker costs ~₹0.15–₹0.20 per successful HTTP 200 response (₹0 on errors/timeouts).
+     * Groq AI extraction costs ~₹0.004 per unlock.
+     * Total cost per coupon unlock: ~₹0.20. At ₹49 for 30 unlocks, gross revenue is ₹1.63/unlock vs ₹0.20 cost, securing an **~80% gross profit margin**.
+
+6. **Smart Cart Multimodal Vision Optimizer & 3-Layer Security Rate Limiter (`src/app/api/coupons/analyze-cart/route.js`, `src/components/CouponResultView.jsx`)**:
+   - **Multimodal Cart Analysis**: Users upload a shopping cart/checkout screenshot. Google Gemini 2.5 Flash Vision analyzes the image to extract items, cart total, currency, and detected store name without restricting to a hardcoded 10-store list.
+   - **Store Selection Fallback**: If AI confidence is low, the UI presents an interactive dropdown populated with all 600 stores to confirm their brand.
+   - **Interactive Metadata Chips**: Quick-toggle chips (`First Order?`, `Bank Card: HDFC/ICICI/Axis/SBI/Amex`) refine coupon filtering dynamically.
+   - **1.5s Honey-Style Labor Illusion UX**: Interactive simulation ticker cycling through codes (`Checking SAVE20...`, `Testing FIRST50...`, `Best deal found!`) providing consumer psychological satisfaction without requiring browser extensions or CORS violations.
+   - **3-Layer Security Rate Limiter**:
+     * Layer 1: Authenticated User Quota (5 scans/day per user ID).
+     * Layer 2: Device Hardware Footprint (5 scans/day per canvas/hardware fingerprint).
+     * Layer 3: Shared IP Quota (25 scans/day per IP to block distributed bot attacks).
+
+#### 🧪 Master End-to-End Verification (`scripts/master_e2e_verification.js`):
+- **Pillar 1 (Disk Store & Metadata)**: 951 store keys verified, 3,789 coupons, 100.00% enriched (`eligibility`, `is_stackable`, 3-step `apply_guide`).
+- **Pillar 2 (Rolling Shard Cron)**: 6 daily shards (~75 brands/day), 22s timeout, smart retry queue, 30s ceiling guard verified.
+- **Pillar 3 (80/20 Hybrid SEO)**: All 11 probed representative global stores returned HTTP 200, `dateModified` in `WebPage` schema, dynamic Question #1 in `FAQPage` schema with live code, and Position 0 `Top Code: [CODE]` badge.
+- **Pillar 4 (Extended Merchant Network Gating)**: Public 600 catalog & Feedico = 100% Free. Unlisted stores for free users = `requiresPaidTier: true` (Paywall card). Unlisted stores cached from paid requests remain strictly blocked for free users.
+- **Pillar 5 (Monetization & Pricing)**: `search_medium` verified at ₹49 / $2.49 (150 credits), `search_large` verified at ₹99 / $4.99 (330 credits).
+- **Pillar 6 (Smart Cart Screenshot & Virtual Auto-Apply)**: Gemini Vision extraction verified; store selection fallback active; virtual auto-apply simulation ticker and interactive metadata chips active; 3-layer security rate limit active.
+
+#### 📦 Git Commit History (10 Commits):
+1. `ca67b5c`: `feat(coupons): implement 6-shard rolling sync engine, persistent store, and groq ai unlocking`
+2. `6445552`: `fix(cron): harden rolling sync engine with 22s timeout, smart retry queue, and 30s ceiling guard`
+3. `8870a18`: `feat(ui): render eligibility pill, stackability badge, and step-by-step how-to-apply guide on coupon cards`
+4. `3f0dbfa`: `feat(data): complete 100% metadata enrichment across all 600 brands and 3,789 coupons`
+5. `425fdd4`: `feat(seo): implement 80/20 hybrid programmatic seo with dateModified schema, dynamic top code faq, and position 0 snippet enhancement`
+6. `d117c5a`: `feat(monetization): update pricing to ₹49/₹99 with 150/330 credits, add AI scanning assistant state and extended merchant paywall`
+7. `f42b6a6`: `feat(security): enforce strict paid-only gating for on-demand unlocked brands even when cached`
+8. `45dcc9a`: `feat(cart-optimizer): enhance multimodal cart analysis with auto-apply simulation, metadata chips, global currency, and store selection fallback`
+9. `874be7b`: `feat(security): enforce 3-layer security rate limiting (5/day per user, device hardware footprint, and shared IP quota) for cart screenshot analysis`
+10. `161855c`: `fix(cart-optimizer): clean trailing catch block in analyze-cart route`
+
+---
+
+### 🗓️ 2026-11-23 (Zero-Downtime Railway Migration, Cloudflare Edge Proxy & AI Trust Sheet 2.0)
 
 * **Status**: 🟢 100% Live in Production & Fully Operational
 * **Origin Infrastructure**: Railway.app project `perfect-inspiration` in `sin1` (Singapore edge, ~35ms latency to India)

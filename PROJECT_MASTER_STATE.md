@@ -2,10 +2,10 @@
 
 **Workspace Path:** `C:\Users\ASUS\.gemini\antigravity\scratch\ai-shopping-assistant`  
 **Production URL:** `https://benefisto.com`  
-**Latest Git Commit:** `326b0d4` (Branch: `main`)  
+**Latest Git Commit:** `161855c` (Branch: `main`)  
 **Parent Conversation ID:** `f2a88c90-b68a-4f91-bca0-98e5335a16b2`  
 **Creation Date:** 2026-11-21  
-**Last Updated:** 2026-11-23  
+**Last Updated:** 2026-11-24  
 
 ---
 
@@ -118,6 +118,16 @@ Benefisto is structured around 5 high-intent vertical savings engines:
 - Completely purged all coupon codes, bank discount cards, and promo clutter from Trust Sheet to guarantee an uncompromised Consumer Reports-level authority.
 - Supercharged the **AI Product Truth Assistant** (`askProductAssistant`): Connected directly to the full 360-degree Trust Sheet context and configured to reply in the user's query language (Hindi/Hinglish/English) with decisive verdicts for personalized workloads.
 
+### Episode 9: Multi-Country 600-Brand Coupon Discovery, 80/20 SEO & Viral Cart Optimizer Architecture
+- **Problem**: 75% of top retail brands across IN, US, GB, CA, AU, AE are not covered by conventional affiliate feeds (Feedico covers only 25%). Redis cache keys suffered cold starts or TTL evictions. High serverless execution times risked timeouts. Unlisted merchants had no revenue model, and competitor Honey browser extensions faced severe CORS restrictions.
+- **The Architecture Solution**:
+  1. *6-Shard Rolling Sync Engine*: Partitioned 448 non-Feedico brands into 6 daily rolling shards (~75 brands/day, Mon–Sat, Sunday audit). Bounded every crawl with a 22s per-brand timeout guard and 30s ceiling guard.
+  2. *Persistent Disk Storage*: Stored all 3,789 verified coupons atomically across 951 store keys in `liveCouponsStore.json` (3.0 MB). 0% blank pages guarantee.
+  3. *100% Coupon Metadata Enrichment*: Enriched all 3,789 coupons with verified `eligibility`, `is_stackable` boolean, and actionable 3-step `apply_guide`.
+  4. *80/20 Programmatic SEO & Ethical White-Hat Standard*: Injected dynamic `dateModified` in Schema.org `WebPage`, dynamic live top code FAQ in Schema.org `FAQPage`, and Position 0 semantic tables. Explicitly rejected spammy star rating microdata in strict compliance with Google's Helpful Content Update.
+  5. *Two-Tier Monetization & Extended Merchant Paywall*: Public 600 brands + Feedico remain 100% Free forever. Unlisted long-tail merchants prompt an Extended Merchant Network Paywall card. Cached on-demand unlocks in Redis are strictly verified against user subscription tier.
+  6. *Smart Cart Multimodal Optimizer & 3-Layer Security*: Powered by Gemini 2.5 Flash Vision to extract items, subtotal, and brand from cart screenshots. Includes store selection fallback, interactive metadata chips, and 1.5s Honey-style labor illusion auto-apply ticker. Protected by 3-layer security rate limiting (5 scans/day per user, device footprint, shared IP quota).
+
 ---
 
 ## 2. PRODUCTION CREDENTIALS & SERVICE REGISTRY (CONFIDENTIAL)
@@ -135,8 +145,8 @@ Benefisto is structured around 5 high-intent vertical savings engines:
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | `tryon_medium` | TryOn Medium (14 Try-Ons) | `pdt_0NsPQyJ5kRsnh2Ez2iz5z` | ₹49 | 18% GST extra | 14 Virtual Try-Ons (60 Days) |
 | `tryon_large` | TryOn Large (30 Try-Ons) | `pdt_0NsPR1cPQuX4dgkldfe1c` | ₹99 | 18% GST extra | 30 Virtual Try-Ons (60 Days) |
-| `search_medium` | AI Search Medium (120 Searches) | `pdt_0NsPR1fUYu9UvLugIhLBo` | ₹39 | 18% GST extra | 120 Deep Searches (60 Days) |
-| `search_large` | AI Search Large (260 Searches) | `pdt_0NsPR1hEd0GbVRSCUSSnA` | ₹79 | 18% GST extra | 260 Deep Searches (60 Days) |
+| `search_medium` | AI Search & Coupon Medium (150 Credits) | `pdt_0NsPR1fUYu9UvLugIhLBo` | ₹49 | 18% GST extra | 120 Deep Searches + 30 Coupon Unlocks (60 Days) |
+| `search_large` | AI Search & Coupon Large (330 Credits) | `pdt_0NsPR1hEd0GbVRSCUSSnA` | ₹99 | 18% GST extra | 260 Deep Searches + 70 Coupon Unlocks (60 Days) |
 
 ### Upstash Redis (Cache & Atomic Credit Wallets)
 - **REST URL:** `https://moved-mallard-184770.upstash.io`
@@ -177,6 +187,10 @@ Benefisto is structured around 5 high-intent vertical savings engines:
 | **AI Search Free Tier** | `daily_search:<userId_or_IP>:<YYYY-MM-DD>` | 24 Hours | 10 free daily searches. Resets midnight UTC. |
 | **Email-to-User Mapping** | `email_to_user_id:<email>` | 90 Days | Bridges webhook payload to Clerk user ID if metadata is disrupted. |
 | **Payment Receipts** | `user_payments:<userId>` | Persistent List | JSON array storing order ID, amount, planKey, credits, and ISO timestamp. |
+| **Cart Analysis User Quota** | `cart_analysis:user:<userId>:<YYYY-MM-DD>` | 24 Hours | Tracks 5 free daily multimodal cart scans per authenticated user. |
+| **Cart Analysis Device Footprint** | `cart_analysis:dev:<device_fp>:<YYYY-MM-DD>` | 24 Hours | Hardware/canvas footprint quota tracking to block incognito abuse. |
+| **Cart Analysis IP Quota** | `cart_analysis:ip:<ip>:<YYYY-MM-DD>` | 24 Hours | Shared IP ceiling (25/day) preventing distributed automated proxy attacks. |
+| **Extended Merchant Paid Cache** | `coupon_store_paid:<storeKey>` | 7 Days | Cached on-demand unlocked coupons strictly gated to paid subscribers. |
 
 ---
 
