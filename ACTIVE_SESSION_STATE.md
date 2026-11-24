@@ -1,7 +1,7 @@
 # 🧭 Benefisto — Active Session State & Daily Handover Ledger
 **File:** `ACTIVE_SESSION_STATE.md` (Project Root)  
-**Last Updated:** 2026-11-22 23:30 IST / 2026-11-22 10:00 PST  
-**Session Status:** 100% PRODUCTION READY & VERIFIED ON LOCALHOST:3000
+**Last Updated:** 2026-11-23 21:05 PST / 2026-11-24 10:35 IST  
+**Session Status:** 100% PRODUCTION READY, TESTED & PUSHED TO GITHUB (`326b0d4`)
 
 ---
 
@@ -9,6 +9,8 @@
 
 | System / Channel | Setup Status | Verification & Action Item |
 | :--- | :--- | :--- |
+| **AI Trust Sheet 2.0 (Hardware Reality Check)** | 🟢 **100% LIVE ON PROD (COMMIT `326b0d4`)** | Overhauled TrustSheet architecture to an objective Chief Hardware Engineer perspective. Delivers: (1) Hardware Capability Matrix over raw numbers, (2) Objective Technical Limits & Trade-Offs without brand-bashing, (3) "6 Months Later: Long-Term Reality" timeline (First 6 Months, Year 1-2, Year 3+), (4) In-The-Box Day-1 Setup Extras (chargers, HDMI cables, mounting brackets), (5) Complete purge of coupon/bank offer clutter, (6) 360-degree context sync to AI Assistant with matching language (Hindi/English) verdicts. Tested live on Croma TV and smartphones. |
+| **Cloudflare Edge Hardening & Railway Cutover** | 🟢 **100% LIVE ON RAILWAY (`sin1` SINGAPORE)** | Production host migrated to Railway (`gekx0i2m.up.railway.app`). Vercel project permanently decommissioned and deleted. Cloudflare CNAME proxy active on `benefisto.com` with `Bot Fight Mode`, `Always Use HTTPS`, and `Full` SSL/TLS encryption. Canonical 301 redirect rule (`www.benefisto.com/*` → `https://benefisto.com/$1`). Crons migrated to GitHub Actions (`.github/workflows/production-crons.yml`). |
 | **VTON Mobile-First Layout** | 🟢 **100% IMPLEMENTED & VERIFIED** | Streamlined `FashionTrialRoom.jsx` to mobile-first standards: Mirror canvas on top, side-by-side action buttons, interactive `[ ℹ️ Tips & Privacy ]` drawer modal, and horizontal category carousels directly beneath gender switches. |
 | **Original AI Studio Models** | 🟢 **100% LOCALLY HOSTED & VERIFIED** | Replaced external Unsplash URLs with 3 high-res photorealistic AI models in `public/models/` (`ai_model_men.jpg`, `ai_model_women.jpg`, `ai_model_kids.jpg`). 100% copyright-free. |
 | **Haute Couture Atelier Loader** | 🟢 **100% IMPLEMENTED & VERIFIED** | Built `src/components/FuturisticVtonLoader.jsx` with an organic breathing studio model backdrop, 60 FPS floating champagne bokeh canvas, minimalist frosted glass aura orb, and 4 consumer-friendly stages (`PREPARING` → `FITTING` → `STYLING` → `READY`). Zero clunky boxes or fake geometric polygons. |

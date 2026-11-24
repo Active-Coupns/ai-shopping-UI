@@ -1,12 +1,11 @@
 # Benefisto Platform — Project Chronicle, Master State & AI Consciousness
 
 **Workspace Path:** `C:\Users\ASUS\.gemini\antigravity\scratch\ai-shopping-assistant`  
-**Production URL:** `https://www.benefisto.com`  
-**Latest Git Commit:** `019c671` (Branch: `main`)  
-**Parent Conversation ID:** `1b4980bf-3ef0-4ba5-b726-d42c052d6f5b`  
-**Parent Transcript File:** [transcript.jsonl](file:///C:/Users/ASUS/.gemini/antigravity/brain/1b4980bf-3ef0-4ba5-b726-d42c052d6f5b/.system_generated/logs/transcript.jsonl)  
-**Parent Full Transcript:** [transcript_full.jsonl](file:///C:/Users/ASUS/.gemini/antigravity/brain/1b4980bf-3ef0-4ba5-b726-d42c052d6f5b/.system_generated/logs/transcript_full.jsonl)  
+**Production URL:** `https://benefisto.com`  
+**Latest Git Commit:** `326b0d4` (Branch: `main`)  
+**Parent Conversation ID:** `f2a88c90-b68a-4f91-bca0-98e5335a16b2`  
 **Creation Date:** 2026-11-21  
+**Last Updated:** 2026-11-23  
 
 ---
 
@@ -98,12 +97,26 @@ Benefisto is structured around 5 high-intent vertical savings engines:
 - **Phase E (Dual Credit Wallets in Preferences & Trial Room)**:
   - Upgraded `UnifiedAccountModal.jsx` (Header -> Preferences) to display dual live balances: AI Search Engine (free daily searches + active 60-day top-ups) and Virtual Try-On (active paid try-ons + exact expiry date).
   - Upgraded `FashionTrialRoom.jsx` to dynamically display paid quota badge (`✨ Active Try-On Pack: X Paid Try-Ons Active (High GPU Speed • 60-Day Active)`).
-- **Phase F (Live Mode Production Cutover)**:
+- **Phase F (Live Mode Production Cutover & Railway Migration)**:
   - Generated Live Dodo API Key: `dodo_live_pQWKvpsGTOXYkzcM.nEHz22_vfTtc8dd0koCFS7X6qhUFhQ4Cs8bWZEjsM3MThsei`.
   - Created 4 official live products via Dodo Live API with `tax_inclusive: false`.
-  - Registered Live Webhook endpoint `https://www.benefisto.com/api/webhooks/dodo` (Secret: `whsec_ONyvWHyRPIY7ykO53V4k5mCsO7WbB/z9`).
-  - Updated Vercel environment variables (all HTTP 200 OK).
-  - Deployed to Vercel production: Deployment `dpl_HhC792d4C8MvNqBaQaYkv7AvkSG9` (**READY & LIVE** at `https://www.benefisto.com`).
+  - Registered Live Webhook endpoint `https://benefisto.com/api/webhooks/dodo` (Secret: `whsec_ONyvWHyRPIY7ykO53V4k5mCsO7WbB/z9`).
+  - Production host migrated to Railway.app (`gekx0i2m.up.railway.app`) in `sin1` Singapore region.
+  - Vercel project decommissioned and permanently deleted via API.
+  - Production live and verified at `https://benefisto.com`.
+
+### Episode 7: Virtual Try-On Mobile-First Layout & Haute Couture Atelier Loader
+- Replaced external Unsplash model URLs with 3 high-definition, copyright-free photorealistic studio portraits (`/models/ai_model_men.jpg`, `/models/ai_model_women.jpg`, `/models/ai_model_kids.jpg`).
+- Streamlined `FashionTrialRoom.jsx` with a mobile-first mirror canvas, action buttons, and interactive `[ ℹ️ Tips & Privacy ]` drawer modal.
+- Engineered `FuturisticVtonLoader.jsx` featuring an organic breathing studio backdrop, 60 FPS floating champagne bokeh canvas, minimalist frosted glass aura orb, and 4 consumer-friendly rotating stages (`PREPARING` → `FITTING` → `STYLING` → `READY`).
+
+### Episode 8: AI Trust Sheet 2.0 (Hardware Capabilities & Pure Product Truth Engine)
+- Redefined backend prompt role in `src/services/trustSheetService.js` to a senior Chief Hardware Engineer: 100% objective, scientific, and free from brand-bashing.
+- Replaced raw specs with a **Hardware Capability Matrix** (`keySpecs`), giving actionable everyday context (gaming FPS, thermal dissipation, screen nits legibility, multi-app headroom).
+- Introduced **"6 Months Later: The Long-Term Reality"** timeline (`shelfLife.timeline`), projecting 3-stage degradation (First 6 Months, Year 1-2, Year 3+).
+- Engineered **In-The-Box Reality & Day-1 Extras** (`inTheBox`), itemizing packaged accessories and warning of missing essentials (chargers, HDMI cables, wall brackets) with estimated initial setup expenses. Set to `null` for non-tech.
+- Completely purged all coupon codes, bank discount cards, and promo clutter from Trust Sheet to guarantee an uncompromised Consumer Reports-level authority.
+- Supercharged the **AI Product Truth Assistant** (`askProductAssistant`): Connected directly to the full 360-degree Trust Sheet context and configured to reply in the user's query language (Hindi/Hinglish/English) with decisive verdicts for personalized workloads.
 
 ---
 
@@ -114,7 +127,7 @@ Benefisto is structured around 5 high-intent vertical savings engines:
 - **Base URL:** `https://live.dodopayments.com`
 - **API Key:** `dodo_live_pQWKvpsGTOXYkzcM.nEHz22_vfTtc8dd0koCFS7X6qhUFhQ4Cs8bWZEjsM3MThsei`
 - **Webhook Endpoint ID:** `ep_3MP9VjqLZlJkDUoPmrlUWOPrsgo`
-- **Webhook URL:** `https://www.benefisto.com/api/webhooks/dodo`
+- **Webhook URL:** `https://benefisto.com/api/webhooks/dodo`
 - **Webhook Secret:** `whsec_ONyvWHyRPIY7ykO53V4k5mCsO7WbB/z9`
 
 ### 4 Live Registered Products:
@@ -127,18 +140,19 @@ Benefisto is structured around 5 high-intent vertical savings engines:
 
 ### Upstash Redis (Cache & Atomic Credit Wallets)
 - **REST URL:** `https://moved-mallard-184770.upstash.io`
-- **REST Token:** `[STORED SECURELY IN VERCEL & .env.local]`
+- **REST Token:** `[STORED SECURELY IN RAILWAY PRODUCTION ENV & .env.local]`
 
 ### Clerk Authentication
 - **Dev Publishable Key:** `pk_test_ZWxlY3RyaWMtY3ViLTQ5NDQuY2xlcmsuYWNjb3VudHMuZGV2JA`
 - **Dev Secret Key:** `[STORED SECURELY IN .env.local]`
 - **Prod Publishable Key:** `pk_live_Y2xlcmsuYmVuZWZpc3RvLmNvbSQ`
-- **Prod Secret Key:** `[STORED SECURELY IN VERCEL PRODUCTION ENV]`
+- **Prod Secret Key:** `[STORED SECURELY IN RAILWAY PRODUCTION ENV]`
 
-### Vercel Deployment & Project Settings
-- **Project ID:** `prj_Wik7uVe6mNHJgryMw44VUsZ4N40Z`
-- **Project Name:** `benefisto-platform`
-- **Org / User ID:** `UBQDWQ4gcKJXwrX8I8wToLMR` (`shopsmart01`)
+### Production Hosting & Edge CDN
+- **Production Host:** Railway.app container (`gekx0i2m.up.railway.app`, `sin1` Singapore region, ~35ms latency to India)
+- **Edge CDN & WAF:** Cloudflare (Apex domain `benefisto.com` proxied, 301 canonical redirect for `www.benefisto.com`, Bot Fight Mode, Always HTTPS, Full SSL)
+- **Production Crons:** GitHub Actions (`.github/workflows/production-crons.yml`) triggering coupon and travel deal syncs daily
+- **Legacy Host:** Vercel (Project `prj_Wik7uVe6mNHJgryMw44VUsZ4N40Z` permanently deleted via API)
 - **Active Production Aliases:** `https://www.benefisto.com`, `https://benefisto.com`
 
 ### Railway High-Performance Compute Engine

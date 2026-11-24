@@ -2,6 +2,35 @@
 DEPLOYMENT LOGS - BENEFISTO PLATFORM
 ================================================================================
 
+[DEPLOYMENT TIMESTAMP] : 2026-11-23 15:50:00 UTC (Local: 2026-11-23 07:50:00 -08:00)
+[COMMIT HASH]          : 326b0d4 (feat(trust-sheet): enhance electronics reality check with hardware capabilities, 6-month aging & purge coupon clutter)
+[TARGET ENVIRONMENT]   : Production (Railway.app + Cloudflare Edge) / https://benefisto.com
+[BUILD STATUS]         : PASSED / LIVE VERIFIED
+[STATUS]               : 100% PRODUCTION DEPLOYED & TESTED
+
+--------------------------------------------------------------------------------
+SUMMARY OF TRUST SHEET 2.0 & CLOUDFLARE PRODUCTION CUTOVER
+--------------------------------------------------------------------------------
+
+1. INFRASTRUCTURE & EDGE SECURITY:
+   - Zero-downtime migration from Vercel to Railway.app (`gekx0i2m.up.railway.app`, `sin1` Singapore edge).
+   - Vercel project permanently deleted (`204 No Content`).
+   - Cloudflare CNAME edge proxy (Orange Cloud active) for `benefisto.com`.
+   - 301 Permanent Canonical Redirect: `www.benefisto.com/*` -> `https://benefisto.com/$1`.
+   - Security: Bot Fight Mode enabled, Always Use HTTPS enabled, SSL mode Full.
+   - Production Crons: Replaced with GitHub Actions (`.github/workflows/production-crons.yml`).
+
+2. AI TRUST SHEET 2.0 (HARDWARE CAPABILITY REALITY CHECK):
+   - Chief Hardware Engineer persona: 100% objective, scientific, zero brand-bashing.
+   - Hardware Capability Matrix: In `keySpecs`, raw specs translated to practical everyday capability context.
+   - Objective Technical Limits & Trade-Offs: Grounded in component physics (polycarbonate, 1-Star BEE, OIS absence).
+   - 6 Months Later & Aging Lifespan: Phase 1 (First 6 Months), Phase 2 (Year 1-2), Phase 3 (Year 3+).
+   - In-The-Box Reality: Itemizes accessories and Day-1 extra costs; cleanly hidden (`null`) for non-tech.
+   - Purged Coupon Clutter: Completely removed promo codes, bank cards, and coupon hacks from Trust Sheet.
+   - 360-Degree AI Assistant: Directly wired to full dossier context; auto-answers in user's query language (Hindi/English).
+
+================================================================================
+
 [DEPLOYMENT TIMESTAMP] : 2026-11-22 18:00:00 UTC (Local: 2026-11-22 10:00:00 -08:00)
 [COMMIT HASH]          : HEAD (feat(vton): Mobile-First Studio Layout, Organic Atelier Loader & Local Quota Fix)
 [TARGET ENVIRONMENT]   : Production (Vercel) / www.benefisto.com

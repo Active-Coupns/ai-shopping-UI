@@ -2233,6 +2233,64 @@
 
 ---
 
+### 🗓️ 2026-11-20 (Virtual Try-On UI Mobile-First Architecture & Haute Couture Atelier Loader)
+* **Status**: ✅ 100% Tested & Verified Locally & Pushed to GitHub
+* **Files Modified**: `src/components/FashionTrialRoom.jsx`, `src/components/FuturisticVtonLoader.jsx`, `src/services/rateLimiter.js`
+* **Changes in this Release**:
+  1. **Photorealistic Copyright-Free AI Studio Models**:
+     - Removed Unsplash dependencies; replaced with native high-definition studio models: `/models/ai_model_men.jpg` (Aakash), `/models/ai_model_women.jpg` (Riya), and `/models/ai_model_kids.jpg` (Aarav).
+  2. **Mobile-First Trial Room UI**:
+     - Compact mobile layout: Mirror Canvas prominently at top with side-by-side action buttons (`Upload Photo` & `Upload Outfit`).
+     - Relocated lengthy instructional text to an interactive `[ ℹ️ Tips & Privacy ]` drawer.
+     - Horizontal category carousels directly beneath gender tabs with smooth anchor scrolling down to wardrobe catalog.
+  3. **Haute Couture Atelier Loader (`FuturisticVtonLoader.jsx`)**:
+     - 60 FPS floating champagne bokeh canvas, organic breathing studio model backdrop, minimalist frosted glass aura orb.
+     - 4 consumer-friendly rotating stages (`PREPARING` → `FITTING` → `STYLING` → `READY`) with zero technical jargon.
+
+---
+
+### 🗓️ 2026-11-22 (Production Railway.app Migration & Cloudflare Edge Hardening)
+* **Status**: ✅ Live on Production (`https://benefisto.com`, 200 OK via `sin1` Singapore Edge)
+* **Target Environment**: Railway.app (`gekx0i2m.up.railway.app`) + Cloudflare Edge CDN
+* **Changes in this Release**:
+  1. **Zero-Downtime Infrastructure Migration**:
+     - Migrated production web hosting from Vercel to Railway container infrastructure.
+     - Permanently decommissioned Vercel project and serverless crons via API (`204 No Content`).
+  2. **Cloudflare Edge Hardening & Canonical Routing**:
+     - Apex domain `benefisto.com` proxied with Cloudflare edge network (Orange Cloud active).
+     - 301 Permanent Canonical Redirect: `www.benefisto.com/*` → `https://benefisto.com/$1` with query string and wildcard preservation.
+     - Enabled Cloudflare `Bot Fight Mode`, `Always Use HTTPS`, and `Full` SSL/TLS encryption.
+  3. **Automated Cron Scheduler via GitHub Actions**:
+     - Implemented `.github/workflows/production-crons.yml` to trigger `/api/cron/sync-coupons` and `/api/cron/sync-travel-deals` daily with secret bearer authorization.
+
+---
+
+### 🗓️ 2026-11-23 (AI Trust Sheet 2.0: Deep Hardware Reality Check & Pure Product Truth Engine)
+* **Git Commit**: `326b0d4`
+* **Commit Message**: `feat(trust-sheet): enhance electronics reality check with hardware capabilities, 6-month aging & purge coupon clutter`
+* **Status**: ✅ Tested Locally, Verified on Live Dev Server & Pushed to GitHub `main` (`prod` & `origin`)
+* **Files Modified**: `src/services/trustSheetService.js`, `src/components/TrustSheetView.jsx`
+
+#### 🌟 New Features & Enhancements Added:
+1. **Chief Hardware Engineer Persona (`trustSheetService.js`)**:
+   - Replaced marketing tone with a senior engineering lab analyst perspective: 100% objective, calm, scientific, and free from brand-bashing.
+2. **Hardware Capability Matrix (`keySpecs`)**:
+   - Instead of raw numbers, every specification now includes its real-world capability context (e.g. gaming resolution & FPS ceilings, thermal dissipation under sustained load, outdoor sunlight nits legibility, and multi-app multitasking headroom).
+3. **Objective Technical Limits & Trade-Offs (`realisticTradeoffs`)**:
+   - Grounded all product compromises in published hardware specs and component physics (e.g. polycarbonate frame for weight savings, 1-Star BEE energy consumption, absence of OIS).
+4. **"6 Months Later: The Long-Term Reality" Timeline (`shelfLife.timeline`)**:
+   - 3-stage degradation reality: Phase 1 (First 6 Months — storage filling, battery retention), Phase 2 (Year 1-2 — normal lithium battery wear, thermal dust maintenance, major OS update load), Phase 3 (Year 3+ — hardware saturation & repairability).
+5. **In-The-Box Reality & Day-1 Setup Extras (`inTheBox`)**:
+   - Explicitly itemizes packaged accessories and warns of missing essentials (chargers, HDMI cables, wall brackets) with estimated initial setup cost. Explicitly set to `null` for non-tech categories to prevent clutter.
+6. **Purged Coupon & Bank Offer Clutter**:
+   - Completely eliminated promo codes, bank offers, and brand portal perks from Trust Sheet, ensuring 100% unbiased Consumer Reports-grade authority.
+7. **360-Degree AI Assistant Memory & Language Mirroring (`askProductAssistant`)**:
+   - Connected assistant directly to full Trust Sheet context (capabilities, aging, trade-offs, box contents). Automatically detects and replies in user's query language (Hindi/Hinglish/English) with decisive verdicts for personalized workloads. Tested with 3 critical scenarios (PS5 gaming, HDMI cable inclusion, and YouTube streaming utility).
+
+---
+
+---
+
 ## 🧭 Future Roadmap & Discussion Backlog
 
 | Feature Area | Current Status | Notes / Plan |

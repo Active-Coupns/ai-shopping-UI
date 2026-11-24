@@ -422,5 +422,32 @@ ShopSmart AI is **NOT a generic coupon website**, nor a spammy affiliate blog. I
 - **Development Loopback Quota Invariant (`rateLimiter.js`)**:
   * Localhost fallback in `checkUnifiedApiQuota` strictly aligned to `remaining: limit` (10) instead of hardcoded `999`, guaranteeing visual consistency between the UI disclaimer and remaining quota badges across all environments.
 
+### 8.9. Cloudflare Zero-Downtime Edge Hardening & Railway.app Migration
+- **Permanent Vercel Decommissioning**:
+  * Vercel project and serverless crons permanently deleted via API (`204 No Content`).
+  * Zero-downtime cutover to Railway.app production container (`gekx0i2m.up.railway.app`, `sin1` Singapore edge).
+- **Cloudflare Edge Proxy & Canonical Routing**:
+  * Apex domain `benefisto.com` proxied with Cloudflare edge network (Orange Cloud active).
+  * 301 Permanent Canonical Redirect Rule: `www.benefisto.com/*` → `https://benefisto.com/$1` with wildcard and query parameter preservation.
+  * Security Hardening: `Bot Fight Mode` enabled, `Always Use HTTPS` enabled, SSL/TLS encryption mode set to `Full`.
+- **Production Cron Automation via GitHub Actions**:
+  * Replaced Vercel crons with `.github/workflows/production-crons.yml` triggering `/api/cron/sync-coupons` (02:00 UTC) and `/api/cron/sync-travel-deals` (03:00 UTC) with secret bearer authentication.
+
+### 8.10. AI Trust Sheet 2.0: Deep Hardware Reality Check & Pure Product Truth Engine
+- **Chief Hardware Engineer Persona (`trustSheetService.js`)**:
+  * Transitioned tone from generic summary to a senior engineering lab analyst: 100% objective, calm, scientific, and free from sensationalism or brand-bashing.
+- **Hardware Capability Matrix (`keySpecs`)**:
+  * Replaced raw numbers with actionable real-world capabilities (gaming resolution/FPS ceilings, sustained thermal dissipation, outdoor sunlight legibility nits, and multi-app multitasking headroom).
+- **Objective Technical Limits & Trade-offs (`realisticTradeoffs`)**:
+  * Grounded all product gotchas in component physics and manufacturing trade-offs (e.g. polycarbonate chassis vs aluminum, 1-Star BEE power consumption, absence of OIS).
+- **6 Months Later & Lifespan Timeline (`shelfLife.timeline`)**:
+  * 3-stage aging reality: Phase 1 (First 6 Months — storage filling, battery retention), Phase 2 (Year 1-2 — normal battery degradation, thermal maintenance, OS update load), Phase 3 (Year 3+ — hardware saturation & repairability).
+- **In-The-Box Reality & Day-1 Setup Extras (`inTheBox`)**:
+  * Accurately itemizes packaged accessories and warns of missing essentials (chargers, HDMI cables, wall brackets) with estimated initial setup cost. Explicitly set to `null` for non-tech categories to prevent clutter.
+- **Purge of Coupon & Bank Card Clutter**:
+  * Completely eliminated promo codes, bank offers, and brand portal perks from Trust Sheet, ensuring 100% unbiased Consumer Reports-grade authority.
+- **360-Degree AI Assistant Memory & Language Mirroring (`askProductAssistant`)**:
+  * Connected assistant directly to full Trust Sheet context (capabilities, aging, trade-offs, box contents). Automatically detects and replies in user's query language (Hindi/Hinglish/English) with decisive verdicts for personalized workloads.
+
 ---
 **END OF CONSTITUTION — IMMUTABLE ARCHITECTURE LOCK**
