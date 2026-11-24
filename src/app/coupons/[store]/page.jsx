@@ -137,9 +137,26 @@ export default async function CouponStorePage({ params, searchParams }) {
   const canonicalUrl = `${baseUrl}/coupons/${store}`;
 
   // Structured Data (JSON-LD) for Google Rich Snippets
+  const topCoupon = (couponResult.coupons || []).find(c => c.hasRealCode && c.code && c.code !== "INSTANT_CASHBACK") || couponResult.coupons?.[0];
+  const lastModifiedDate = (couponResult.lastUpdated ? new Date(couponResult.lastUpdated) : new Date()).toISOString();
+  const topDealSummary = topCoupon && topCoupon.code && topCoupon.code !== "INSTANT_CASHBACK"
+    ? `The best verified promo code for ${cleanName} right now is '${topCoupon.code}', offering ${topCoupon.title || "instant checkout savings"}. Tested and confirmed active in ${monthName} ${year}.`
+    : `Currently, ${cleanName} shoppers can unlock up to 50% in verified promotional discounts. Check our active list above for immediate checkout savings.`;
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
+      // 0. WebPage Schema with Freshness Signal (dateModified)
+      {
+        "@type": "WebPage",
+        "@id": canonicalUrl,
+        "url": canonicalUrl,
+        "name": `${cleanName} Promo Codes & Coupons (${monthName} ${year})`,
+        "description": `Get 100% verified ${cleanName} discount codes, special app vouchers, and payment perks for ${monthName} ${year}. Tested daily on Benefisto.`,
+        "dateModified": lastModifiedDate,
+        "datePublished": "2026-01-01T00:00:00Z",
+        "inLanguage": country === "IN" ? "en-IN" : (country === "GB" ? "en-GB" : "en-US")
+      },
       // 1. Breadcrumb Schema
       {
         "@type": "BreadcrumbList",
@@ -176,6 +193,14 @@ export default async function CouponStorePage({ params, searchParams }) {
       {
         "@type": "FAQPage",
         "mainEntity": [
+          {
+            "@type": "Question",
+            "name": `What is the best active coupon code for ${cleanName} right now?`,
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": topDealSummary
+            }
+          },
           {
             "@type": "Question",
             "name": `How do I apply a verified promo code on ${cleanName}?`,

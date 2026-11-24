@@ -234,7 +234,8 @@ export async function getCouponsForStore(queryOrStore = "", country = "IN") {
     totalOffers: finalizedCoupons.length,
     coupons: finalizedCoupons,
     isOnDemand: Boolean(storeData.isOnDemand),
-    isRealTime: true
+    isRealTime: true,
+    lastUpdated: preSyncedStore?.lastUpdated || currentLiveStore?.metadata?.lastUpdated || new Date().toISOString()
   };
 }
 

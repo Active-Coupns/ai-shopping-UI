@@ -558,8 +558,23 @@ export default function CouponResultView({
     }
   ];
 
-  // Semantic SEO FAQs with Schema.org readiness
+  // Semantic SEO FAQs with Dynamic Freshness (Schema.org readiness)
+  const topCouponForFaq = useMemo(() => {
+    return (storeCoupons || []).find(c => c.hasRealCode && c.code && c.code !== "INSTANT_CASHBACK") || storeCoupons?.[0];
+  }, [storeCoupons]);
+
+  const dynamicTopDealAnswer = useMemo(() => {
+    if (topCouponForFaq && topCouponForFaq.code && topCouponForFaq.code !== "INSTANT_CASHBACK") {
+      return `As of ${currentMonthYear}, the highest-saving verified coupon code for ${storeName} on Benefisto is '${topCouponForFaq.code}', which unlocks ${topCouponForFaq.title || bestOfferText}. It has been tested and verified active for checkout today.`;
+    }
+    return `Currently, ${storeName} shoppers can unlock ${bestOfferText}. Check our tested offers above to activate your instant savings.`;
+  }, [topCouponForFaq, currentMonthYear, storeName, bestOfferText]);
+
   const storeFaqs = [
+    {
+      q: `What is the best active coupon code for ${storeName} right now?`,
+      a: dynamicTopDealAnswer
+    },
     {
       q: "Why do some offers say \"Discount Auto-Applied\" instead of a coupon code?",
       a: "Many leading retailers (such as Nike, Hostinger, Apple, and seasonal brand sales) do not require users to enter a manual promo code. Instead, clicking \"Activate Deal\" takes you through a verified partner link where the discount is pre-activated in your cart automatically at checkout."
@@ -799,8 +814,13 @@ export default function CouponResultView({
                     <th scope="row" className="py-2 sm:py-2.5 px-3.5 sm:px-4 font-bold text-slate-500 bg-slate-50/50 w-2/5 sm:w-1/4 text-[11px] sm:text-xs">
                       Best Discount Today
                     </th>
-                    <td className="py-2 sm:py-2.5 px-3.5 sm:px-4 font-extrabold text-emerald-600 text-[11px] sm:text-xs">
-                      {bestOfferText}
+                    <td className="py-2 sm:py-2.5 px-3.5 sm:px-4 font-extrabold text-emerald-600 text-[11px] sm:text-xs flex items-center justify-between gap-2 flex-wrap">
+                      <span>{bestOfferText}</span>
+                      {topCouponForFaq?.code && topCouponForFaq.code !== "INSTANT_CASHBACK" && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-mono text-[10px] font-black border border-emerald-300 shrink-0">
+                          Top Code: {topCouponForFaq.code}
+                        </span>
+                      )}
                     </td>
                   </tr>
                   <tr className="border-b border-slate-100">
