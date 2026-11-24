@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAuth } from "@clerk/nextjs/server";
+import crypto from "crypto";
 import { checkRateLimit, checkSharedIpQuota } from "@/services/rateLimiter";
 import { calculateBestCartCoupon } from "@/services/couponService";
 import { safeClientError } from "@/lib/errorShield";
@@ -131,6 +132,28 @@ export async function POST(req) {
             headers: { "Retry-After": String(retrySec) }
           }
         );
+      }
+
+      // Device Hardware Footprint Abuse Protection (Max 5/day per physical device across accounts)
+      const deviceFingerprint = req.headers.get("x-device-fingerprint") || req.headers.get("x-device-id") || null;
+      if (deviceFingerprint && typeof deviceFingerprint === "string" && redis) {
+        try {
+          const deviceHash = crypto.createHash("sha256").update(deviceFingerprint).digest("hex").slice(0, 32);
+          const deviceKey = `device:cart_analyze_daily:${deviceHash}`;
+          const rawDevice = await redis.get(deviceKey);
+          const deviceCount = parseInt(rawDevice || "0", 10);
+          if (deviceCount >= 5) {
+            return NextResponse.json(
+              {
+                success: false,
+                error: "DEVICE_QUOTA_EXHAUSTED",
+                message: "Daily free cart analysis limit reached (5/5) for this device. Quota resets at 12:00 AM IST! Upgrade to Search & Coupon Pack (₹49) for unlimited access.",
+                remaining: 0
+              },
+              { status: 429 }
+            );
+          }
+        } catch (_) {}
       }
     } catch {
       console.error("[Cart Analysis API] Limiter exception occurred.");
@@ -291,6 +314,14 @@ Important:
         message: optimization.message,
         upgradeUrl: optimization.upgradeUrl || "/pricing?tab=search"
       });
+    }
+
+    if (deviceFingerprint && typeof deviceFingerprint === "string" && redis && !isPaidUser) {
+      try {
+        const deviceHash = crypto.createHash("sha256").update(deviceFingerprint).digest("hex").slice(0, 32);
+        const deviceKey = `device:cart_analyze_daily:${deviceHash}`;
+        redis.incr(deviceKey).then(() => redis.expire(deviceKey, 86400)).catch(() => {});
+      } catch (_) {}
     }
 
     return NextResponse.json({
