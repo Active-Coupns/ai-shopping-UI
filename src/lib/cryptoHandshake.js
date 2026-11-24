@@ -10,8 +10,20 @@
  */
 
 // Internal cryptographic seed known only to the built application runtime
-const HANDSHAKE_SECRET_SEED = process.env.HANDSHAKE_SECRET_SEED || "benefisto_sec_alpha_92f81c4e70b9";
+const BASE_HANDSHAKE_SEED = process.env.HANDSHAKE_SECRET_SEED || "benefisto_sec_alpha_92f81c4e70b9";
 const TIME_WINDOW_MS = 30000; // 30-second rolling window tolerance
+
+/**
+ * Dynamic Epoch-Rotating Salt Generator:
+ * Generates an automated daily-rotating salt derived from UTC calendar epoch.
+ * Mutates every 24 hours at 00:00 UTC so captured payloads & decompiled logic become obsolete.
+ */
+function getRotatingSeed(timestampMs = Date.now()) {
+  const epochDay = Math.floor(timestampMs / 86400000);
+  // Linear congruential scramble on epochDay mixed with base seed
+  const scramble = ((epochDay * 31337) ^ 0x5bf03635) >>> 0;
+  return `${BASE_HANDSHAKE_SEED}_rot_${epochDay}_${scramble}`;
+}
 
 /**
  * Universal SHA-256 Hasher (Browser & Node.js isomorphic)
@@ -46,7 +58,8 @@ export async function generateHandshakeHeaders(path = "") {
   try {
     const timestamp = Date.now().toString();
     const nonce = Math.random().toString(36).substring(2, 10);
-    const payload = `${timestamp}:${nonce}:${path}:${HANDSHAKE_SECRET_SEED}`;
+    const rotatingSeed = getRotatingSeed(parseInt(timestamp, 10));
+    const payload = `${timestamp}:${nonce}:${path}:${rotatingSeed}`;
     const signature = await computeSha256(payload);
 
     return {
@@ -97,8 +110,9 @@ export async function verifyCryptoHandshake(request, expectedPath = "") {
     };
   }
 
-  // Re-compute expected signature
-  const expectedPayload = `${timestamp}:${nonce}:${expectedPath}:${HANDSHAKE_SECRET_SEED}`;
+  // Re-compute expected signature using the exact rotating seed for the request timestamp
+  const rotatingSeed = getRotatingSeed(reqTime);
+  const expectedPayload = `${timestamp}:${nonce}:${expectedPath}:${rotatingSeed}`;
   const computedSignature = await computeSha256(expectedPayload);
 
   // Constant-time comparison

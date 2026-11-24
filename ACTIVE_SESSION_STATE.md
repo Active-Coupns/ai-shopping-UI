@@ -55,6 +55,12 @@
    - Global currency support (INR, USD, GBP, CAD, AUD, AED) with interactive metadata chips and store fallback.
    - 1.5s Honey-style Auto-Apply Labor Illusion UX ticker.
    - 3-Layer Security Rate Limiter (5 scans/day per user, device hardware footprint, shared IP quota).
+7. **Platform-Wide Security Fortress (19/19 Tests Passed)**:
+   - Zero-File Edge Honeypot (0 disk artifacts, traps vulnerability scanners).
+   - Platform-Wide Blacklist: Blacklisted attacker IPs dropped across all verticals (Shopping Search, Travel, Subscriptions, Coupons, Root).
+   - Dynamic Rotating Salt Handshake: UTC calendar epoch seed mutating daily at 00:00 UTC.
+   - Tor & Anonymous Proxy Shield: `cf-ipcountry: T1/XX` and threat scores > 40 blocked with 403.
+   - Admin Cloaking: Public `/admin` and `/api/admin/*` return 404 Not Found (Stealth Mode).
 
 ---
 

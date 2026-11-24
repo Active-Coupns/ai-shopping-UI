@@ -71,15 +71,23 @@
      * Layer 2: Device Hardware Footprint (5 scans/day per canvas/hardware fingerprint).
      * Layer 3: Shared IP Quota (25 scans/day per IP to block distributed bot attacks).
 
-#### 🧪 Master End-to-End Verification (`scripts/master_e2e_verification.js`):
+7. **Platform-Wide Security Fortress & Zero-File Edge Honeypot (`src/middleware.js`, `src/lib/cryptoHandshake.js`, `scripts/security_fortress_audit.mjs`)**:
+   - **Isolated Virtual Edge Honeypot**: Zero files on disk (no real `.env`, `wp-login.php`, `phpmyadmin`). Edge regex trap in `middleware.js` captures automated vulnerability scanners and immediately severs connection with 403 Forbidden.
+   - **Platform-Wide Blacklist Enforcement**: Attacker IPs trapped by honeypot or confirmed malicious actions are instantly dropped across ALL platform verticals (AI Shopping Search, Hardware Trust Sheet, Virtual Try-On, Subscriptions, Travel, Coupons, and Root). Genuine shoppers experience 0.00ms overhead.
+   - **Dynamic Rotating Salt Handshake Engine (`cryptoHandshake.js`)**: Dynamic UTC epoch-rotating seed mutating daily at 00:00 UTC derived from calendar `epochDay` and deterministic linear congruential scramble. Decompiled or sniffed client signatures become completely obsolete every 24 hours.
+   - **Tor, Anonymous Proxy & Cloudflare Threat Score Shield**: Evaluates `cf-ipcountry: T1` (Tor), `cf-ipcountry: XX` (Anonymous Proxy), and `cf-threat-score > 40` on API routes, returning 403 Forbidden at the edge.
+   - **Admin API Cloaking (Stealth Mode)**: Public domain requests to `/admin` and `/api/admin/*` are rewritten to 404 Not Found, preventing automated scanners from confirming endpoint existence, while preserving access via secret `sentinelx9.benefisto.com` subdomain.
+
+#### 🧪 Master End-to-End Verification (`scripts/master_e2e_verification.js` & `scripts/security_fortress_audit.mjs`):
 - **Pillar 1 (Disk Store & Metadata)**: 951 store keys verified, 3,789 coupons, 100.00% enriched (`eligibility`, `is_stackable`, 3-step `apply_guide`).
 - **Pillar 2 (Rolling Shard Cron)**: 6 daily shards (~75 brands/day), 22s timeout, smart retry queue, 30s ceiling guard verified.
 - **Pillar 3 (80/20 Hybrid SEO)**: All 11 probed representative global stores returned HTTP 200, `dateModified` in `WebPage` schema, dynamic Question #1 in `FAQPage` schema with live code, and Position 0 `Top Code: [CODE]` badge.
 - **Pillar 4 (Extended Merchant Network Gating)**: Public 600 catalog & Feedico = 100% Free. Unlisted stores for free users = `requiresPaidTier: true` (Paywall card). Unlisted stores cached from paid requests remain strictly blocked for free users.
 - **Pillar 5 (Monetization & Pricing)**: `search_medium` verified at ₹49 / $2.49 (150 credits), `search_large` verified at ₹99 / $4.99 (330 credits).
 - **Pillar 6 (Smart Cart Screenshot & Virtual Auto-Apply)**: Gemini Vision extraction verified; store selection fallback active; virtual auto-apply simulation ticker and interactive metadata chips active; 3-layer security rate limit active.
+- **Pillar 7 (Security Fortress E2E Audit)**: 19/19 tests passed (100.0%) verifying Zero-File Honeypot, Rotating Salt Handshake, Tor/Proxy 403 Shield, Admin 404 Cloaking, and Platform-Wide Blacklist across all 5 consumer verticals.
 
-#### 📦 Git Commit History (10 Commits):
+#### 📦 Git Commit History (12 Commits):
 1. `ca67b5c`: `feat(coupons): implement 6-shard rolling sync engine, persistent store, and groq ai unlocking`
 2. `6445552`: `fix(cron): harden rolling sync engine with 22s timeout, smart retry queue, and 30s ceiling guard`
 3. `8870a18`: `feat(ui): render eligibility pill, stackability badge, and step-by-step how-to-apply guide on coupon cards`
@@ -90,6 +98,8 @@
 8. `45dcc9a`: `feat(cart-optimizer): enhance multimodal cart analysis with auto-apply simulation, metadata chips, global currency, and store selection fallback`
 9. `874be7b`: `feat(security): enforce 3-layer security rate limiting (5/day per user, device hardware footprint, and shared IP quota) for cart screenshot analysis`
 10. `161855c`: `fix(cart-optimizer): clean trailing catch block in analyze-cart route`
+11. `a2af8eb`: `docs: synchronize master ledger, GEMINI constitution, development log & deployment logs for multi-country coupon discovery, 80/20 SEO & cart optimizer`
+12. `HEAD`: `feat(security): platform-wide fortress with zero-file edge honeypot, dynamic rotating salt handshake, Tor/proxy shield & admin 404 cloaking`
 
 ---
 

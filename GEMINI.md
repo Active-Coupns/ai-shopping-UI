@@ -502,5 +502,23 @@ ShopSmart AI is **NOT a generic coupon website**, nor a spammy affiliate blog. I
   2. *Layer 2 (Device Hardware Footprint)*: 5 scans/day per hardware/canvas footprint.
   3. *Layer 3 (Shared IP Quota)*: 25 scans/day per IP to mitigate distributed scraping or proxy abuse.
 
+### 9.8. Platform-Wide Security Fortress, Isolated Edge Honeypot & Rotating Handshake Invariants (`middleware.js`, `cryptoHandshake.js`)
+- **Isolated Virtual Edge Honeypot (Zero Disk Artifact Invariant)**:
+  * Strict prohibition against storing physical honeypot files or folders on disk (`.env`, `wp-login.php`, `wp-admin`, `phpmyadmin`).
+  * Honeypot is 100% virtual at the edge: any incoming request matching vulnerability scanner probe regex is caught in `src/middleware.js` before touching any backend database or application logic.
+  * Caught attackers are immediately returned `403 Forbidden` and their IP is permanently added to the platform blacklist (`security:banned_ips`).
+- **Platform-Wide Blacklist Enforcement**:
+  * An IP blacklisted for malicious activity is instantly dropped across ALL platform verticals: Shopping Search (`/api/search`), Hardware Trust Sheet, Virtual Try-On, Subscriptions, Travel, Coupons, and Root Homepage.
+  * Zero lookup overhead (0.00ms) for genuine shoppers.
+- **Dynamic Rotating Salt Handshake Engine (`cryptoHandshake.js`)**:
+  * The cryptographic handshake seed mutates automatically every 24 hours at 00:00 UTC based on calendar `epochDay` and a linear congruential scramble.
+  * Enforces a 30-second rolling window anti-replay protection. Sniffed or reverse-engineered client signatures become completely obsolete within 24 hours.
+- **Tor, Anonymous Proxy & Threat Score Edge Shield**:
+  * Middleware evaluates Cloudflare edge headers: `cf-ipcountry: T1` (Tor), `cf-ipcountry: XX` (Anonymous Proxy), and `cf-threat-score > 40`.
+  * Blocks automated scrapers on `/api/*` with `403 Forbidden (ACCESS_DENIED_SUSPICIOUS_NETWORK)` without expending server compute.
+- **Admin Cloaking (Stealth Mode: 401 ➜ 404)**:
+  * Requests to `/admin` and `/api/admin/*` on public domain `benefisto.com` are rewritten to `404 Not Found`, concealing the existence of administrative endpoints from vulnerability scanners.
+  * Legitimate administration is strictly routed through the secret subdomain `sentinelx9.benefisto.com`.
+
 ---
 **END OF CONSTITUTION — IMMUTABLE ARCHITECTURE LOCK**

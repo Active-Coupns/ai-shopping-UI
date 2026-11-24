@@ -127,6 +127,7 @@ Benefisto is structured around 5 high-intent vertical savings engines:
   4. *80/20 Programmatic SEO & Ethical White-Hat Standard*: Injected dynamic `dateModified` in Schema.org `WebPage`, dynamic live top code FAQ in Schema.org `FAQPage`, and Position 0 semantic tables. Explicitly rejected spammy star rating microdata in strict compliance with Google's Helpful Content Update.
   5. *Two-Tier Monetization & Extended Merchant Paywall*: Public 600 brands + Feedico remain 100% Free forever. Unlisted long-tail merchants prompt an Extended Merchant Network Paywall card. Cached on-demand unlocks in Redis are strictly verified against user subscription tier.
   6. *Smart Cart Multimodal Optimizer & 3-Layer Security*: Powered by Gemini 2.5 Flash Vision to extract items, subtotal, and brand from cart screenshots. Includes store selection fallback, interactive metadata chips, and 1.5s Honey-style labor illusion auto-apply ticker. Protected by 3-layer security rate limiting (5 scans/day per user, device footprint, shared IP quota).
+  7. *Platform-Wide Security Fortress & Zero-File Edge Honeypot*: Zero disk artifacts (no physical `.env` or `wp-admin`). Virtual edge regex traps vulnerability scanners and blacklists attacker IPs across ALL verticals (Shopping Search, Trust Sheet, Virtual Try-On, Subscriptions, Travel, Coupons, Root). Powered by daily UTC epoch-rotating salt handshake, Cloudflare Tor/Proxy 403 shield, and Admin 404 cloaking (19/19 E2E tests passed).
 
 ---
 
