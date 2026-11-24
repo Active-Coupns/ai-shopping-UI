@@ -58,6 +58,21 @@ export async function getCouponsForStore(queryOrStore = "", country = "IN", { is
                          (normalizedKey ? currentLiveStore?.stores?.[normalizedKey] : null) ||
                          (searchSlug ? currentLiveStore?.stores?.[searchSlug] : null);
   if (preSyncedStore && Array.isArray(preSyncedStore.coupons) && preSyncedStore.coupons.length > 0) {
+    // If this store was unlocked via on-demand and is NOT in the public 600 catalog:
+    // It is an exclusive Extended Network brand that requires Paid Tier!
+    const isPublicCatalogBrand = Boolean(catalogBrand || normalizedKey);
+    if (preSyncedStore.isOnDemandUnlocked && !isPublicCatalogBrand && !isPaidUser) {
+      return {
+        success: false,
+        requiresPaidTier: true,
+        storeName: preSyncedStore.brandName || queryOrStore,
+        title: "Extended Merchant Network",
+        message: `${preSyncedStore.brandName || queryOrStore} is part of our Extended Global Merchant Network. Active checkout deals and promo codes for this store require an active Benefisto Search & Coupon Pack.`,
+        upgradeUrl: "/pricing?tab=search",
+        coupons: []
+      };
+    }
+
     feedicoCoupons = preSyncedStore.coupons;
     if (preSyncedStore.isLiveScraped || preSyncedStore.coupons[0]?.source === "brightdata_groq_unlocked") {
       storeData = {
@@ -200,6 +215,7 @@ export async function getCouponsForStore(queryOrStore = "", country = "IN", { is
             domain: storeData.domain,
             lastUpdated: new Date().toISOString(),
             isLiveScraped: true,
+            isOnDemandUnlocked: true,
             coupons: storeData.coupons || []
           };
           savePersistentStore(persistent);
