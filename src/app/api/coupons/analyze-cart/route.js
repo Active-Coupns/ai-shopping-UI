@@ -341,8 +341,3 @@ Important:
     );
   }
 }
-      { error: "Cart analysis failed", details: safeClientError(error).message },
-      { status: 500 }
-    );
-  }
-}
