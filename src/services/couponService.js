@@ -295,33 +295,93 @@ export async function getCouponsForStore(queryOrStore = "", country = "IN", { is
 }
 
 /**
- * Real-time Cart Optimizer: Calculates the #1 maximum savings coupon and next-tier upgrades
+ * Real-time Cart Optimizer: Simulates all coupons against user's cart total & metadata
  */
-export async function calculateBestCartCoupon(storeNameOrKey, cartTotal) {
+export async function calculateBestCartCoupon(
+  storeNameOrKey, 
+  cartTotal, 
+  country = "IN", 
+  { isNewUser = false, paymentMethod = null, isPaidUser = false, userId = null } = {}
+) {
   const numericCart = parseFloat(cartTotal) || 0;
-  const storeCouponsResult = await getCouponsForStore(storeNameOrKey);
+  const storeCouponsResult = await getCouponsForStore(storeNameOrKey, country, { isPaidUser, userId });
+
+  if (storeCouponsResult.requiresPaidTier) {
+    return {
+      success: false,
+      requiresPaidTier: true,
+      storeName: storeCouponsResult.storeName || storeNameOrKey,
+      message: storeCouponsResult.message,
+      upgradeUrl: storeCouponsResult.upgradeUrl || "/pricing?tab=search"
+    };
+  }
+
   const coupons = storeCouponsResult.coupons || [];
+  const meta = getCountryMeta(country);
+  const currencySymbol = meta?.symbol || "₹";
+
+  // Currency-aware shortfall threshold for next-tier upgrades
+  const cCode = (country || "IN").toUpperCase();
+  const maxShortfallAllowed = cCode === "IN" ? 350 : (cCode === "GB" ? 10 : (cCode === "AE" ? 50 : 15));
 
   const evaluatedCoupons = coupons.map((c) => {
-    const isEligible = numericCart >= c.min_order;
+    const minOrder = c.min_order ? parseFloat(c.min_order) : 0;
+    const isMinOrderMet = numericCart >= minOrder;
+    const shortfall = !isMinOrderMet ? Math.round(minOrder - numericCart) : 0;
+
+    // Check user eligibility metadata
+    const eligText = (c.eligibility || c.badge || "").toLowerCase();
+    const isNewUserCoupon = eligText.includes("new user") || eligText.includes("first") || eligText.includes("welcome");
+    const userEligible = isNewUser ? true : !isNewUserCoupon;
+
+    // Check bank/payment method metadata
+    const titleLower = (c.title || "").toLowerCase();
+    const descLower = (c.description || "").toLowerCase();
+    let paymentMatch = true;
+    if (paymentMethod && paymentMethod !== "ALL") {
+      const pm = paymentMethod.toLowerCase();
+      const hasBankMention = titleLower.includes("hdfc") || titleLower.includes("icici") || titleLower.includes("axis") || titleLower.includes("sbi") || titleLower.includes("amex");
+      if (hasBankMention) {
+        paymentMatch = titleLower.includes(pm) || descLower.includes(pm);
+      }
+    }
+
     let savings = 0;
+    const isEligible = isMinOrderMet && userEligible && paymentMatch;
 
     if (isEligible) {
       if (c.discount_type === "PERCENT") {
         const calculated = Math.round(numericCart * (c.discount_val / 100));
-        savings = Math.min(c.max_discount, calculated);
+        const maxCap = c.max_discount ? parseFloat(c.max_discount) : Infinity;
+        savings = Math.min(maxCap, calculated);
       } else {
-        savings = Math.min(c.max_discount, c.discount_val);
+        const flatVal = parseFloat(c.discount_val) || 0;
+        const maxCap = c.max_discount ? parseFloat(c.max_discount) : flatVal;
+        savings = Math.min(maxCap, flatVal);
       }
     }
 
-    const shortfall = !isEligible ? c.min_order - numericCart : 0;
+    let status = "ELIGIBLE";
+    let statusText = `Saves ${currencySymbol}${savings} at checkout`;
+
+    if (!isMinOrderMet) {
+      status = "MIN_ORDER_SHORTFALL";
+      statusText = `Need ${currencySymbol}${shortfall} more in cart`;
+    } else if (!userEligible) {
+      status = "NEW_USER_REQUIRED";
+      statusText = "App / First-order accounts only";
+    } else if (!paymentMatch) {
+      status = "PAYMENT_METHOD_MISMATCH";
+      statusText = `Requires ${c.title.split(" ")[0]} payment`;
+    }
 
     return {
       ...c,
       isEligible,
       savingsAmount: savings,
-      shortfall
+      shortfall,
+      simulationStatus: status,
+      simulationText: statusText
     };
   });
 
@@ -332,19 +392,26 @@ export async function calculateBestCartCoupon(storeNameOrKey, cartTotal) {
 
   // Identify next tier (offers needing a small cart bump)
   const nextTierOpportunities = evaluatedCoupons
-    .filter((c) => !c.isEligible && c.shortfall <= 350)
+    .filter((c) => !c.isEligible && c.shortfall > 0 && c.shortfall <= maxShortfallAllowed)
     .sort((a, b) => a.shortfall - b.shortfall);
 
-  const bestCoupon = eligibleCoupons.length > 0 ? eligibleCoupons[0] : null;
+  // Pick top real code as best coupon
+  const bestCoupon = eligibleCoupons.find(c => c.hasRealCode && c.code && c.code !== "INSTANT_CASHBACK") || eligibleCoupons[0] || null;
 
   return {
+    success: true,
+    storeKey: storeCouponsResult.storeKey,
     storeName: storeCouponsResult.storeName,
     logo: storeCouponsResult.logo,
     category: storeCouponsResult.category,
     cartTotal: numericCart,
+    currencySymbol,
+    country,
     bestCoupon,
     eligibleCoupons,
     nextTierOpportunities,
-    allCoupons: evaluatedCoupons
+    allCoupons: evaluatedCoupons,
+    simulatedCount: evaluatedCoupons.length,
+    requiresPaidTier: false
   };
 }

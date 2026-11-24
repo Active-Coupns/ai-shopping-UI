@@ -3,6 +3,7 @@ import { getAuth } from "@clerk/nextjs/server";
 import { checkRateLimit, checkSharedIpQuota } from "@/services/rateLimiter";
 import { calculateBestCartCoupon } from "@/services/couponService";
 import { safeClientError } from "@/lib/errorShield";
+import { redis } from "@/services/redis";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
 
@@ -31,105 +32,121 @@ export async function POST(req) {
     );
   }
 
-  // 2. Distributed Rate Limiting & Quota Protection (Fail-Closed, 5/24 hours)
-  try {
-    const dailyLimit = await checkRateLimit({
-      namespace: "cart_analyze_daily",
-      identifier: userId,
-      limit: 5,
-      windowSeconds: 86400
-    });
-
-    if (!dailyLimit || typeof dailyLimit !== "object" || dailyLimit.isBackendError) {
-      const retrySec = Number.isInteger(dailyLimit?.retryAfter) && dailyLimit.retryAfter > 0 ? dailyLimit.retryAfter : 60;
-      return NextResponse.json(
-        {
-          success: false,
-          error: "RATE_LIMITER_UNAVAILABLE",
-          message: "Cart analysis service is temporarily busy. Please retry shortly.",
-          retryAfter: retrySec
-        },
-        {
-          status: 503,
-          headers: { "Retry-After": String(retrySec) }
-        }
-      );
-    }
-
-    if (!dailyLimit.allowed) {
-      const retrySec = Number.isInteger(dailyLimit.retryAfter) && dailyLimit.retryAfter > 0 ? dailyLimit.retryAfter : 60;
-      const hoursRemaining = Math.max(1, Math.ceil((dailyLimit.resetInSeconds || 86400) / 3600));
-      return NextResponse.json(
-        {
-          success: false,
-          error: "RATE_LIMIT_EXCEEDED",
-          message: `Daily cart analysis limit reached (5/5 requests). Your quota resets in ${hoursRemaining} hours.`,
-          retryAfter: retrySec,
-          limit: dailyLimit.limit,
-          remaining: dailyLimit.remaining,
-          resetInSeconds: dailyLimit.resetInSeconds
-        },
-        {
-          status: 429,
-          headers: { "Retry-After": String(retrySec) }
-        }
-      );
-    }
-
-    // Shared IP Rolling 24-Hour Quota (10 requests per rolling 24h, Fail-Closed)
-    const ipQuotaResult = await checkSharedIpQuota({
-      request: req,
-      limit: 10,
-      windowSeconds: 86400
-    });
-
-    if (!ipQuotaResult || typeof ipQuotaResult !== "object" || ipQuotaResult.isBackendError) {
-      const retrySec = Number.isInteger(ipQuotaResult?.retryAfter) && ipQuotaResult.retryAfter > 0 ? ipQuotaResult.retryAfter : 60;
-      return NextResponse.json(
-        {
-          success: false,
-          error: "RATE_LIMITER_UNAVAILABLE",
-          message: "Cart analysis service is temporarily busy. Please retry shortly.",
-          retryAfter: retrySec
-        },
-        {
-          status: 503,
-          headers: { "Retry-After": String(retrySec) }
-        }
-      );
-    }
-
-    if (!ipQuotaResult.allowed) {
-      const retrySec = Number.isInteger(ipQuotaResult.retryAfter) && ipQuotaResult.retryAfter > 0 ? ipQuotaResult.retryAfter : 60;
-      return NextResponse.json(
-        {
-          success: false,
-          error: "IP_QUOTA_EXHAUSTED",
-          message: "Daily limit reached for this network/device across free tools. Please try again later.",
-          retryAfter: retrySec,
-          limit: ipQuotaResult.limit,
-          remaining: ipQuotaResult.remaining
-        },
-        {
-          status: 429,
-          headers: { "Retry-After": String(retrySec) }
-        }
-      );
-    }
-  } catch {
-    console.error("[Cart Analysis API] Limiter exception occurred.");
-    return NextResponse.json(
-      {
-        success: false,
-        error: "RATE_LIMITER_UNAVAILABLE",
-        message: "Cart analysis service is temporarily busy. Please retry shortly.",
-        retryAfter: 60
-      },
-      {
-        status: 503,
-        headers: { "Retry-After": "60" }
+  // Check paid status (active Search Pack) to bypass free limits if applicable
+  let isPaidUser = false;
+  if (userId && redis) {
+    try {
+      const rawCredits = await redis.get(`user_search_credits:${userId}`);
+      const rawExpiry = await redis.get(`user_search_expiry:${userId}`);
+      const credits = parseInt(rawCredits || "0", 10);
+      const expiry = parseInt(rawExpiry || "0", 10);
+      if (credits > 0 && Date.now() <= expiry) {
+        isPaidUser = true;
       }
-    );
+    } catch (_) {}
+  }
+
+  // 2. Distributed Rate Limiting & Quota Protection (Fail-Closed, 5/24 hours, bypassed for paid users)
+  if (!isPaidUser) {
+    try {
+      const dailyLimit = await checkRateLimit({
+        namespace: "cart_analyze_daily",
+        identifier: userId,
+        limit: 5,
+        windowSeconds: 86400
+      });
+
+      if (!dailyLimit || typeof dailyLimit !== "object" || dailyLimit.isBackendError) {
+        const retrySec = Number.isInteger(dailyLimit?.retryAfter) && dailyLimit.retryAfter > 0 ? dailyLimit.retryAfter : 60;
+        return NextResponse.json(
+          {
+            success: false,
+            error: "RATE_LIMITER_UNAVAILABLE",
+            message: "Cart analysis service is temporarily busy. Please retry shortly.",
+            retryAfter: retrySec
+          },
+          {
+            status: 503,
+            headers: { "Retry-After": String(retrySec) }
+          }
+        );
+      }
+
+      if (!dailyLimit.allowed) {
+        const retrySec = Number.isInteger(dailyLimit.retryAfter) && dailyLimit.retryAfter > 0 ? dailyLimit.retryAfter : 60;
+        const hoursRemaining = Math.max(1, Math.ceil((dailyLimit.resetInSeconds || 86400) / 3600));
+        return NextResponse.json(
+          {
+            success: false,
+            error: "RATE_LIMIT_EXCEEDED",
+            message: `Daily cart analysis limit reached (5/5 requests). Upgrade to Benefisto Search & Coupon Pack (₹49) to unlock unlimited on-demand analyses!`,
+            retryAfter: retrySec,
+            limit: dailyLimit.limit,
+            remaining: dailyLimit.remaining,
+            resetInSeconds: dailyLimit.resetInSeconds
+          },
+          {
+            status: 429,
+            headers: { "Retry-After": String(retrySec) }
+          }
+        );
+      }
+
+      // Shared IP Rolling 24-Hour Quota (10 requests per rolling 24h, Fail-Closed)
+      const ipQuotaResult = await checkSharedIpQuota({
+        request: req,
+        limit: 10,
+        windowSeconds: 86400
+      });
+
+      if (!ipQuotaResult || typeof ipQuotaResult !== "object" || ipQuotaResult.isBackendError) {
+        const retrySec = Number.isInteger(ipQuotaResult?.retryAfter) && ipQuotaResult.retryAfter > 0 ? ipQuotaResult.retryAfter : 60;
+        return NextResponse.json(
+          {
+            success: false,
+            error: "RATE_LIMITER_UNAVAILABLE",
+            message: "Cart analysis service is temporarily busy. Please retry shortly.",
+            retryAfter: retrySec
+          },
+          {
+            status: 503,
+            headers: { "Retry-After": String(retrySec) }
+          }
+        );
+      }
+
+      if (!ipQuotaResult.allowed) {
+        const retrySec = Number.isInteger(ipQuotaResult.retryAfter) && ipQuotaResult.retryAfter > 0 ? ipQuotaResult.retryAfter : 60;
+        return NextResponse.json(
+          {
+            success: false,
+            error: "IP_QUOTA_EXHAUSTED",
+            message: "Daily limit reached for this network/device across free tools. Please try again later.",
+            retryAfter: retrySec,
+            limit: ipQuotaResult.limit,
+            remaining: ipQuotaResult.remaining
+          },
+          {
+            status: 429,
+            headers: { "Retry-After": String(retrySec) }
+          }
+        );
+      }
+    } catch {
+      console.error("[Cart Analysis API] Limiter exception occurred.");
+      return NextResponse.json(
+        {
+          success: false,
+          error: "RATE_LIMITER_UNAVAILABLE",
+          message: "Cart analysis service is temporarily busy. Please retry shortly.",
+          retryAfter: 60
+        },
+        {
+          status: 503,
+          headers: { "Retry-After": "60" }
+        }
+      );
+    }
   }
 
   try {
@@ -144,115 +161,155 @@ export async function POST(req) {
       return NextResponse.json({ success: false, error: "INVALID_PAYLOAD", message: "Request body must be a JSON object." }, { status: 400 });
     }
 
-    const { imageBase64, mimeType = "image/jpeg" } = body;
+    const { 
+      imageBase64, 
+      mimeType = "image/jpeg",
+      country = "IN",
+      isNewUser = false,
+      paymentMethod = null,
+      manualStore = null,
+      manualCartTotal = null
+    } = body;
 
-    if (!imageBase64 || typeof imageBase64 !== "string") {
+    if (!imageBase64 && !manualCartTotal) {
       return NextResponse.json(
-        { error: "Image data is required" },
+        { error: "Image data or cart total is required" },
         { status: 400 }
       );
     }
 
-    // Clean base64 data if it contains data URI prefix
-    const cleanBase64 = imageBase64.replace(/^data:image\/[a-zA-Z]+;base64,/, "");
+    let extractedData = null;
 
-    const prompt = `
-You are an expert e-commerce and food delivery checkout analyzer.
-Analyze this checkout/cart screenshot carefully.
+    if (imageBase64) {
+      const cleanBase64 = imageBase64.replace(/^data:image\/[a-zA-Z]+;base64,/, "");
 
+      const prompt = `You are the Benefisto Expert E-Commerce Checkout & Cart Visual Inspector.
+Analyze this checkout or shopping cart screenshot carefully.
 Extract and return ONLY a valid JSON object matching this schema:
 {
-  "detectedStore": "Zomato" | "Swiggy" | "Blinkit" | "Zepto" | "Myntra" | "Ajio" | "Dominos" | "Amazon" | "Flipkart" | "Nykaa" | "Other",
-  "cartTotal": number (e.g. 480 or 1299. Extract the final subtotal or bill total before or after taxes/delivery),
-  "currency": "INR" | "USD",
-  "itemsSummary": "short summary of items or restaurant/store name",
-  "alreadyAppliedCoupon": "code name if already applied, or null",
-  "confidenceScore": number (0 to 1)
+  "detectedStore": string or null (Identify the exact brand, merchant, or restaurant name from the header logo, app bar, URL bar, or merchant details. E.g. "The Derma Co", "Zomato", "Dominos", "Walmart", "Swiggy", "Blinkit", "Myntra", "Pepperfry", "Target", "Argos", etc. If the store name is missing or ambiguous, return null),
+  "cartTotal": number or null (Extract the numerical final cart subtotal or payable bill total, e.g. 1499 or 45.50. Clean number only, no currency signs),
+  "currency": string (e.g. "INR", "USD", "GBP", "CAD", "AUD", "AED"),
+  "itemsSummary": string (Short summary of items in cart, e.g. "2 Pizzas + Garlic Bread" or "Skincare Serums"),
+  "alreadyAppliedCoupon": string or null (Promo code name if already applied in promo box, or null),
+  "confidenceScore": number (0.0 to 1.0)
 }
-
 Important:
-- If the store name is visible in the header, logo, or restaurant details, identify it accurately.
-- Find the numerical cart total / bill amount.
-- Do NOT include markdown blocks, just raw JSON.
-`;
+- Return ONLY raw JSON, with no markdown fences, no explanatory text.
+- If the image does not show an e-commerce cart or checkout screen, set confidenceScore to 0.1 and detectedStore to null.`;
 
-    let extractedData = null;
-    const visionModels = [
-      "gemini-2.5-flash",
-      "gemini-2.0-flash",
-      "gemini-1.5-flash",
-      "gemini-1.5-flash-8b"
-    ];
+      const visionModels = [
+        "gemini-2.5-flash",
+        "gemini-2.0-flash",
+        "gemini-1.5-flash",
+        "gemini-1.5-flash-8b"
+      ];
 
-    if (GEMINI_API_KEY) {
-      for (const model of visionModels) {
-        try {
-          const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
-          const res = await fetch(url, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              contents: [
-                {
-                  parts: [
-                    { text: prompt },
-                    {
-                      inline_data: {
-                        mime_type: mimeType,
-                        data: cleanBase64
+      if (GEMINI_API_KEY) {
+        for (const model of visionModels) {
+          try {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
+            const res = await fetch(url, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                contents: [
+                  {
+                    parts: [
+                      { text: prompt },
+                      {
+                        inline_data: {
+                          mime_type: mimeType,
+                          data: cleanBase64
+                        }
                       }
-                    }
-                  ]
+                    ]
+                  }
+                ],
+                generationConfig: {
+                  temperature: 0.1,
+                  response_mime_type: "application/json"
                 }
-              ],
-              generationConfig: {
-                temperature: 0.1,
-                response_mime_type: "application/json"
-              }
-            })
-          });
+              })
+            });
 
-          if (!res.ok) continue;
+            if (!res.ok) continue;
 
-          const data = await res.json();
-          const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (rawText) {
-            const cleaned = rawText.replace(/```json/gi, "").replace(/```/g, "").trim();
-            extractedData = JSON.parse(cleaned);
-            break;
+            const data = await res.json();
+            const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (rawText) {
+              const cleaned = rawText.replace(/```json/gi, "").replace(/```/g, "").trim();
+              extractedData = JSON.parse(cleaned);
+              break;
+            }
+          } catch (visionErr) {
+            console.warn(`[Vision Error ${model}]:`, visionErr.message);
           }
-        } catch (visionErr) {
-          console.warn(`[Vision Error ${model}]:`, visionErr.message);
         }
       }
     }
 
-    // Fallback if Vision API key not present or failed to parse image
-    if (!extractedData || !extractedData.detectedStore) {
-      extractedData = {
-        detectedStore: "Zomato",
-        cartTotal: 499,
-        currency: "INR",
-        itemsSummary: "Cart items detected from screenshot",
-        alreadyAppliedCoupon: null,
-        confidenceScore: 0.85
-      };
+    const effectiveStore = manualStore || extractedData?.detectedStore || null;
+    const effectiveTotal = manualCartTotal || extractedData?.cartTotal || null;
+
+    if (!effectiveTotal || effectiveTotal <= 0) {
+      return NextResponse.json({
+        success: false,
+        error: "UNREADABLE_CART",
+        message: "Could not clearly detect your cart bill total from this image. Please upload a clear screenshot of your checkout/cart screen showing the bill."
+      }, { status: 400 });
     }
 
-    // Run through deterministic coupon optimizer
+    // If store name is not identifiable from image, prompt user to select store
+    if (!effectiveStore) {
+      return NextResponse.json({
+        success: true,
+        requiresStoreSelection: true,
+        cartTotal: effectiveTotal,
+        currency: extractedData?.currency || "INR",
+        message: "Cart bill detected! Which store are you shopping on?",
+        popularStores: [
+          "Zomato", "Swiggy", "Blinkit", "Dominos India", "The Derma Co", 
+          "Mamaearth", "Myntra", "Nykaa", "Pepperfry", "Walmart", "Target", "Amazon"
+        ]
+      });
+    }
+
+    // Run deterministic mathematical cart optimization
     const optimization = await calculateBestCartCoupon(
-      extractedData.detectedStore,
-      extractedData.cartTotal
+      effectiveStore,
+      effectiveTotal,
+      country,
+      { isNewUser, paymentMethod, isPaidUser, userId }
     );
+
+    if (optimization.requiresPaidTier) {
+      return NextResponse.json({
+        success: false,
+        requiresPaidTier: true,
+        storeName: optimization.storeName || effectiveStore,
+        message: optimization.message,
+        upgradeUrl: optimization.upgradeUrl || "/pricing?tab=search"
+      });
+    }
 
     return NextResponse.json({
       success: true,
-      analysis: extractedData,
+      analysis: {
+        ...(extractedData || {}),
+        detectedStore: effectiveStore,
+        cartTotal: effectiveTotal
+      },
       optimization
     });
   } catch (error) {
     console.error("[Cart Analysis Route Error]:", error);
     return NextResponse.json(
+      { error: "Cart analysis failed", details: safeClientError(error).message },
+      { status: 500 }
+    );
+  }
+}
       { error: "Cart analysis failed", details: safeClientError(error).message },
       { status: 500 }
     );

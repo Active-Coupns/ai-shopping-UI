@@ -170,7 +170,8 @@ export default function CouponResultView({
   isCartAnalysis = false,
   isLoading = false,
   onReset,
-  country = "IN"
+  country = "IN",
+  onRetryWithStore
 }) {
   const currentCountry = (country || resultData?.country || "IN").toUpperCase();
   const isIndia = currentCountry === "IN";
@@ -188,6 +189,11 @@ export default function CouponResultView({
   const [activeFilter, setActiveFilter] = useState("all");
   const [calculatorAmount, setCalculatorAmount] = useState("");
   const [userVotes, setUserVotes] = useState({});
+
+  // Interactive Cart Metadata Simulation Chips
+  const [cartIsNewUser, setCartIsNewUser] = useState(false);
+  const [cartPaymentMethod, setCartPaymentMethod] = useState("ALL");
+  const [manualStoreInput, setManualStoreInput] = useState("");
 
   const handleVote = (couponId, voteType) => {
     setUserVotes(prev => ({ ...prev, [couponId]: voteType }));
@@ -262,11 +268,53 @@ export default function CouponResultView({
   const analysis = resultData?.analysis || null;
   const optimization = resultData?.optimization || null;
   const storeCoupons = resultData?.coupons || optimization?.allCoupons || [];
-  const bestCoupon = optimization?.bestCoupon || null;
+  const cartTotal = analysis?.cartTotal || optimization?.cartTotal || 0;
+
+  // Dynamic client re-evaluation of best coupon when user toggles chips (New User or Bank Card)
+  const dynamicallyEvaluatedBestCoupon = useMemo(() => {
+    if (!isCartAnalysis || !cartTotal || storeCoupons.length === 0) {
+      return optimization?.bestCoupon || null;
+    }
+    
+    let highestSavings = 0;
+    let winner = null;
+    
+    for (const c of storeCoupons) {
+      const minOrder = c.min_order ? parseFloat(c.min_order) : 0;
+      if (cartTotal < minOrder) continue;
+      
+      const eligLower = (c.eligibility || c.badge || "").toLowerCase();
+      const isNewUserDeal = eligLower.includes("new user") || eligLower.includes("first") || eligLower.includes("welcome");
+      if (isNewUserDeal && !cartIsNewUser) continue;
+      
+      if (cartPaymentMethod !== "ALL") {
+        const pm = cartPaymentMethod.toLowerCase();
+        const text = ((c.title || "") + " " + (c.description || "")).toLowerCase();
+        const hasBankMention = text.includes("hdfc") || text.includes("icici") || text.includes("axis") || text.includes("sbi") || text.includes("amex");
+        if (hasBankMention && !text.includes(pm)) continue;
+      }
+      
+      let savings = 0;
+      if (c.discount_type === "PERCENT") {
+        const calc = Math.round(cartTotal * (c.discount_val / 100));
+        savings = Math.min(c.max_discount || calc, calc);
+      } else {
+        savings = Math.min(c.max_discount || c.discount_val, c.discount_val);
+      }
+      
+      if (savings > highestSavings && c.hasRealCode && c.code && c.code !== "INSTANT_CASHBACK") {
+        highestSavings = savings;
+        winner = { ...c, savingsAmount: savings };
+      }
+    }
+    
+    return winner || optimization?.bestCoupon || null;
+  }, [isCartAnalysis, cartTotal, storeCoupons, cartIsNewUser, cartPaymentMethod, optimization]);
+
+  const bestCoupon = dynamicallyEvaluatedBestCoupon;
   const nextTier = optimization?.nextTierOpportunities || [];
   const storeName = resultData?.storeName || optimization?.storeName || analysis?.detectedStore || "Store";
   const logo = resultData?.logo || optimization?.logo || "🏷️";
-  const cartTotal = analysis?.cartTotal || optimization?.cartTotal || 0;
   const storeDomain = resultData?.domain || "";
   const storeCategory = resultData?.category || "Online Shopping";
   const officialWebsiteUrl = resultData?.officialUrl || storeCoupons[0]?.link || (storeDomain ? `https://${storeDomain}` : null);
@@ -751,6 +799,77 @@ export default function CouponResultView({
     );
   }
 
+  // Interactive Store Selection fallback if AI couldn't clearly detect brand from cropped image
+  if (resultData?.requiresStoreSelection) {
+    const popular = resultData.popularStores || [
+      "Zomato", "Swiggy", "Blinkit", "Dominos India", "The Derma Co", 
+      "Mamaearth", "Myntra", "Nykaa", "Pepperfry", "Walmart", "Target", "Amazon"
+    ];
+    return (
+      <div className="w-full max-w-2xl mx-auto px-4 py-8 text-center">
+        <div className="p-7 sm:p-10 rounded-3xl bg-white border border-slate-200 shadow-xl shadow-slate-900/5 space-y-6 text-left">
+          <div className="flex items-center gap-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-violet-600 to-indigo-600 text-white flex items-center justify-center font-black shadow-md shadow-violet-500/20 text-xl shrink-0">
+              🛒
+            </div>
+            <div>
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-[10px] font-bold text-emerald-800 uppercase tracking-wider mb-1">
+                ✓ Cart Bill Detected: {currencySymbol}{resultData.cartTotal}
+              </span>
+              <h3 className="text-lg font-black text-slate-900 tracking-tight">
+                Which store is this cart from?
+              </h3>
+              <p className="text-xs text-slate-500 font-medium mt-0.5">
+                We extracted your bill of {currencySymbol}{resultData.cartTotal}. Tap or type your store below to simulate the highest coupon savings:
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-2.5">
+            <span className="text-xs font-bold text-slate-700 block">Tap Your Store:</span>
+            <div className="flex flex-wrap gap-2">
+              {popular.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => onRetryWithStore?.(s, resultData.cartTotal)}
+                  className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-violet-600 hover:text-white border border-slate-200 text-xs font-bold text-slate-800 transition-all cursor-pointer shadow-2xs active:scale-95"
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <form 
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (manualStoreInput.trim()) {
+                onRetryWithStore?.(manualStoreInput.trim(), resultData.cartTotal);
+              }
+            }}
+            className="pt-3 border-t border-slate-100 flex items-center gap-2"
+          >
+            <input
+              type="text"
+              placeholder="Or type any store name (e.g. KFC, Tata 1mg, Argos)..."
+              value={manualStoreInput}
+              onChange={(e) => setManualStoreInput(e.target.value)}
+              className="flex-1 px-4 py-2.5 text-xs rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 text-slate-800 font-medium"
+            />
+            <button
+              type="submit"
+              disabled={!manualStoreInput.trim()}
+              className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs disabled:opacity-50 transition-all cursor-pointer shrink-0"
+            >
+              Simulate Best Coupon
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
   // Polite Empty State if store not found or unverified
   if (resultData?.notFound || resultData?.success === false) {
     return (
@@ -959,6 +1078,56 @@ export default function CouponResultView({
                 <span>Detected Store: <strong className="text-white">{storeName}</strong></span>
                 <span>•</span>
                 <span>Cart Bill: <strong className="text-amber-300 font-mono text-sm font-bold">{currencySymbol}{cartTotal}</strong></span>
+              </div>
+            </div>
+
+            {/* Virtual Auto-Apply Simulation Status Ticker */}
+            <div className="mb-4 p-3 rounded-2xl bg-white/10 border border-white/10 flex flex-wrap items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                <span className="text-violet-200 text-[11px] sm:text-xs">
+                  Auto-simulated <strong className="text-white font-mono">{storeCoupons.length}</strong> live store codes on your bill of <strong className="text-amber-300 font-mono">{currencySymbol}{cartTotal}</strong>
+                </span>
+              </div>
+              <span className="text-[10px] font-bold text-emerald-300 bg-emerald-500/20 px-2.5 py-0.5 rounded-full border border-emerald-400/30">
+                ⚡ 100% Zero-Failure Math
+              </span>
+            </div>
+
+            {/* Interactive Metadata Chips: New User & Bank Card Boost */}
+            <div className="mb-4 p-3 rounded-2xl bg-slate-900/60 border border-white/10 flex flex-wrap items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-slate-400 text-[11px] font-semibold">User Status:</span>
+                <button
+                  type="button"
+                  onClick={() => setCartIsNewUser(false)}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${!cartIsNewUser ? "bg-violet-600 text-white shadow-xs" : "bg-white/10 text-slate-300 hover:text-white"}`}
+                >
+                  Existing User
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCartIsNewUser(true)}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${cartIsNewUser ? "bg-amber-400 text-slate-950 shadow-xs" : "bg-white/10 text-slate-300 hover:text-white"}`}
+                >
+                  👤 First Order / New User
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-slate-400 text-[11px] font-semibold">💳 Bank Card:</span>
+                <div className="flex flex-wrap gap-1">
+                  {["ALL", "HDFC", "ICICI", "Axis", "SBI", "Amex"].map(bank => (
+                    <button
+                      key={bank}
+                      type="button"
+                      onClick={() => setCartPaymentMethod(bank)}
+                      className={`px-2 py-0.5 rounded-md text-[10px] font-bold transition-all cursor-pointer ${cartPaymentMethod === bank ? "bg-emerald-500 text-white" : "bg-white/10 text-slate-300 hover:text-white"}`}
+                    >
+                      {bank}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 

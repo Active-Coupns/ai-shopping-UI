@@ -769,8 +769,8 @@ export default function Home() {
     }
   };
 
-  const handleAnalyzeCartScreenshot = async (imageBase64) => {
-    if (!imageBase64) return;
+  const handleAnalyzeCartScreenshot = async (imageBase64, options = {}) => {
+    if (!imageBase64 && !options.manualCartTotal) return;
     setCouponResultData(null);
     setIsApiLoading(true);
     setAppState("coupon_results");
@@ -780,7 +780,11 @@ export default function Home() {
       const res = await fetch("/api/coupons/analyze-cart", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageBase64 })
+        body: JSON.stringify({ 
+          imageBase64, 
+          country: countryToUse,
+          ...options
+        })
       });
       const data = await res.json();
       if (!res.ok && !data.error) {
@@ -1121,6 +1125,9 @@ export default function Home() {
                 isCartAnalysis={isCartAnalysis}
                 isLoading={isApiLoading}
                 onReset={handleReset}
+                onRetryWithStore={(storeName, amount) => {
+                  handleAnalyzeCartScreenshot(null, { manualStore: storeName, manualCartTotal: amount });
+                }}
               />
             </motion.div>
           )}
