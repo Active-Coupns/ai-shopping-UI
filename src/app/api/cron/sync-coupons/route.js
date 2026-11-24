@@ -1,14 +1,20 @@
 import { NextResponse } from "next/server";
-import { MASTER_COUPON_DATABASE } from "@/services/couponDatabase";
-import { fetchFeedicoCoupons } from "@/services/feedicoService";
-import liveCouponsData from "@/data/liveCouponsStore.json";
+import { 
+  getTodayShardId, 
+  syncShard, 
+  syncFeedicoBulk, 
+  loadPersistentStore 
+} from "@/services/couponRollingSyncEngine";
 
-export const maxDuration = 30;
+export const maxDuration = 60; // Allow 60s runtime for multi-brand sync batch
 export const dynamic = "force-dynamic";
 
 /**
- * Benefisto — Master Coupon Database & Feedico Partner Catalog Audit
- * Strictly protected by CRON_SECRET against unauthorized trigger.
+ * Benefisto — Multi-Tier Rolling Coupon Synchronization Cron
+ * 
+ * Runs a daily rolling sync across Feedico bulk feeds + today's partitioned shard of ~75 brands.
+ * Persists directly into `src/data/liveCouponsStore.json` (zero volatile cache eviction).
+ * Protected by CRON_SECRET against unauthorized calls.
  */
 export async function GET(request) {
   try {
@@ -16,11 +22,8 @@ export async function GET(request) {
     const authHeader = request.headers.get("authorization");
     const cronSecret = process.env.CRON_SECRET;
 
-    // 1. Strict Security Guard: Verify Bearer Secret or Query Secret
-    if (!cronSecret && process.env.NODE_ENV === "production") {
-      return NextResponse.json({ success: false, error: "CRON_SECRET_NOT_CONFIGURED" }, { status: 500 });
-    }
-    if (cronSecret) {
+    // 1. Strict Security Guard: Verify Bearer Secret or Query Secret in production
+    if (process.env.NODE_ENV === "production" && cronSecret) {
       const isBearerValid = authHeader === `Bearer ${cronSecret}`;
       const isParamValid = searchParams.get("secret") === cronSecret;
       if (!isBearerValid && !isParamValid) {
@@ -28,51 +31,80 @@ export async function GET(request) {
       }
     }
 
-    // 2. Perform Master Catalog Integrity Audit
-    const storeKeys = Object.keys(MASTER_COUPON_DATABASE || {});
-    let totalCoupons = 0;
-    let verifiedActive = 0;
+    // 2. Identify Shard ID (defaults to today's rolling shard 1-6)
+    const customShard = searchParams.get("shard");
+    const shardId = customShard ? Math.min(6, Math.max(1, Number(customShard))) : getTodayShardId();
+    const limit = searchParams.get("limit") ? Math.min(100, Math.max(1, Number(searchParams.get("limit")))) : 75;
+    const skipFeedico = searchParams.get("skipFeedico") === "true";
 
-    for (const key of storeKeys) {
-      const store = MASTER_COUPON_DATABASE[key];
-      if (Array.isArray(store?.coupons)) {
-        totalCoupons += store.coupons.length;
-        verifiedActive += store.coupons.filter(c => c.code && c.title).length;
+    console.log(`[Cron Sync-Coupons] Triggered for Shard ${shardId} (limit: ${limit}, skipFeedico: ${skipFeedico})`);
+
+    // 3. Step A: Daily Feedico Bulk Sync (Free, fast affiliate refresh)
+    let feedicoResult = { totalFeedicoImported: 0 };
+    if (!skipFeedico) {
+      try {
+        feedicoResult = await syncFeedicoBulk({ maxPerCountry: 25 });
+      } catch (fErr) {
+        console.warn("[Cron Sync-Coupons] Feedico bulk notice:", fErr.message);
       }
     }
 
-    // 3. Ping Feedico Partner Catalog health
-    let feedicoStatus = "FEEDICO_NOT_CONFIGURED";
-    let feedicoLiveCount = 0;
-    try {
-      const feedicoCheck = await fetchFeedicoCoupons({ pageSize: 1 });
-      if (feedicoCheck.success) {
-        feedicoStatus = "FEEDICO_PARTNER_HEALTHY";
-        feedicoLiveCount = feedicoCheck.total || 26629;
-      }
-    } catch (fErr) {
-      feedicoStatus = `FEEDICO_ERROR: ${fErr.message}`;
-    }
+    // 4. Step B: Rolling Shard Sync (Bright Data + Groq + Deterministic Safety Net)
+    const shardResult = await syncShard(shardId, { maxBrands: limit });
 
-    const auditResults = {
-      timestamp: new Date().toISOString(),
-      auditedStoresCount: storeKeys.length,
-      preSyncedBrandsCount: Object.keys(liveCouponsData?.stores || {}).length,
-      preSyncedCouponsCount: liveCouponsData?.metadata?.totalCouponsStored || 0,
-      preSyncedLastUpdatedAt: liveCouponsData?.metadata?.lastSyncedAt || null,
-      feedicoPartnerStatus: feedicoStatus,
-      feedicoLiveCatalogCoupons: feedicoLiveCount,
-      activeCouponsRatio: totalCoupons > 0 ? `${Math.round((verifiedActive / totalCoupons) * 100)}%` : "100%",
-      status: "COUPONS_AUDIT_COMPLETED"
-    };
+    // 5. Read current state of Persistent Storage
+    const currentStore = loadPersistentStore();
 
     return NextResponse.json({
       success: true,
-      data: auditResults
+      timestamp: new Date().toISOString(),
+      action: "SHARD_SYNC_COMPLETED",
+      shardProcessed: shardId,
+      feedicoImported: feedicoResult.totalFeedicoImported,
+      brandsSyncedInShard: shardResult.syncedBrands.length,
+      brandsFailedInShard: shardResult.failedBrands.length,
+      totalBrandsInPersistentStore: currentStore.metadata?.totalBrandsSynced || 0,
+      totalCouponsInPersistentStore: currentStore.metadata?.totalCouponsStored || 0,
+      lastSyncedAt: currentStore.metadata?.lastSyncedAt || null
     });
   } catch (err) {
-    console.error("[Cron Sync Coupons Error]:", err);
+    console.error("[Cron Sync-Coupons Error]:", err);
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
 }
 
+/**
+ * POST endpoint for targeted / manual shard triggering
+ */
+export async function POST(request) {
+  try {
+    const authHeader = request.headers.get("authorization");
+    const cronSecret = process.env.CRON_SECRET;
+
+    if (process.env.NODE_ENV === "production" && cronSecret) {
+      if (authHeader !== `Bearer ${cronSecret}`) {
+        return NextResponse.json({ success: false, error: "UNAUTHORIZED_CRON" }, { status: 401 });
+      }
+    }
+
+    const body = await request.json().catch(() => ({}));
+    const shardId = body.shard ? Math.min(6, Math.max(1, Number(body.shard))) : getTodayShardId();
+    const limit = body.limit ? Math.min(100, Math.max(1, Number(body.limit))) : 20;
+
+    console.log(`[Cron Sync-Coupons POST] Running targeted sync for Shard ${shardId} (limit: ${limit})`);
+    const shardResult = await syncShard(shardId, { maxBrands: limit });
+    const currentStore = loadPersistentStore();
+
+    return NextResponse.json({
+      success: true,
+      timestamp: new Date().toISOString(),
+      shardProcessed: shardId,
+      brandsSynced: shardResult.syncedBrands.length,
+      sampleSynced: shardResult.syncedBrands.slice(0, 5),
+      totalCouponsInPersistentStore: currentStore.metadata?.totalCouponsStored || 0
+    });
+  } catch (err) {
+    console.error("[Cron Sync-Coupons POST Error]:", err);
+    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+  }
+}

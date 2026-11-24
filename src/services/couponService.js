@@ -7,14 +7,16 @@ import { fetchFeedicoCoupons } from "./feedicoService.js";
 import { findBrandInCatalog, getTopBrandsForCountry } from "../data/countryBrandsCatalog.js";
 import { aiRouter } from "./aiRouter.js";
 
-let liveCouponsData = null;
-try {
-  const storePath = path.join(process.cwd(), "src/data/liveCouponsStore.json");
-  if (fs.existsSync(storePath)) {
-    liveCouponsData = JSON.parse(fs.readFileSync(storePath, "utf8"));
+function getLiveCouponsStore() {
+  try {
+    const storePath = path.join(process.cwd(), "src/data/liveCouponsStore.json");
+    if (fs.existsSync(storePath)) {
+      return JSON.parse(fs.readFileSync(storePath, "utf8"));
+    }
+  } catch (e) {
+    // Graceful fallback
   }
-} catch (e) {
-  // Graceful fallback
+  return liveCouponsData;
 }
 
 const SEMANTIC_INTENT_MAP = [
@@ -43,11 +45,29 @@ export async function getCouponsForStore(queryOrStore = "", country = "IN") {
   let storeData = normalizedKey ? MASTER_COUPON_DATABASE[normalizedKey] : null;
 
   // 3. Pre-Synced Live Store Check (Instant sub-millisecond cache from Daily Cron)
+  const currentLiveStore = getLiveCouponsStore();
   let feedicoCoupons = [];
-  const brandLookupKey = (catalogBrand?.name || queryOrStore).toLowerCase().replace(/[^a-z0-9]+/g, "-");
-  const preSyncedStore = liveCouponsData?.stores?.[brandLookupKey];
+  const rawLookupKey = (catalogBrand?.name || queryOrStore).toLowerCase().replace(/[^a-z0-9]+/g, "-");
+  const cleanLookupKey = rawLookupKey.replace(/-(india|uk|canada|australia|uae)$/i, "");
+  const idLookupKey = (catalogBrand?.id || "").toLowerCase();
+  const preSyncedStore = currentLiveStore?.stores?.[rawLookupKey] ||
+                         currentLiveStore?.stores?.[cleanLookupKey] ||
+                         currentLiveStore?.stores?.[idLookupKey] ||
+                         (normalizedKey ? currentLiveStore?.stores?.[normalizedKey] : null) ||
+                         (searchSlug ? currentLiveStore?.stores?.[searchSlug] : null);
   if (preSyncedStore && Array.isArray(preSyncedStore.coupons) && preSyncedStore.coupons.length > 0) {
     feedicoCoupons = preSyncedStore.coupons;
+    if (preSyncedStore.isLiveScraped || preSyncedStore.coupons[0]?.source === "brightdata_groq_unlocked") {
+      storeData = {
+        name: catalogBrand?.name || preSyncedStore.brandName || queryOrStore,
+        category: catalogBrand?.category || "Verified Brand Savings",
+        logo: catalogBrand?.logo || "🏷️",
+        brandColor: catalogBrand?.color || "from-blue-600 to-indigo-700",
+        domain: catalogBrand?.domain || preSyncedStore.domain,
+        tagline: catalogBrand?.tagline || "Official Verified Savings",
+        coupons: preSyncedStore.coupons
+      };
+    }
   }
 
   // 3.1 Live Query to Feedico Partner Catalog (if not in pre-synced cache)
