@@ -116,11 +116,18 @@ export default function CouponCard({ coupon }) {
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs font-bold text-brand-violet uppercase tracking-wider flex items-center gap-1">
             <Tag className="w-3.5 h-3.5" />
-            {coupon.store}
+            {coupon.store || coupon.merchantName}
           </span>
-          <span className="text-[10px] text-slate-700 font-semibold bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">
-            {coupon.region}
-          </span>
+          <div className="flex items-center gap-1">
+            {coupon.eligibility && (
+              <span className="text-[9px] font-bold text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded-full border border-amber-200">
+                {coupon.eligibility.toLowerCase().includes("new") ? "New Users" : "All"}
+              </span>
+            )}
+            <span className="text-[10px] text-slate-700 font-semibold bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">
+              {coupon.region || "Verified"}
+            </span>
+          </div>
         </div>
         <h4 className="text-sm font-bold text-slate-900 line-clamp-2 leading-snug">{coupon.description}</h4>
       </div>

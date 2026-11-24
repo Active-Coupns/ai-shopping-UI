@@ -1179,12 +1179,32 @@ export default function CouponResultView({
                     </div>
                   )}
 
-                  {/* Top Badge & Success Rate */}
+                  {/* Top Badge, Eligibility, Stackability & Success Rate */}
                   <div>
-                    <div className="flex items-center justify-between gap-2 mb-2">
-                      <span className="text-[10px] font-bold text-violet-700 bg-violet-50 border border-violet-200 px-2 py-0.5 rounded-full uppercase tracking-wider">
-                        {coupon.badge || "PROMO CODE"}
-                      </span>
+                    <div className="flex flex-wrap items-center justify-between gap-1.5 mb-2">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="text-[10px] font-bold text-violet-700 bg-violet-50 border border-violet-200 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                          {coupon.badge || "PROMO CODE"}
+                        </span>
+                        {coupon.eligibility && (
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                            coupon.eligibility.toLowerCase().includes("new")
+                              ? "bg-amber-50 text-amber-800 border-amber-200"
+                              : "bg-blue-50 text-blue-800 border-blue-200"
+                          }`}>
+                            {coupon.eligibility.toLowerCase().includes("new") ? "👤 New Users" : "👥 All Users"}
+                          </span>
+                        )}
+                        {coupon.is_stackable !== undefined && (
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                            coupon.is_stackable 
+                              ? "bg-emerald-50 text-emerald-800 border-emerald-200" 
+                              : "bg-slate-100 text-slate-600 border-slate-200"
+                          }`}>
+                            {coupon.is_stackable ? "⚡ Stackable" : "Single Offer"}
+                          </span>
+                        )}
+                      </div>
                       <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                         <span>{coupon.verified_rate || "98% Success"}</span>
@@ -1261,6 +1281,23 @@ export default function CouponResultView({
                                       <span className="text-slate-600">{aiFit.paymentMethod}</span>
                                     </div>
                                   </div>
+
+                                  {/* Step-by-Step Checkout Guide (Groq Metadata) */}
+                                  {coupon.apply_guide && Array.isArray(coupon.apply_guide) && coupon.apply_guide.length > 0 && (
+                                    <div className="pt-2 mt-2 border-t border-violet-200/70">
+                                      <div className="flex items-center gap-1.5 mb-1 text-violet-900 font-extrabold text-[11px]">
+                                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                                        <span>How to Apply (Checkout Guide):</span>
+                                      </div>
+                                      <ol className="space-y-1 pl-4 list-decimal text-slate-700 leading-tight">
+                                        {coupon.apply_guide.map((step, sIdx) => (
+                                          <li key={sIdx} className="text-[10px] text-slate-600">
+                                            {step.replace(/^Step\s*\d+:\s*/i, "")}
+                                          </li>
+                                        ))}
+                                      </ol>
+                                    </div>
+                                  )}
                                 </div>
                               </motion.div>
                             )}
