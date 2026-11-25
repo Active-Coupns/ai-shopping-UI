@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import { 
   Check, Copy, Zap, TrendingUp, Award, Gift, 
   Smartphone, Monitor, Volume2, Shield, Calendar, 
@@ -570,6 +571,20 @@ export default function SubscriptionInteractiveClient({ sub, initialCoupons = []
                 </div>
               );
             })}
+          </div>
+
+          {/* Two-Way Flywheel: Link to Dedicated Store Coupon Page */}
+          <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+            <span className="text-slate-500 font-medium">
+              Looking for exclusive first-order codes or seasonal payment offers for {sub.name}?
+            </span>
+            <Link
+              href={`/coupons/${sub.id.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
+              className="font-bold text-indigo-600 hover:text-indigo-800 inline-flex items-center gap-1 group cursor-pointer shrink-0"
+            >
+              <span>Explore {sub.name} Full Coupon Store</span>
+              <span className="group-hover:translate-x-0.5 transition-transform">→</span>
+            </Link>
           </div>
         </div>
       ) : (

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getCouponsForStore } from "@/services/couponService";
 import { COUNTRY_TOP_BRANDS, findBrandInCatalog } from "@/data/countryBrandsCatalog";
 import { getCountryMeta, getCountryDateDetails } from "@/lib/countryConfig";
+import { getUniversalSubscriptionBySlug } from "@/data/subscriptionsRegistry";
 import CouponStorePageClient from "./CouponStorePageClient";
 
 export const dynamic = "force-dynamic";
@@ -272,6 +273,21 @@ export default async function CouponStorePage({ params, searchParams }) {
     ]
   };
 
+  // Flywheel cross-linking: check if brand has subscription plans & pricing blueprint
+  let linkedSubscription = null;
+  try {
+    const sub = await getUniversalSubscriptionBySlug(store, country) || await getUniversalSubscriptionBySlug(cleanName.toLowerCase().replace(/[^a-z0-9]+/g, "-"), country);
+    if (sub) {
+      linkedSubscription = {
+        name: sub.name,
+        slug: sub.seo?.slug || sub.id,
+        bestSavings: sub.savingsBlueprint?.annualMath?.savingsPercent || sub.savingsBlueprint?.snapshot?.bestSavings || "Save with Annual Billing"
+      };
+    }
+  } catch (e) {
+    // Non-blocking
+  }
+
   return (
     <>
       {/* Inject Google Rich Snippets JSON-LD */}
@@ -294,6 +310,7 @@ export default async function CouponStorePage({ params, searchParams }) {
         initialData={couponResult}
         storeSlug={store}
         countryCode={country}
+        linkedSubscription={linkedSubscription}
       />
     </>
   );

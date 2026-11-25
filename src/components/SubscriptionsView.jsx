@@ -63,6 +63,7 @@ export default function SubscriptionsView({
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [savingsFilter, setSavingsFilter] = useState("all"); // 'all' | 'student' | 'telecom' | 'split'
   const [activeBlueprintSub, setActiveBlueprintSub] = useState(null);
   const [isAiChatOpen, setIsAiChatOpen] = useState(false);
   const [copiedCode, setCopiedCode] = useState(null);
@@ -429,6 +430,32 @@ export default function SubscriptionsView({
   // Filter subscriptions based on search and category
   const filteredSubs = useMemo(() => {
     return modeSubs.filter((sub) => {
+      // 1. Savings Superpower Filter
+      if (savingsFilter === "student") {
+        const hasStudent = Boolean(
+          sub.savingsBlueprint?.studentHack ||
+          sub.savingsBlueprint?.snapshot?.studentGrant ||
+          (sub.tagline && sub.tagline.toLowerCase().includes("student"))
+        );
+        if (!hasStudent) return false;
+      } else if (savingsFilter === "telecom") {
+        const hasTelecom = Boolean(
+          (Array.isArray(sub.savingsBlueprint?.telecomFree) && sub.savingsBlueprint.telecomFree.length > 0) ||
+          sub.savingsBlueprint?.snapshot?.bestSavings?.toLowerCase().includes("telecom") ||
+          sub.savingsBlueprint?.snapshot?.bestSavings?.toLowerCase().includes("jio") ||
+          sub.savingsBlueprint?.snapshot?.bestSavings?.toLowerCase().includes("airtel") ||
+          sub.savingsBlueprint?.snapshot?.bestSavings?.toLowerCase().includes("t-mobile") ||
+          sub.savingsBlueprint?.snapshot?.bestSavings?.toLowerCase().includes("verizon") ||
+          sub.savingsBlueprint?.snapshot?.bestSavings?.toLowerCase().includes("ee") ||
+          sub.savingsBlueprint?.snapshot?.bestSavings?.toLowerCase().includes("optus")
+        );
+        if (!hasTelecom) return false;
+      } else if (savingsFilter === "split") {
+        const hasSplit = Boolean(sub.savingsBlueprint?.familySplit);
+        if (!hasSplit) return false;
+      }
+
+      // 2. Category Matching
       const matchCat = getSubMatchesCategory(sub, selectedCategory);
       if (!searchQuery.trim()) return matchCat;
       const q = searchQuery.toLowerCase();
@@ -437,7 +464,7 @@ export default function SubscriptionsView({
       const matchShows = (sub.popularShows || []).some((s) => s.toLowerCase().includes(q));
       return matchCat && (matchName || matchTag || matchShows);
     });
-  }, [modeSubs, searchQuery, selectedCategory]);
+  }, [modeSubs, searchQuery, selectedCategory, savingsFilter]);
 
   const handleCopyCode = (code, directUrl = null) => {
     navigator.clipboard?.writeText(code);
@@ -741,6 +768,57 @@ export default function SubscriptionsView({
               Clear
             </button>
           )}
+        </div>
+
+        {/* Superpower Quick Savings Filter Pills */}
+        <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar py-0.5 select-none">
+          <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-slate-400 shrink-0 flex items-center gap-1 pl-1">
+            <Zap className="w-3 h-3 text-amber-500 fill-amber-500" /> Fast Hacks:
+          </span>
+          <button
+            type="button"
+            onClick={() => setSavingsFilter("all")}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 ${
+              savingsFilter === "all"
+                ? "bg-slate-900 text-white shadow-xs"
+                : "bg-white text-slate-600 border border-slate-200 hover:border-slate-300"
+            }`}
+          >
+            <span>All Deals</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setSavingsFilter("student")}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 ${
+              savingsFilter === "student"
+                ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-xs"
+                : "bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100"
+            }`}
+          >
+            <span>🎓 Free for Students (.edu)</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setSavingsFilter("telecom")}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 ${
+              savingsFilter === "telecom"
+                ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-xs"
+                : "bg-indigo-50 text-indigo-800 border border-indigo-200 hover:bg-indigo-100"
+            }`}
+          >
+            <span>📱 Free with Telecom / Carrier</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setSavingsFilter("split")}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 ${
+              savingsFilter === "split"
+                ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-xs"
+                : "bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100"
+            }`}
+          >
+            <span>👥 Family Split Hacks</span>
+          </button>
         </div>
 
         {/* Visual Category Tiles (Inspired by Modern Category Portals) */}

@@ -176,17 +176,71 @@ export default async function SubscriptionDetailPage({ params }) {
     .filter(item => item.id !== sub.id && item.category === sub.category)
     .slice(0, 3);
 
+  const topTelecom = sub.savingsBlueprint?.telecomFree?.[0];
+  const topTelecomText = topTelecom ? `Free with ${topTelecom.operator} (${topTelecom.plan})` : null;
+
   const snapshot = sub.savingsBlueprint?.snapshot || {
-    bestSavings: `Save ${sub.savingsBlueprint?.annualMath?.savingsPercent || "30%"} with Annual Billing`,
-    activePromoCodes: `${liveCoupons.length || 2} Verified Active Codes Available`,
-    freeTier: "Available with Core Features",
-    studentGrant: "100% Free with Verified College ID"
+    bestSavings: topTelecomText || (sub.savingsBlueprint?.annualMath?.savingsPercent ? `Save ${sub.savingsBlueprint.annualMath.savingsPercent} with Annual Billing` : "Save with Verified Bundles & Billing Arbitrage"),
+    activePromoCodes: `${liveCoupons.length || (sub.savingsBlueprint?.promoCodes?.length || 2)} Verified Active Codes Available`,
+    freeTier: sub.plans?.some(p => p.price === 0 || String(p.tier).toLowerCase().includes("free")) ? "Available (Free Tier / Trial)" : "Available with Core Features",
+    studentGrant: sub.savingsBlueprint?.studentHack ? (sub.savingsBlueprint.studentHack.savingsValue || "Eligible for Student / Edu Discounts") : "100% Free with Verified College ID"
   };
+
+  const dynamicQuestion1 = {
+    question: `What is the cheapest way to get ${sub.name} in ${regionName}?`,
+    answer: topTelecomText 
+      ? `The cheapest way to get ${sub.name} in ${regionName} is through mobile and broadband bundles like ${topTelecom.operator} (${topTelecom.plan}) which includes it at $0 / month. Alternatively, save up to ${savingsPercent} with annual billing or student verification.`
+      : `The cheapest way to get ${sub.name} in ${regionName} is by choosing annual billing to immediately slash up to ${savingsPercent} off the price, or using verified academic (.edu) student verification to unlock discounted or free access.`
+  };
+
+  const baseFaqs = sub.seo?.faqs && sub.seo.faqs.length > 0 ? sub.seo.faqs : [
+    {
+      question: `How do I apply a verified promo code on ${sub.name}?`,
+      answer: `To apply a promo code on ${sub.name}: 1) Select your preferred tier and click 'Reveal Code' on Benefisto. 2) Copy the code and navigate to the official ${sub.name} checkout. 3) Paste the coupon code in the promo box to instantly reduce your billing total.`
+    },
+    {
+      question: `How much can I save with annual billing on ${sub.name}?`,
+      answer: `Switching to annual billing on ${sub.name} unlocks an instant discount of up to ${sub.savingsBlueprint?.annualMath?.savingsPercent || "33%"}, saving significant money compared to monthly payments.`
+    },
+    {
+      question: `Does ${sub.name} offer student or education discounts?`,
+      answer: `Yes, verified students and educators can unlock steep discounts or 100% free licenses on ${sub.name} by registering with an institutional (.edu) email address.`
+    },
+    {
+      question: `Are these promo codes and deals for ${sub.name} verified today?`,
+      answer: `Yes, every offer on Benefisto is verified daily against official checkout requirements and live affiliate catalogs so you get active, 100% working savings.`
+    },
+    {
+      question: `Can I share ${sub.name} with team members or family?`,
+      answer: `By selecting a multi-user or family tier on ${sub.name}, the effective cost per person drops to a fraction of single-user subscriptions.`
+    }
+  ];
+
+  const pageFaqs = [dynamicQuestion1, ...baseFaqs.filter(f => !f.question.toLowerCase().includes("cheapest way"))];
+
+  const dynamicPageTitle = isNoCouponSaas
+    ? `How to Save on ${sub.name} (${currentMonth} ${currentYear}): Verified Hacks & Pricing Blueprint | Benefisto`
+    : `${sub.name} Promo Codes & Pricing (${currentMonth} ${currentYear}) — Verified Deals | Benefisto`;
+
+  const dynamicPageDesc = isNoCouponSaas
+    ? `Don't pay full price for ${sub.name}! Cut your bill by up to ${savingsPercent} with our verified annual arbitrage, 100% free student education hacks, and team seat blueprints on Benefisto.`
+    : `Verified ${sub.name} promo codes, discount vouchers, and multi-tier plan pricing for ${currentMonth} ${currentYear}. Tested daily with instant checkout savings on Benefisto.`;
 
   // Structured Data (JSON-LD)
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
+      // 0. WebPage Schema with dynamic dateModified & freshness signal
+      {
+        "@type": "WebPage",
+        "@id": `https://www.benefisto.com/subscriptions/${sub.seo?.slug || sub.id}#webpage`,
+        "url": `https://www.benefisto.com/subscriptions/${sub.seo?.slug || sub.id}`,
+        "name": dynamicPageTitle,
+        "description": dynamicPageDesc,
+        "dateModified": new Date().toISOString(),
+        "datePublished": "2024-01-01T00:00:00Z",
+        "inLanguage": isAE ? "en-AE" : (isAU ? "en-AU" : (isCA ? "en-CA" : (isUK ? "en-GB" : (isUS ? "en-US" : "en-IN"))))
+      },
       // 1. BreadcrumbList Schema
       {
         "@type": "BreadcrumbList",
@@ -229,28 +283,7 @@ export default async function SubscriptionDetailPage({ params }) {
       // 3. FAQPage Schema for Search Snippets
       {
         "@type": "FAQPage",
-        "mainEntity": (sub.seo?.faqs && sub.seo.faqs.length > 0 ? sub.seo.faqs : [
-          {
-            question: `How do I apply a verified promo code on ${sub.name}?`,
-            answer: `To apply a promo code on ${sub.name}: 1) Select your preferred tier and click 'Reveal Code' on Benefisto. 2) Copy the code and navigate to the official ${sub.name} checkout. 3) Paste the coupon code in the promo box to instantly reduce your billing total.`
-          },
-          {
-            question: `How much can I save with annual billing on ${sub.name}?`,
-            answer: `Switching to annual billing on ${sub.name} unlocks an instant discount of up to ${sub.savingsBlueprint?.annualMath?.savingsPercent || "33%"}, saving significant money compared to monthly payments.`
-          },
-          {
-            question: `Does ${sub.name} offer student or education discounts?`,
-            answer: `Yes, verified students and educators can unlock steep discounts or 100% free licenses on ${sub.name} by registering with an institutional (.edu) email address.`
-          },
-          {
-            question: `Are these promo codes and deals for ${sub.name} verified today?`,
-            answer: `Yes, every offer on Benefisto is verified daily against official checkout requirements and live affiliate catalogs so you get active, 100% working savings.`
-          },
-          {
-            question: `Can I share ${sub.name} with team members or family?`,
-            answer: `By selecting a multi-user or family tier on ${sub.name}, the effective cost per person drops to a fraction of single-user subscriptions.`
-          }
-        ]).map(faq => ({
+        "mainEntity": pageFaqs.map(faq => ({
           "@type": "Question",
           "name": faq.question,
           "acceptedAnswer": {
@@ -416,6 +449,21 @@ export default async function SubscriptionDetailPage({ params }) {
               </div>
             </div>
           </section>
+
+          {/* Two-Way Flywheel: Link to Dedicated Coupons Store */}
+          <div className="mb-6 p-3.5 sm:p-4 rounded-2xl bg-indigo-50/70 border border-indigo-100/90 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs text-indigo-950">
+            <span className="font-semibold flex items-center gap-2">
+              <Tag className="w-4 h-4 text-indigo-600 shrink-0" />
+              <span>Looking for active checkout promo codes, bank offers &amp; discount vouchers?</span>
+            </span>
+            <Link
+              href={`/coupons/${(sub.id || sub.seo?.slug).toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
+              className="inline-flex items-center gap-1 font-extrabold text-indigo-700 hover:text-indigo-900 group shrink-0"
+            >
+              <span>Explore {sub.name} Full Coupon Store</span>
+              <span className="group-hover:translate-x-0.5 transition-transform">→</span>
+            </Link>
+          </div>
 
           {/* Client-Side Interactive Plan Switcher, 3-Layer Blueprints & Feedico Coupons */}
           <SubscriptionInteractiveClient 

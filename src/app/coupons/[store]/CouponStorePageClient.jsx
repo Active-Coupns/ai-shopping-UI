@@ -7,7 +7,7 @@ import CouponResultView from "@/components/CouponResultView";
 import { ArrowLeft, Sparkles, Search, Globe, ShieldCheck } from "lucide-react";
 import { SUPPORTED_COUNTRIES } from "@/lib/countryConfig";
 
-export default function CouponStorePageClient({ initialData, storeSlug, countryCode }) {
+export default function CouponStorePageClient({ initialData, storeSlug, countryCode, linkedSubscription }) {
   const router = useRouter();
   const [selectedCountry, setSelectedCountry] = useState(countryCode || "IN");
   const [searchQuery, setSearchQuery] = useState("");
@@ -98,6 +98,36 @@ export default function CouponStorePageClient({ initialData, storeSlug, countryC
 
       {/* Main Coupon Container */}
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8 pb-28 sm:pb-12">
+        {/* Flywheel Cross-Linking: Link to Subscription Plans & Pricing Blueprint */}
+        {linkedSubscription && (
+          <div className="mb-6 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-indigo-800/40">
+            <div className="flex items-center gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-amber-400/20 border border-amber-400/30 flex items-center justify-center shrink-0 text-amber-400 font-black">
+                <Sparkles className="w-5 h-5 fill-current" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-amber-400/20 text-amber-300 border border-amber-400/30">
+                    Pricing &amp; Plans Blueprint
+                  </span>
+                  <span className="text-xs text-indigo-200 hidden sm:inline">•</span>
+                  <span className="text-xs text-indigo-200 hidden sm:inline">Official Tier Comparison</span>
+                </div>
+                <p className="text-sm font-bold text-white mt-1">
+                  Looking for {linkedSubscription.name} plans, student discounts &amp; annual billing arbitrage?
+                </p>
+              </div>
+            </div>
+            <Link
+              href={`/subscriptions/${linkedSubscription.slug}`}
+              className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-white hover:bg-violet-50 text-slate-950 font-black text-xs shadow-sm hover:shadow transition-all shrink-0 group cursor-pointer"
+            >
+              <span>View Plans &amp; Savings Hacks</span>
+              <span className="text-violet-600 group-hover:translate-x-0.5 transition-transform">→</span>
+            </Link>
+          </div>
+        )}
+
         <CouponResultView 
           resultData={initialData}
           country={selectedCountry}
