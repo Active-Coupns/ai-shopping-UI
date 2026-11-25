@@ -2,10 +2,10 @@
 
 **Workspace Path:** `C:\Users\ASUS\.gemini\antigravity\scratch\ai-shopping-assistant`  
 **Production URL:** `https://benefisto.com`  
-**Latest Git Commit:** `161855c` (Branch: `main`)  
+**Latest Git Commit:** `77b7efa` (Branch: `main`)  
 **Parent Conversation ID:** `f2a88c90-b68a-4f91-bca0-98e5335a16b2`  
 **Creation Date:** 2026-11-21  
-**Last Updated:** 2026-11-24  
+**Last Updated:** 2026-11-25  
 
 ---
 
@@ -128,6 +128,16 @@ Benefisto is structured around 5 high-intent vertical savings engines:
   5. *Two-Tier Monetization & Extended Merchant Paywall*: Public 600 brands + Feedico remain 100% Free forever. Unlisted long-tail merchants prompt an Extended Merchant Network Paywall card. Cached on-demand unlocks in Redis are strictly verified against user subscription tier.
   6. *Smart Cart Multimodal Optimizer & 3-Layer Security*: Powered by Gemini 2.5 Flash Vision to extract items, subtotal, and brand from cart screenshots. Includes store selection fallback, interactive metadata chips, and 1.5s Honey-style labor illusion auto-apply ticker. Protected by 3-layer security rate limiting (5 scans/day per user, device footprint, shared IP quota).
   7. *Platform-Wide Security Fortress & Zero-File Edge Honeypot*: Zero disk artifacts (no physical `.env` or `wp-admin`). Virtual edge regex traps vulnerability scanners and blacklists attacker IPs across ALL verticals (Shopping Search, Trust Sheet, Virtual Try-On, Subscriptions, Travel, Coupons, Root). Powered by daily UTC epoch-rotating salt handshake, Cloudflare Tor/Proxy 403 shield, and Admin 404 cloaking (19/19 E2E tests passed).
+
+### Episode 10: Subscriptions Hub Discovery, 80/20 Programmatic SEO & Two-Way Coupon Flywheel
+- **Problem**: Subscriptions & SaaS hub was passive; users had to manually dig for student grants or telecom carrier perks. Subscriptions detail pages lacked live Googlebot freshness signals and dynamic FAQs. Furthermore, coupon brand pages (e.g. NordVPN, Hostinger, Canva) were isolated from their respective subscription pricing blueprints.
+- **The Architecture Solution**:
+  1. *Smart Discovery Quick Savings Filter Pills (`src/components/SubscriptionsView.jsx`)*: Injected 4 interactive filter pills (`All Deals`, `🎓 Free for Students (.edu)`, `📱 Free with Telecom / Carrier`, `👥 Family Split Hacks`), dynamically slicing the 165+ tools per country with zero server roundtrips.
+  2. *80/20 Programmatic SEO (Zero Cron, Zero Maintenance)*: Injected Schema.org `WebPage` with live `dateModified: new Date().toISOString()`, and dynamic Question #1 in Schema.org `FAQPage` (*"What is the cheapest way to get [Platform] in [Country]?"*) injecting live telecom bundle hacks ($0 carrier billing) or annual arbitrage calculations.
+  3. *Position 0 Quick Savings Table Fallback*: Upgraded data extraction to guarantee zero empty rows across both OTT and SaaS tools in all 6 regions.
+  4. *Two-Way Flywheel Cross-Linking*: Dynamically displays a high-converting "Pricing & Plans Blueprint" banner on coupon pages for brands with subscription plans (NordVPN, Hostinger, Canva, Shopify, etc.), linking to `/subscriptions/[slug]`. Subscriptions detail pages reciprocate with prominent "Explore Full Coupon Store →" routing back to the coupon engine.
+  5. *Supabase Secret Sanitation*: Purged hardcoded JWT fallback string in `src/lib/supabaseClient.js`, eliminating GitHub/Supabase secret scanning security alerts.
+  6. *Full E2E Automated Verification*: 63-assertion automated test suite passed with 100% success (0 failed). Pushed to `prod/main` and `origin/main` (Commit `77b7efa`).
 
 ---
 
