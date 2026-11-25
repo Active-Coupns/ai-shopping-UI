@@ -15,6 +15,7 @@ import fs from "fs";
 import path from "path";
 import { fetchFeedicoCoupons } from "./feedicoService.js";
 import { getCountryMeta, getCountryDateDetails } from "../lib/countryConfig.js";
+import { COUNTRY_TOP_BRANDS } from "../data/countryBrandsCatalog.js";
 
 const STORE_FILE_PATH = path.join(process.cwd(), "src", "data", "liveCouponsStore.json");
 const AUDIT_MATRIX_PATH = path.join(process.cwd(), "src", "data", "couponAuditMatrix.json");
@@ -85,17 +86,49 @@ export function savePersistentStore(storeData) {
 }
 
 /**
- * Load the Audit Matrix
+ * Load the Audit Matrix with Dynamic Fallback Generation from COUNTRY_TOP_BRANDS
  */
 export function loadAuditMatrix() {
   try {
     if (fs.existsSync(AUDIT_MATRIX_PATH)) {
       return JSON.parse(fs.readFileSync(AUDIT_MATRIX_PATH, "utf8"));
     }
+    // Secondary fallback path check
+    const altPath = path.join(__dirname, "..", "data", "couponAuditMatrix.json");
+    if (fs.existsSync(altPath)) {
+      return JSON.parse(fs.readFileSync(altPath, "utf8"));
+    }
   } catch (e) {
-    console.warn("[RollingSync] Matrix file not found:", e.message);
+    console.warn("[RollingSync] Matrix file read notice:", e.message);
   }
-  return null;
+
+  // Resilient Zero-Crash Fallback: Dynamically partition all 600 COUNTRY_TOP_BRANDS into 6 Shards
+  console.log("[RollingSync] Generating dynamic 6-shard partition from master COUNTRY_TOP_BRANDS catalog...");
+  const allBrands = [];
+  for (const [countryCode, list] of Object.entries(COUNTRY_TOP_BRANDS || {})) {
+    for (const b of list) {
+      allBrands.push({
+        id: b.id,
+        name: b.name,
+        domain: b.domain,
+        country: countryCode,
+        category: b.category,
+        catGroup: b.catGroup
+      });
+    }
+  }
+
+  const shards = { "1": [], "2": [], "3": [], "4": [], "5": [], "6": [] };
+  allBrands.forEach((brand, idx) => {
+    const shardIndex = String((idx % 6) + 1);
+    shards[shardIndex].push(brand);
+  });
+
+  return {
+    generatedAt: new Date().toISOString(),
+    totalBrands: allBrands.length,
+    shards
+  };
 }
 
 /**

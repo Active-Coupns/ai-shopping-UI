@@ -657,14 +657,14 @@ export default function Home() {
   };
 
   const handleSearchSubmit = async (query, bypassGuide = false, isExactMatch = false, forceTerminal = false, category = "general") => {
-    if (!isSignedIn) {
+    if (!isSignedIn && searchesLeft <= 0) {
       if (typeof openSignIn === "function") {
         openSignIn();
       }
       return;
     }
 
-    if (searchesLeft <= 0) {
+    if (isSignedIn && searchesLeft <= 0) {
       setIsQuotaOpen(true);
       return;
     }
@@ -676,14 +676,14 @@ export default function Home() {
   };
 
   const handleDirectSearch = async (query, isUrlLookup = false, sourceStore = null, sourceUrl = null, isExactMatch = false, category = "general") => {
-    if (!isSignedIn) {
+    if (!isSignedIn && searchesLeft <= 0) {
       if (typeof openSignIn === "function") {
         openSignIn();
       }
       return;
     }
 
-    if (searchesLeft <= 0) {
+    if (isSignedIn && searchesLeft <= 0) {
       setIsQuotaOpen(true);
       return;
     }
@@ -726,12 +726,19 @@ export default function Home() {
       }
     } catch (err) {
       console.error("Local search API request failed:", err);
-      if (err.message?.includes("403") || err.message?.includes("QuotaReached") || err.message?.includes("QUOTA_EXHAUSTED") || err.message?.includes("DAILY_LIMIT_EXHAUSTED") || err.message?.includes("DAILY_QUOTA_EXHAUSTED")) {
+      if (err.message?.includes("GUEST_LIMIT_REACHED") || (!isSignedIn && (err.message?.includes("429") || err.message?.includes("QUOTA")))) {
+        setSearchesLeft(0);
+        if (typeof openSignIn === "function") {
+          openSignIn();
+        }
+      } else if (err.message?.includes("403") || err.message?.includes("QuotaReached") || err.message?.includes("QUOTA_EXHAUSTED") || err.message?.includes("DAILY_LIMIT_EXHAUSTED") || err.message?.includes("DAILY_QUOTA_EXHAUSTED")) {
         setSearchesLeft(0);
         setIsQuotaOpen(true);
       } else if (err.message?.includes("401") || err.message?.includes("Unauthorized")) {
         setApiError("Your session has expired. Please sign in again.");
-        openSignIn();
+        if (typeof openSignIn === "function") {
+          openSignIn();
+        }
       } else if (err.message?.includes("429") || err.message?.includes("busy") || err.message?.includes("Too Many Requests")) {
         setApiError("Zippy servers are experiencing extraordinarily high shopping traffic right now. To ensure price accuracy, please wait a moment or try again in a few seconds.");
       } else if (err.name === "AbortError" || err.message?.includes("abort") || err.message?.includes("timeout")) {

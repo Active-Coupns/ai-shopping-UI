@@ -34,7 +34,8 @@ export async function GET(request) {
     // 2. Identify Shard ID (defaults to today's rolling shard 1-6)
     const customShard = searchParams.get("shard");
     const shardId = customShard ? Math.min(6, Math.max(1, Number(customShard))) : getTodayShardId();
-    const limit = searchParams.get("limit") ? Math.min(100, Math.max(1, Number(searchParams.get("limit")))) : 75;
+    // Default to 20 brands per run so the route completes cleanly within 30-45s without proxy timeout
+    const limit = searchParams.get("limit") ? Math.min(100, Math.max(1, Number(searchParams.get("limit")))) : 20;
     const skipFeedico = searchParams.get("skipFeedico") === "true";
 
     console.log(`[Cron Sync-Coupons] Triggered for Shard ${shardId} (limit: ${limit}, skipFeedico: ${skipFeedico})`);
@@ -60,10 +61,11 @@ export async function GET(request) {
       timestamp: new Date().toISOString(),
       action: "SHARD_SYNC_COMPLETED",
       shardProcessed: shardId,
-      feedicoImported: feedicoResult.totalFeedicoImported,
-      brandsSyncedInShard: shardResult.syncedBrands.length,
-      brandsFailedInShard: shardResult.failedBrands.length,
-      totalBrandsInPersistentStore: currentStore.metadata?.totalBrandsSynced || 0,
+      feedicoImported: feedicoResult.totalFeedicoImported || 0,
+      totalBrandsInShard: shardResult.totalBrands || 0,
+      signalsProcessed: shardResult.signalsProcessed || 0,
+      unlockedCoupons: shardResult.unlockedCount || 0,
+      totalBrandsInPersistentStore: currentStore.metadata?.totalBrandsSynced || currentStore.metadata?.totalStores || 0,
       totalCouponsInPersistentStore: currentStore.metadata?.totalCouponsStored || 0,
       lastSyncedAt: currentStore.metadata?.lastSyncedAt || null
     });
@@ -99,8 +101,9 @@ export async function POST(request) {
       success: true,
       timestamp: new Date().toISOString(),
       shardProcessed: shardId,
-      brandsSynced: shardResult.syncedBrands.length,
-      sampleSynced: shardResult.syncedBrands.slice(0, 5),
+      totalBrandsInShard: shardResult.totalBrands || 0,
+      signalsProcessed: shardResult.signalsProcessed || 0,
+      unlockedCoupons: shardResult.unlockedCount || 0,
       totalCouponsInPersistentStore: currentStore.metadata?.totalCouponsStored || 0
     });
   } catch (err) {

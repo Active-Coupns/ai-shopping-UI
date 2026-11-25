@@ -1,7 +1,64 @@
 import { NextResponse } from "next/server";
+import crypto from "crypto";
 import { redis } from "@/services/redis";
 
 export const dynamic = "force-dynamic";
+
+/**
+ * Validates Dodo Payments standard webhook signature (HMAC-SHA256)
+ */
+function verifyDodoSignature(rawBody, request, secret) {
+  if (!secret) return true;
+
+  const webhookId = request.headers.get("webhook-id") || request.headers.get("x-webhook-id");
+  const webhookTimestamp = request.headers.get("webhook-timestamp") || request.headers.get("x-webhook-timestamp");
+  const signatureHeader = request.headers.get("webhook-signature") || request.headers.get("x-dodo-signature");
+
+  if (!signatureHeader) {
+    return false;
+  }
+
+  try {
+    const rawSecret = secret.startsWith("whsec_") ? secret.substring(6) : secret;
+    let secretKey;
+    try {
+      secretKey = Buffer.from(rawSecret, "base64");
+    } catch {
+      secretKey = Buffer.from(secret, "utf-8");
+    }
+
+    // Reject replay attacks older than 5 minutes
+    if (webhookTimestamp) {
+      const timestampSec = parseInt(webhookTimestamp, 10);
+      const currentSec = Math.floor(Date.now() / 1000);
+      if (Math.abs(currentSec - timestampSec) > 300) {
+        console.warn("[Dodo Webhook] Timestamp skew exceeded 300s.");
+        return false;
+      }
+    }
+
+    const payloadToSign = webhookId && webhookTimestamp
+      ? `${webhookId}.${webhookTimestamp}.${rawBody}`
+      : rawBody;
+
+    const expectedSig = crypto
+      .createHmac("sha256", secretKey)
+      .update(payloadToSign)
+      .digest("base64");
+
+    const sigParts = signatureHeader.split(" ");
+    for (const part of sigParts) {
+      const cleanSig = part.startsWith("v1,") ? part.substring(3) : part;
+      if (cleanSig.length === expectedSig.length && crypto.timingSafeEqual(Buffer.from(cleanSig), Buffer.from(expectedSig))) {
+        return true;
+      }
+    }
+  } catch (err) {
+    console.error("[Dodo Webhook Signature Verification Error]:", err.message);
+  }
+
+  return false;
+}
 
 /**
  * POST /api/webhooks/dodo
@@ -11,6 +68,17 @@ export const dynamic = "force-dynamic";
 export async function POST(request) {
   try {
     const rawBody = await request.text();
+    const webhookSecret = process.env.DODO_WEBHOOK_SECRET;
+
+    // Strict Webhook Signature Verification in Production
+    if (process.env.NODE_ENV === "production" && webhookSecret) {
+      const isValid = verifyDodoSignature(rawBody, request, webhookSecret);
+      if (!isValid) {
+        console.warn("[Dodo Webhook] Unauthorized webhook attempt: Invalid HMAC signature.");
+        return NextResponse.json({ error: "UNAUTHORIZED_SIGNATURE" }, { status: 401 });
+      }
+    }
+
     let event = null;
 
     try {

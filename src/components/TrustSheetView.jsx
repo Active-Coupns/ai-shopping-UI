@@ -458,12 +458,6 @@ export default function TrustSheetView({
 
   // Phase 1: Identify Product (URL-First Direct Flow)
   const handleIdentify = async (targetInput, existingProduct = null) => {
-    if (!isSignedIn) {
-      if (typeof openSignIn === "function") {
-        openSignIn();
-      }
-      return;
-    }
     const clean = String(typeof targetInput === "string" ? targetInput : inputVal || "").trim();
     if (!clean && !existingProduct) return;
 
@@ -537,6 +531,12 @@ export default function TrustSheetView({
       }
       setPhase("dossier");
     } catch (err) {
+      if (err.message?.includes("DAILY_QUOTA_EXHAUSTED") || err.message?.includes("Daily limit reached")) {
+        if (!isSignedIn && typeof openSignIn === "function") {
+          openSignIn();
+          return;
+        }
+      }
       setError(err.message || "An unexpected error occurred while inspecting product.");
       setPhase("input");
     }
@@ -563,12 +563,6 @@ export default function TrustSheetView({
 
   // Phase 2: Generate Trust Sheet Dossier
   const handleGenerateDossier = async (customAnswers = null) => {
-    if (!isSignedIn) {
-      if (typeof openSignIn === "function") {
-        openSignIn();
-      }
-      return;
-    }
     if (!identifiedProduct) return;
 
     setError(null);
@@ -627,12 +621,6 @@ export default function TrustSheetView({
 
   // Phase 3: In-Feature Search for Matching Deals (User Initiated, 2-3 Curated Alternatives)
   const handleSearchMatching = async (searchQuery) => {
-    if (!isSignedIn) {
-      if (typeof openSignIn === "function") {
-        openSignIn();
-      }
-      return;
-    }
     let query = String(searchQuery || "").trim();
     if (!query) return;
 

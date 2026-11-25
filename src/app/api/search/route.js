@@ -197,22 +197,13 @@ export async function POST(request) {
       }, { status: 403 });
     }
 
-    // 2. Mandatory Clerk Session Token / Auth State Verification
+    // 2. Clerk Session Token / Auth State Verification
     let userId = null;
     try {
       const authObj = getAuth(request);
       userId = authObj?.userId || null;
     } catch (clerkErr) {
       userId = null;
-    }
-
-    if (!userId && !request.headers.get("x-internal-test-auth")) {
-      return NextResponse.json({
-        products: [],
-        coupons: [],
-        error: "UNAUTHORIZED",
-        message: "Sign-in required to search live deals. Please sign in to continue."
-      }, { status: 401 });
     }
 
     const deviceFingerprint = request.headers.get("x-device-fingerprint") || null;
@@ -283,12 +274,13 @@ export async function POST(request) {
         }
 
         if ((hasProducts && !hasFallbackProducts && !hasPoisonedMismatch && !hasSearchLink) || isServiceCoupon) {
+          const userQuotaLimit = userId ? 10 : 3;
           const quotaStatus = await checkUnifiedApiQuota({
             userId,
             clientIp,
             deviceFingerprint: effectiveDeviceFingerprint,
             isCacheHit: true,
-            limit: 10
+            limit: userQuotaLimit
           });
           const remainingSearches = quotaStatus.remaining;
           let finalCachedProducts = (isUrlLookup && cachedPayload.products) 
@@ -398,22 +390,27 @@ export async function POST(request) {
       }, { status: 200 });
     }
 
-    // 6. Live Product Search via OpenWebNinja - Consumes 1 credit from Unified 10-Call API Quota
+    // 6. Live Product Search via OpenWebNinja - Consumes 1 credit from Unified API Quota (10 for registered, 3 for guests)
+    const userQuotaLimit = userId ? 10 : 3;
     const quotaResult = await checkUnifiedApiQuota({
       userId,
       clientIp,
       deviceFingerprint: effectiveDeviceFingerprint,
       isCacheHit: false,
-      limit: 10
+      limit: userQuotaLimit
     });
 
     if (!quotaResult.allowed) {
+      const isGuest = !userId;
       return NextResponse.json({
         products: [],
         coupons: [],
-        error: "QUOTA_EXHAUSTED",
-        message: quotaResult.message || "Daily limit reached (10/10 AI operations). Your quota resets tomorrow at 12:00 AM IST!",
-        searchesLeft: 0
+        error: isGuest ? "GUEST_LIMIT_REACHED" : "QUOTA_EXHAUSTED",
+        message: isGuest
+          ? "You have used your 3 free guest searches for today! Please sign in to unlock 10 daily searches and exclusive promo codes."
+          : (quotaResult.message || "Daily limit reached (10/10 AI operations). Your quota resets tomorrow at 12:00 AM IST!"),
+        searchesLeft: 0,
+        requiresSignIn: isGuest
       }, { status: 429 });
     }
 

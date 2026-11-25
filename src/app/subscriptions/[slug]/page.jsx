@@ -17,10 +17,7 @@ import {
 import { getCouponsForStore } from "@/services/couponService.js";
 import SubscriptionInteractiveClient from "./SubscriptionInteractiveClient";
 
-export async function generateStaticParams() {
-  const slugs = getAllUniversalSubscriptionSlugs();
-  return slugs.map((slug) => ({ slug }));
-}
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }) {
   const { slug } = await params;

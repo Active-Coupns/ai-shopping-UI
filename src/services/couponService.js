@@ -108,7 +108,7 @@ export async function getCouponsForStore(queryOrStore = "", country = "IN", { is
   if (!storeData && queryOrStore) {
     const qLower = queryOrStore.toLowerCase();
     for (const mapping of SEMANTIC_INTENT_MAP) {
-      if (mapping.keywords.some(kw => qLower.includes(kw))) {
+      if (mapping.keywords.some(kw => new RegExp(`(^|\\s|[^a-z0-9])${kw}($|\\s|[^a-z0-9])`, "i").test(qLower))) {
         if (MASTER_COUPON_DATABASE[mapping.storeKey]) {
           storeData = MASTER_COUPON_DATABASE[mapping.storeKey];
           console.log(`[Coupon RAG] Mapped "${queryOrStore}" to verified merchant "${storeData.name}"`);
