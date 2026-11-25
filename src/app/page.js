@@ -657,14 +657,14 @@ export default function Home() {
   };
 
   const handleSearchSubmit = async (query, bypassGuide = false, isExactMatch = false, forceTerminal = false, category = "general") => {
-    if (!isSignedIn && searchesLeft <= 0) {
+    if (!isSignedIn) {
       if (typeof openSignIn === "function") {
         openSignIn();
       }
       return;
     }
 
-    if (isSignedIn && searchesLeft <= 0) {
+    if (searchesLeft <= 0) {
       setIsQuotaOpen(true);
       return;
     }
@@ -676,14 +676,14 @@ export default function Home() {
   };
 
   const handleDirectSearch = async (query, isUrlLookup = false, sourceStore = null, sourceUrl = null, isExactMatch = false, category = "general") => {
-    if (!isSignedIn && searchesLeft <= 0) {
+    if (!isSignedIn) {
       if (typeof openSignIn === "function") {
         openSignIn();
       }
       return;
     }
 
-    if (isSignedIn && searchesLeft <= 0) {
+    if (searchesLeft <= 0) {
       setIsQuotaOpen(true);
       return;
     }

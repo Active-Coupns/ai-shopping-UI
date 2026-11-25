@@ -458,6 +458,12 @@ export default function TrustSheetView({
 
   // Phase 1: Identify Product (URL-First Direct Flow)
   const handleIdentify = async (targetInput, existingProduct = null) => {
+    if (!isSignedIn) {
+      if (typeof openSignIn === "function") {
+        openSignIn();
+      }
+      return;
+    }
     const clean = String(typeof targetInput === "string" ? targetInput : inputVal || "").trim();
     if (!clean && !existingProduct) return;
 
@@ -563,6 +569,12 @@ export default function TrustSheetView({
 
   // Phase 2: Generate Trust Sheet Dossier
   const handleGenerateDossier = async (customAnswers = null) => {
+    if (!isSignedIn) {
+      if (typeof openSignIn === "function") {
+        openSignIn();
+      }
+      return;
+    }
     if (!identifiedProduct) return;
 
     setError(null);
@@ -621,6 +633,12 @@ export default function TrustSheetView({
 
   // Phase 3: In-Feature Search for Matching Deals (User Initiated, 2-3 Curated Alternatives)
   const handleSearchMatching = async (searchQuery) => {
+    if (!isSignedIn) {
+      if (typeof openSignIn === "function") {
+        openSignIn();
+      }
+      return;
+    }
     let query = String(searchQuery || "").trim();
     if (!query) return;
 
@@ -637,8 +655,24 @@ export default function TrustSheetView({
 
     try {
       const response = await searchProducts(query, country || "IN");
-      const products = Array.isArray(response?.results) ? response.results.slice(0, 3) : [];
-      setMatchingDeals(products);
+      const currentTitle = (identifiedProduct?.title || "").toLowerCase().trim();
+      const rawProducts = Array.isArray(response?.results) ? response.results : [];
+      // Deduplicate: Exclude currently inspected product and filter duplicates
+      const seenTitles = new Set();
+      const distinctProducts = [];
+      for (const p of rawProducts) {
+        const pTitle = (p.title || p.product_title || "").toLowerCase().trim();
+        if (!pTitle) continue;
+        if (currentTitle && (pTitle === currentTitle || (currentTitle.length > 15 && pTitle.includes(currentTitle.slice(0, 25))))) {
+          continue;
+        }
+        const normKey = pTitle.slice(0, 30);
+        if (seenTitles.has(normKey)) continue;
+        seenTitles.add(normKey);
+        distinctProducts.push(p);
+        if (distinctProducts.length >= 3) break;
+      }
+      setMatchingDeals(distinctProducts);
       setHasSearchedMatching(true);
     } catch (err) {
       console.error("Matching search error:", err);
@@ -719,10 +753,25 @@ export default function TrustSheetView({
 
     try {
       const response = await searchProducts(query, country || "IN");
-      const products = Array.isArray(response?.results) ? response.results.slice(0, 3) : [];
+      const currentTitle = (identifiedProduct?.title || "").toLowerCase().trim();
+      const rawProducts = Array.isArray(response?.results) ? response.results : [];
+      const seenTitles = new Set();
+      const distinctProducts = [];
+      for (const p of rawProducts) {
+        const pTitle = (p.title || p.product_title || "").toLowerCase().trim();
+        if (!pTitle) continue;
+        if (currentTitle && (pTitle === currentTitle || (currentTitle.length > 15 && pTitle.includes(currentTitle.slice(0, 25))))) {
+          continue;
+        }
+        const normKey = pTitle.slice(0, 30);
+        if (seenTitles.has(normKey)) continue;
+        seenTitles.add(normKey);
+        distinctProducts.push(p);
+        if (distinctProducts.length >= 3) break;
+      }
       setAssistantHistory(prev => prev.map((msg, idx) => {
         if (idx === msgIndex) {
-          return { ...msg, isSearching: false, matchingDeals: products };
+          return { ...msg, isSearching: false, matchingDeals: distinctProducts };
         }
         return msg;
       }));

@@ -876,6 +876,35 @@ Respond ONLY with valid, raw JSON (no markdown formatting, no backticks, no comm
     }
   }
 
+  // Tier 3: Google Gemini Direct API Fallback
+  const geminiKey = (process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || "").trim();
+  if (!jsonResult && geminiKey) {
+    try {
+      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`;
+      const geminiRes = await fetch(geminiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            temperature: 0.2,
+            responseMimeType: "application/json"
+          }
+        }),
+        signal: AbortSignal.timeout(30000)
+      });
+      if (geminiRes.ok) {
+        const geminiData = await geminiRes.json();
+        const rawContent = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "";
+        if (rawContent) {
+          jsonResult = JSON.parse(rawContent);
+        }
+      }
+    } catch (gErr) {
+      console.warn("[TrustSheet] Gemini Tier 3 fallback notice:", gErr.message);
+    }
+  }
+
   // ZERO DUMMY FALLBACK RULE: Only return genuine 100% AI-generated analysis grounded in real specs
   if (!jsonResult) {
     return {
