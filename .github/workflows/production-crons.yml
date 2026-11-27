@@ -23,70 +23,73 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Determine & Trigger Due Cron
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
           BASE_URL="https://benefisto.com"
-          SECRET="cron_b0280b0f7c4d36ecc2cd057df1dfc3335e316277"
           HOUR=$(date -u +%H)
           MINUTE=$(date -u +%M)
           DOW=$(date -u +%u)
 
           echo "UTC Time: $HOUR:$MINUTE, Day of week: $DOW"
 
-          # Function to trigger cron endpoint
+          # Function to trigger cron endpoint with TLS-encrypted Bearer Token
           ping_cron() {
             ENDPOINT=$1
             echo "--> Triggering: $BASE_URL$ENDPOINT"
-            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X GET "$BASE_URL$ENDPOINT")
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X GET "$BASE_URL$ENDPOINT" \
+              -H "Authorization: Bearer $CRON_SECRET" \
+              -H "User-Agent: Benefisto-Automated-Cron/2.0")
             echo "    Result: HTTP $HTTP_CODE"
           }
 
           # 02:00 UTC: Sync Coupons
           if [ "$HOUR" -eq "02" ]; then
-            ping_cron "/api/cron/sync-coupons?secret=$SECRET"
+            ping_cron "/api/cron/sync-coupons"
             if [ "$DOW" -eq "7" ]; then
-              ping_cron "/api/cron/sync-subscriptions?country=IN&secret=$SECRET"
+              ping_cron "/api/cron/sync-subscriptions?country=IN"
             fi
           fi
 
           # 03:00 UTC: Sync Travel Deals
           if [ "$HOUR" -eq "03" ]; then
-            ping_cron "/api/cron/sync-travel-deals?secret=$SECRET"
+            ping_cron "/api/cron/sync-travel-deals"
           fi
 
           # 00:30 UTC: Heal Sentinel (APAC Cluster)
           if [ "$HOUR" -eq "00" ]; then
-            ping_cron "/api/cron/heal-sentinel?cluster=apac&secret=$SECRET"
+            ping_cron "/api/cron/heal-sentinel?cluster=apac"
           fi
 
           # 06:00 UTC: Heal Sentinel (GB) & Sunday Subscriptions (GB)
           if [ "$HOUR" -eq "06" ]; then
-            ping_cron "/api/cron/heal-sentinel?country=GB&secret=$SECRET"
+            ping_cron "/api/cron/heal-sentinel?country=GB"
             if [ "$DOW" -eq "7" ]; then
-              ping_cron "/api/cron/sync-subscriptions?country=GB&secret=$SECRET"
+              ping_cron "/api/cron/sync-subscriptions?country=GB"
             fi
           fi
 
           # 11:00 UTC: Heal Sentinel (Americas Cluster)
           if [ "$HOUR" -eq "11" ]; then
-            ping_cron "/api/cron/heal-sentinel?cluster=americas&secret=$SECRET"
+            ping_cron "/api/cron/heal-sentinel?cluster=americas"
           fi
 
           # 20:00 UTC: Heal Sentinel (Australia)
           if [ "$HOUR" -eq "20" ]; then
-            ping_cron "/api/cron/heal-sentinel?country=AU&secret=$SECRET"
+            ping_cron "/api/cron/heal-sentinel?country=AU"
           fi
 
           # Sunday Multi-Country Subscriptions Sync
           if [ "$DOW" -eq "7" ]; then
             if [ "$HOUR" -eq "04" ]; then
-              ping_cron "/api/cron/sync-subscriptions?country=US&secret=$SECRET"
+              ping_cron "/api/cron/sync-subscriptions?country=US"
             fi
             if [ "$HOUR" -eq "08" ]; then
-              ping_cron "/api/cron/sync-subscriptions?country=CA&secret=$SECRET"
+              ping_cron "/api/cron/sync-subscriptions?country=CA"
             fi
             if [ "$HOUR" -eq "12" ]; then
-              ping_cron "/api/cron/sync-subscriptions?country=AE&secret=$SECRET"
-              ping_cron "/api/cron/sync-subscriptions?country=AU&secret=$SECRET"
+              ping_cron "/api/cron/sync-subscriptions?country=AE"
+              ping_cron "/api/cron/sync-subscriptions?country=AU"
             fi
           fi
 

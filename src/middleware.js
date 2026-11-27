@@ -48,6 +48,19 @@ const isPublicRoute = createRouteMatcher([
 const bannedIpsL1 = new Set();
 const HONEYPOT_REGEX = /^\/(\.env|\.git|wp-login|wp-admin|phpmyadmin|xmlrpc\.php|eval-stdin|actuator|\.aws|\.docker)/i;
 
+/**
+ * Constant-time string comparison to prevent side-channel timing attacks
+ */
+function safeCompareTokens(a, b) {
+  if (typeof a !== "string" || typeof b !== "string") return false;
+  if (a.length !== b.length) return false;
+  let mismatch = 0;
+  for (let i = 0; i < a.length; i++) {
+    mismatch |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return mismatch === 0;
+}
+
 const handler = clerkMiddleware(
   async (auth, req) => {
     const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || "";
@@ -120,7 +133,21 @@ const handler = clerkMiddleware(
     const cfThreatScore = parseInt(req.headers.get("cf-threat-score") || "0", 10);
     const isTorOrProxy = cfCountry === "T1" || cfCountry === "XX";
 
-    if (req.nextUrl.pathname.startsWith("/api/") && (isTorOrProxy || cfThreatScore > 40)) {
+    // Verified Internal Cron Exemption (Strictly Authenticated by 64-char CRON_SECRET & Bearer Token)
+    let isAuthorizedCron = false;
+    if (req.nextUrl.pathname.startsWith("/api/cron")) {
+      const cronSecret = process.env.CRON_SECRET;
+      const authHeader = req.headers.get("authorization") || "";
+      const bearerToken = authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
+      const secretParam = req.nextUrl.searchParams.get("secret") || "";
+      const providedToken = bearerToken || secretParam;
+
+      if (cronSecret && providedToken && safeCompareTokens(providedToken, cronSecret)) {
+        isAuthorizedCron = true;
+      }
+    }
+
+    if (req.nextUrl.pathname.startsWith("/api/") && !isAuthorizedCron && (isTorOrProxy || cfThreatScore > 40)) {
       return NextResponse.json(
         {
           success: false,

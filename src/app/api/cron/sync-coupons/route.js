@@ -10,6 +10,19 @@ export const maxDuration = 60; // Allow 60s runtime for multi-brand sync batch
 export const dynamic = "force-dynamic";
 
 /**
+ * Constant-time string comparison to prevent timing attacks
+ */
+function safeCompareTokens(a, b) {
+  if (typeof a !== "string" || typeof b !== "string") return false;
+  if (a.length !== b.length) return false;
+  let mismatch = 0;
+  for (let i = 0; i < a.length; i++) {
+    mismatch |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return mismatch === 0;
+}
+
+/**
  * Benefisto — Multi-Tier Rolling Coupon Synchronization Cron
  * 
  * Runs a daily rolling sync across Feedico bulk feeds + today's partitioned shard of ~75 brands.
@@ -24,8 +37,8 @@ export async function GET(request) {
 
     // 1. Strict Security Guard: Verify Bearer Secret or Query Secret in production
     if (process.env.NODE_ENV === "production" && cronSecret) {
-      const isBearerValid = authHeader === `Bearer ${cronSecret}`;
-      const isParamValid = searchParams.get("secret") === cronSecret;
+      const isBearerValid = safeCompareTokens(authHeader, `Bearer ${cronSecret}`);
+      const isParamValid = safeCompareTokens(searchParams.get("secret"), cronSecret);
       if (!isBearerValid && !isParamValid) {
         return NextResponse.json({ success: false, error: "UNAUTHORIZED_CRON" }, { status: 401 });
       }
@@ -84,7 +97,7 @@ export async function POST(request) {
     const cronSecret = process.env.CRON_SECRET;
 
     if (process.env.NODE_ENV === "production" && cronSecret) {
-      if (authHeader !== `Bearer ${cronSecret}`) {
+      if (!safeCompareTokens(authHeader, `Bearer ${cronSecret}`)) {
         return NextResponse.json({ success: false, error: "UNAUTHORIZED_CRON" }, { status: 401 });
       }
     }
